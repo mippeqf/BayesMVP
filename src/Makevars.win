@@ -1,5 +1,7 @@
 
-# CXX17=/opt/AMD/aocc-compiler-4.2.0/bin/clang++
+# CXX14=/opt/rh/devtoolset-8/root/usr/bin/g++ # old flag (default for Stan)
+# CXX17=/opt/rh/devtoolset-8/root/usr/bin/g++
+# CXX17=/opt/AMD/aocc-compiler-4.1.0/bin/clang++
 
 
 CC = clang
@@ -9,7 +11,11 @@ CXX14 = clang++
 CXX17 = clang++
 CXX_STD = CXX17
 
-PKG_CXXFLAGS =   -g -O3 -D_REENTRANT  -DNDEBUG    -march=znver4 -mtune=znver4   -mfma   -ffp-contract=fast  -fno-math-errno  -fno-trapping-math  -fno-signed-zeros $(SHLIB_OPENMP_CXXFLAGS)
+# for AMD zen4 CPU's install the latest AOCC clang++ compilern and use:
+# -march=znver4 -mtune=znver4
+# ... instead of:  -march=native -mtune=native
+
+PKG_CXXFLAGS =   -g -O3 -D_REENTRANT  -DNDEBUG    -march=native -mtune=native    -mfma   -ffp-contract=fast  -fno-math-errno  -fno-trapping-math  -fno-signed-zeros $(SHLIB_OPENMP_CXXFLAGS)
 PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS)  $(shell "$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" -e "RcppParallel::RcppParallelLibs()") $(shell "$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" -e "StanHeaders:::LdFlags()")  # old flag (default for Stan)
 
 
