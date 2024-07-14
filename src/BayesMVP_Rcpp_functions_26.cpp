@@ -86,6 +86,7 @@ using namespace Eigen;
 
 static Ziggurat::Ziggurat::Ziggurat zigg;
 
+#define VECTORISATION_VEC_WIDTH 16;
 
 
 
@@ -261,7 +262,7 @@ inline double fast_exp_double_wo_checks(double a)
 // [[Rcpp::export]]
 Eigen::Array<double, -1, 1  > fast_exp_double_wo_checks_Eigen(  Eigen::Array<double, -1, 1  > x) {
   
-  //  #pragma clang loop vectorize_width(16)
+     // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
   for (int i = 0; i < x.rows(); ++i) {
     x(i) = fast_exp_double_wo_checks(x(i));
   }    
@@ -279,7 +280,7 @@ Eigen::Array<double, -1, 1  > fast_exp_double_wo_checks_Eigen(  Eigen::Array<dou
 Eigen::Array<double, -1, -1  > fast_exp_double_wo_checks_Eigen_mat(  Eigen::Array<double, -1, -1  > x) {
   
   for (int j = 0; j < x.cols(); ++j) {
-    //  #pragma clang loop vectorize_width(16)
+      // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
     for (int i = 0; i < x.rows(); ++i) {
       x(i, j) = fast_exp_double_wo_checks(x(i, j));
     }
@@ -322,7 +323,7 @@ double fast_exp_approx_double_wo_checks (double p)
 // Note: Compiler needs  to auto-vectorise for the following to be fast
 // [[Rcpp::export]]
 Eigen::Array<double, -1, 1  > fast_exp_approx_double_wo_checks_Eigen(  Eigen::Array<double, -1, 1  > x)   {  
-  //  #pragma clang loop vectorize_width(16)
+    // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
   for (int i = 0; i < x.rows(); ++i) {
     x(i) =  fast_exp_approx_double_wo_checks(x(i));
   }    
@@ -334,9 +335,9 @@ Eigen::Array<double, -1, 1  > fast_exp_approx_double_wo_checks_Eigen(  Eigen::Ar
 Eigen::Array<double, -1, -1  >  fast_exp_approx_double_wo_checks_Eigen_mat(  Eigen::Array<double, -1, -1  > x)
 {    
   
-  //  //  #pragma clang loop vectorize_width(16)
+ 
   for (int j = 0; j < x.cols(); ++j) {
-    //  #pragma clang loop vectorize_width(16)
+      // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
     for (int i = 0; i < x.rows(); ++i) {
       x(i, j) =  fast_exp_approx_double_wo_checks(x(i, j));
     }  
@@ -384,7 +385,7 @@ inline double fast_log_approx_double_wo_checks(double a)
 Eigen::Array<double, -1, 1  > fast_log_approx_double_wo_checks_Eigen(  Eigen::Array<double, -1, 1  > x)
 {  
   
-  //  #pragma clang loop vectorize_width(16)
+    // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
   for (int i = 0; i < x.rows(); ++i) {
     x(i) =  fast_log_approx_double_wo_checks(x(i));
   }   
@@ -399,7 +400,7 @@ Eigen::Array<double, -1, -1  >  fast_log_approx_double_wo_checks_Eigen_mat(  Eig
 {   
   
   for (int j = 0; j < x.cols(); ++j) {
-    //  #pragma clang loop vectorize_width(16) 
+      // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH) 
     for (int i = 0; i < x.rows(); ++i) {
       x(i, j) =  fast_log_approx_double_wo_checks(x(i, j));
     }  
@@ -696,7 +697,7 @@ inline double  Phi_approx_fast( double x )  {
 Eigen::Array<double, -1, 1  > Phi_approx_fast_Eigen(  Eigen::Array<double, -1, 1   > x)
 {    
   
-  //  #pragma clang loop vectorize_width(16) 
+    // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH) 
   for (int i = 0; i < x.rows(); ++i) { 
     x(i) =  Phi_approx_fast(x(i));
   }       
@@ -723,7 +724,7 @@ inline double  inv_Phi_approx_fast( const double x )  {
 
 // [[Rcpp::export]] 
 Eigen::Array<double, -1, 1  > inv_Phi_approx_fast_Eigen(  Eigen::Array<double, -1, 1   > x)  {       
-  //  #pragma clang loop vectorize_width(16)  
+    // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)  
   for (int i = 0; i < x.rows(); ++i) {  
     x(i) =  inv_Phi_approx_fast(x(i));
   }            
@@ -2169,956 +2170,6 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
  
  
 
- 
- // [[Rcpp::export]]
- Eigen::Matrix<double, -1, 1 >        fn_lp_and_grad_latent_trait_MD_and_AD(  Eigen::Matrix<double, -1, 1  > theta_main,
-                                                                                             Eigen::Matrix<double, -1, 1  > theta_us,
-                                                                                             Eigen::Matrix< int, -1, -1>	 y,
-                                                                                             std::vector<Eigen::Matrix<double, -1, -1 > >  X,
-                                                                                             Rcpp::List other_args
-                                                                                             ) {
-
-
-   
-   
-   
-   const int n_cores = other_args(0); 
-   const bool exclude_priors = other_args(1); 
-   const bool CI = other_args(2); 
-   Eigen::Matrix<double, -1, 1>  lkj_cholesky_eta = other_args(3); 
-   Eigen::Matrix<double, -1, -1> prior_coeffs_mean  = other_args(4); 
-   Eigen::Matrix<double, -1, -1> prior_coeffs_sd = other_args(5); 
-   const int n_class = other_args(6); 
-   const int ub_threshold_phi_approx = other_args(7); 
-   const int n_chunks = other_args(8); 
-   const bool corr_force_positive = other_args(9); 
-   std::vector<Eigen::Matrix<double, -1, -1 > >  prior_for_corr_a = other_args(10); 
-   std::vector<Eigen::Matrix<double, -1, -1 > >  prior_for_corr_b = other_args(11); 
-   const bool corr_prior_beta  = other_args(12); 
-   const bool corr_prior_norm  = other_args(13); 
-   std::vector<Eigen::Matrix<double, -1, -1 > >  lb_corr = other_args(14); 
-   std::vector<Eigen::Matrix<double, -1, -1 > >  ub_corr = other_args(15); 
-   std::vector<Eigen::Matrix<int, -1, -1 > >      known_values_indicator = other_args(16); 
-   std::vector<Eigen::Matrix<double, -1, -1 > >   known_values = other_args(17); 
-   const double prev_prior_a = other_args(18); 
-   const double prev_prior_b = other_args(19); 
-   const bool exp_fast = other_args(20); 
-   const bool log_fast = other_args(21); 
-   std::string Phi_type = other_args(22); 
-   Eigen::Matrix<double, -1, -1> LT_b_priors_shape  = other_args(23); 
-   Eigen::Matrix<double, -1, -1> LT_b_priors_scale  = other_args(24); 
-   Eigen::Matrix<double, -1, -1> LT_known_bs_indicator = other_args(25); 
-   Eigen::Matrix<double, -1, -1> LT_known_bs_values  = other_args(26); 
- 
-   
-   const int n_tests = y.cols();
-   const int N = y.rows();
-   const int n_corrs =  n_class * n_tests * (n_tests - 1) * 0.5;
-   const int n_coeffs = n_class * n_tests * 1;
-   const int n_us =  1 *  N * n_tests;
-   const int n_params = theta_us.rows() +  theta_main.rows()   ; // n_corrs + n_coeffs + n_us + n_class;
-   const int n_params_main = n_params - n_us;
-   
-   const int n_bs_LT = n_class * n_tests;
-   
-   const double sqrt_2_pi_recip =   1.0 / sqrt(2.0 * M_PI) ; //  0.3989422804;
-   const double sqrt_2_recip = 1.0 / stan::math::sqrt(2.0);
-   const double minus_sqrt_2_recip =  - sqrt_2_recip;
-   const double a = 0.07056;
-   const double b = 1.5976;
-   const double a_times_3 = 3.0 * 0.07056;
-   const double s = 1.0/1.702;
-   
-   
-   double prior_densities = 0.0;
-     
-
-   // corrs / b's
-   Eigen::Matrix<double, -1, 1  >  bs_raw_vec_double = theta_main.segment(0, n_bs_LT) ;
-   Eigen::Matrix<stan::math::var, -1, 1  >  bs_raw_vec_var =  stan::math::to_var(bs_raw_vec_double) ;
-   Eigen::Matrix<stan::math::var, -1, -1 > bs_mat =    Eigen::Matrix<stan::math::var, -1, -1 >::Zero(n_class, n_tests);
-   Eigen::Matrix<double, -1, -1 > bs_mat_double =    Eigen::Matrix<double, -1, -1 >::Zero(n_class, n_tests);
-   Eigen::Matrix<stan::math::var, -1, -1 > bs_raw_mat =  Eigen::Matrix<stan::math::var, -1, -1 >::Zero(n_class, n_tests);
-
-
-
-   bs_raw_mat.row(0) =  bs_raw_vec_var.segment(0, n_tests).transpose();
-   bs_raw_mat.row(1) =  bs_raw_vec_var.segment(n_tests, n_tests).transpose();
-
-   bs_mat.row(0) = stan::math::exp( bs_raw_mat.row(0)) ;
-   bs_mat.row(1) = stan::math::exp( bs_raw_mat.row(1)) ;
-
-   stan::math::var known_bs_raw_sum = 0.0;
-
-
-   Eigen::Matrix<stan::math::var, -1, 1 > bs_nd  =   bs_mat.row(0).transpose() ; //  bs_constrained_raw_vec_var.head(n_tests);
-   Eigen::Matrix<stan::math::var, -1, 1 > bs_d   =   bs_mat.row(1).transpose() ; //  bs_constrained_raw_vec_var.segment(n_tests, n_tests);
-
-   
-   // coeffs
-   Eigen::Matrix<stan::math::var, -1, -1  > LT_theta(n_class, n_tests);
-   Eigen::Matrix<stan::math::var, -1, -1  > LT_a(n_class, n_tests);
-
-   Eigen::Matrix<double, -1, 1  > coeffs_vec_double(n_coeffs);
-   Eigen::Matrix<stan::math::var, -1, 1  > coeffs_vec_var(n_coeffs);
-
-   coeffs_vec_double = theta_main.segment(0 + n_corrs, n_coeffs);
-   coeffs_vec_var = stan::math::to_var(coeffs_vec_double);
-
-   {
-     int i = 0 ; // 0 + n_corrs;
-     for (int c = 0; c < n_class; ++c) {
-       for (int t = 0; t < n_tests; ++t) {
-         LT_a(c, t) = coeffs_vec_var(i);
-         bs_mat_double(c, t) = bs_mat(c, t).val();
-         i = i + 1;
-       }
-     }
-   }
-
-   //// LT_theta as TRANSFORMED parameter (need Jacobian adj. if wish to put prior on theta!!!)
-   for (int t = 0; t < n_tests; ++t) {
-     LT_theta(1, t)   =    LT_a(1, t) /  stan::math::sqrt(1 + ( bs_d(t) * bs_d(t)));
-     LT_theta(0, t)   =    LT_a(0, t) /  stan::math::sqrt(1 + ( bs_nd(t) * bs_nd(t)));
-   }
-
-
-   // prev
-   double u_prev_diseased = theta_main(n_params_main - 1);
-
- 
-   
-   ///////////////////////////////////////////////////////////////////////////////////////// output vec
-   Eigen::Matrix<double, -1, 1> out_mat    =  Eigen::Matrix<double, -1, 1>::Zero(n_params + 1 + N);  ///////////////////////////////////////////////
-   ///////////////////////////////////////////////////////////////////////////////////////////////////
-   
-   
-
-   ////////////////////////////////////// AD part  -   for non-LKJ corr priors
-   int n_choose_2 = n_tests * (n_tests - 1) * 0.5 ;
-   std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  L_Omega_var = vec_of_mats_test_var(n_tests, n_tests, n_class);
-   std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_var  = vec_of_mats_test_var(n_tests, n_tests, n_class);
-
-
-   Eigen::Matrix<stan::math::var, -1, -1 > identity_dim_T =     Eigen::Matrix<stan::math::var, -1, -1 > ::Zero(n_tests, n_tests) ; //  stan::math::diag_matrix(  stan::math::rep_vector(1, n_tests)  ) ;
-
-
-   Eigen::Matrix<double, -1, 1 >   bs_d_double(n_tests);
-   Eigen::Matrix<double, -1, 1 >   bs_nd_double(n_tests);
-
-   for (int i = 0; i < n_tests; ++i) {
-     identity_dim_T(i, i) = 1;
-     bs_d_double(i) = bs_d(i).val() ;
-     bs_nd_double(i) = bs_nd(i).val() ;
-   }
-
-
-   Omega_var[0] = identity_dim_T +  bs_nd * bs_nd.transpose();
-   Omega_var[1] = identity_dim_T +  bs_d * bs_d.transpose();
-
-   
-   double grad_prev_AD = 0.0;
-   Eigen::Matrix<double, -1, 1 >  target_AD_grad(n_corrs);
-   stan::math::var target_AD = 0.0;
-
-
-   for (int c = 0; c < n_class; ++c) {
-     L_Omega_var[c]   = stan::math::cholesky_decompose( Omega_var[c]) ;
-   }
-
-
-   //////////////// Jacobian L_Sigma -> b's
-   std::vector< std::vector<Eigen::Matrix<stan::math::var, -1, -1 > > > Jacobian_d_L_Sigma_wrt_b_3d_arrays_var = vec_of_vec_of_mats_test_var(n_tests, n_tests, n_tests, n_class);
-   std::vector< std::vector<Eigen::Matrix<double, -1, -1 > > > Jacobian_d_L_Sigma_wrt_b_3d_arrays_double = vec_of_vec_of_mats_test(n_tests, n_tests, n_tests, n_class);
-   std::vector<Eigen::Matrix<double, -1, -1 > >  Jacobian_d_L_Sigma_wrt_b_matrix = vec_of_mats_test(n_choose_2 + n_tests, n_tests, n_class);
-
-   for (int c = 0; c < n_class; ++c) {
-
-       //  # -----------  wrt last b first
-         int t = n_tests;
-         stan::math::var sum_sq_1 = 0.0;
-         for (int j = 1; j < t; ++j) {
-           Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, j-1) = ( L_Omega_var[c](n_tests-1, j-1) / bs_mat(c, n_tests-1) ) ;//* bs_nd(n_tests-1) ;
-           sum_sq_1 +=   bs_mat(c, j-1) * bs_mat(c, j-1) ;
-         }
-         stan::math::var big_denom_p1 =  1 + sum_sq_1;
-         Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, n_tests-1) =   (1 / L_Omega_var[c](n_tests-1, n_tests-1) ) * ( bs_mat(c, n_tests-1) / big_denom_p1 ) ;//* bs_nd(n_tests-1) ;
-
-        //  # -----------  wrt 2nd-to-last b
-        t = n_tests - 1;
-        sum_sq_1 = 0;
-        stan::math::var  sum_sq_2 = 0.0;
-        for (int j = 1; j < t + 1; ++j) {
-          Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, j-1) = ( L_Omega_var[c](t-1, j-1) / bs_mat(c, t-1) );// * bs_nd(t-1) ;
-          sum_sq_1 +=   bs_mat(c, j-1) * bs_mat(c, j-1) ;
-          if (j < (t))   sum_sq_2 +=  bs_mat(c, j-1) * bs_mat(c, j-1) ;
-        }
-        big_denom_p1 =  1 + sum_sq_1;
-        stan::math::var big_denom_p2 =  1 + sum_sq_2;
-        stan::math::var  big_denom_part =  big_denom_p1 * big_denom_p2;
-        Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, t-1) =   (1 / L_Omega_var[c](t-1, t-1)) * ( bs_mat(c, t-1) / big_denom_p2 );// * bs_nd(t-1) ;
-
-        for (int j = t+1; j < n_tests + 1; ++j) {
-          Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](j-1, t-1) =   ( 1/L_Omega_var[c](j-1, t-1) ) * (bs_mat(c, j-1) *  bs_mat(c, j-1)  ) * (   bs_mat(c, t-1)  / big_denom_part) * (1 - ( bs_mat(c, t-1) * bs_mat(c, t-1)  / big_denom_p1 ) );// * bs_nd(t-1)   ;
-        }
-
-        Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t, t)   =  - ( 1/L_Omega_var[c](t, t) ) * (bs_mat(c, t) * bs_mat(c, t)) * ( bs_mat(c, t-1)  / (big_denom_p1*big_denom_p1));//*  bs_nd(t-1) ;
-
-        // # -----------  wrt rest of b's
-          for (int t = 1; t < (n_tests - 2) + 1; ++t) {
-
-            sum_sq_1  = 0;
-            sum_sq_2  = 0;
-
-          for (int j = 1; j < t + 1; ++j) {
-            if (j < (t)) Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, j-1) = ( L_Omega_var[c](t-1, j-1) /  bs_mat(c, t-1) ) ;//* ;// bs_nd(t-1) ;
-            sum_sq_1 +=   bs_mat(c, j-1) *   bs_mat(c, j-1) ;
-            if (j < (t))   sum_sq_2 +=    bs_mat(c, j-1) *   bs_mat(c, j-1) ;
-          }
-            big_denom_p1 = 1 + sum_sq_1;
-            big_denom_p2 = 1 + sum_sq_2;
-            big_denom_part =  big_denom_p1 * big_denom_p2;
-
-          Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, t-1) =   (1 / L_Omega_var[c](t-1, t-1) ) * (  bs_mat(c, t-1) / big_denom_p2 ) ;//*  bs_nd(t-1) ;
-
-          for (int j = t + 1; j < n_tests + 1; ++j) {
-            Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](j-1, t-1)  =   (1/L_Omega_var[c](j-1, t-1)) * (  bs_mat(c, j-1) *   bs_mat(c, j-1) ) * (   bs_mat(c, t-1) / big_denom_part) * (1 - ( ( bs_mat(c, t-1) *  bs_mat(c, t-1) ) / big_denom_p1 ) ) ;//*  bs_nd(t-1) ;
-          }
-
-          for (int j = t + 1; j < n_tests ; ++j) {
-            Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](j-1, j-1) =  - (1/L_Omega_var[c](j-1, j-1)) * (  bs_mat(c, j-1) *   bs_mat(c, j-1) ) * ( bs_mat(c, t-1) / (big_denom_p1*big_denom_p1)) ;//*  bs_nd(t-1) ;
-            big_denom_p1 = big_denom_p1 +   bs_mat(c, j-1) *   bs_mat(c, j-1) ;
-            big_denom_p2 = big_denom_p2 + bs_mat(c, j-2) * bs_mat(c, j-2) ;
-            big_denom_part =  big_denom_p1 * big_denom_p2 ;
-            if (t < n_tests - 1) {
-                for (int k = j + 1; k < n_tests + 1; ++k) {
-                  Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](k-1, j-1) =   (-1 / L_Omega_var[c](k-1, j-1)) * (  bs_mat(c, k-1) *   bs_mat(c, k-1) ) * (  bs_mat(c, j-1) *   bs_mat(c, j-1) ) * (  bs_mat(c, t-1) / big_denom_part ) * ( ( 1 / big_denom_p2 )  +  ( 1 / big_denom_p1 ) ) ;//*  bs_nd(t-1) ;
-              }
-            }
-          }
-
-          Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](n_tests-1, n_tests-1) =  - (1/L_Omega_var[c](n_tests-1, n_tests-1)) * (bs_mat(c, n_tests-1) * bs_mat(c, n_tests-1)) * ( bs_mat(c, t-1) / (big_denom_p1*big_denom_p1)) ;//*  bs_nd(t-1) ;
-
-        }
-
-
-          
-          for (int t1 = 0; t1 < n_tests; ++t1) {
-            for (int t2 = 0; t2 < n_tests; ++t2) {
-              for (int t3 = 0; t3 < n_tests; ++t3) {
-                  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t2, t3)    =      Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t1](t2, t3).val();
-              }
-            }
-          }
-   }
-
-
-   ////////////////////// priors for corr
-   for (int t = 0; t < n_tests; ++t) {
-     target_AD += stan::math::weibull_lpdf(  bs_nd(t) ,   LT_b_priors_shape(0, t), LT_b_priors_scale(0, t)  );
-     target_AD += stan::math::weibull_lpdf(  bs_d(t)  ,   LT_b_priors_shape(1, t), LT_b_priors_scale(1, t)  );
-   }
-
-   target_AD +=  (bs_raw_mat).sum()  - known_bs_raw_sum ; // Jacobian b -> raw_b
-
-   /// priors and Jacobians for coeffs
-   for (int c = 0; c < n_class; ++c) {
-     for (int t = 0; t < n_tests; ++t) {
-       target_AD += stan::math::normal_lpdf(LT_theta(c, t), prior_coeffs_mean(c, t), prior_coeffs_sd(c, t));
-       target_AD +=  - 0.5 * stan::math::log(1 + stan::math::square(stan::math::abs(bs_mat(c, t) ))); // Jacobian for LT_theta -> LT_a
-     }
-   }
-   
-   
-   /////////////  prev stuff  ---- vars
-   std::vector<stan::math::var> 	 u_prev_var_vec_var(n_class, 0.0);
-   std::vector<stan::math::var> 	 prev_var_vec_var(n_class, 0.0);
-   std::vector<stan::math::var> 	 tanh_u_prev_var(n_class, 0.0);
-   Eigen::Matrix<stan::math::var, -1, -1>	 prev_var(1, n_class);
-   
-   u_prev_var_vec_var[1] =  stan::math::to_var(u_prev_diseased);
-   tanh_u_prev_var[1] = ( exp(2*u_prev_var_vec_var[1] ) - 1) / ( exp(2*u_prev_var_vec_var[1] ) + 1) ;
-   u_prev_var_vec_var[0] =   0.5 *  log( (1 + ( (1 - 0.5 * ( tanh_u_prev_var[1] + 1))*2 - 1) ) / (1 - ( (1 - 0.5 * ( tanh_u_prev_var[1] + 1))*2 - 1) ) )  ;
-   tanh_u_prev_var[0] = (exp(2*u_prev_var_vec_var[0] ) - 1) / ( exp(2*u_prev_var_vec_var[0] ) + 1) ;
-   
-   prev_var_vec_var[1] = 0.5 * ( tanh_u_prev_var[1] + 1);
-   prev_var_vec_var[0] =  0.5 * ( tanh_u_prev_var[0] + 1);
-   prev_var(0,1) =  prev_var_vec_var[1];
-   prev_var(0,0) =  prev_var_vec_var[0];
-   
-   stan::math::var tanh_pu_deriv_var = ( 1 - tanh_u_prev_var[1] * tanh_u_prev_var[1]  );
-   stan::math::var deriv_p_wrt_pu_var = 0.5 *  tanh_pu_deriv_var;
-   stan::math::var tanh_pu_second_deriv_var  = -2 * tanh_u_prev_var[1]  * tanh_pu_deriv_var;
-   stan::math::var log_jac_p_deriv_wrt_pu_var  = ( 1 / deriv_p_wrt_pu_var) * 0.5 * tanh_pu_second_deriv_var; // for gradient of u's
-   stan::math::var  log_jac_p_var =    log( deriv_p_wrt_pu_var );
-   
-   
-   // stan::math::var  target_AD_prev = beta_lpdf(  prev_var(0,1), prev_prior_a, prev_prior_b  ); // weakly informative prior - helps avoid boundaries with slight negative skew (for lower N)
-   // target_AD_prev += log_jac_p_var;
-   // target_AD  +=  target_AD_prev;
-   
-   
-   target_AD += beta_lpdf(  prev_var(0,1), prev_prior_a, prev_prior_b  ); // weakly informative prior - helps avoid boundaries with slight negative skew (for lower N)
-   target_AD += log_jac_p_var;
-   
- 
-   
-   prior_densities += target_AD.val() ; // target_AD_coeffs.val() + target_AD_corrs.val();
-
-   //  ///////////////////////
-   stan::math::set_zero_all_adjoints();
-   target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-   out_mat.segment(1 + n_us, n_bs_LT) = bs_raw_vec_var.adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-   stan::math::set_zero_all_adjoints();
-   //////////////////////////////////////////////////////////// end of AD part
-
-
-   //  ///////////////////////
-   stan::math::set_zero_all_adjoints();
-   target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-   out_mat.segment(1 + n_us + n_corrs, n_coeffs)  = coeffs_vec_var.adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-   stan::math::set_zero_all_adjoints();
-   //////////////////////////////////////////////////////////// end of AD part
-
-   
-
-   ///////////////////////
-   stan::math::set_zero_all_adjoints();
-   target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-   grad_prev_AD  =  u_prev_var_vec_var[1].adj() - u_prev_var_vec_var[0].adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-   stan::math::set_zero_all_adjoints();
-   //////////////////////////////////////////////////////////// end of AD part
-   
-   
-   
-
-   ///////////////// get cholesky factor's (lower-triangular) of corr matrices
-   // convert to 3d var array
-   std::vector<Eigen::Matrix<double, -1, -1 > > L_Omega_double = vec_of_mats_test(n_tests, n_tests, n_class);
-   std::vector<Eigen::Matrix<double, -1, -1 > > L_Omega_recip_double = vec_of_mats_test(n_tests, n_tests, n_class);
-
-   for (int c = 0; c < n_class; ++c) {
-     for (int t1 = 0; t1 < n_tests; ++t1) {
-       for (int t2 = 0; t2 < n_tests; ++t2) {
-         L_Omega_double[c](t1, t2) =   L_Omega_var[c](t1, t2).val();
-         L_Omega_recip_double[c](t1, t2) =   1.0 / L_Omega_double[c](t1, t2) ;
-       }
-     }
-   }
-
-
-    stan::math::recover_memory();
-   
-   
-   /////////////  prev stuff
-   std::vector<double> 	 u_prev_var_vec(n_class, 0.0);
-   std::vector<double> 	 prev_var_vec(n_class, 0.0);
-   std::vector<double> 	 tanh_u_prev(n_class, 0.0);
-   Eigen::Matrix<double, -1, -1>	 prev(1, n_class);
-   
-   u_prev_var_vec[1] =  (double) u_prev_diseased ;
-   tanh_u_prev[1] = ( exp(2.0*u_prev_var_vec[1] ) - 1.0) / ( exp(2.0*u_prev_var_vec[1] ) + 1.0) ;
-   u_prev_var_vec[0] =   0.5 *  log( (1 + ( (1 - 0.5 * ( tanh_u_prev[1] + 1))*2.0 - 1.0) ) / (1.0 - ( (1.0 - 0.5 * ( tanh_u_prev[1] + 1.0))*2.0 - 1.0) ) )  ;
-   tanh_u_prev[0] = (exp(2.0*u_prev_var_vec[0] ) - 1.0) / ( exp(2.0*u_prev_var_vec[0] ) + 1.0) ;
-   
-   prev_var_vec[1] =  0.5 * ( tanh_u_prev[1] + 1.0);
-   prev_var_vec[0] =  0.5 * ( tanh_u_prev[0] + 1.0);
-   prev(0,1) =  prev_var_vec[1];
-   prev(0,0) =  prev_var_vec[0];
-   
-   
-   double tanh_pu_deriv = ( 1.0 - tanh_u_prev[1] * tanh_u_prev[1]  );
-   double deriv_p_wrt_pu_double = 0.5 *  tanh_pu_deriv;
-   double tanh_pu_second_deriv  = -2.0 * tanh_u_prev[1]  * tanh_pu_deriv;
-   double log_jac_p_deriv_wrt_pu  = ( 1.0 / deriv_p_wrt_pu_double) * 0.5 * tanh_pu_second_deriv; // for gradient of u's
- 
-   
- 
-
- 
-   /////////////////////////////////////////////////////////////////////////////////////////////////////
-   ///////// likelihood
-   int chunk_counter = 0;
-   int chunk_size  = std::round( N / n_chunks  / 2) * 2;  ; // N / n_chunks;
-   
-    
-   double log_prob_out = 0.0;
-   
-   
-   if (exp_fast == true)   theta_us.array() =      fast_tanh_approx_Eigen( theta_us ).array(); 
-   else                    theta_us.array() =      ( theta_us ).array().tanh(); 
-   
-   
-   double log_jac_u  =  0.0;
-   if    (log_fast == true)   log_jac_u  =    (  fast_log_approx_double_wo_checks_Eigen( 0.5 *   (  1.0 -  ( theta_us.array()   *  theta_us.array()   ).array()  ).array()  ).array()   ).matrix().sum(); 
-   else  log_jac_u  =    (  ( 0.5 *   (  1.0 -  ( theta_us.array()   *  theta_us.array()   ).array()  ).array()  ).array().log()   ).matrix().sum();   
-    
-
-    
-    ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, 1>   beta_grad_vec   =  Eigen::Matrix<double, -1, 1>::Zero(n_coeffs);  //
-    Eigen::Matrix<double, -1, -1>  beta_grad_array  =  Eigen::Matrix<double, -1, -1>::Zero(2, n_tests); //
-    Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(2); //
-    Eigen::Matrix<double, -1, 1>  prev_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(2); //
-    Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec_out =   Eigen::Matrix<double, -1, 1>::Zero(2 - 1); //
-    // ///////////////////////////////////////////////
-
-    
-    double log_prob = 0.0;
-    
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////
-    std::vector<Eigen::Matrix<double, -1, -1 > >  Z_std_norm =  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
-    std::vector<Eigen::Matrix<double, -1, -1 > >  Bound_Z =  Z_std_norm ;
-    std::vector<Eigen::Matrix<double, -1, -1 > >  abs_Bound_Z =  Z_std_norm ;
-    std::vector<Eigen::Matrix<double, -1, -1 > >  Bound_U_Phi_Bound_Z =  Z_std_norm ;  //  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
-    std::vector<Eigen::Matrix<double, -1, -1 > >  Phi_Z =  Z_std_norm ;  //  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
-    std::vector<Eigen::Matrix<double, -1, -1 > >  y1_or_phi_Bound_Z =  Z_std_norm ;  //  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
-    std::vector<Eigen::Matrix<double, -1, -1 > >  prob =  Z_std_norm ;  //  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
-    ///////////////////////////////////////////////);
-    Eigen::Array<double, -1, -1> y_chunk = Eigen::Array<double, -1, -1>::Zero(chunk_size, n_tests);
-    Eigen::Array<double, -1, -1> u_array =  y_chunk ;
-    ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, 1> prod_container_or_inc_array  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-    Eigen::Matrix<double, -1, 1>      prob_n  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-    ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1>     common_grad_term_1   =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-    Eigen::Matrix<double, -1, -1 >    L_Omega_diag_recip_array   = common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-    Eigen::Matrix<double, -1, -1 >    y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip   =  common_grad_term_1 ; //   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-    Eigen::Matrix<double, -1, -1 >    y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip   =   common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-    Eigen::Matrix<double, -1, -1 >    prop_rowwise_prod_temp   =   common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-    Eigen::Matrix<double, -1, -1>     u_grad_array_CM_chunk   =   common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);    ////////
-    Eigen::Matrix<double, -1, -1>     phi_Z_recip  =   common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-    ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, 1>      derivs_chain_container_vec  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-    Eigen::Matrix<double, -1, 1>      prop_rowwise_prod_temp_all  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-    Eigen::Array<int, -1, -1>         abs_indicator = Eigen::Array<int, -1, -1>::Zero(n_tests, 2);
-    ////////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1 >  log_prev = stan::math::log(prev);
-    ////////////////////////////////////////////////
-
-
-   Eigen::Matrix<double, -1, 1>  deriv_L_t1 =     Eigen::Matrix<double, -1, 1>::Zero( n_tests);
-   Eigen::Matrix<double, -1, 1>  deriv_L_t1_output_vec =     Eigen::Matrix<double, -1, 1>::Zero( n_tests);
-   Eigen::Matrix<double, -1, -1 >   deriv_inc  =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-   Eigen::Matrix<double, -1, 1> deriv_comp_2  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-
-
-  // std::vector<Eigen::Matrix<double, -1, -1 > >  z_grad_term = vec_of_mats_test(chunk_size, n_tests, 2) ;
-   //  std::vector<Eigen::Matrix<double, -1, -1 > >  grad_bound_z = vec_of_mats_test(chunk_size, n_tests, 2) ;
-   Eigen::Matrix<double, -1, -1>     grad_bound_z =     Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests*2);
-   std::vector<Eigen::Matrix<double, -1, -1 > >  grad_Phi_bound_z = vec_of_mats_test(chunk_size, n_tests*2, 2) ;
-   std::vector<Eigen::Matrix<double, -1, -1 > >  deriv_Bound_Z_x_L = vec_of_mats_test(chunk_size, n_tests*2, 2) ;
-   Eigen::Matrix<double, -1, -1>     grad_prob =      Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests*2);
-   Eigen::Matrix<double, -1, -1>     z_grad_term =      Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests*2);
-
-   Eigen::Matrix< double , -1, 1>  temp_L_Omega_x_grad_z_sum_1(chunk_size);
-   Eigen::Matrix<double, -1, -1>  grad_pi_wrt_b_raw =  Eigen::Matrix<double, -1, -1>::Zero(2, n_tests) ;
-
-
-   Eigen::Matrix<double, -1, -1> y_sign   =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-   Eigen::Matrix<double, -1, -1 >  y_m_ysign_x_u_array =   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests) ;  ;
-   std::vector<Eigen::Matrix<double, -1, -1 > >  phi_Z  =  vec_of_mats_test(chunk_size, n_tests, 2) ;
-   
-   
-   
-   {
-     
-     // /////////////////////////////////////////////////////////////////////////////////////////////////////
-     Eigen::Matrix<double, -1, -1>    lp_array  =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, 2);///////
-     ////////////////////////////////////////////////////////////////////////////////////////////////////////
-     
- 
-
-   for (int nc = 0; nc < n_chunks; nc++) {
-     
-             int chunk_counter = nc;
-
-               abs_indicator.array() = 0;
-               u_grad_array_CM_chunk.array() = 0.0;
-
-               y_chunk = y.middleRows(chunk_size * chunk_counter , chunk_size).array().cast<double>() ;
-
-               u_array  = 0.5 * (  theta_us.segment(chunk_size * n_tests * chunk_counter , chunk_size * n_tests).reshaped(chunk_size, n_tests).array() + 1.0 ).array() ;
-
-               y_sign.array() = Eigen::Select(y_chunk.array() == 1.0,  Eigen::Array<double, -1, -1>::Ones(chunk_size, n_tests), -Eigen::Array<double, -1, -1>::Ones(chunk_size,  n_tests));
-               y_m_ysign_x_u_array.array()  =   ( (  (y_chunk.array()  - y_sign.array()  *  u_array.array()  ).array() ) ) ;   // temp - delete this!!
-
-                    for (int c = 0; c < n_class; c++) {
-
-                      prod_container_or_inc_array.array()  = 0.0; // needs to be reset to 0
-
-                      for (int t = 0; t < n_tests; t++) {
-
-                                    //   Bound_Z[c].col(t).array() =    L_Omega_recip_double[c](t, t) * (  - ( beta_double_array(c, t) +      prod_container_or_inc_array.array()   )  ) ; // / L_Omega_double[c](t, t)     ;
-                                      Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) *    ( (  0.0 - ( LT_a(c, t).val() +    prod_container_or_inc_array.array()    )     )  ).array() ;
-                                      abs_Bound_Z[c].col(t).array() =    Bound_Z[c].col(t).array().abs();
-                                      if ((abs_Bound_Z[c].col(t).array() > 5.0).matrix().sum() > 0)     abs_indicator(t, c) = 1;
-
-                                      if (Phi_type == "Phi")   Bound_U_Phi_Bound_Z[c].col(t).array() =  0.5 *   ( minus_sqrt_2_recip * Bound_Z[c].col(t).array() ).erfc() ;
-                                      else   Bound_U_Phi_Bound_Z[c].col(t).array() = Phi_approx_fast_Eigen(Bound_Z[c].col(t).array() );
-
-                                      // for all configs
-                                      if (  abs_indicator(t, c) == 1) {
-                                        //  #pragma clang loop vectorize_width(16)
-                                        for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
-                                          if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
-                                            Bound_U_Phi_Bound_Z[c](n_index, t) =    stan::math::inv_logit( 1.702 *  Bound_Z[c](n_index, t)  );  //  stan::math::inv_logit( 1.702 * Bound_Z[c].col(t)  )
-                                          }
-                                        }
-                                      }
-
-                                      Phi_Z[c].col(t).array()    =      (   y_chunk.col(t)   *  Bound_U_Phi_Bound_Z[c].col(t).array() +
-                                        (   y_chunk.col(t)   -  Bound_U_Phi_Bound_Z[c].col(t).array() ) *   ( y_chunk.col(t)  + (  y_chunk.col(t)  - 1.0)  )  * u_array.col(t)   )   ;
-
-                                      if (Phi_type == "Phi") {
-                                        if (log_fast == false) Z_std_norm[c].col(t).array() = stan::math::inv_Phi(Phi_Z[c].col(t)).array() ; //    qnorm_rcpp_Eigen( Phi_Z[c].col(t).array());
-                                        else                   Z_std_norm[c].col(t).array() = qnorm_w_fast_log_rcpp_Eigen( Phi_Z[c].col(t).array());  // with approximations
-                                      } else if (Phi_type == "Phi_approx") {
-                                        Z_std_norm[c].col(t).array() =  inv_Phi_approx_fast_Eigen(Phi_Z[c].col(t).array());
-                                      }
-
-                                      // for all configs
-                                      if (abs_indicator(t, c) == 1) {
-                                        //  #pragma clang loop vectorize_width(16)
-                                        for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectoriose ?!
-                                          if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
-                                            Z_std_norm[c](n_index, t) =    s  *  stan::math::logit(Phi_Z[c](n_index, t));  //   s *  fast_logit_1_Eigen(    Phi_Z[c].col(t) ).array()
-                                          }
-                                        }
-                                      }
-
-                                      if (t < n_tests - 1)       prod_container_or_inc_array.array()  =   ( Z_std_norm[c].topLeftCorner(chunk_size, t + 1)  *   ( L_Omega_double[c].row(t+1).head(t+1).transpose()  ) ) ;      // for all configs
-
-                      } // end of t loop
-
-
-                      prob[c].array() =  y_chunk.array() * ( 1.0 -    Bound_U_Phi_Bound_Z[c].array() ) +  ( y_chunk - 1.0  )   *    Bound_U_Phi_Bound_Z[c].array() *   ( y_chunk +  (  y_chunk - 1.0)  )  ;   // for all configs
-
-                      if (log_fast == true)  y1_or_phi_Bound_Z[c].array()  =   fast_log_approx_double_wo_checks_Eigen_mat(prob[c].array() ) ;
-                      else                   y1_or_phi_Bound_Z[c].array()  =   prob[c].array().log();
-
-                      lp_array.col(c).array() =     y1_or_phi_Bound_Z[c].rowwise().sum().array() +  log_prev(0,c) ;
-
-                    } // end of c loop
-
-
-
-                  if    ( (log_fast == false) && (exp_fast == false)  )  {
-                    out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   = (  lp_array.array().maxCoeff() +  (   (  (lp_array.array() - lp_array.array().maxCoeff() ).array()).exp().matrix().rowwise().sum().array()   ).log()  )  ;
-                    prob_n  =  (out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()).exp() ;
-                  } else if  ( (log_fast == true) && (exp_fast == false)  )  {
-                    out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   = (  lp_array.array().maxCoeff() +  fast_log_approx_double_wo_checks_Eigen(   (  (lp_array.array() - lp_array.array().maxCoeff() ).array()).exp().matrix().rowwise().sum().array()   )  )  ;
-                    prob_n  =  (out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()).exp() ;
-                  } else if  ( (log_fast == false) && (exp_fast == true)  )  {
-                    out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   = (  lp_array.array().maxCoeff() +  (   fast_exp_double_wo_checks_Eigen_mat(  (lp_array.array() - lp_array.array().maxCoeff() ).array()).matrix().rowwise().sum().array()   ).log()  )  ;
-                    prob_n  =  fast_exp_double_wo_checks_Eigen(out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()) ;
-                  } else if  ( (log_fast == true) && (exp_fast == true)  )   {
-                    out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   = (  lp_array.array().maxCoeff() +  fast_log_approx_double_wo_checks_Eigen(   fast_exp_double_wo_checks_Eigen_mat(  (lp_array.array() - lp_array.array().maxCoeff() ).array()).matrix().rowwise().sum().array()   )  )  ;
-                    prob_n  =  fast_exp_double_wo_checks_Eigen(out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()) ;
-                  }
-
-
-        
-        for (int c = 0; c < n_class; c++) {
-                        
-                        for (int i = 0; i < n_tests; i++) { // i goes from 1 to 3
-                          int t = n_tests - (i+1) ;
-                          prop_rowwise_prod_temp.col(t).array()   =   prob[c].block(0, t + 0, chunk_size, i + 1).rowwise().prod().array() ;
-                        }
-
-                        prop_rowwise_prod_temp_all.array() =  prob[c].rowwise().prod().array()  ;
-
-                        for (int i = 0; i < n_tests; i++) { // i goes from 1 to 3
-                          int t = n_tests - (i + 1) ;
-                          common_grad_term_1.col(t) =   (  ( prev(0,c) / prob_n.array() ) * (    prop_rowwise_prod_temp_all.array() /  prop_rowwise_prod_temp.col(t).array()  ).array() )  ;
-                        }
-                        for (int t = 0; t < n_tests; t++) {
-                          L_Omega_diag_recip_array.col(t).array() =  L_Omega_recip_double[c](t, t) ;
-                        }
-
-
-                        for (int t = 0; t < n_tests; t++) {
-
-                          if (Phi_type == "Phi_approx")  {
-                            y1_or_phi_Bound_Z[c].array() =                (  (    (  a_times_3*Bound_Z[c].array()*Bound_Z[c].array()   + b  ).array()  ).array() )  *  Bound_U_Phi_Bound_Z[c].array() * (1.0 -  Bound_U_Phi_Bound_Z[c].array() )   ;
-                          } else if (Phi_type == "Phi") {
-                            if (exp_fast == true)       y1_or_phi_Bound_Z[c].array() =                   sqrt_2_pi_recip *  fast_exp_double_wo_checks_Eigen_mat( - 0.5 * Bound_Z[c].array()    *  Bound_Z[c].array()    ).array()  ;
-                            else                        y1_or_phi_Bound_Z[c].array() =                   sqrt_2_pi_recip *  ( - 0.5 * Bound_Z[c].array()    *  Bound_Z[c].array()    ).array().exp()  ;
-                          }
-
-                          // for all configs
-                          if (abs_indicator(t, c) == 1) {
-                            //  #pragma clang loop vectorize_width(16)
-                            for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
-                              if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
-                                double Phi_x_i =  Bound_U_Phi_Bound_Z[c](n_index, t);
-                                double Phi_x_1m_Phi  =    (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
-                                y1_or_phi_Bound_Z[c](n_index, t) =  1.702 * Phi_x_1m_Phi;
-                              }
-                            }
-                          }
-                        }
-
-
-
-                        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array()  =                  ( y_chunk.array()  + (  y_chunk.array() - 1.0).array() ).array() *    y1_or_phi_Bound_Z[c].array()  *   L_Omega_diag_recip_array.array() ;
-
-                        if (Phi_type == "Phi_approx")  {
-                          phi_Z_recip.array()  =    1.0 / (    (   (a_times_3*Z_std_norm[c].array()*Z_std_norm[c].array()   + b  ).array()  ).array() *  Phi_Z[c].array() * (1.0 -  Phi_Z[c].array() )  ).array()  ;  // Phi_type == 2
-                        } else  if (Phi_type == "Phi")  {
-                          if (exp_fast == true)      phi_Z_recip.array() =                 1.0  / (   sqrt_2_pi_recip *  fast_exp_double_wo_checks_Eigen_mat( - 0.5 * Z_std_norm[c].array()    *  Z_std_norm[c].array()    ).array() )  ;
-                          else                       phi_Z_recip.array() =                 1.0  / (   sqrt_2_pi_recip *  ( - 0.5 * Z_std_norm[c].array()    *  Z_std_norm[c].array()    ).array().exp() ).array()  ;
-                        }
-                        // for all configs
-                        for (int t = 0; t < n_tests; t++) {
-                          if (abs_indicator(t, c) == 1) {
-                            // #pragma  clang loop vectorize_width(16)
-                            for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
-                              if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
-                                double Phi_x_i =  Phi_Z[c](n_index, t);
-                                double Phi_x_1m_Phi_x_recip =  1.0 / (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
-                                Phi_x_1m_Phi_x_recip =  1.0 / (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
-                                phi_Z_recip(n_index, t) =      s * Phi_x_1m_Phi_x_recip;
-                              }
-                            }
-                          }
-                        }
-
-                        phi_Z[c].array() =  1.0 /     phi_Z_recip.array();
-
-
-                      y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array()  =    ( (  (   y_chunk.array()   -  ( y_chunk.array()  + (  y_chunk.array()  - 1.0).array() ).array()    * u_array.array()    ).array() ) ).array() *
-                                                                                                                   phi_Z_recip.array()  *   y1_or_phi_Bound_Z[c].array()   *    L_Omega_diag_recip_array.array() ;
-
-
-          
-              
-              /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
-              {
-
-                ///// then second-to-last term (test T - 1)
-                int t = n_tests - 1;
-
-                u_grad_array_CM_chunk.col(n_tests - 2).array()  +=  (  common_grad_term_1.col(t).array()  * (y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  *  L_Omega_double[c](t,t - 1) * ( phi_Z_recip.col(t-1).array() )  *  prob[c].col(t-1).array()) ).array()  ;
-
-                { ///// then third-to-last term (test T - 2)
-                  t = n_tests - 2;
-
-                  z_grad_term.col(0) = ( phi_Z_recip.col(t-1).array())  *  prob[c].col(t-1).array() ;
-                  grad_prob.col(0) =        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   *     L_Omega_double[c](t, t - 1) *   z_grad_term.col(0).array() ; // lp(T-1) - part 2;
-                  z_grad_term.col(1).array()  =      L_Omega_double[c](t,t-1) *   z_grad_term.col(0).array() *       y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() ;
-                  grad_prob.col(1)  =         (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+1).array()   ) *  (  z_grad_term.col(0).array() *  L_Omega_double[c](t + 1,t - 1)  -   z_grad_term.col(1).array()  * L_Omega_double[c](t+1,t)) ;
-
-                  u_grad_array_CM_chunk.col(n_tests - 3).array()  +=  ( common_grad_term_1.col(t).array()   *  (  grad_prob.col(1).array() *  prob[c].col(t).array()  +      grad_prob.col(0).array() *   prob[c].col(t+1).array()  )  )   ;
-                }
-
-                // then rest of terms
-                for (int i = 1; i < n_tests - 2; i++) { // i goes from 1 to 3
-
-                  grad_prob.array()   = 0.0;
-                  z_grad_term.array() = 0.0;
-
-                  int t = n_tests - (i+2) ; // starts at t = 6 - (1+2) = 3, ends at t = 6 - (3+2) = 6 - 5 = 1 (when i = 3)
-
-                  z_grad_term.col(0) = (  phi_Z_recip.col(t-1).array())  *  prob[c].col(t-1).array() ;
-                  grad_prob.col(0) =         y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   *   L_Omega_double[c](t, t - 1) *   z_grad_term.col(0).array() ; // lp(T-1) - part 2;
-
-                  for (int ii = 0; ii < i+1; ii++) { // if i = 1, ii goes from 0 to 1 u_grad_z u_grad_term
-                    if (ii == 0)    prod_container_or_inc_array  = (   (z_grad_term.topLeftCorner(chunk_size, ii + 1) ) *  (fn_first_element_neg_rest_pos(L_Omega_double[c].row( t + (ii-1) + 1).segment(t - 1, ii + 1))).transpose()  )      ;
-                    z_grad_term.col(ii+1)  =           y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t + ii).array() *  -   prod_container_or_inc_array.array() ;
-                    prod_container_or_inc_array  = (   (z_grad_term.topLeftCorner(chunk_size, ii + 2) ) *  (fn_first_element_neg_rest_pos(L_Omega_double[c].row( t + (ii) + 1).segment(t - 1, ii + 2))).transpose()  )      ;
-                    grad_prob.col(ii+1)  =       (    y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+ii+1).array()  ) *     -    prod_container_or_inc_array.array()  ;
-                  } // end of ii loop
-
-                  {
-                    derivs_chain_container_vec.array() = 0.0;
-
-                    for (int ii = 0; ii < i + 2; ii++) {
-                      derivs_chain_container_vec.array()  +=  ( grad_prob.col(ii).array()    * (       prop_rowwise_prod_temp.col(t).array() /   prob[c].col(t + ii).array()  ).array() ).array()  ;
-                    }
-                    u_grad_array_CM_chunk.col(n_tests - (i+3)).array()    +=   (  ( (   common_grad_term_1.col(t).array()   *  derivs_chain_container_vec.array() ) ).array()  ).array() ;
-                  }
-
-                }
-
-
-                out_mat.segment(1, n_us).segment(chunk_size * n_tests * chunk_counter , chunk_size * n_tests)  =  u_grad_array_CM_chunk.reshaped() ; //   u_grad_array_CM.block(chunk_size * chunk_counter, 0, chunk_size, n_tests).reshaped() ; // .cast<float>()     ;         }
-
-              }
-                                                                                                                     
-
-           // /////////////////////////////////////////////////////////////////////////// Grad of intercepts / coefficients (beta's)
-           // ///// last term first (test T)
-              {
-
-                int t = n_tests - 1;
-
-                beta_grad_array(c, t) +=     (common_grad_term_1.col(t).array()  *   (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()    )).sum();
-
-                ///// then second-to-last term (test T - 1)
-                {
-                  t = n_tests - 2;
-                  grad_prob.col(0) =       (     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ) ;
-                  z_grad_term.col(0)   =     - y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()         ;
-                  grad_prob.col(1)  =       (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+1).array()    )   * (   L_Omega_double[c](t + 1,t) *      z_grad_term.col(0).array() ) ;
-                  beta_grad_array(c, t) +=  (common_grad_term_1.col(t).array()   * ( grad_prob.col(1).array() *  prob[c].col(t).array() +         grad_prob.col(0).array() *   prob[c].col(t+1).array() ) ).sum() ;
-                }
-
-                // then rest of terms
-                for (int i = 1; i < n_tests - 1; i++) { // i goes from 1 to 3
-
-                  t = n_tests - (i+2) ; // starts at t = 6 - (1+2) = 3, ends at t = 6 - (3+2) = 6 - 5 = 1 (when i = 3)
-
-                  grad_prob.col(0)  =     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ;
-
-                  // component 2 (second-to-earliest test)
-                  z_grad_term.col(0)  =        -y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()       ;
-                  grad_prob.col(1) =        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + 1).array()    *    (   L_Omega_double[c](t + 1,t) *   z_grad_term.col(0).array() ) ;
-
-                  // rest of components
-                  for (int ii = 1; ii < i+1; ii++) { // if i = 1, ii goes from 0 to 1
-                    if (ii == 1)  prod_container_or_inc_array  = (    z_grad_term.topLeftCorner(chunk_size, ii)  *   L_Omega_double[c].row( t + (ii - 1) + 1).segment(t + 0, ii + 0).transpose()  );
-                    z_grad_term.col(ii)  =        -y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t + ii).array()    *   prod_container_or_inc_array.array();
-                    prod_container_or_inc_array  = (    z_grad_term.topLeftCorner(chunk_size, ii + 1)  *   L_Omega_double[c].row( t + (ii) + 1).segment(t + 0, ii + 1).transpose()  );
-                    grad_prob.col(ii + 1) =      (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + ii + 1).array()  ).array()     *  prod_container_or_inc_array.array();
-                  }
-
-                  {
-                    derivs_chain_container_vec.array() = 0.0;
-
-                    ///// attempt at vectorising  // bookmark
-                    for (int ii = 0; ii < i + 2; ii++) {
-                      derivs_chain_container_vec.array() +=  ( grad_prob.col(ii).array()  * (      prop_rowwise_prod_temp.col(t).array() /   prob[c].col(t + ii).array()  ).array() ).array() ;
-                    }
-                    beta_grad_array(c, t) +=        ( common_grad_term_1.col(t).array()   *  derivs_chain_container_vec.array() ).sum();
-                  }
-
-                }
-
-              }
-              
-              
-              
-     ////////////////////////////////////////////////////////////////////////////////////////////////// Grad of L_Omega ('s)
-    {
-
-
-         ///////////////////////// deriv of diagonal elements (not needed if using the "standard" or "Stan" Cholesky parameterisation of Omega)
-
-         //////// w.r.t last diagonal first
-         {
-           int  t1 = n_tests - 1;
-
-
-
-         double deriv_L_T_T_inv =  ( - 1 /  ( L_Omega_double[c](t1,t1)  * L_Omega_double[c](t1,t1) ) )   *   Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t1)  ;
-
-         deriv_Bound_Z_x_L[c].col(0).array() = 0;
-         for (int t = 0; t < t1; t++) {
-           deriv_Bound_Z_x_L[c].col(0).array() +=   Z_std_norm[c].col(t).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t);
-         }
-
-         double deriv_a = 0 ; //  stan::math::pow( (1 + (bs_mat_double(c, t1)*bs_mat_double(c, t1)) ), -0.5) * bs_mat_double(c, t1)  * LT_theta(c, t1)  ;
-         deriv_Bound_Z_x_L[c].col(0).array()   = deriv_a -     deriv_Bound_Z_x_L[c].col(0).array();
-
-         grad_bound_z.col(0).array() =   deriv_L_T_T_inv * (Bound_Z[c].col(t1).array() * L_Omega_double[c](t1,t1)  ) +  (1 / L_Omega_double[c](t1, t1)) *   deriv_Bound_Z_x_L[c].col(0).array()  ;
-         grad_Phi_bound_z[c].col(0)  =  ( y1_or_phi_Bound_Z[c].col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
-         grad_prob.col(0)   =  (   - y_sign.col(t1).array()  *   grad_Phi_bound_z[c].col(0).array() ).matrix() ;     // correct  (standard form)
-
-
-         grad_pi_wrt_b_raw(c, t1)  +=   (   common_grad_term_1.col(t1).array()    *            grad_prob.col(0).array()    ).matrix().sum()   ; // correct  (standard form)
-
-
-         }
-
-
-            //////// then w.r.t the second-to-last diagonal
-         {
-           int  t1 = n_tests - 2;
-
-           double deriv_L_T_T_inv =  ( - 1 /   ( L_Omega_double[c](t1,t1)  * L_Omega_double[c](t1,t1) ) )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t1)  ;
-
-           deriv_Bound_Z_x_L[c].col(0).array() = 0.0;
-           for (int t = 0; t < t1; t++) {
-             deriv_Bound_Z_x_L[c].col(0).array() += Z_std_norm[c].col(t).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t);
-           }
-
-           double deriv_a = 0 ; //   stan::math::pow( (1 + (bs_mat_double(c, t1)*bs_mat_double(c, t1)) ), -0.5) * bs_mat_double(c, t1)   * LT_theta(c, t1)   ;
-           deriv_Bound_Z_x_L[c].col(0).array()   = deriv_a -     deriv_Bound_Z_x_L[c].col(0).array();
-
-
-           grad_bound_z.col(0).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1).array() * L_Omega_double[c](t1,t1)  ) +  (1 / L_Omega_double[c](t1, t1)) *     deriv_Bound_Z_x_L[c].col(0).array()  ;
-           grad_Phi_bound_z[c].col(0)  =  ( y1_or_phi_Bound_Z[c].col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
-           grad_prob.col(0)   =  (   - y_sign.col(t1).array()  *   grad_Phi_bound_z[c].col(0).array() ).matrix() ;     // correct  (standard form)
-
-
-           z_grad_term.col(0).array()  =      (  ( (  y_m_ysign_x_u_array.col(t1).array()   / phi_Z[c].col(t1).array()  ).array()    * y1_or_phi_Bound_Z[c].col(t1).array() *   grad_bound_z.col(0).array()  ).array() ).matrix()  ;  // correct  (standard form)
-
-           deriv_L_T_T_inv =  ( - 1 /  ( L_Omega_double[c](t1+1,t1+1)  * L_Omega_double[c](t1+1,t1+1)  )  )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1+1, t1+1)  ;
-           deriv_Bound_Z_x_L[c].col(1).array()  =    L_Omega_double[c](t1+1,t1) *   z_grad_term.col(0).array()     +   Z_std_norm[c].col(t1).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1+1, t1);
-           grad_bound_z.col(1).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1+1).array() * L_Omega_double[c](t1+1,t1+1)  ) +  (1 / L_Omega_double[c](t1+1, t1+1)) * -   deriv_Bound_Z_x_L[c].col(1).array()  ;
-
-           grad_Phi_bound_z[c].col(1) =   ( y1_or_phi_Bound_Z[c].col(t1 + 1).array() *  (    grad_bound_z.col(1).array()   ) ).matrix();   // correct  (standard form)
-           grad_prob.col(1)   =   (  - y_sign.col(t1 + 1).array()  *     grad_Phi_bound_z[c].col(1).array()  ).array().matrix() ;    // correct   (standard form)
-
-           grad_pi_wrt_b_raw(c, t1) +=   ( ( common_grad_term_1.col(t1).array() )    *
-                                   ( prob[c].col(t1 + 1).array()  *      grad_prob.col(0).array()  +   prob[c].col(t1).array()  *         grad_prob.col(1).array()   ) ).sum() ;
-         }
-
-
-             //////// then w.r.t the third-to-last diagonal .... etc
-             {
-
-               //   int i = 4;
-               for (int i = 3; i < n_tests + 1; i++) {
-
-                 grad_prob.array()   = 0.0;
-                 z_grad_term.array() = 0.0;
-                 
-                 
-                 int  t1 = n_tests - i;
-
-                 double deriv_L_T_T_inv =  ( - 1 /   ( L_Omega_double[c](t1,t1)  * L_Omega_double[c](t1,t1) ) )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t1)  ;
-
-                 deriv_Bound_Z_x_L[c].col(0).array() = 0;
-                 for (int t = 0; t < t1; t++) {
-                   deriv_Bound_Z_x_L[c].col(0).array() += Z_std_norm[c].col(t).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t);
-                 }
-
-                 double deriv_a = 0 ; //  stan::math::pow( (1 + (bs_mat_double(c, t1)*bs_mat_double(c, t1)) ), -0.5) * bs_mat_double(c, t1) *   LT_theta(c, t1)   ;
-                 deriv_Bound_Z_x_L[c].col(0).array()   = deriv_a -     deriv_Bound_Z_x_L[c].col(0).array();
-
-
-                 grad_bound_z.col(0).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1).array() * L_Omega_double[c](t1,t1)  ) +  (1 / L_Omega_double[c](t1, t1)) *    deriv_Bound_Z_x_L[c].col(0).array()  ;
-                 grad_Phi_bound_z[c].col(0)  =  ( y1_or_phi_Bound_Z[c].col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
-                 grad_prob.col(0)   =  (   - y_sign.col(t1).array()  *   grad_Phi_bound_z[c].col(0).array() ).matrix() ;     // correct  (standard form)
-
-
-                 z_grad_term.col(0).array()  =      (  ( (  y_m_ysign_x_u_array.col(t1).array()   / phi_Z[c].col(t1).array()  ).array()    * y1_or_phi_Bound_Z[c].col(t1).array() *   grad_bound_z.col(0).array()  ).array() ).matrix()  ;  // correct  (standard form)
-
-                 deriv_L_T_T_inv =  ( - 1 /  ( L_Omega_double[c](t1+1,t1+1)  * L_Omega_double[c](t1+1,t1+1)  )  )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1+1, t1+1)  ;
-                 deriv_Bound_Z_x_L[c].col(1).array()  =    L_Omega_double[c](t1+1,t1) *   z_grad_term.col(0).array()     +   Z_std_norm[c].col(t1).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1+1, t1);
-                 grad_bound_z.col(1).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1+1).array() * L_Omega_double[c](t1+1,t1+1)  ) +  (1 / L_Omega_double[c](t1+1, t1+1)) * -  deriv_Bound_Z_x_L[c].col(1).array()  ;
-
-                 grad_Phi_bound_z[c].col(1) =   ( y1_or_phi_Bound_Z[c].col(t1 + 1).array() *  (    grad_bound_z.col(1).array()   ) ).matrix();   // correct  (standard form)
-                 grad_prob.col(1)  =   (  - y_sign.col(t1 + 1).array()  *     grad_Phi_bound_z[c].col(1).array()  ).array().matrix() ;    // correct   (standard form)
-
-
-                 for (int ii = 1; ii < i - 1; ii++) {
-                      z_grad_term.col(ii).array()  =    (  ( (  y_m_ysign_x_u_array.col(t1 + ii).array()   / phi_Z[c].col(t1 + ii).array()  ).array()    * y1_or_phi_Bound_Z[c].col(t1 + ii).array() *   grad_bound_z.col(ii).array()  ).array() ).matrix() ;     // correct  (standard form)
-
-                     deriv_L_T_T_inv =  ( - 1 /  (  L_Omega_double[c](t1 + ii + 1,t1 + ii + 1)  * L_Omega_double[c](t1 + ii + 1,t1 + ii + 1) )  )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1 + ii + 1, t1 + ii + 1)  ;
-
-                     deriv_Bound_Z_x_L[c].col(ii + 1).array()   =  0.0;
-                     for (int jj = 0; jj < ii + 1; jj++) {
-                       deriv_Bound_Z_x_L[c].col(ii + 1).array()  +=    L_Omega_double[c](t1 + ii + 1,t1 + jj)     *   z_grad_term.col(jj).array()     +   Z_std_norm[c].col(t1 + jj).array()     *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1 + ii + 1, t1 + jj) ;// +
-                     }
-                     grad_bound_z.col(ii + 1).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1 + ii + 1).array() * L_Omega_double[c](t1 + ii + 1,t1 + ii + 1)  ) +  (1 / L_Omega_double[c](t1 + ii + 1, t1 + ii + 1)) * -   deriv_Bound_Z_x_L[c].col(ii + 1).array()  ;
-                     grad_Phi_bound_z[c].col(ii + 1).array()  =     y1_or_phi_Bound_Z[c].col(t1 + ii + 1).array()  *   grad_bound_z.col(ii + 1).array() ;   // correct  (standard form)
-                     grad_prob.col(ii + 1).array()  =   ( - y_sign.col(t1 + ii + 1).array()  ) *    grad_Phi_bound_z[c].col(ii + 1).array() ;  // correct  (standard form)
-
-                 }
-
-
-                 derivs_chain_container_vec.array() = 0.0;
-                 
-                 ///// attempt at vectorising  // bookmark
-                 for (int iii = 0; iii <  i; iii++) {
-                   derivs_chain_container_vec.array() +=  (    grad_prob.col(iii).array()  * (   prob[c].block(0, t1 + 0, chunk_size, i).rowwise().prod().array()  /  prob[c].col(t1 + iii).array()  ).array() ).array() ; // correct  (standard form)
-                 }
- 
-                 
-                 grad_pi_wrt_b_raw(c, t1) +=        ( common_grad_term_1.col(t1).array()   *  derivs_chain_container_vec.array() ).sum();
-                 
-
-               }
-
-             }
-
-           prev_grad_vec(c)  +=  ( ( 1.0 / prob_n.array() ) * prob[c].rowwise().prod().array() ).matrix().sum() ;
-
-
-            }
-              
-        }
-        
-   }
-   
- 
-   //////////////////////// gradients for latent class membership probabilitie(s) (i.e. disease prevalence)
-   for (int c = 0; c < n_class; c++) {
-     prev_unconstrained_grad_vec(c)  =   prev_grad_vec(c)   * deriv_p_wrt_pu_double ;
-   }
-   prev_unconstrained_grad_vec(0) = prev_unconstrained_grad_vec(1) - prev_unconstrained_grad_vec(0) - 2 * tanh_u_prev[1];
-   prev_unconstrained_grad_vec_out(0) = prev_unconstrained_grad_vec(0);
-
-
-   // log_prob_out += log_lik.sum();
-   log_prob_out += out_mat.segment(1 + n_params, N).sum();
-
-   if (exclude_priors == false)  log_prob_out += prior_densities;
-
-   log_prob_out +=  log_jac_u;
- //  log_prob_out +=  log_jac_p;
-
-   log_prob = (double) log_prob_out;
-
-   int i = 0; // probs_all_range.prod() cancels out
-   for (int c = 0; c < n_class; c++) {
-     for (int t = 0; t < n_tests; t++) {
-       beta_grad_vec(i) = beta_grad_array(c, t);
-       i += 1;
-     }
-   }
-
-
-   Eigen::Matrix<double, -1, 1 >  bs_grad_vec_nd =  (grad_pi_wrt_b_raw.row(0).transpose().array() * bs_nd_double.array()).matrix() ; //     ( deriv_log_pi_wrt_L_Omega[0].asDiagonal().diagonal().array() * bs_nd_double.array()  ).matrix()  ; //  Jacobian_d_L_Sigma_wrt_b_matrix[0].transpose() * deriv_log_pi_wrt_L_Omega_vec_nd;
-   Eigen::Matrix<double, -1, 1 >  bs_grad_vec_d =   (grad_pi_wrt_b_raw.row(1).transpose().array() * bs_d_double.array()).matrix() ; //    ( deriv_log_pi_wrt_L_Omega[1].asDiagonal().diagonal().array() * bs_d_double.array()  ).matrix()  ; //   Jacobian_d_L_Sigma_wrt_b_matrix[1].transpose()  * deriv_log_pi_wrt_L_Omega_vec_d;
-
-   Eigen::Matrix<double, -1, 1 >   bs_grad_vec(n_bs_LT);
-   bs_grad_vec.head(n_tests)              = bs_grad_vec_nd ;
-   bs_grad_vec.segment(n_tests, n_tests)  = bs_grad_vec_d;
-
-  //   stan::math::recover_memory();
-
-
-
-       ////////////////////////////  outputs // add log grad and sign stuff';///////////////
-       out_mat(0) =  log_prob;
-       out_mat.segment(1 + n_us, n_bs_LT)  += bs_grad_vec ;
-       out_mat.segment(1 + n_us + n_corrs, n_coeffs) += beta_grad_vec;//.cast<float>();
-       out_mat(n_params) = ((grad_prev_AD +  prev_unconstrained_grad_vec_out(0)));
-       out_mat.segment(1, n_us).array() =     (  out_mat.segment(1, n_us).array() *  ( 0.5 * (1.0 - theta_us.array() * theta_us.array()  )  )   ).array()    - 2.0 * theta_us.array()   ;
-
-
-   
-   }
-   
-
-
-   int LT_cnt_2 = 0;
-   for (int c = 0; c < n_class; ++c) {
-     for (int t = 0; t < n_tests; ++t) {
-       if (LT_known_bs_indicator(c, t) == 1) {
-         out_mat(1 + n_us + LT_cnt_2) = 0;
-       }
-       LT_cnt_2 += 1;
-     }
-   }
-
-
-    return(out_mat);
-
-
-
-
- }
-
-
-
-
-
 
  
  
@@ -3132,7 +2183,7 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
 
 
  // [[Rcpp::export]]
- Eigen::Matrix<double, -1, 1 >    fn_lp_and_grad_MVP_using_Chol_Spinkney_MD_and_AD(      Eigen::Matrix<double, -1, 1  > theta_main,
+ Eigen::Matrix<double, -1, 1 >    fn_lp_and_grad_MVP_LC_using_Chol_Spinkney_MD_and_AD(      Eigen::Matrix<double, -1, 1  > theta_main,
                                                                                          Eigen::Matrix<double, -1, 1  > theta_us,
                                                                                          Eigen::Matrix<int, -1, -1>	 y,
                                                                                          std::vector<Eigen::Matrix<double, -1, -1 > >  X,
@@ -3523,7 +2574,7 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
                                     
                                                     // for all configs 
                                                    if (  abs_indicator(t, c) == 1) {
-                                                      //  #pragma clang loop vectorize_width(16)
+                                                        // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
                                                       for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
                                                          if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
                                                             Bound_U_Phi_Bound_Z[c](n_index, t) =    stan::math::inv_logit( 1.702 *  Bound_Z[c](n_index, t)  );  //  stan::math::inv_logit( 1.702 * Bound_Z[c].col(t)  )
@@ -3543,7 +2594,7 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
       
                                                  // for all configs 
                                                  if (abs_indicator(t, c) == 1) {
-                                                   //  #pragma clang loop vectorize_width(16)
+                                                     // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
                                                    for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectoriose ?!
                                                          if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
                                                             Z_std_norm[c](n_index, t) =    s  *  stan::math::logit(Phi_Z[c](n_index, t));  //   s *  fast_logit_1_Eigen(    Phi_Z[c].col(t) ).array()
@@ -3615,7 +2666,7 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
                        
                                  // for all configs
                                  if (abs_indicator(t, c) == 1) {
-                                  //  #pragma clang loop vectorize_width(16)
+                                    // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
                                   for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
                                     if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
                                       double Phi_x_i =  Bound_U_Phi_Bound_Z[c](n_index, t);
@@ -3639,7 +2690,7 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
                           // for all configs
                                 for (int t = 0; t < n_tests; t++) {
                                   if (abs_indicator(t, c) == 1) {
-                                        // #pragma  clang loop vectorize_width(16)
+                                       // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
                                         for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
                                           if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
                                             double Phi_x_i =  Phi_Z[c](n_index, t);
@@ -4011,6 +3062,1703 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
 
  
  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ // [[Rcpp::export]]
+ Eigen::Matrix<double, -1, 1 >    fn_lp_and_grad_MVP_using_Chol_Spinkney_MD_and_AD(      Eigen::Matrix<double, -1, 1  > theta_main,
+                                                                                         Eigen::Matrix<double, -1, 1  > theta_us,
+                                                                                         Eigen::Matrix<int, -1, -1>	 y,
+                                                                                         std::vector<Eigen::Matrix<double, -1, -1 > >  X,
+                                                                                         Rcpp::List other_args
+ ) { 
+   
+   
+   
+   
+   
+   const int n_cores = other_args(0); 
+   const bool exclude_priors = other_args(1); 
+   // const bool CI = other_args(2); // CI makes no sense for non-LCM MVP model??!!
+   Eigen::Matrix<double, -1, 1>  lkj_cholesky_eta = other_args(3); 
+   Eigen::Matrix<double, -1, -1> prior_coeffs_mean  = other_args(4); 
+   Eigen::Matrix<double, -1, -1> prior_coeffs_sd = other_args(5); 
+   const int n_class = 1;
+   const int ub_threshold_phi_approx = other_args(7); 
+   const int n_chunks = other_args(8); 
+   const bool corr_force_positive = other_args(9); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >  prior_for_corr_a = other_args(10); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >  prior_for_corr_b = other_args(11); 
+   const bool corr_prior_beta  = other_args(12); 
+   const bool corr_prior_norm  = other_args(13); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >  lb_corr = other_args(14); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >  ub_corr = other_args(15); 
+   std::vector<Eigen::Matrix<int, -1, -1 > >      known_values_indicator = other_args(16); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >   known_values = other_args(17); 
+   // const double prev_prior_a = other_args(18); 
+   // const double prev_prior_b = other_args(19); 
+   const bool exp_fast = other_args(20); 
+   const bool log_fast = other_args(21); 
+   std::string Phi_type = other_args(22); 
+    
+   const int n_tests = y.cols();
+   const int N = y.rows();
+   const int n_corrs =   n_tests * (n_tests - 1) * 0.5;
+   const int n_covariates = X.size() ;   ////////////////////////////  
+   const int n_coeffs =  n_tests * n_covariates;
+   const int n_us =    N * n_tests; 
+   
+   const int n_params = theta_us.rows() +  theta_main.rows()   ; // n_corrs + n_coeffs + n_us + 1;
+   const int n_params_main = n_params - n_us;
+   
+   const double sqrt_2_pi_recip =   1.0 / sqrt(2.0 * M_PI) ; //  0.3989422804;
+   const double sqrt_2_recip = 1.0 / stan::math::sqrt(2.0);
+   const double minus_sqrt_2_recip =  - sqrt_2_recip;
+   const double a = 0.07056;
+   const double b = 1.5976;
+   const double a_times_3 = 3.0 * 0.07056;
+   const double s = 1.0/1.702;
+   
+    
+   // corrs
+   Eigen::Matrix<double, -1, 1  >  Omega_raw_vec_double = theta_main.head(n_corrs); // .cast<double>();
+   Eigen::Matrix<stan::math::var, -1, 1  >  Omega_raw_vec_var =  stan::math::to_var(Omega_raw_vec_double) ;
+   Eigen::Matrix<stan::math::var, -1, 1  >  Omega_constrained_raw_vec_var =  Eigen::Matrix<stan::math::var, -1, 1  >::Zero(n_corrs) ;
+   Omega_constrained_raw_vec_var = Omega_raw_vec_var ; // no transformation for Nump needed! done later on
+   
+    
+   // coeffs
+   Eigen::Matrix<double, -1, -1> beta_double_array(1, n_coeffs);
+    
+   {
+     int i = n_corrs;
+       for (int k = 0; k < n_coeffs; ++k) {
+         beta_double_array(0, k) = theta_main(i);
+         i += 1;
+       }
+   }
+     
+   
+    
+   Eigen::Matrix<double, -1, 1 >  target_AD_grad(n_corrs);
+   stan::math::var target_AD = 0.0;
+    
+   int dim_choose_2 = n_tests * (n_tests - 1) * 0.5 ;
+   std::vector<Eigen::Matrix<double, -1, -1 > > deriv_L_wrt_unc_full = vec_of_mats_test(dim_choose_2 + n_tests, dim_choose_2, 1);
+   std::vector<Eigen::Matrix<double, -1, -1 > > L_Omega_double = vec_of_mats_test(n_tests, n_tests, 1);
+   std::vector<Eigen::Matrix<double, -1, -1 > > L_Omega_recip_double = L_Omega_double ; 
+    
+   
+   
+   {
+     
+     
+     std::vector<Eigen::Matrix<stan::math::var, -1, -1 > > Omega_unconstrained_var = fn_convert_std_vec_of_corrs_to_3d_array_var( Eigen_vec_to_std_vec_var(Omega_constrained_raw_vec_var),
+                                                                                                                                  n_tests,
+                                                                                                                                  1);
+     
+     
+     std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  L_Omega_var = vec_of_mats_test_var(n_tests, n_tests, 1);
+     std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_var   = vec_of_mats_test_var(n_tests, n_tests, 1);
+     
+     {
+       Eigen::Matrix<stan::math::var, -1, -1 >  ub = stan::math::to_var(ub_corr[0]);
+       Eigen::Matrix<stan::math::var, -1, -1 >  lb = stan::math::to_var(lb_corr[0]);
+       
+       Eigen::Matrix<stan::math::var, -1, -1  >  Chol_Schur_outs =  Spinkney_LDL_bounds_opt(n_tests, lb, ub, Omega_unconstrained_var[0], known_values_indicator[0], known_values[0]) ; //   Omega_unconstrained_var[0], n_tests, tol )  ;
+       
+       L_Omega_var[0]   =  Chol_Schur_outs.block(1, 0, n_tests, n_tests);
+       Omega_var[0] =   L_Omega_var[0] * L_Omega_var[0].transpose() ;
+       
+       
+       target_AD +=   Chol_Schur_outs(0, 0); // now can set prior directly on Omega
+     } 
+     
+     
+     
+      {
+       if ( (corr_prior_beta == false)   &&  (corr_prior_norm == false) ) {
+         target_AD +=  stan::math::lkj_corr_cholesky_lpdf(L_Omega_var[0], lkj_cholesky_eta(0)) ; 
+       } else if ( (corr_prior_beta == true)   &&  (corr_prior_norm == false) ) {
+         for (int i = 1; i < n_tests; i++) {
+           for (int j = 0; j < i; j++) {
+             target_AD +=  stan::math::beta_lpdf(  (Omega_var[0](i, j) + 1)/2, prior_for_corr_a[0](i, j), prior_for_corr_b[0](i, j));
+           } 
+         }
+         //  Jacobian for  Omega -> L_Omega transformation for prior log-densities (since both LKJ and truncated normal prior densities are in terms of Omega, not L_Omega)
+         Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
+         for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i+1) ) * log(L_Omega_var[0](i, i));
+         target_AD  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
+       } else if  ( (corr_prior_beta == false)   &&  (corr_prior_norm == true) ) { 
+         for (int i = 1; i < n_tests; i++) {
+           for (int j = 0; j < i; j++) {
+             target_AD +=  stan::math::normal_lpdf(  Omega_var[0](i, j), prior_for_corr_a[0](i, j), prior_for_corr_b[0](i, j));
+           } 
+         }
+         Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
+         for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i+1) ) * log(L_Omega_var[0](i, i));
+         target_AD  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
+       } 
+     }
+     
+     
+     ///////////////////////
+     stan::math::set_zero_all_adjoints();
+     target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+     target_AD_grad =  Omega_raw_vec_var.adj();    // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+     stan::math::set_zero_all_adjoints();
+     //////////////////////////////////////////////////////////// end of AD part
+     
+      {
+       int cnt_1 = 0; 
+       for (int k = 0; k < n_tests; k++) {
+         for (int l = 0; l < k + 1; l++) {
+           (  L_Omega_var[0](k, l)).grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+           int cnt_2 = 0;
+           for (int i = 1; i < n_tests; i++) {
+             for (int j = 0; j < i; j++) {
+               deriv_L_wrt_unc_full[0](cnt_1, cnt_2)  =   Omega_unconstrained_var[0](i, j).adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+               cnt_2 += 1;
+             }
+           }
+           stan::math::set_zero_all_adjoints();
+           cnt_1 += 1;
+         }
+       }
+     }
+     
+     ///////////////// get cholesky factor's (lower-triangular) of corr matrices
+     // convert to 3d var array
+      {
+       for (int t1 = 0; t1 < n_tests; ++t1) {
+         for (int t2 = 0; t2 < n_tests; ++t2) {
+           L_Omega_double[0](t1, t2) =   L_Omega_var[0](t1, t2).val()  ;
+           L_Omega_recip_double[0](t1, t2) =   1.0 / L_Omega_double[0](t1, t2) ;
+         }
+       }
+     }
+     
+     stan::math::recover_memory();
+   }
+   
+   
+   ///////////////////////////////////////////////////////////////////////// prior densities
+   double prior_densities = 0.0;
+   
+   
+   if (exclude_priors == false) {
+     ///////////////////// priors for coeffs
+     double prior_densities_coeffs = 0.0;
+     {
+       for (int t = 0; t < n_coeffs; t++) {
+         prior_densities_coeffs  += stan::math::normal_lpdf(beta_double_array(0, t), prior_coeffs_mean(0, t), prior_coeffs_sd(0, t));
+       }
+     }
+     double prior_densities_corrs = target_AD.val();
+     prior_densities = prior_densities_coeffs  +      prior_densities_corrs ;     // total prior densities and Jacobian adjustments
+   }
+   
+   
+   /////////////////////////////////////////////////////////////////////////////////////////////////////
+   ///////// likelihood
+   int chunk_counter = 0;
+   int chunk_size  = std::round( N / n_chunks  / 2) * 2;  ; // N / n_chunks;
+   
+   
+   double log_prob_out = 0.0;
+   
+   
+   if (exp_fast == true)   theta_us.array() =      fast_tanh_approx_Eigen( theta_us ).array(); 
+   else                    theta_us.array() =      ( theta_us ).array().tanh(); 
+   
+   double log_jac_u  =  0.0;
+   if    (log_fast == true)    {  // most stable
+     log_jac_u  =    (  fast_log_approx_double_wo_checks_Eigen( 0.5 *   (  1.0 -  ( theta_us.array()   *  theta_us.array()   ).array()  ).array()  ).array()   ).matrix().sum();  // log
+   } else {
+     log_jac_u  =    (  ( 0.5 *   (  1.0 -  ( theta_us.array()   *  theta_us.array()   ).array()  ).array()  ).array().log()   ).matrix().sum();  // log
+   }
+   
+   
+   ///////////////////////////////////////////////
+   Eigen::Matrix<double , -1, 1>   beta_grad_vec   =  Eigen::Matrix<double, -1, 1>::Zero(n_coeffs);  //
+   Eigen::Matrix<double, -1, -1>   beta_grad_array  =  Eigen::Matrix<double, -1, -1>::Zero(1, n_coeffs); //
+   std::vector<Eigen::Matrix<double, -1, -1 > > U_Omega_grad_array =  vec_of_mats_test(n_tests, n_tests, 1); //
+   Eigen::Matrix<double, -1, 1 > L_Omega_grad_vec(n_corrs + (1 * n_tests)); //
+   Eigen::Matrix<double, -1, 1 > U_Omega_grad_vec(n_corrs); //
+   // ///////////////////////////////////////////////
+   ///////////////////////////////////////////////////////////////////////////////////////// output vec
+   Eigen::Matrix<double, -1, 1> out_mat    =  Eigen::Matrix<double, -1, 1>::Zero(n_params + 1 + N);  ///////////////////////////////////////////////
+   ///////////////////////////////////////////////////////////////////////////////////////////////////
+   
+   double log_prob = 0.0;
+   
+   {
+     
+     
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+     ///////////////////////////////////////////////
+     std::vector<Eigen::Matrix<double, -1, -1 > >  Z_std_norm =  vec_of_mats_test(chunk_size, n_tests, 1); //////////////////////////////
+     std::vector<Eigen::Matrix<double, -1, -1 > >  Bound_Z =  Z_std_norm ;  
+     std::vector<Eigen::Matrix<double, -1, -1 > >  abs_Bound_Z =  Z_std_norm ;  
+     std::vector<Eigen::Matrix<double, -1, -1 > >  Bound_U_Phi_Bound_Z =  Z_std_norm ;   
+     std::vector<Eigen::Matrix<double, -1, -1 > >  Phi_Z =  Z_std_norm ;  
+     std::vector<Eigen::Matrix<double, -1, -1 > >  y1_or_phi_Bound_Z =  Z_std_norm ;  
+     std::vector<Eigen::Matrix<double, -1, -1 > >  prob =  Z_std_norm ;  
+     ///////////////////////////////////////////////);
+     Eigen::Array<double, -1, -1> y_chunk = Eigen::Array<double, -1, -1>::Zero(chunk_size, n_tests);
+     Eigen::Array<double, -1, -1> u_array =  y_chunk ;  
+     ///////////////////////////////////////////////
+     Eigen::Matrix<double, -1, 1>      prod_container_or_inc_array  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+     Eigen::Matrix<double, -1, 1>      prob_n  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+     ///////////////////////////////////////////////
+     Eigen::Matrix<double, -1, -1 >    L_Omega_diag_recip_array   = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+     Eigen::Matrix<double, -1, -1 >    y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip   =  L_Omega_diag_recip_array ; //   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+     Eigen::Matrix<double, -1, -1 >    y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip   =   L_Omega_diag_recip_array ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+     Eigen::Matrix<double, -1, -1 >    prop_rowwise_prod_temp   =   L_Omega_diag_recip_array ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+     Eigen::Matrix<double, -1, -1>     grad_prob =    L_Omega_diag_recip_array ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+     Eigen::Matrix<double, -1, -1>     z_grad_term =  L_Omega_diag_recip_array ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+     Eigen::Matrix<double, -1, -1>     u_grad_array_CM_chunk   =   L_Omega_diag_recip_array ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);    ////////
+     Eigen::Matrix<double, -1, -1>     phi_Z_recip  =   L_Omega_diag_recip_array ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+     ///////////////////////////////////////////////
+     Eigen::Matrix<double, -1, 1>      derivs_chain_container_vec  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+     Eigen::Matrix<double, -1, 1>      prop_rowwise_prod_temp_all  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+     Eigen::Array<int, -1, -1>         abs_indicator = Eigen::Array<int, -1, -1>::Zero(n_tests, n_class);
+     ////////////////////////////////////////////////
+     
+     
+     {
+       
+       // /////////////////////////////////////////////////////////////////////////////////////////////////////
+       Eigen::Matrix<double, -1, -1>    lp_array  =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, 1);///////
+       ////////////////////////////////////////////////////////////////////////////////////////////////////////
+       
+       
+       for (int nc = 0; nc < n_chunks; nc++) {
+         
+         abs_indicator.array() = 0;
+         
+         u_grad_array_CM_chunk.array() = 0.0;
+         
+         int chunk_counter = nc;
+         
+         y_chunk = y.middleRows(chunk_size * chunk_counter , chunk_size).array().cast<double>() ;
+         
+         u_array  = 0.5 * (  theta_us.segment(chunk_size * n_tests * chunk_counter , chunk_size * n_tests).reshaped(chunk_size, n_tests).array() + 1.0 ).array() ;
+         
+         
+        {
+                       
+                       prod_container_or_inc_array.array()  = 0.0; // needs to be reset to 0
+                       
+                       for (int t = 0; t < n_tests; t++) { 
+                         
+                                     Bound_Z[0].col(t).array() =    L_Omega_recip_double[0](t, t) * (  - ( beta_double_array(0, t) +      prod_container_or_inc_array.array()   )  ) ; // / L_Omega_double[0](t, t)     ;
+                                     abs_Bound_Z[0].col(t).array() =    Bound_Z[0].col(t).array().abs(); 
+                                     if ((abs_Bound_Z[0].col(t).array() > 5.0).matrix().sum() > 0)     abs_indicator(t, 0) = 1;
+                                     
+                                     if (Phi_type == "Phi")   Bound_U_Phi_Bound_Z[0].col(t).array() =  0.5 *   ( minus_sqrt_2_recip * Bound_Z[0].col(t).array() ).erfc() ;
+                                     else   Bound_U_Phi_Bound_Z[0].col(t).array() = Phi_approx_fast_Eigen(Bound_Z[0].col(t).array() );
+                                     
+                                     // for all configs 
+                                     if (  abs_indicator(t, 0) == 1) {
+                                       // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
+                                       for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
+                                         if ( abs_Bound_Z[0](n_index, t) > 5.0   ) {
+                                           Bound_U_Phi_Bound_Z[0](n_index, t) =    stan::math::inv_logit( 1.702 *  Bound_Z[0](n_index, t)  );  //  stan::math::inv_logit( 1.702 * Bound_Z[0].col(t)  )
+                                         }
+                                       }
+                                     }
+                                     
+                                     Phi_Z[0].col(t).array()    =      (   y_chunk.col(t)   *  Bound_U_Phi_Bound_Z[0].col(t).array() +
+                                       (   y_chunk.col(t)   -  Bound_U_Phi_Bound_Z[0].col(t).array() ) *   ( y_chunk.col(t)  + (  y_chunk.col(t)  - 1.0)  )  * u_array.col(t)   )   ;  
+                                     
+                                     if (Phi_type == "Phi") {    
+                                       if (log_fast == false) Z_std_norm[0].col(t).array() = stan::math::inv_Phi(Phi_Z[0].col(t)).array() ; //    qnorm_rcpp_Eigen( Phi_Z[0].col(t).array());   
+                                       else                   Z_std_norm[0].col(t).array() = qnorm_w_fast_log_rcpp_Eigen( Phi_Z[0].col(t).array());  // with approximations
+                                     } else if (Phi_type == "Phi_approx") {
+                                       Z_std_norm[0].col(t).array() =  inv_Phi_approx_fast_Eigen(Phi_Z[0].col(t).array());
+                                     }
+                                     
+                                     // for all configs 
+                                     if (abs_indicator(t,0) == 1) {
+                                       // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
+                                       for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectoriose ?!
+                                         if ( abs_Bound_Z[0](n_index, t) > 5.0   ) {
+                                           Z_std_norm[0](n_index, t) =    s  *  stan::math::logit(Phi_Z[0](n_index, t));  //   s *  fast_logit_1_Eigen(    Phi_Z[0].col(t) ).array()
+                                         }
+                                       }
+                                     } 
+                                     
+                                     if (t < n_tests - 1)       prod_container_or_inc_array.array()  =   ( Z_std_norm[0].topLeftCorner(chunk_size, t + 1)  *   ( L_Omega_double[0].row(t+1).head(t+1).transpose()  ) ) ;      // for all configs 
+                                     
+                       } // end of t loop
+                       
+                       prob[0].array() =  y_chunk.array() * ( 1.0 -    Bound_U_Phi_Bound_Z[0].array() ) +  ( y_chunk - 1.0  )   *    Bound_U_Phi_Bound_Z[0].array() *   ( y_chunk +  (  y_chunk - 1.0)  )  ;   // for all configs 
+                       
+                       if (log_fast == true)  y1_or_phi_Bound_Z[0].array()  =   fast_log_approx_double_wo_checks_Eigen_mat(prob[0].array() ) ;
+                       else                   y1_or_phi_Bound_Z[0].array()  =   prob[0].array().log();
+                       
+                       lp_array.col(0).array() =     y1_or_phi_Bound_Z[0].rowwise().sum().array() ;
+                       
+         }  
+         
+         
+         out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   =    lp_array.col(0).sum(); 
+        
+         if    ( (log_fast == false) && (exp_fast == false)  )  {  
+           prob_n  =  (out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()).exp() ;
+         } else if  ( (log_fast == true) && (exp_fast == false)  )  {  
+           prob_n  =  (out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()).exp() ;
+         } else if  ( (log_fast == false) && (exp_fast == true)  )  { 
+           prob_n  =  fast_exp_double_wo_checks_Eigen(out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()) ;
+         } else if  ( (log_fast == true) && (exp_fast == true)  )   { 
+           prob_n  =  fast_exp_double_wo_checks_Eigen(out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()) ;
+         }
+         
+         
+         // fast_exp_approx_double_wo_checks_Eigen_mat 
+         // fast_exp_approx_double_wo_checks_Eigen 
+         // fast_exp_double_wo_checks_Eigen
+         // fast_exp_double_wo_checks_Eigen_mat
+         
+         {
+           
+           
+           for (int t = 0; t < n_tests; t++) {
+             L_Omega_diag_recip_array.col(t).array() =  L_Omega_recip_double[0](t, t) ;
+           }
+           
+           
+           for (int t = 0; t < n_tests; t++) {
+             
+             if (Phi_type == "Phi_approx")  {
+               y1_or_phi_Bound_Z[0].array() =                (  (    (  a_times_3*Bound_Z[0].array()*Bound_Z[0].array()   + b  ).array()  ).array() )  *  Bound_U_Phi_Bound_Z[0].array() * (1.0 -  Bound_U_Phi_Bound_Z[0].array() )   ;
+             } else if (Phi_type == "Phi") { 
+               if (exp_fast == true)       y1_or_phi_Bound_Z[0].array() =                   sqrt_2_pi_recip *  fast_exp_double_wo_checks_Eigen_mat( - 0.5 * Bound_Z[0].array()    *  Bound_Z[0].array()    ).array()  ;  
+               else                        y1_or_phi_Bound_Z[0].array() =                   sqrt_2_pi_recip *  ( - 0.5 * Bound_Z[0].array()    *  Bound_Z[0].array()    ).array().exp()  ;
+             }
+             
+             // for all configs
+             if (abs_indicator(t, 0) == 1) {
+               // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
+               for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
+                 if ( abs_Bound_Z[0](n_index, t) > 5.0   ) {
+                   double Phi_x_i =  Bound_U_Phi_Bound_Z[0](n_index, t);
+                   double Phi_x_1m_Phi  =    (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
+                   y1_or_phi_Bound_Z[0](n_index, t) =  1.702 * Phi_x_1m_Phi;
+                 }
+               }
+             }
+           }
+           
+           y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array()  =                  ( y_chunk.array()  + (  y_chunk.array() - 1.0).array() ).array() *    y1_or_phi_Bound_Z[0].array()  *   L_Omega_diag_recip_array.array() ;
+           
+           if (Phi_type == "Phi_approx")  {
+             phi_Z_recip.array()  =    1.0 / (    (   (a_times_3*Z_std_norm[0].array()*Z_std_norm[0].array()   + b  ).array()  ).array() *  Phi_Z[0].array() * (1.0 -  Phi_Z[0].array() )  ).array()  ;  // Phi_type == 2
+           } else  if (Phi_type == "Phi")  {
+             if (exp_fast == true)      phi_Z_recip.array() =                 1.0  / (   sqrt_2_pi_recip *  fast_exp_double_wo_checks_Eigen_mat( - 0.5 * Z_std_norm[0].array()    *  Z_std_norm[0].array()    ).array() )  ; 
+             else                       phi_Z_recip.array() =                 1.0  / (   sqrt_2_pi_recip *  ( - 0.5 * Z_std_norm[0].array()    *  Z_std_norm[0].array()    ).array().exp() ).array()  ;
+           }
+           // for all configs
+           for (int t = 0; t < n_tests; t++) {
+             if (abs_indicator(t, 0) == 1) {
+               // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
+               for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
+                 if ( abs_Bound_Z[0](n_index, t) > 5.0   ) {
+                   double Phi_x_i =  Phi_Z[0](n_index, t);
+                   double Phi_x_1m_Phi_x_recip =  1.0 / (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
+                   Phi_x_1m_Phi_x_recip =  1.0 / (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
+                   phi_Z_recip(n_index, t) =      s * Phi_x_1m_Phi_x_recip;
+                 }
+               }
+             }
+           }
+           
+           y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array()  =    ( (  (   y_chunk.array()   -  ( y_chunk.array()  + (  y_chunk.array()  - 1.0).array() ).array()    * u_array.array()    ).array() ) ).array() *
+             phi_Z_recip.array()  *   y1_or_phi_Bound_Z[0].array()   *    L_Omega_diag_recip_array.array() ;
+           
+           
+           ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
+             {
+               
+               ///// then second-to-last term (test T - 1)
+               int t = n_tests - 1;
+               
+               u_grad_array_CM_chunk.col(n_tests - 2).array()  +=  (   (y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  *  L_Omega_double[0](t,t - 1) * ( phi_Z_recip.col(t-1).array() )  *  prob[0].col(t-1).array()) ).array()  ;
+               
+               { ///// then third-to-last term (test T - 2)
+                 t = n_tests - 2;
+                 
+                 z_grad_term.col(0) = ( phi_Z_recip.col(t-1).array())  *  prob[0].col(t-1).array() ;
+                 grad_prob.col(0) =        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   *     L_Omega_double[0](t, t - 1) *   z_grad_term.col(0).array() ; // lp(T-1) - part 2;
+                 z_grad_term.col(1).array()  =      L_Omega_double[0](t,t-1) *   z_grad_term.col(0).array() *       y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() ;
+                 grad_prob.col(1)  =         (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+1).array()   ) *  (  z_grad_term.col(0).array() *  L_Omega_double[0](t + 1,t - 1)  -   z_grad_term.col(1).array()  * L_Omega_double[0](t+1,t)) ;
+                 
+                 u_grad_array_CM_chunk.col(n_tests - 3).array()  +=  (  (  grad_prob.col(1).array() *  prob[0].col(t).array()  +      grad_prob.col(0).array() *   prob[0].col(t+1).array()  )  )   ;
+               }
+               
+               // then rest of terms
+               for (int i = 1; i < n_tests - 2; i++) { // i goes from 1 to 3
+                 
+                 grad_prob.array()   = 0.0;
+                 z_grad_term.array() = 0.0;
+                 
+                 int t = n_tests - (i+2) ; // starts at t = 6 - (1+2) = 3, ends at t = 6 - (3+2) = 6 - 5 = 1 (when i = 3)
+                 
+                 z_grad_term.col(0) = (  phi_Z_recip.col(t-1).array())  *  prob[0].col(t-1).array() ;
+                 grad_prob.col(0) =         y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   *   L_Omega_double[0](t, t - 1) *   z_grad_term.col(0).array() ; // lp(T-1) - part 2;
+                 
+                 for (int ii = 0; ii < i+1; ii++) { // if i = 1, ii goes from 0 to 1 u_grad_z u_grad_term     ;
+                   if (ii == 0)    prod_container_or_inc_array  = (   (z_grad_term.topLeftCorner(chunk_size, ii + 1) ) *  (fn_first_element_neg_rest_pos(L_Omega_double[0].row( t + (ii-1) + 1).segment(t - 1, ii + 1))).transpose()  )      ;
+                   z_grad_term.col(ii+1)  =           y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t + ii).array() *  -   prod_container_or_inc_array.array() ;
+                   prod_container_or_inc_array  = (   (z_grad_term.topLeftCorner(chunk_size, ii + 2) ) *  (fn_first_element_neg_rest_pos(L_Omega_double[0].row( t + (ii) + 1).segment(t - 1, ii + 2))).transpose()  )      ;
+                   grad_prob.col(ii+1)  =       (    y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+ii+1).array()  ) *     -    prod_container_or_inc_array.array()  ;
+                 } // end of ii loop
+                 
+                 {
+                   derivs_chain_container_vec.array() = 0.0;
+                   
+                   for (int ii = 0; ii < i + 2; ii++) {
+                     derivs_chain_container_vec.array()  +=  ( grad_prob.col(ii).array()    * (       prop_rowwise_prod_temp.col(t).array() /   prob[0].col(t + ii).array()  ).array() ).array()  ;
+                   }
+                   u_grad_array_CM_chunk.col(n_tests - (i+3)).array()    +=   (  ( (    derivs_chain_container_vec.array() ) ).array()  ).array() ;
+                 }
+                 
+               }
+               
+               
+               out_mat.segment(1, n_us).segment(chunk_size * n_tests * chunk_counter , chunk_size * n_tests)  =  u_grad_array_CM_chunk.reshaped() ; //   u_grad_array_CM.block(chunk_size * chunk_counter, 0, chunk_size, n_tests).reshaped() ; // .cast<float>()     ;         }
+               
+             }
+             
+             // /////////////////////////////////////////////////////////////////////////// Grad of intercepts / coefficients (beta's)
+             // ///// last term first (test T)
+             
+             {
+               
+               int t = n_tests - 1;
+               
+               beta_grad_array(0, t) +=     (     (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()    )).sum();
+               
+               ///// then second-to-last term (test T - 1)
+               {
+                 t = n_tests - 2;
+                 grad_prob.col(0) =       (     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ) ;
+                 z_grad_term.col(0)   =     - y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()         ;
+                 grad_prob.col(1)  =       (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+1).array()    )   * (   L_Omega_double[0](t + 1,t) *      z_grad_term.col(0).array() ) ;
+                 beta_grad_array(0, t) +=  ( ( grad_prob.col(1).array() *  prob[0].col(t).array() +         grad_prob.col(0).array() *   prob[0].col(t+1).array() ) ).sum() ;
+               }
+               
+               // then rest of terms
+               for (int i = 1; i < n_tests - 1; i++) { // i goes from 1 to 3
+                 
+                 t = n_tests - (i+2) ; // starts at t = 6 - (1+2) = 3, ends at t = 6 - (3+2) = 6 - 5 = 1 (when i = 3)
+                 
+                 grad_prob.col(0)  =     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ;
+                 
+                 // component 2 (second-to-earliest test)
+                 z_grad_term.col(0)  =        -y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()       ;
+                 grad_prob.col(1) =        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + 1).array()    *    (   L_Omega_double[0](t + 1,t) *   z_grad_term.col(0).array() ) ;
+                 
+                 // rest of components
+                 for (int ii = 1; ii < i+1; ii++) { // if i = 1, ii goes from 0 to 1
+                   if (ii == 1)  prod_container_or_inc_array  = (    z_grad_term.topLeftCorner(chunk_size, ii)  *   L_Omega_double[0].row( t + (ii - 1) + 1).segment(t + 0, ii + 0).transpose()  );
+                   z_grad_term.col(ii)  =        -y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t + ii).array()    *   prod_container_or_inc_array.array();
+                   prod_container_or_inc_array  = (    z_grad_term.topLeftCorner(chunk_size, ii + 1)  *   L_Omega_double[0].row( t + (ii) + 1).segment(t + 0, ii + 1).transpose()  );
+                   grad_prob.col(ii + 1) =      (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + ii + 1).array()  ).array()     *  prod_container_or_inc_array.array();
+                 }
+                 
+                 {
+                   derivs_chain_container_vec.array() = 0.0;
+                   
+                   ///// attempt at vectorising  // bookmark
+                   for (int ii = 0; ii < i + 2; ii++) {
+                     derivs_chain_container_vec.array() +=  ( grad_prob.col(ii).array()  * (      prop_rowwise_prod_temp.col(t).array() /   prob[0].col(t + ii).array()  ).array() ).array() ;
+                   }
+                   beta_grad_array(0, t) +=        (    derivs_chain_container_vec.array() ).sum();
+                 }
+                 
+               }
+               
+             }
+             
+             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of L_Omega ('s)
+             {
+               {
+                 ///////////////////////// deriv of diagonal elements (not needed if using the "standard" or "Stan" Cholesky parameterisation of Omega)
+                 
+                 //////// w.r.t last diagonal first
+                 {
+                   int  t1 = n_tests - 1;
+                   
+                   U_Omega_grad_array[0](t1, t1) +=   (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1).array()  *   Bound_Z[0].col(t1).array()       ).sum() ;
+                 }
+                 
+                 
+                 //////// then w.r.t the second-to-last diagonal
+                 int  t1 = n_tests - 2;
+                 grad_prob.col(0).array()  =         y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1).array() *     Bound_Z[0].col(t1).array()     ;     // correct  (standard form)
+                 z_grad_term.col(0).array()  =      (   - y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t1).array()  )    *  Bound_Z[0].col(t1).array()    ;  // correct
+                 
+                 prod_container_or_inc_array.array()  =   (  L_Omega_double[0](t1 + 1, t1)    *   z_grad_term.col(0).array()   ) ; // sequence
+                 grad_prob.col(1).array()  =   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1 + 1).array()   *          prod_container_or_inc_array.array()      ;    // correct   (standard form)
+                 
+                 U_Omega_grad_array[0](t1, t1) +=   (    (  prob[0].col(t1 + 1).array()  *   grad_prob.col(0).array()  +    prob[0].col(t1).array()  *      grad_prob.col(1).array()   )  ).sum()   ;
+                 
+               }
+               
+               // //////// then w.r.t the third-to-last diagonal .... etc
+               {
+                 
+                 for (int i = 3; i < n_tests + 1; i++) {
+                   
+                   int  t1 = n_tests - i;
+                   
+                   //////// 1st component
+                   // 1st grad_Z term and 1st grad_prob term (simplest terms)
+                   grad_prob.col(0).array()  =   (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1).array() )  *  ( Bound_Z[0].col(t1).array()   ).array()  ; // correct  (standard form)
+                   z_grad_term.col(0).array()  =    ( -y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t1).array()  )  *  Bound_Z[0].col(t1).array()       ;   // correct  (standard form)
+                   
+                   // 2nd   grad_Z term and 2nd grad_prob  (more complicated than 1st term)
+                   prod_container_or_inc_array.array() =    L_Omega_double[0](t1 + 1, t1)   * z_grad_term.col(0).array()  ; // correct  (standard form)
+                   grad_prob.col(1).array()  =   (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1 + 1).array()  )   *  (    prod_container_or_inc_array.array() ).array()  ; // correct  (standard form)
+                   
+                   
+                   for (int ii = 1; ii < i - 1; ii++) {
+                     z_grad_term.col(ii).array()  =     (- y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t1 + ii).array()  )    *   prod_container_or_inc_array.array()   ;   // correct  (standard form)       // grad_z term
+                     prod_container_or_inc_array.matrix() =   (  L_Omega_double[0].row(t1 + ii + 1).segment(t1, ii + 1) *   z_grad_term.topLeftCorner(chunk_size, ii + 1).transpose() ).transpose().matrix(); // correct  (standard form)
+                     grad_prob.col(ii + 1).array()  =    y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1 + ii + 1).array()    *    prod_container_or_inc_array.array()  ;  // correct  (standard form)     //    grad_prob term
+                   }
+                   
+                   {
+                     
+                     derivs_chain_container_vec.array() = 0.0;
+                     
+                     ///// attempt at vectorising  // bookmark
+                     for (int iii = 0; iii <  i; iii++) {
+                       derivs_chain_container_vec.array()  +=    grad_prob.col(iii).array()  * (       prop_rowwise_prod_temp.col(t1).array()    /   prob[0].col(t1 + iii).array()  ).array()  ;  // correct  (standard form)
+                     }
+                     
+                     U_Omega_grad_array[0](t1, t1)   +=       (   derivs_chain_container_vec.array() ).sum()  ; // correct  (standard form)
+                   }
+                 }
+               }
+             }
+             
+             {
+               z_grad_term.array() = 0.0 ;
+               grad_prob.array() = 0.0;
+               
+               { ///////////////////// last row first
+                 int t1_dash = 0;  // t1 = n_tests - 1
+                 
+                 int t1 = n_tests - (t1_dash + 1); //  starts at n_tests - 1;  // if t1_dash = 0 -> t1 = T - 1
+                 int t2 = n_tests - (t1_dash + 2); //  starts at n_tests - 2;
+                 
+                 U_Omega_grad_array[0](t1, t2) +=        (     (  - y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1).array()   )     *  ( -  Z_std_norm[0].col(t2).array()  )  ).sum() ;
+                 
+                 if (t1 > 1) { // starts at  L_{T, T-2}
+                   {
+                     t2 =   n_tests - (t1_dash + 3); // starts at n_tests - 3;
+                     U_Omega_grad_array[0](t1, t2) +=     (      (  - y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1).array()    )   *     (  - Z_std_norm[0].col(t2).array()   ) ).sum()  ;
+                   }
+                 }
+                 
+                 if (t1 > 2) {// starts at  L_{T, T-3}
+                   for (int t2_dash = 3; t2_dash < n_tests; t2_dash++ ) { // t2 < t1
+                     t2 = n_tests - (t1_dash + t2_dash + 1); // starts at T - 4
+                     if (t2 < n_tests - 1) {
+                       U_Omega_grad_array[0](t1, t2)  +=   (      (  - y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1).array()    )  *   (      - Z_std_norm[0].col(t2).array()  )  ).sum() ;
+                     }
+                   }
+                 }
+               }
+             }
+             
+             {
+               /////////////////// then rest of rows (second-to-last row, then third-to-last row, .... , then first row)
+               for (int t1_dash = 1; t1_dash <  n_tests - 1;  t1_dash++) {
+                 int  t1 = n_tests - (t1_dash + 1);
+                 
+                 for (int t2_dash = t1_dash + 1; t2_dash <  n_tests;  t2_dash++) {
+                   int t2 = n_tests - (t2_dash + 1); // starts at t1 - 1, then t1 - 2, up to 0
+                   
+                   {
+                     //prod_container_or_inc_array.array()  =  Z_std_norm[0].block(0, t2, chunk_size, t1 - t2) * deriv_L_t1.head(t1 - t2) ;
+                     prod_container_or_inc_array.array()  =  Z_std_norm[0].col(t2) ; // block(0, t2, chunk_size, t1 - t2) * deriv_L_t1.head(t1 - t2) ;
+                     grad_prob.col(0) =       y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1).array()   *           prod_container_or_inc_array.array()   ;
+                     z_grad_term.col(0).array()  =                 y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t1).array()     *   (   -    prod_container_or_inc_array.array()     )      ;
+                     
+                     if (t1_dash > 0) {
+                       for (int t1_dash_dash = 1; t1_dash_dash <  t1_dash + 1;  t1_dash_dash++) {
+                         if (t1_dash_dash > 1) {
+                           z_grad_term.col(t1_dash_dash - 1)   =           y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t1 + t1_dash_dash - 1).array()   *  ( - prod_container_or_inc_array.array() )    ;
+                         }
+                         prod_container_or_inc_array.array()  =            (   z_grad_term.topLeftCorner(chunk_size, t1_dash_dash) *   L_Omega_double[0].row(t1 + t1_dash_dash).segment(t1, t1_dash_dash).transpose()   ) ;
+                         grad_prob.col(t1_dash_dash)  =             y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t1 + t1_dash_dash).array()    *      prod_container_or_inc_array.array()  ;
+                       }
+                     }
+                     
+                     {
+                       
+                       derivs_chain_container_vec.array() = 0.0;
+                       
+                       ///// attempt at vectorising  // bookmark
+                       for (int ii = 0; ii <  t1_dash + 1; ii++) {
+                         derivs_chain_container_vec.array() += ( grad_prob.col(ii).array()  * ( prop_rowwise_prod_temp.col(t1).array()     /   prob[0].col(t1 + ii).array()  ).array() ).array() ; // correct i think
+                       }
+                       U_Omega_grad_array[0](t1, t2)   +=       (   derivs_chain_container_vec.array() ).sum()  ; // correct  (standard form)
+                       
+                     }
+                     
+                   }
+                 }
+               }
+               
+             }
+ 
+             
+         }
+         
+       }
+       
+     }
+     
+     
+     
+     
+     
+     //////////////////////// gradients for latent class membership probabilitie(s) (i.e. disease prevalence)
+     log_prob_out += out_mat.segment(1 + n_params, N).sum();
+     if (exclude_priors == false)  log_prob_out += prior_densities;
+     log_prob_out +=  log_jac_u;
+     log_prob = (double) log_prob_out;
+     
+     int i = 0; // probs_all_range.prod() cancels out
+      {
+       for (int t = 0; t < n_tests; t++) {
+         if (exclude_priors == false) {
+           beta_grad_array(0, t) +=  - ((beta_double_array(0,t) - prior_coeffs_mean(0, t)) / prior_coeffs_sd(0, t) ) * (1.0/ prior_coeffs_sd(0, t) ) ;     // add normal prior density derivative to gradient
+         }
+         beta_grad_vec(i) = beta_grad_array(0, t);
+         i += 1;
+       }
+     }
+     
+     
+     {
+       int i = 0;
+       {
+         for (int t1 = 0; t1 < n_tests  ; t1++ ) {
+           for (int t2 = 0; t2 <  t1 + 1; t2++ ) {
+             L_Omega_grad_vec(i) = U_Omega_grad_array[0](t1,t2);
+             i += 1;
+           }
+         }
+       }
+     }
+     
+
+     Eigen::Matrix<double, -1, 1>  grad_wrt_L_Omega  =   L_Omega_grad_vec.segment(0, dim_choose_2 + n_tests);
+     U_Omega_grad_vec.segment(0, dim_choose_2) =  ( grad_wrt_L_Omega.transpose()  *  deriv_L_wrt_unc_full[0].cast<double>() ).transpose() ;
+
+     
+   }
+   
+ 
+   {
+     ////////////////////////////  outputs // add log grad and sign stuff';///////////////
+     out_mat(0) =  log_prob;
+     out_mat.segment(1, n_us).array() =     (  out_mat.segment(1, n_us).array() *  ( 0.5 * (1.0 - theta_us.array() * theta_us.array()  )  )   ).array()    - 2.0 * theta_us.array()   ;
+     out_mat.segment(1 + n_us, n_corrs) = target_AD_grad ;          // .cast<float>();
+     out_mat.segment(1 + n_us, n_corrs) += U_Omega_grad_vec ;        //.cast<float>()  ;
+     out_mat.segment(1 + n_us + n_corrs, n_coeffs) = beta_grad_vec ; //.cast<float>() ;
+   }
+   
+   return(out_mat);
+   
+   
+ }
+
+
+
+
+
+
+
+ 
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ // [[Rcpp::export]]
+ Eigen::Matrix<double, -1, 1 >        fn_lp_and_grad_latent_trait_MD_and_AD(  Eigen::Matrix<double, -1, 1  > theta_main,
+                                                                              Eigen::Matrix<double, -1, 1  > theta_us,
+                                                                              Eigen::Matrix< int, -1, -1>	 y,
+                                                                              std::vector<Eigen::Matrix<double, -1, -1 > >  X,
+                                                                              Rcpp::List other_args
+ ) { 
+   
+   
+   
+   
+   
+   const int n_cores = other_args(0); 
+   const bool exclude_priors = other_args(1); 
+   const bool CI = other_args(2); 
+   Eigen::Matrix<double, -1, 1>  lkj_cholesky_eta = other_args(3); 
+   Eigen::Matrix<double, -1, -1> prior_coeffs_mean  = other_args(4); 
+   Eigen::Matrix<double, -1, -1> prior_coeffs_sd = other_args(5); 
+   const int n_class = other_args(6); 
+   const int ub_threshold_phi_approx = other_args(7); 
+   const int n_chunks = other_args(8); 
+   const bool corr_force_positive = other_args(9); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >  prior_for_corr_a = other_args(10); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >  prior_for_corr_b = other_args(11); 
+   const bool corr_prior_beta  = other_args(12); 
+   const bool corr_prior_norm  = other_args(13); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >  lb_corr = other_args(14); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >  ub_corr = other_args(15); 
+   std::vector<Eigen::Matrix<int, -1, -1 > >      known_values_indicator = other_args(16); 
+   std::vector<Eigen::Matrix<double, -1, -1 > >   known_values = other_args(17); 
+   const double prev_prior_a = other_args(18); 
+   const double prev_prior_b = other_args(19); 
+   const bool exp_fast = other_args(20); 
+   const bool log_fast = other_args(21); 
+   std::string Phi_type = other_args(22); 
+   Eigen::Matrix<double, -1, -1> LT_b_priors_shape  = other_args(23); 
+   Eigen::Matrix<double, -1, -1> LT_b_priors_scale  = other_args(24); 
+   Eigen::Matrix<double, -1, -1> LT_known_bs_indicator = other_args(25); 
+   Eigen::Matrix<double, -1, -1> LT_known_bs_values  = other_args(26); 
+    
+   
+   const int n_tests = y.cols();
+   const int N = y.rows();
+   const int n_corrs =  n_class * n_tests * (n_tests - 1) * 0.5;
+   const int n_coeffs = n_class * n_tests * 1;
+   const int n_us =  1 *  N * n_tests;
+   const int n_params = theta_us.rows() +  theta_main.rows()   ; // n_corrs + n_coeffs + n_us + n_class;
+   const int n_params_main = n_params - n_us;
+   
+   const int n_bs_LT = n_class * n_tests;
+   
+   const double sqrt_2_pi_recip =   1.0 / sqrt(2.0 * M_PI) ; //  0.3989422804;
+   const double sqrt_2_recip = 1.0 / stan::math::sqrt(2.0);
+   const double minus_sqrt_2_recip =  - sqrt_2_recip;
+   const double a = 0.07056;
+   const double b = 1.5976;
+   const double a_times_3 = 3.0 * 0.07056;
+   const double s = 1.0/1.702;
+   
+   
+   double prior_densities = 0.0;
+   
+    
+   // corrs / b's
+   Eigen::Matrix<double, -1, 1  >  bs_raw_vec_double = theta_main.segment(0, n_bs_LT) ;
+   Eigen::Matrix<stan::math::var, -1, 1  >  bs_raw_vec_var =  stan::math::to_var(bs_raw_vec_double) ;
+   Eigen::Matrix<stan::math::var, -1, -1 > bs_mat =    Eigen::Matrix<stan::math::var, -1, -1 >::Zero(n_class, n_tests);
+   Eigen::Matrix<double, -1, -1 > bs_mat_double =    Eigen::Matrix<double, -1, -1 >::Zero(n_class, n_tests);
+   Eigen::Matrix<stan::math::var, -1, -1 > bs_raw_mat =  Eigen::Matrix<stan::math::var, -1, -1 >::Zero(n_class, n_tests);
+   
+    
+   
+   bs_raw_mat.row(0) =  bs_raw_vec_var.segment(0, n_tests).transpose();
+   bs_raw_mat.row(1) =  bs_raw_vec_var.segment(n_tests, n_tests).transpose();
+    
+   bs_mat.row(0) = stan::math::exp( bs_raw_mat.row(0)) ;
+   bs_mat.row(1) = stan::math::exp( bs_raw_mat.row(1)) ;
+    
+   stan::math::var known_bs_raw_sum = 0.0;
+   
+    
+   Eigen::Matrix<stan::math::var, -1, 1 > bs_nd  =   bs_mat.row(0).transpose() ; //  bs_constrained_raw_vec_var.head(n_tests);
+   Eigen::Matrix<stan::math::var, -1, 1 > bs_d   =   bs_mat.row(1).transpose() ; //  bs_constrained_raw_vec_var.segment(n_tests, n_tests);
+    
+   
+   // coeffs
+   Eigen::Matrix<stan::math::var, -1, -1  > LT_theta(n_class, n_tests);
+   Eigen::Matrix<stan::math::var, -1, -1  > LT_a(n_class, n_tests);
+    
+   Eigen::Matrix<double, -1, 1  > coeffs_vec_double(n_coeffs);
+   Eigen::Matrix<stan::math::var, -1, 1  > coeffs_vec_var(n_coeffs);
+    
+   coeffs_vec_double = theta_main.segment(0 + n_corrs, n_coeffs);
+   coeffs_vec_var = stan::math::to_var(coeffs_vec_double); 
+   
+   {
+     int i = 0 ; // 0 + n_corrs;
+     for (int c = 0; c < n_class; ++c) {
+       for (int t = 0; t < n_tests; ++t) {
+         LT_a(c, t) = coeffs_vec_var(i);
+         bs_mat_double(c, t) = bs_mat(c, t).val();
+         i = i + 1;
+       }
+     }
+   } 
+   
+   //// LT_theta as TRANSFORMED parameter (need Jacobian adj. if wish to put prior on theta!!!)
+   for (int t = 0; t < n_tests; ++t) {
+     LT_theta(1, t)   =    LT_a(1, t) /  stan::math::sqrt(1 + ( bs_d(t) * bs_d(t)));
+     LT_theta(0, t)   =    LT_a(0, t) /  stan::math::sqrt(1 + ( bs_nd(t) * bs_nd(t)));
+   }
+    
+   
+   // prev
+   double u_prev_diseased = theta_main(n_params_main - 1);
+   
+    
+   
+   ///////////////////////////////////////////////////////////////////////////////////////// output vec
+   Eigen::Matrix<double, -1, 1> out_mat    =  Eigen::Matrix<double, -1, 1>::Zero(n_params + 1 + N);  ///////////////////////////////////////////////
+   ///////////////////////////////////////////////////////////////////////////////////////////////////
+   
+   
+    
+   ////////////////////////////////////// AD part  -   for non-LKJ corr priors
+   int n_choose_2 = n_tests * (n_tests - 1) * 0.5 ;
+   std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  L_Omega_var = vec_of_mats_test_var(n_tests, n_tests, n_class);
+   std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_var   = vec_of_mats_test_var(n_tests, n_tests, n_class);
+   
+   
+   Eigen::Matrix<stan::math::var, -1, -1 > identity_dim_T =     Eigen::Matrix<stan::math::var, -1, -1 > ::Zero(n_tests, n_tests) ; //  stan::math::diag_matrix(  stan::math::rep_vector(1, n_tests)  ) ;
+   
+    
+   Eigen::Matrix<double, -1, 1 >   bs_d_double(n_tests);
+   Eigen::Matrix<double, -1, 1 >   bs_nd_double(n_tests);
+    
+   for (int i = 0; i < n_tests; ++i) {
+     identity_dim_T(i, i) = 1.0;
+     bs_d_double(i) = bs_d(i).val() ;
+     bs_nd_double(i) = bs_nd(i).val() ;
+   }
+    
+   
+   Omega_var[0] = identity_dim_T +  bs_nd * bs_nd.transpose();
+   Omega_var[1] = identity_dim_T +  bs_d * bs_d.transpose();
+    
+   
+   double grad_prev_AD = 0.0;
+   Eigen::Matrix<double, -1, 1 >  target_AD_grad(n_corrs);
+   stan::math::var target_AD = 0.0;
+   
+    
+   for (int c = 0; c < n_class; ++c) {
+     L_Omega_var[c]   = stan::math::cholesky_decompose( Omega_var[c]) ;
+   }
+    
+   
+   //////////////// Jacobian L_Sigma -> b's
+   std::vector< std::vector<Eigen::Matrix<stan::math::var, -1, -1 > > > Jacobian_d_L_Sigma_wrt_b_3d_arrays_var = vec_of_vec_of_mats_test_var(n_tests, n_tests, n_tests, n_class);
+   std::vector< std::vector<Eigen::Matrix<double, -1, -1 > > > Jacobian_d_L_Sigma_wrt_b_3d_arrays_double = vec_of_vec_of_mats_test(n_tests, n_tests, n_tests, n_class);
+   std::vector<Eigen::Matrix<double, -1, -1 > >  Jacobian_d_L_Sigma_wrt_b_matrix = vec_of_mats_test(n_choose_2 + n_tests, n_tests, n_class);
+    
+   for (int c = 0; c < n_class; ++c) {
+     
+     //  # -----------  wrt last b first
+     int t = n_tests;
+     stan::math::var sum_sq_1 = 0.0;
+     for (int j = 1; j < t; ++j) {
+       Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, j-1) = ( L_Omega_var[c](n_tests-1, j-1) / bs_mat(c, n_tests-1) ) ;//* bs_nd(n_tests-1) ;
+       sum_sq_1 +=   bs_mat(c, j-1) * bs_mat(c, j-1) ;
+     }
+     stan::math::var big_denom_p1 =  1 + sum_sq_1;
+     Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, n_tests-1) =   (1 / L_Omega_var[c](n_tests-1, n_tests-1) ) * ( bs_mat(c, n_tests-1) / big_denom_p1 ) ;//* bs_nd(n_tests-1) ;
+     
+     //  # -----------  wrt 2nd-to-last b  
+     t = n_tests - 1;
+     sum_sq_1 = 0;
+     stan::math::var  sum_sq_2 = 0.0;
+     for (int j = 1; j < t + 1; ++j) {
+       Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, j-1) = ( L_Omega_var[c](t-1, j-1) / bs_mat(c, t-1) );// * bs_nd(t-1) ;
+       sum_sq_1 +=   bs_mat(c, j-1) * bs_mat(c, j-1) ;
+       if (j < (t))   sum_sq_2 +=  bs_mat(c, j-1) * bs_mat(c, j-1) ;
+     }
+     big_denom_p1 =  1 + sum_sq_1;
+     stan::math::var big_denom_p2 =  1 + sum_sq_2;
+     stan::math::var  big_denom_part =  big_denom_p1 * big_denom_p2;
+     Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, t-1) =   (1 / L_Omega_var[c](t-1, t-1)) * ( bs_mat(c, t-1) / big_denom_p2 );// * bs_nd(t-1) ;
+     
+     for (int j = t+1; j < n_tests + 1; ++j) {
+       Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](j-1, t-1) =   ( 1/L_Omega_var[c](j-1, t-1) ) * (bs_mat(c, j-1) *  bs_mat(c, j-1)  ) * (   bs_mat(c, t-1)  / big_denom_part) * (1 - ( bs_mat(c, t-1) * bs_mat(c, t-1)  / big_denom_p1 ) );// * bs_nd(t-1)   ;
+     }
+     
+     Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t, t)   =  - ( 1/L_Omega_var[c](t, t) ) * (bs_mat(c, t) * bs_mat(c, t)) * ( bs_mat(c, t-1)  / (big_denom_p1*big_denom_p1));//*  bs_nd(t-1) ;
+     
+     // # -----------  wrt rest of b's
+     for (int t = 1; t < (n_tests - 2) + 1; ++t) {
+       
+       sum_sq_1  = 0;
+       sum_sq_2  = 0;
+       
+       for (int j = 1; j < t + 1; ++j) {
+         if (j < (t)) Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, j-1) = ( L_Omega_var[c](t-1, j-1) /  bs_mat(c, t-1) ) ;//* ;// bs_nd(t-1) ;
+         sum_sq_1 +=   bs_mat(c, j-1) *   bs_mat(c, j-1) ;
+         if (j < (t))   sum_sq_2 +=    bs_mat(c, j-1) *   bs_mat(c, j-1) ;
+       }
+       big_denom_p1 = 1 + sum_sq_1;
+       big_denom_p2 = 1 + sum_sq_2;
+       big_denom_part =  big_denom_p1 * big_denom_p2;
+       
+       Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](t-1, t-1) =   (1 / L_Omega_var[c](t-1, t-1) ) * (  bs_mat(c, t-1) / big_denom_p2 ) ;//*  bs_nd(t-1) ;
+       
+       for (int j = t + 1; j < n_tests + 1; ++j) {
+         Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](j-1, t-1)  =   (1/L_Omega_var[c](j-1, t-1)) * (  bs_mat(c, j-1) *   bs_mat(c, j-1) ) * (   bs_mat(c, t-1) / big_denom_part) * (1 - ( ( bs_mat(c, t-1) *  bs_mat(c, t-1) ) / big_denom_p1 ) ) ;//*  bs_nd(t-1) ;
+       }
+       
+       for (int j = t + 1; j < n_tests ; ++j) {
+         Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](j-1, j-1) =  - (1/L_Omega_var[c](j-1, j-1)) * (  bs_mat(c, j-1) *   bs_mat(c, j-1) ) * ( bs_mat(c, t-1) / (big_denom_p1*big_denom_p1)) ;//*  bs_nd(t-1) ;
+         big_denom_p1 = big_denom_p1 +   bs_mat(c, j-1) *   bs_mat(c, j-1) ;
+         big_denom_p2 = big_denom_p2 + bs_mat(c, j-2) * bs_mat(c, j-2) ;
+         big_denom_part =  big_denom_p1 * big_denom_p2 ;
+         if (t < n_tests - 1) {
+           for (int k = j + 1; k < n_tests + 1; ++k) {
+             Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](k-1, j-1) =   (-1 / L_Omega_var[c](k-1, j-1)) * (  bs_mat(c, k-1) *   bs_mat(c, k-1) ) * (  bs_mat(c, j-1) *   bs_mat(c, j-1) ) * (  bs_mat(c, t-1) / big_denom_part ) * ( ( 1 / big_denom_p2 )  +  ( 1 / big_denom_p1 ) ) ;//*  bs_nd(t-1) ;
+           }
+         }
+       }
+       
+       Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t-1](n_tests-1, n_tests-1) =  - (1/L_Omega_var[c](n_tests-1, n_tests-1)) * (bs_mat(c, n_tests-1) * bs_mat(c, n_tests-1)) * ( bs_mat(c, t-1) / (big_denom_p1*big_denom_p1)) ;//*  bs_nd(t-1) ;
+       
+     }
+     
+     
+     
+     for (int t1 = 0; t1 < n_tests; ++t1) {
+       for (int t2 = 0; t2 < n_tests; ++t2) {
+         for (int t3 = 0; t3 < n_tests; ++t3) {
+           Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t2, t3)    =      Jacobian_d_L_Sigma_wrt_b_3d_arrays_var[c][t1](t2, t3).val();
+         }
+       }
+     }
+   }
+   
+   
+   ////////////////////// priors for corr
+   for (int t = 0; t < n_tests; ++t) {
+     target_AD += stan::math::weibull_lpdf(  bs_nd(t) ,   LT_b_priors_shape(0, t), LT_b_priors_scale(0, t)  );
+     target_AD += stan::math::weibull_lpdf(  bs_d(t)  ,   LT_b_priors_shape(1, t), LT_b_priors_scale(1, t)  );
+   }
+   
+   target_AD +=  (bs_raw_mat).sum()  - known_bs_raw_sum ; // Jacobian b -> raw_b
+   
+   /// priors and Jacobians for coeffs
+   for (int c = 0; c < n_class; ++c) {
+     for (int t = 0; t < n_tests; ++t) {
+       target_AD += stan::math::normal_lpdf(LT_theta(c, t), prior_coeffs_mean(c, t), prior_coeffs_sd(c, t));
+       target_AD +=  - 0.5 * stan::math::log(1 + stan::math::square(stan::math::abs(bs_mat(c, t) ))); // Jacobian for LT_theta -> LT_a
+     }
+   }
+   
+   
+   /////////////  prev stuff  ---- vars
+   std::vector<stan::math::var> 	 u_prev_var_vec_var(n_class, 0.0);
+   std::vector<stan::math::var> 	 prev_var_vec_var(n_class, 0.0);
+   std::vector<stan::math::var> 	 tanh_u_prev_var(n_class, 0.0);
+   Eigen::Matrix<stan::math::var, -1, -1>	 prev_var(1, n_class);
+   
+   u_prev_var_vec_var[1] =  stan::math::to_var(u_prev_diseased);
+   tanh_u_prev_var[1] = ( exp(2*u_prev_var_vec_var[1] ) - 1) / ( exp(2*u_prev_var_vec_var[1] ) + 1) ;
+   u_prev_var_vec_var[0] =   0.5 *  log( (1 + ( (1 - 0.5 * ( tanh_u_prev_var[1] + 1))*2 - 1) ) / (1 - ( (1 - 0.5 * ( tanh_u_prev_var[1] + 1))*2 - 1) ) )  ;
+   tanh_u_prev_var[0] = (exp(2*u_prev_var_vec_var[0] ) - 1) / ( exp(2*u_prev_var_vec_var[0] ) + 1) ;
+   
+   prev_var_vec_var[1] = 0.5 * ( tanh_u_prev_var[1] + 1);
+   prev_var_vec_var[0] =  0.5 * ( tanh_u_prev_var[0] + 1);
+   prev_var(0,1) =  prev_var_vec_var[1];
+   prev_var(0,0) =  prev_var_vec_var[0];
+   
+   stan::math::var tanh_pu_deriv_var = ( 1 - tanh_u_prev_var[1] * tanh_u_prev_var[1]  );
+   stan::math::var deriv_p_wrt_pu_var = 0.5 *  tanh_pu_deriv_var;
+   stan::math::var tanh_pu_second_deriv_var  = -2 * tanh_u_prev_var[1]  * tanh_pu_deriv_var;
+   stan::math::var log_jac_p_deriv_wrt_pu_var  = ( 1 / deriv_p_wrt_pu_var) * 0.5 * tanh_pu_second_deriv_var; // for gradient of u's
+   stan::math::var  log_jac_p_var =    log( deriv_p_wrt_pu_var );
+   
+   
+   // stan::math::var  target_AD_prev = beta_lpdf(  prev_var(0,1), prev_prior_a, prev_prior_b  ); // weakly informative prior - helps avoid boundaries with slight negative skew (for lower N)
+   // target_AD_prev += log_jac_p_var;
+   // target_AD  +=  target_AD_prev;
+   
+   
+   target_AD += beta_lpdf(  prev_var(0,1), prev_prior_a, prev_prior_b  ); // weakly informative prior - helps avoid boundaries with slight negative skew (for lower N)
+   target_AD += log_jac_p_var;
+   
+   
+   
+   prior_densities += target_AD.val() ; // target_AD_coeffs.val() + target_AD_corrs.val();
+   
+   //  ///////////////////////
+   stan::math::set_zero_all_adjoints();
+   target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+   out_mat.segment(1 + n_us, n_bs_LT) = bs_raw_vec_var.adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+   stan::math::set_zero_all_adjoints();
+   //////////////////////////////////////////////////////////// end of AD part
+   
+   
+   //  ///////////////////////
+   stan::math::set_zero_all_adjoints();
+   target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+   out_mat.segment(1 + n_us + n_corrs, n_coeffs)  = coeffs_vec_var.adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+   stan::math::set_zero_all_adjoints();
+   //////////////////////////////////////////////////////////// end of AD part
+   
+   
+   
+   ///////////////////////
+   stan::math::set_zero_all_adjoints();
+   target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+   grad_prev_AD  =  u_prev_var_vec_var[1].adj() - u_prev_var_vec_var[0].adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+   stan::math::set_zero_all_adjoints();
+   //////////////////////////////////////////////////////////// end of AD part
+   
+   
+   
+   
+   ///////////////// get cholesky factor's (lower-triangular) of corr matrices
+   // convert to 3d var array
+   std::vector<Eigen::Matrix<double, -1, -1 > > L_Omega_double = vec_of_mats_test(n_tests, n_tests, n_class);
+   std::vector<Eigen::Matrix<double, -1, -1 > > L_Omega_recip_double = vec_of_mats_test(n_tests, n_tests, n_class);
+   
+   for (int c = 0; c < n_class; ++c) {
+     for (int t1 = 0; t1 < n_tests; ++t1) {
+       for (int t2 = 0; t2 < n_tests; ++t2) {
+         L_Omega_double[c](t1, t2) =   L_Omega_var[c](t1, t2).val();
+         L_Omega_recip_double[c](t1, t2) =   1.0 / L_Omega_double[c](t1, t2) ;
+       }
+     }
+   }
+   
+   
+   stan::math::recover_memory();
+   
+   
+   /////////////  prev stuff
+   std::vector<double> 	 u_prev_var_vec(n_class, 0.0);
+   std::vector<double> 	 prev_var_vec(n_class, 0.0);
+   std::vector<double> 	 tanh_u_prev(n_class, 0.0);
+   Eigen::Matrix<double, -1, -1>	 prev(1, n_class);
+   
+   u_prev_var_vec[1] =  (double) u_prev_diseased ;
+   tanh_u_prev[1] = ( exp(2.0*u_prev_var_vec[1] ) - 1.0) / ( exp(2.0*u_prev_var_vec[1] ) + 1.0) ;
+   u_prev_var_vec[0] =   0.5 *  log( (1 + ( (1 - 0.5 * ( tanh_u_prev[1] + 1))*2.0 - 1.0) ) / (1.0 - ( (1.0 - 0.5 * ( tanh_u_prev[1] + 1.0))*2.0 - 1.0) ) )  ;
+   tanh_u_prev[0] = (exp(2.0*u_prev_var_vec[0] ) - 1.0) / ( exp(2.0*u_prev_var_vec[0] ) + 1.0) ;
+   
+   prev_var_vec[1] =  0.5 * ( tanh_u_prev[1] + 1.0);
+   prev_var_vec[0] =  0.5 * ( tanh_u_prev[0] + 1.0);
+   prev(0,1) =  prev_var_vec[1];
+   prev(0,0) =  prev_var_vec[0];
+   
+   
+   double tanh_pu_deriv = ( 1.0 - tanh_u_prev[1] * tanh_u_prev[1]  );
+   double deriv_p_wrt_pu_double = 0.5 *  tanh_pu_deriv;
+   double tanh_pu_second_deriv  = -2.0 * tanh_u_prev[1]  * tanh_pu_deriv;
+   double log_jac_p_deriv_wrt_pu  = ( 1.0 / deriv_p_wrt_pu_double) * 0.5 * tanh_pu_second_deriv; // for gradient of u's
+   
+   
+   
+   
+   
+   /////////////////////////////////////////////////////////////////////////////////////////////////////
+   ///////// likelihood
+   int chunk_counter = 0;
+   int chunk_size  = std::round( N / n_chunks  / 2) * 2;  ; // N / n_chunks;
+   
+   
+   double log_prob_out = 0.0;
+   
+   
+   if (exp_fast == true)   theta_us.array() =      fast_tanh_approx_Eigen( theta_us ).array(); 
+   else                    theta_us.array() =      ( theta_us ).array().tanh(); 
+   
+   
+   double log_jac_u  =  0.0;
+   if    (log_fast == true)   log_jac_u  =    (  fast_log_approx_double_wo_checks_Eigen( 0.5 *   (  1.0 -  ( theta_us.array()   *  theta_us.array()   ).array()  ).array()  ).array()   ).matrix().sum(); 
+   else  log_jac_u  =    (  ( 0.5 *   (  1.0 -  ( theta_us.array()   *  theta_us.array()   ).array()  ).array()  ).array().log()   ).matrix().sum();   
+   
+   
+   
+   ///////////////////////////////////////////////
+   Eigen::Matrix<double, -1, 1>   beta_grad_vec   =  Eigen::Matrix<double, -1, 1>::Zero(n_coeffs);  //
+   Eigen::Matrix<double, -1, -1>  beta_grad_array  =  Eigen::Matrix<double, -1, -1>::Zero(2, n_tests); //
+   Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(2); //
+   Eigen::Matrix<double, -1, 1>  prev_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(2); //
+   Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec_out =   Eigen::Matrix<double, -1, 1>::Zero(2 - 1); //
+   // ///////////////////////////////////////////////
+   
+   
+   double log_prob = 0.0;
+   
+   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   ///////////////////////////////////////////////
+   std::vector<Eigen::Matrix<double, -1, -1 > >  Z_std_norm =  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
+   std::vector<Eigen::Matrix<double, -1, -1 > >  Bound_Z =  Z_std_norm ;
+   std::vector<Eigen::Matrix<double, -1, -1 > >  abs_Bound_Z =  Z_std_norm ;
+   std::vector<Eigen::Matrix<double, -1, -1 > >  Bound_U_Phi_Bound_Z =  Z_std_norm ;  //  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
+   std::vector<Eigen::Matrix<double, -1, -1 > >  Phi_Z =  Z_std_norm ;  //  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
+   std::vector<Eigen::Matrix<double, -1, -1 > >  y1_or_phi_Bound_Z =  Z_std_norm ;  //  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
+   std::vector<Eigen::Matrix<double, -1, -1 > >  prob =  Z_std_norm ;  //  vec_of_mats_test(chunk_size, n_tests, 2); //////////////////////////////
+   ///////////////////////////////////////////////);
+   Eigen::Array<double, -1, -1> y_chunk = Eigen::Array<double, -1, -1>::Zero(chunk_size, n_tests);
+   Eigen::Array<double, -1, -1> u_array =  y_chunk ;
+   ///////////////////////////////////////////////
+   Eigen::Matrix<double, -1, 1> prod_container_or_inc_array  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+   Eigen::Matrix<double, -1, 1>      prob_n  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+   ///////////////////////////////////////////////
+   Eigen::Matrix<double, -1, -1>     common_grad_term_1   =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+   Eigen::Matrix<double, -1, -1 >    L_Omega_diag_recip_array   = common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+   Eigen::Matrix<double, -1, -1 >    y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip   =  common_grad_term_1 ; //   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+   Eigen::Matrix<double, -1, -1 >    y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip   =   common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+   Eigen::Matrix<double, -1, -1 >    prop_rowwise_prod_temp   =   common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+   Eigen::Matrix<double, -1, -1>     u_grad_array_CM_chunk   =   common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);    ////////
+   Eigen::Matrix<double, -1, -1>     phi_Z_recip  =   common_grad_term_1 ; //  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+   ///////////////////////////////////////////////
+   Eigen::Matrix<double, -1, 1>      derivs_chain_container_vec  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+   Eigen::Matrix<double, -1, 1>      prop_rowwise_prod_temp_all  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+   Eigen::Array<int, -1, -1>         abs_indicator = Eigen::Array<int, -1, -1>::Zero(n_tests, 2);
+   ////////////////////////////////////////////////
+   Eigen::Matrix<double, -1, -1 >  log_prev = stan::math::log(prev);
+   ////////////////////////////////////////////////
+   
+   
+   Eigen::Matrix<double, -1, 1>  deriv_L_t1 =     Eigen::Matrix<double, -1, 1>::Zero( n_tests);
+   Eigen::Matrix<double, -1, 1>  deriv_L_t1_output_vec =     Eigen::Matrix<double, -1, 1>::Zero( n_tests);
+   Eigen::Matrix<double, -1, -1 >   deriv_inc  =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+   Eigen::Matrix<double, -1, 1> deriv_comp_2  =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+   
+   
+   // std::vector<Eigen::Matrix<double, -1, -1 > >  z_grad_term = vec_of_mats_test(chunk_size, n_tests, 2) ;
+   //  std::vector<Eigen::Matrix<double, -1, -1 > >  grad_bound_z = vec_of_mats_test(chunk_size, n_tests, 2) ;
+   Eigen::Matrix<double, -1, -1>     grad_bound_z =     Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests*2);
+   std::vector<Eigen::Matrix<double, -1, -1 > >  grad_Phi_bound_z = vec_of_mats_test(chunk_size, n_tests*2, 2) ;
+   std::vector<Eigen::Matrix<double, -1, -1 > >  deriv_Bound_Z_x_L = vec_of_mats_test(chunk_size, n_tests*2, 2) ;
+   Eigen::Matrix<double, -1, -1>     grad_prob =      Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests*2);
+   Eigen::Matrix<double, -1, -1>     z_grad_term =      Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests*2);
+   
+   Eigen::Matrix< double , -1, 1>  temp_L_Omega_x_grad_z_sum_1(chunk_size);
+   Eigen::Matrix<double, -1, -1>  grad_pi_wrt_b_raw =  Eigen::Matrix<double, -1, -1>::Zero(2, n_tests) ;
+   
+   
+   Eigen::Matrix<double, -1, -1> y_sign   =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+   Eigen::Matrix<double, -1, -1 >  y_m_ysign_x_u_array =   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests) ;  ;
+   std::vector<Eigen::Matrix<double, -1, -1 > >  phi_Z  =  vec_of_mats_test(chunk_size, n_tests, 2) ;
+   
+   
+   
+   {
+     
+     // /////////////////////////////////////////////////////////////////////////////////////////////////////
+     Eigen::Matrix<double, -1, -1>    lp_array  =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, 2);///////
+     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+     
+     
+     
+     for (int nc = 0; nc < n_chunks; nc++) {
+       
+       int chunk_counter = nc;
+       
+       abs_indicator.array() = 0;
+       u_grad_array_CM_chunk.array() = 0.0;
+       
+       y_chunk = y.middleRows(chunk_size * chunk_counter , chunk_size).array().cast<double>() ;
+       
+       u_array  = 0.5 * (  theta_us.segment(chunk_size * n_tests * chunk_counter , chunk_size * n_tests).reshaped(chunk_size, n_tests).array() + 1.0 ).array() ;
+       
+       y_sign.array() = Eigen::Select(y_chunk.array() == 1.0,  Eigen::Array<double, -1, -1>::Ones(chunk_size, n_tests), -Eigen::Array<double, -1, -1>::Ones(chunk_size,  n_tests));
+       y_m_ysign_x_u_array.array()  =   ( (  (y_chunk.array()  - y_sign.array()  *  u_array.array()  ).array() ) ) ;   // temp - delete this!!
+       
+       for (int c = 0; c < n_class; c++) {
+         
+         prod_container_or_inc_array.array()  = 0.0; // needs to be reset to 0
+         
+         for (int t = 0; t < n_tests; t++) {
+           
+           //   Bound_Z[c].col(t).array() =    L_Omega_recip_double[c](t, t) * (  - ( beta_double_array(c, t) +      prod_container_or_inc_array.array()   )  ) ; // / L_Omega_double[c](t, t)     ;
+           Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) *    ( (  0.0 - ( LT_a(c, t).val() +    prod_container_or_inc_array.array()    )     )  ).array() ;
+           abs_Bound_Z[c].col(t).array() =    Bound_Z[c].col(t).array().abs();
+           if ((abs_Bound_Z[c].col(t).array() > 5.0).matrix().sum() > 0)     abs_indicator(t, c) = 1;
+           
+           if (Phi_type == "Phi")   Bound_U_Phi_Bound_Z[c].col(t).array() =  0.5 *   ( minus_sqrt_2_recip * Bound_Z[c].col(t).array() ).erfc() ;
+           else   Bound_U_Phi_Bound_Z[c].col(t).array() = Phi_approx_fast_Eigen(Bound_Z[c].col(t).array() );
+           
+           // for all configs
+           if (  abs_indicator(t, c) == 1) {
+               // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
+             for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
+               if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
+                 Bound_U_Phi_Bound_Z[c](n_index, t) =    stan::math::inv_logit( 1.702 *  Bound_Z[c](n_index, t)  );  //  stan::math::inv_logit( 1.702 * Bound_Z[c].col(t)  )
+               }
+             }
+           }
+           
+           Phi_Z[c].col(t).array()    =      (   y_chunk.col(t)   *  Bound_U_Phi_Bound_Z[c].col(t).array() +
+             (   y_chunk.col(t)   -  Bound_U_Phi_Bound_Z[c].col(t).array() ) *   ( y_chunk.col(t)  + (  y_chunk.col(t)  - 1.0)  )  * u_array.col(t)   )   ;
+           
+           if (Phi_type == "Phi") {
+             if (log_fast == false) Z_std_norm[c].col(t).array() = stan::math::inv_Phi(Phi_Z[c].col(t)).array() ; //    qnorm_rcpp_Eigen( Phi_Z[c].col(t).array());
+             else                   Z_std_norm[c].col(t).array() = qnorm_w_fast_log_rcpp_Eigen( Phi_Z[c].col(t).array());  // with approximations
+           } else if (Phi_type == "Phi_approx") {
+             Z_std_norm[c].col(t).array() =  inv_Phi_approx_fast_Eigen(Phi_Z[c].col(t).array());
+           }
+           
+           // for all configs
+           if (abs_indicator(t, c) == 1) {
+               // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
+             for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectoriose ?!
+               if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
+                 Z_std_norm[c](n_index, t) =    s  *  stan::math::logit(Phi_Z[c](n_index, t));  //   s *  fast_logit_1_Eigen(    Phi_Z[c].col(t) ).array()
+               }
+             }
+           }
+           
+           if (t < n_tests - 1)       prod_container_or_inc_array.array()  =   ( Z_std_norm[c].topLeftCorner(chunk_size, t + 1)  *   ( L_Omega_double[c].row(t+1).head(t+1).transpose()  ) ) ;      // for all configs
+           
+         } // end of t loop
+         
+         
+         prob[c].array() =  y_chunk.array() * ( 1.0 -    Bound_U_Phi_Bound_Z[c].array() ) +  ( y_chunk - 1.0  )   *    Bound_U_Phi_Bound_Z[c].array() *   ( y_chunk +  (  y_chunk - 1.0)  )  ;   // for all configs
+         
+         if (log_fast == true)  y1_or_phi_Bound_Z[c].array()  =   fast_log_approx_double_wo_checks_Eigen_mat(prob[c].array() ) ;
+         else                   y1_or_phi_Bound_Z[c].array()  =   prob[c].array().log();
+         
+         lp_array.col(c).array() =     y1_or_phi_Bound_Z[c].rowwise().sum().array() +  log_prev(0,c) ;
+         
+       } // end of c loop
+       
+       
+       
+       if    ( (log_fast == false) && (exp_fast == false)  )  {
+         out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   = (  lp_array.array().maxCoeff() +  (   (  (lp_array.array() - lp_array.array().maxCoeff() ).array()).exp().matrix().rowwise().sum().array()   ).log()  )  ;
+         prob_n  =  (out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()).exp() ;
+       } else if  ( (log_fast == true) && (exp_fast == false)  )  {
+         out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   = (  lp_array.array().maxCoeff() +  fast_log_approx_double_wo_checks_Eigen(   (  (lp_array.array() - lp_array.array().maxCoeff() ).array()).exp().matrix().rowwise().sum().array()   )  )  ;
+         prob_n  =  (out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()).exp() ;
+       } else if  ( (log_fast == false) && (exp_fast == true)  )  {
+         out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   = (  lp_array.array().maxCoeff() +  (   fast_exp_double_wo_checks_Eigen_mat(  (lp_array.array() - lp_array.array().maxCoeff() ).array()).matrix().rowwise().sum().array()   ).log()  )  ;
+         prob_n  =  fast_exp_double_wo_checks_Eigen(out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()) ;
+       } else if  ( (log_fast == true) && (exp_fast == true)  )   {
+         out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()   = (  lp_array.array().maxCoeff() +  fast_log_approx_double_wo_checks_Eigen(   fast_exp_double_wo_checks_Eigen_mat(  (lp_array.array() - lp_array.array().maxCoeff() ).array()).matrix().rowwise().sum().array()   )  )  ;
+         prob_n  =  fast_exp_double_wo_checks_Eigen(out_mat.segment(n_params + 1, N).segment(chunk_size * chunk_counter, chunk_size).array()) ;
+       }
+       
+       
+       
+       for (int c = 0; c < n_class; c++) {
+         
+         for (int i = 0; i < n_tests; i++) { // i goes from 1 to 3
+           int t = n_tests - (i+1) ;
+           prop_rowwise_prod_temp.col(t).array()   =   prob[c].block(0, t + 0, chunk_size, i + 1).rowwise().prod().array() ;
+         }
+         
+         prop_rowwise_prod_temp_all.array() =  prob[c].rowwise().prod().array()  ;
+         
+         for (int i = 0; i < n_tests; i++) { // i goes from 1 to 3
+           int t = n_tests - (i + 1) ;
+           common_grad_term_1.col(t) =   (  ( prev(0,c) / prob_n.array() ) * (    prop_rowwise_prod_temp_all.array() /  prop_rowwise_prod_temp.col(t).array()  ).array() )  ;
+         }
+         for (int t = 0; t < n_tests; t++) {
+           L_Omega_diag_recip_array.col(t).array() =  L_Omega_recip_double[c](t, t) ;
+         }
+         
+         
+         for (int t = 0; t < n_tests; t++) {
+           
+           if (Phi_type == "Phi_approx")  {
+             y1_or_phi_Bound_Z[c].array() =                (  (    (  a_times_3*Bound_Z[c].array()*Bound_Z[c].array()   + b  ).array()  ).array() )  *  Bound_U_Phi_Bound_Z[c].array() * (1.0 -  Bound_U_Phi_Bound_Z[c].array() )   ;
+           } else if (Phi_type == "Phi") {
+             if (exp_fast == true)       y1_or_phi_Bound_Z[c].array() =                   sqrt_2_pi_recip *  fast_exp_double_wo_checks_Eigen_mat( - 0.5 * Bound_Z[c].array()    *  Bound_Z[c].array()    ).array()  ;
+             else                        y1_or_phi_Bound_Z[c].array() =                   sqrt_2_pi_recip *  ( - 0.5 * Bound_Z[c].array()    *  Bound_Z[c].array()    ).array().exp()  ;
+           }
+           
+           // for all configs
+           if (abs_indicator(t, c) == 1) {
+               // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
+             for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
+               if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
+                 double Phi_x_i =  Bound_U_Phi_Bound_Z[c](n_index, t);
+                 double Phi_x_1m_Phi  =    (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
+                 y1_or_phi_Bound_Z[c](n_index, t) =  1.702 * Phi_x_1m_Phi;
+               }
+             }
+           }
+         }
+         
+         
+         
+         y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array()  =                  ( y_chunk.array()  + (  y_chunk.array() - 1.0).array() ).array() *    y1_or_phi_Bound_Z[c].array()  *   L_Omega_diag_recip_array.array() ;
+         
+         if (Phi_type == "Phi_approx")  {
+           phi_Z_recip.array()  =    1.0 / (    (   (a_times_3*Z_std_norm[c].array()*Z_std_norm[c].array()   + b  ).array()  ).array() *  Phi_Z[c].array() * (1.0 -  Phi_Z[c].array() )  ).array()  ;  // Phi_type == 2
+         } else  if (Phi_type == "Phi")  {
+           if (exp_fast == true)      phi_Z_recip.array() =                 1.0  / (   sqrt_2_pi_recip *  fast_exp_double_wo_checks_Eigen_mat( - 0.5 * Z_std_norm[c].array()    *  Z_std_norm[c].array()    ).array() )  ;
+           else                       phi_Z_recip.array() =                 1.0  / (   sqrt_2_pi_recip *  ( - 0.5 * Z_std_norm[c].array()    *  Z_std_norm[c].array()    ).array().exp() ).array()  ;
+         }
+         // for all configs
+         for (int t = 0; t < n_tests; t++) {
+           if (abs_indicator(t, c) == 1) {
+            // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH) 
+             for (int n_index = 0; n_index < chunk_size; n_index++) { // can't vectorise ?!
+               if ( abs_Bound_Z[c](n_index, t) > 5.0   ) {
+                 double Phi_x_i =  Phi_Z[c](n_index, t);
+                 double Phi_x_1m_Phi_x_recip =  1.0 / (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
+                 Phi_x_1m_Phi_x_recip =  1.0 / (  Phi_x_i * (1.0 - Phi_x_i)  ) ;
+                 phi_Z_recip(n_index, t) =      s * Phi_x_1m_Phi_x_recip;
+               }
+             }
+           }
+         }
+         
+         phi_Z[c].array() =  1.0 /     phi_Z_recip.array();
+         
+         
+         y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array()  =    ( (  (   y_chunk.array()   -  ( y_chunk.array()  + (  y_chunk.array()  - 1.0).array() ).array()    * u_array.array()    ).array() ) ).array() *
+           phi_Z_recip.array()  *   y1_or_phi_Bound_Z[c].array()   *    L_Omega_diag_recip_array.array() ;
+         
+         
+         
+         
+         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
+           {
+             
+             ///// then second-to-last term (test T - 1)
+             int t = n_tests - 1;
+             
+             u_grad_array_CM_chunk.col(n_tests - 2).array()  +=  (  common_grad_term_1.col(t).array()  * (y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  *  L_Omega_double[c](t,t - 1) * ( phi_Z_recip.col(t-1).array() )  *  prob[c].col(t-1).array()) ).array()  ;
+             
+             { ///// then third-to-last term (test T - 2)
+               t = n_tests - 2;
+               
+               z_grad_term.col(0) = ( phi_Z_recip.col(t-1).array())  *  prob[c].col(t-1).array() ;
+               grad_prob.col(0) =        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   *     L_Omega_double[c](t, t - 1) *   z_grad_term.col(0).array() ; // lp(T-1) - part 2;
+               z_grad_term.col(1).array()  =      L_Omega_double[c](t,t-1) *   z_grad_term.col(0).array() *       y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() ;
+               grad_prob.col(1)  =         (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+1).array()   ) *  (  z_grad_term.col(0).array() *  L_Omega_double[c](t + 1,t - 1)  -   z_grad_term.col(1).array()  * L_Omega_double[c](t+1,t)) ;
+               
+               u_grad_array_CM_chunk.col(n_tests - 3).array()  +=  ( common_grad_term_1.col(t).array()   *  (  grad_prob.col(1).array() *  prob[c].col(t).array()  +      grad_prob.col(0).array() *   prob[c].col(t+1).array()  )  )   ;
+             }
+             
+             // then rest of terms
+             for (int i = 1; i < n_tests - 2; i++) { // i goes from 1 to 3
+               
+               grad_prob.array()   = 0.0;
+               z_grad_term.array() = 0.0;
+               
+               int t = n_tests - (i+2) ; // starts at t = 6 - (1+2) = 3, ends at t = 6 - (3+2) = 6 - 5 = 1 (when i = 3)
+               
+               z_grad_term.col(0) = (  phi_Z_recip.col(t-1).array())  *  prob[c].col(t-1).array() ;
+               grad_prob.col(0) =         y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   *   L_Omega_double[c](t, t - 1) *   z_grad_term.col(0).array() ; // lp(T-1) - part 2;
+               
+               for (int ii = 0; ii < i+1; ii++) { // if i = 1, ii goes from 0 to 1 u_grad_z u_grad_term
+                 if (ii == 0)    prod_container_or_inc_array  = (   (z_grad_term.topLeftCorner(chunk_size, ii + 1) ) *  (fn_first_element_neg_rest_pos(L_Omega_double[c].row( t + (ii-1) + 1).segment(t - 1, ii + 1))).transpose()  )      ;
+                 z_grad_term.col(ii+1)  =           y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t + ii).array() *  -   prod_container_or_inc_array.array() ;
+                 prod_container_or_inc_array  = (   (z_grad_term.topLeftCorner(chunk_size, ii + 2) ) *  (fn_first_element_neg_rest_pos(L_Omega_double[c].row( t + (ii) + 1).segment(t - 1, ii + 2))).transpose()  )      ;
+                 grad_prob.col(ii+1)  =       (    y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+ii+1).array()  ) *     -    prod_container_or_inc_array.array()  ;
+               } // end of ii loop
+               
+               {
+                 derivs_chain_container_vec.array() = 0.0;
+                 
+                 for (int ii = 0; ii < i + 2; ii++) {
+                   derivs_chain_container_vec.array()  +=  ( grad_prob.col(ii).array()    * (       prop_rowwise_prod_temp.col(t).array() /   prob[c].col(t + ii).array()  ).array() ).array()  ;
+                 }
+                 u_grad_array_CM_chunk.col(n_tests - (i+3)).array()    +=   (  ( (   common_grad_term_1.col(t).array()   *  derivs_chain_container_vec.array() ) ).array()  ).array() ;
+               }
+               
+             }
+             
+             
+             out_mat.segment(1, n_us).segment(chunk_size * n_tests * chunk_counter , chunk_size * n_tests)  =  u_grad_array_CM_chunk.reshaped() ; //   u_grad_array_CM.block(chunk_size * chunk_counter, 0, chunk_size, n_tests).reshaped() ; // .cast<float>()     ;         }
+             
+           }
+           
+           
+           // /////////////////////////////////////////////////////////////////////////// Grad of intercepts / coefficients (beta's)
+           // ///// last term first (test T)
+           {
+             
+             int t = n_tests - 1;
+             
+             beta_grad_array(c, t) +=     (common_grad_term_1.col(t).array()  *   (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()    )).sum();
+             
+             ///// then second-to-last term (test T - 1)
+             {
+               t = n_tests - 2;
+               grad_prob.col(0) =       (     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ) ;
+               z_grad_term.col(0)   =     - y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()         ;
+               grad_prob.col(1)  =       (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t+1).array()    )   * (   L_Omega_double[c](t + 1,t) *      z_grad_term.col(0).array() ) ;
+               beta_grad_array(c, t) +=  (common_grad_term_1.col(t).array()   * ( grad_prob.col(1).array() *  prob[c].col(t).array() +         grad_prob.col(0).array() *   prob[c].col(t+1).array() ) ).sum() ;
+             }
+             
+             // then rest of terms
+             for (int i = 1; i < n_tests - 1; i++) { // i goes from 1 to 3
+               
+               t = n_tests - (i+2) ; // starts at t = 6 - (1+2) = 3, ends at t = 6 - (3+2) = 6 - 5 = 1 (when i = 3)
+               
+               grad_prob.col(0)  =     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ;
+               
+               // component 2 (second-to-earliest test)
+               z_grad_term.col(0)  =        -y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()       ;
+               grad_prob.col(1) =        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + 1).array()    *    (   L_Omega_double[c](t + 1,t) *   z_grad_term.col(0).array() ) ;
+               
+               // rest of components
+               for (int ii = 1; ii < i+1; ii++) { // if i = 1, ii goes from 0 to 1
+                 if (ii == 1)  prod_container_or_inc_array  = (    z_grad_term.topLeftCorner(chunk_size, ii)  *   L_Omega_double[c].row( t + (ii - 1) + 1).segment(t + 0, ii + 0).transpose()  );
+                 z_grad_term.col(ii)  =        -y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t + ii).array()    *   prod_container_or_inc_array.array();
+                 prod_container_or_inc_array  = (    z_grad_term.topLeftCorner(chunk_size, ii + 1)  *   L_Omega_double[c].row( t + (ii) + 1).segment(t + 0, ii + 1).transpose()  );
+                 grad_prob.col(ii + 1) =      (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + ii + 1).array()  ).array()     *  prod_container_or_inc_array.array();
+               }
+               
+               {
+                 derivs_chain_container_vec.array() = 0.0;
+                 
+                 ///// attempt at vectorising  // bookmark
+                 for (int ii = 0; ii < i + 2; ii++) {
+                   derivs_chain_container_vec.array() +=  ( grad_prob.col(ii).array()  * (      prop_rowwise_prod_temp.col(t).array() /   prob[c].col(t + ii).array()  ).array() ).array() ;
+                 }
+                 beta_grad_array(c, t) +=        ( common_grad_term_1.col(t).array()   *  derivs_chain_container_vec.array() ).sum();
+               }
+               
+             }
+             
+           }
+           
+           
+           
+           ////////////////////////////////////////////////////////////////////////////////////////////////// Grad of L_Omega ('s)
+           {
+             
+             
+             ///////////////////////// deriv of diagonal elements (not needed if using the "standard" or "Stan" Cholesky parameterisation of Omega)
+             
+             //////// w.r.t last diagonal first
+             {
+               int  t1 = n_tests - 1;
+               
+               
+               
+               double deriv_L_T_T_inv =  ( - 1 /  ( L_Omega_double[c](t1,t1)  * L_Omega_double[c](t1,t1) ) )   *   Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t1)  ;
+               
+               deriv_Bound_Z_x_L[c].col(0).array() = 0;
+               for (int t = 0; t < t1; t++) {
+                 deriv_Bound_Z_x_L[c].col(0).array() +=   Z_std_norm[c].col(t).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t);
+               }
+               
+               double deriv_a = 0 ; //  stan::math::pow( (1 + (bs_mat_double(c, t1)*bs_mat_double(c, t1)) ), -0.5) * bs_mat_double(c, t1)  * LT_theta(c, t1)  ;
+               deriv_Bound_Z_x_L[c].col(0).array()   = deriv_a -     deriv_Bound_Z_x_L[c].col(0).array();
+               
+               grad_bound_z.col(0).array() =   deriv_L_T_T_inv * (Bound_Z[c].col(t1).array() * L_Omega_double[c](t1,t1)  ) +  (1 / L_Omega_double[c](t1, t1)) *   deriv_Bound_Z_x_L[c].col(0).array()  ;
+               grad_Phi_bound_z[c].col(0)  =  ( y1_or_phi_Bound_Z[c].col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
+               grad_prob.col(0)   =  (   - y_sign.col(t1).array()  *   grad_Phi_bound_z[c].col(0).array() ).matrix() ;     // correct  (standard form)
+               
+               
+               grad_pi_wrt_b_raw(c, t1)  +=   (   common_grad_term_1.col(t1).array()    *            grad_prob.col(0).array()    ).matrix().sum()   ; // correct  (standard form)
+               
+               
+             }
+             
+             
+             //////// then w.r.t the second-to-last diagonal
+             {
+               int  t1 = n_tests - 2;
+               
+               double deriv_L_T_T_inv =  ( - 1 /   ( L_Omega_double[c](t1,t1)  * L_Omega_double[c](t1,t1) ) )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t1)  ;
+               
+               deriv_Bound_Z_x_L[c].col(0).array() = 0.0;
+               for (int t = 0; t < t1; t++) {
+                 deriv_Bound_Z_x_L[c].col(0).array() += Z_std_norm[c].col(t).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t);
+               }
+               
+               double deriv_a = 0 ; //   stan::math::pow( (1 + (bs_mat_double(c, t1)*bs_mat_double(c, t1)) ), -0.5) * bs_mat_double(c, t1)   * LT_theta(c, t1)   ;
+               deriv_Bound_Z_x_L[c].col(0).array()   = deriv_a -     deriv_Bound_Z_x_L[c].col(0).array();
+               
+               
+               grad_bound_z.col(0).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1).array() * L_Omega_double[c](t1,t1)  ) +  (1 / L_Omega_double[c](t1, t1)) *     deriv_Bound_Z_x_L[c].col(0).array()  ;
+               grad_Phi_bound_z[c].col(0)  =  ( y1_or_phi_Bound_Z[c].col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
+               grad_prob.col(0)   =  (   - y_sign.col(t1).array()  *   grad_Phi_bound_z[c].col(0).array() ).matrix() ;     // correct  (standard form)
+               
+               
+               z_grad_term.col(0).array()  =      (  ( (  y_m_ysign_x_u_array.col(t1).array()   / phi_Z[c].col(t1).array()  ).array()    * y1_or_phi_Bound_Z[c].col(t1).array() *   grad_bound_z.col(0).array()  ).array() ).matrix()  ;  // correct  (standard form)
+               
+               deriv_L_T_T_inv =  ( - 1 /  ( L_Omega_double[c](t1+1,t1+1)  * L_Omega_double[c](t1+1,t1+1)  )  )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1+1, t1+1)  ;
+               deriv_Bound_Z_x_L[c].col(1).array()  =    L_Omega_double[c](t1+1,t1) *   z_grad_term.col(0).array()     +   Z_std_norm[c].col(t1).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1+1, t1);
+               grad_bound_z.col(1).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1+1).array() * L_Omega_double[c](t1+1,t1+1)  ) +  (1 / L_Omega_double[c](t1+1, t1+1)) * -   deriv_Bound_Z_x_L[c].col(1).array()  ;
+               
+               grad_Phi_bound_z[c].col(1) =   ( y1_or_phi_Bound_Z[c].col(t1 + 1).array() *  (    grad_bound_z.col(1).array()   ) ).matrix();   // correct  (standard form)
+               grad_prob.col(1)   =   (  - y_sign.col(t1 + 1).array()  *     grad_Phi_bound_z[c].col(1).array()  ).array().matrix() ;    // correct   (standard form)
+               
+               grad_pi_wrt_b_raw(c, t1) +=   ( ( common_grad_term_1.col(t1).array() )    *
+                 ( prob[c].col(t1 + 1).array()  *      grad_prob.col(0).array()  +   prob[c].col(t1).array()  *         grad_prob.col(1).array()   ) ).sum() ;
+             }
+             
+             
+             //////// then w.r.t the third-to-last diagonal .... etc
+             {
+               
+               //   int i = 4;
+               for (int i = 3; i < n_tests + 1; i++) {
+                 
+                 grad_prob.array()   = 0.0;
+                 z_grad_term.array() = 0.0;
+                 
+                 
+                 int  t1 = n_tests - i;
+                 
+                 double deriv_L_T_T_inv =  ( - 1 /   ( L_Omega_double[c](t1,t1)  * L_Omega_double[c](t1,t1) ) )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t1)  ;
+                 
+                 deriv_Bound_Z_x_L[c].col(0).array() = 0;
+                 for (int t = 0; t < t1; t++) {
+                   deriv_Bound_Z_x_L[c].col(0).array() += Z_std_norm[c].col(t).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1, t);
+                 }
+                 
+                 double deriv_a = 0 ; //  stan::math::pow( (1 + (bs_mat_double(c, t1)*bs_mat_double(c, t1)) ), -0.5) * bs_mat_double(c, t1) *   LT_theta(c, t1)   ;
+                 deriv_Bound_Z_x_L[c].col(0).array()   = deriv_a -     deriv_Bound_Z_x_L[c].col(0).array();
+                 
+                 
+                 grad_bound_z.col(0).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1).array() * L_Omega_double[c](t1,t1)  ) +  (1 / L_Omega_double[c](t1, t1)) *    deriv_Bound_Z_x_L[c].col(0).array()  ;
+                 grad_Phi_bound_z[c].col(0)  =  ( y1_or_phi_Bound_Z[c].col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
+                 grad_prob.col(0)   =  (   - y_sign.col(t1).array()  *   grad_Phi_bound_z[c].col(0).array() ).matrix() ;     // correct  (standard form)
+                 
+                 
+                 z_grad_term.col(0).array()  =      (  ( (  y_m_ysign_x_u_array.col(t1).array()   / phi_Z[c].col(t1).array()  ).array()    * y1_or_phi_Bound_Z[c].col(t1).array() *   grad_bound_z.col(0).array()  ).array() ).matrix()  ;  // correct  (standard form)
+                 
+                 deriv_L_T_T_inv =  ( - 1 /  ( L_Omega_double[c](t1+1,t1+1)  * L_Omega_double[c](t1+1,t1+1)  )  )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1+1, t1+1)  ;
+                 deriv_Bound_Z_x_L[c].col(1).array()  =    L_Omega_double[c](t1+1,t1) *   z_grad_term.col(0).array()     +   Z_std_norm[c].col(t1).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1+1, t1);
+                 grad_bound_z.col(1).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1+1).array() * L_Omega_double[c](t1+1,t1+1)  ) +  (1 / L_Omega_double[c](t1+1, t1+1)) * -  deriv_Bound_Z_x_L[c].col(1).array()  ;
+                 
+                 grad_Phi_bound_z[c].col(1) =   ( y1_or_phi_Bound_Z[c].col(t1 + 1).array() *  (    grad_bound_z.col(1).array()   ) ).matrix();   // correct  (standard form)
+                 grad_prob.col(1)  =   (  - y_sign.col(t1 + 1).array()  *     grad_Phi_bound_z[c].col(1).array()  ).array().matrix() ;    // correct   (standard form)
+                 
+                 
+                 for (int ii = 1; ii < i - 1; ii++) {
+                   z_grad_term.col(ii).array()  =    (  ( (  y_m_ysign_x_u_array.col(t1 + ii).array()   / phi_Z[c].col(t1 + ii).array()  ).array()    * y1_or_phi_Bound_Z[c].col(t1 + ii).array() *   grad_bound_z.col(ii).array()  ).array() ).matrix() ;     // correct  (standard form)
+                   
+                   deriv_L_T_T_inv =  ( - 1 /  (  L_Omega_double[c](t1 + ii + 1,t1 + ii + 1)  * L_Omega_double[c](t1 + ii + 1,t1 + ii + 1) )  )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1 + ii + 1, t1 + ii + 1)  ;
+                   
+                   deriv_Bound_Z_x_L[c].col(ii + 1).array()   =  0.0;
+                   for (int jj = 0; jj < ii + 1; jj++) {
+                     deriv_Bound_Z_x_L[c].col(ii + 1).array()  +=    L_Omega_double[c](t1 + ii + 1,t1 + jj)     *   z_grad_term.col(jj).array()     +   Z_std_norm[c].col(t1 + jj).array()     *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c][t1](t1 + ii + 1, t1 + jj) ;// +
+                   }
+                   grad_bound_z.col(ii + 1).array() =  deriv_L_T_T_inv * (Bound_Z[c].col(t1 + ii + 1).array() * L_Omega_double[c](t1 + ii + 1,t1 + ii + 1)  ) +  (1 / L_Omega_double[c](t1 + ii + 1, t1 + ii + 1)) * -   deriv_Bound_Z_x_L[c].col(ii + 1).array()  ;
+                   grad_Phi_bound_z[c].col(ii + 1).array()  =     y1_or_phi_Bound_Z[c].col(t1 + ii + 1).array()  *   grad_bound_z.col(ii + 1).array() ;   // correct  (standard form)
+                   grad_prob.col(ii + 1).array()  =   ( - y_sign.col(t1 + ii + 1).array()  ) *    grad_Phi_bound_z[c].col(ii + 1).array() ;  // correct  (standard form)
+                   
+                 }
+                 
+                 
+                 derivs_chain_container_vec.array() = 0.0;
+                 
+                 ///// attempt at vectorising  // bookmark
+                 for (int iii = 0; iii <  i; iii++) {
+                   derivs_chain_container_vec.array() +=  (    grad_prob.col(iii).array()  * (   prob[c].block(0, t1 + 0, chunk_size, i).rowwise().prod().array()  /  prob[c].col(t1 + iii).array()  ).array() ).array() ; // correct  (standard form)
+                 }
+                 
+                 
+                 grad_pi_wrt_b_raw(c, t1) +=        ( common_grad_term_1.col(t1).array()   *  derivs_chain_container_vec.array() ).sum();
+                 
+                 
+               }
+               
+             }
+             
+             prev_grad_vec(c)  +=  ( ( 1.0 / prob_n.array() ) * prob[c].rowwise().prod().array() ).matrix().sum() ;
+             
+             
+           }
+           
+       }
+       
+     }
+     
+     
+     //////////////////////// gradients for latent class membership probabilitie(s) (i.e. disease prevalence)
+     for (int c = 0; c < n_class; c++) {
+       prev_unconstrained_grad_vec(c)  =   prev_grad_vec(c)   * deriv_p_wrt_pu_double ;
+     }
+     prev_unconstrained_grad_vec(0) = prev_unconstrained_grad_vec(1) - prev_unconstrained_grad_vec(0) - 2 * tanh_u_prev[1];
+     prev_unconstrained_grad_vec_out(0) = prev_unconstrained_grad_vec(0);
+     
+     
+     // log_prob_out += log_lik.sum();
+     log_prob_out += out_mat.segment(1 + n_params, N).sum();
+     
+     if (exclude_priors == false)  log_prob_out += prior_densities;
+     
+     log_prob_out +=  log_jac_u;
+     //  log_prob_out +=  log_jac_p;
+     
+     log_prob = (double) log_prob_out;
+     
+     int i = 0; // probs_all_range.prod() cancels out
+     for (int c = 0; c < n_class; c++) {
+       for (int t = 0; t < n_tests; t++) {
+         beta_grad_vec(i) = beta_grad_array(c, t);
+         i += 1;
+       }
+     }
+     
+     
+     Eigen::Matrix<double, -1, 1 >  bs_grad_vec_nd =  (grad_pi_wrt_b_raw.row(0).transpose().array() * bs_nd_double.array()).matrix() ; //     ( deriv_log_pi_wrt_L_Omega[0].asDiagonal().diagonal().array() * bs_nd_double.array()  ).matrix()  ; //  Jacobian_d_L_Sigma_wrt_b_matrix[0].transpose() * deriv_log_pi_wrt_L_Omega_vec_nd;
+     Eigen::Matrix<double, -1, 1 >  bs_grad_vec_d =   (grad_pi_wrt_b_raw.row(1).transpose().array() * bs_d_double.array()).matrix() ; //    ( deriv_log_pi_wrt_L_Omega[1].asDiagonal().diagonal().array() * bs_d_double.array()  ).matrix()  ; //   Jacobian_d_L_Sigma_wrt_b_matrix[1].transpose()  * deriv_log_pi_wrt_L_Omega_vec_d;
+     
+     Eigen::Matrix<double, -1, 1 >   bs_grad_vec(n_bs_LT);
+     bs_grad_vec.head(n_tests)              = bs_grad_vec_nd ;
+     bs_grad_vec.segment(n_tests, n_tests)  = bs_grad_vec_d;
+     
+     //   stan::math::recover_memory();
+     
+     
+     
+     ////////////////////////////  outputs // add log grad and sign stuff';///////////////
+     out_mat(0) =  log_prob;
+     out_mat.segment(1 + n_us, n_bs_LT)  += bs_grad_vec ;
+     out_mat.segment(1 + n_us + n_corrs, n_coeffs) += beta_grad_vec;//.cast<float>();
+     out_mat(n_params) = ((grad_prev_AD +  prev_unconstrained_grad_vec_out(0)));
+     out_mat.segment(1, n_us).array() =     (  out_mat.segment(1, n_us).array() *  ( 0.5 * (1.0 - theta_us.array() * theta_us.array()  )  )   ).array()    - 2.0 * theta_us.array()   ;
+     
+     
+     
+   }
+   
+   
+   
+   int LT_cnt_2 = 0;
+   for (int c = 0; c < n_class; ++c) {
+     for (int t = 0; t < n_tests; ++t) {
+       if (LT_known_bs_indicator(c, t) == 1) {
+         out_mat(1 + n_us + LT_cnt_2) = 0;
+       }
+       LT_cnt_2 += 1;
+     }
+   }
+   
+   
+   return(out_mat);
+   
+   
+   
+   
+ }
+
+
+
+
+
 
 
  
@@ -4185,7 +4933,7 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
 
                                                        
                                                        if (Model_type == "MVP_LC")  {
-                                                           neg_lp_and_grad_outs.array()    =    - fn_lp_and_grad_MVP_using_Chol_Spinkney_MD_and_AD(         theta_main_array_proposed , // .cast<double>().matrix(),
+                                                           neg_lp_and_grad_outs.array()    =    - fn_lp_and_grad_MVP_LC_using_Chol_Spinkney_MD_and_AD(         theta_main_array_proposed , // .cast<double>().matrix(),
                                                                                                                                                                         theta_us_array_proposed , //  .cast<double>() , // .matrix(), // needs tto be a double? check
                                                                                                                                                                         y,
                                                                                                                                                                         X,
@@ -4196,7 +4944,14 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
                                                                                                                                                                       y,
                                                                                                                                                                       X,
                                                                                                                                                                       other_args).array() ; 
+                                                       }   else if (Model_type == "MVP_standard") { 
+                                                         neg_lp_and_grad_outs.array()    =    - fn_lp_and_grad_MVP_using_Chol_Spinkney_MD_and_AD(     theta_main_array_proposed ,  
+                                                                                                                                                      theta_us_array_proposed , 
+                                                                                                                                                      y,
+                                                                                                                                                      X,
+                                                                                                                                                      other_args).array() ; 
                                                        }
+                                                       
 
 
                                                          if (l == -1)      log_posterior_0 = - neg_lp_and_grad_outs(0)  ;
@@ -4387,12 +5142,12 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
    
    const int n_class = other_args(6); 
    const int n_chunks = other_args(8);
-   
+
    const int n_tests = y.cols();
    const int N = y.rows();
    const int n_corrs =  n_class * n_tests * (n_tests - 1) * 0.5;
    const int n_coeffs = n_class * n_tests * 1;
-   const int n_us =  1 *  N * n_tests;
+   const int n_us =   N * n_tests;
    
    const int n_bs_LT =  n_tests * n_class;
    
@@ -4457,14 +5212,14 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
        
        {
          Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
-         //  #pragma clang loop vectorize_width(16)
+           // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
          for (int d = 0; d < n_params_main; d++) {
            std_norm_vec_main(d) =      zigg.norm();
          } 
          velocity_0_main_array.matrix()  = M_inv_dense_main_chol * std_norm_vec_main;
          
          // velocity_0_us_array =  draw_mean_zero_norm_using_Zigg_Rcpp(velocity_0_us_array,  M_inv_us_array.sqrt().matrix() ) ;
-         //  #pragma clang loop vectorize_width(16)
+           // #pragma clang loop vectorize_width(VECTORISATION_VEC_WIDTH)
          for (int d = 0; d < n_us; d++) {
            velocity_0_us_array(d) =  zigg.norm() ;
          } 
@@ -4537,17 +5292,23 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
              
              
              if (Model_type == "MVP_LC")  {
-                         neg_lp_and_grad_outs.array()    =    - fn_lp_and_grad_MVP_using_Chol_Spinkney_MD_and_AD(         theta_main_array_proposed , // .cast<double>().matrix(),
-                                                                                                                                      theta_us_array_proposed , //  .cast<double>() , // .matrix(), // needs tto be a double? check
-                                                                                                                                      y,
-                                                                                                                                      X,
-                                                                                                                                      other_args).array() ; 
+                         neg_lp_and_grad_outs.array()    =    - fn_lp_and_grad_MVP_LC_using_Chol_Spinkney_MD_and_AD(         theta_main_array_proposed ,  
+                                                                                                                             theta_us_array_proposed , 
+                                                                                                                             y,
+                                                                                                                             X,
+                                                                                                                             other_args).array() ; 
              } else if (Model_type == "LT_LC") {   
                          neg_lp_and_grad_outs.array()    =    - fn_lp_and_grad_latent_trait_MD_and_AD(                 theta_main_array_proposed ,    
-                                                                                                                                      theta_us_array_proposed ,  
-                                                                                                                                      y,
-                                                                                                                                      X,
-                                                                                                                                      other_args).array() ; 
+                                                                                                                       theta_us_array_proposed ,  
+                                                                                                                       y,
+                                                                                                                       X,
+                                                                                                                       other_args).array() ; 
+             }   else if (Model_type == "MVP_standard") { 
+                          neg_lp_and_grad_outs.array()    =    - fn_lp_and_grad_MVP_using_Chol_Spinkney_MD_and_AD(     theta_main_array_proposed ,  
+                                                                                                                       theta_us_array_proposed , 
+                                                                                                                       y,
+                                                                                                                       X,
+                                                                                                                       other_args).array() ; 
              }
              
              
@@ -4582,12 +5343,19 @@ Eigen::Matrix<double, -1, -1  > duplication_matrix(const int &n) {
          
          
          if (Model_type == "LT_LC")  { // for latent trait
-           for (int i = 0 + n_bs_LT; i < 0 + n_corrs; i++) {
+           for (int i = n_bs_LT; i < n_corrs; i++) {
              velocity_main_array(i) = 0.0 ;
              velocity_0_main_array(i) = 0.0 ;
              theta_main_array(i) =   R::rnorm(0.0, 1.0);
            }
          }
+         // } else if (Model_type == "MVP_standard") { 
+         //   for (int i = end_index_for_MVP_standard; i < n_params_main; i++) {
+         //     velocity_main_array(i) = 0.0 ;
+         //     velocity_0_main_array(i) = 0.0 ;
+         //     theta_main_array(i) =   R::rnorm(0.0, 1.0);
+         //   } 
+         // }
          
          
          //////////////////////////////////////////////////////////////////    M-H acceptance step  (i.e, Accept/Reject step)
