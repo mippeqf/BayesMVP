@@ -2814,7 +2814,7 @@ Eigen::Matrix<double, -1, 1 > notLog2_vec(  Eigen::Matrix<double, -1, 1 >  x) {
  
  
  
- 
+ // source: same as implemented in R and adapted from Stan code here: https://github.com/stan-dev/math/issues/2555 (Stan code written by Sean Spinkney)
  inline double  qnorm_rcpp(double p) {
    
    double r; 
@@ -2889,7 +2889,7 @@ Eigen::Matrix<double, -1, 1 > notLog2_vec(  Eigen::Matrix<double, -1, 1 >  x) {
  
  
  
- 
+  // source: same as implemented in R and adapted from Stan code here: https://github.com/stan-dev/math/issues/2555 (Stan code written by Sean Spinkney)
  inline double  qnorm_w_fast_log_rcpp(double p) {
    
    double r;
