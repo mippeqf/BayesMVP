@@ -16,9 +16,9 @@ The DESCRIPTION file:
 ~~ An overview of how to use the package, including the most important functions ~~
 }
 \author{
-\packageAuthor{Enzo Cerullo}
+\packageAuthor{BayesMVP}
 
-Maintainer: \packageMaintainer{Enzo Cerullo}
+Maintainer: \packageMaintainer{BayesMVP}
 }
 \references{
 ~~ Literature or other references for background information ~~
