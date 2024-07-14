@@ -1,0 +1,4 @@
+useDynLib(BayesMVPv2)
+import(RcppEigen, RcppZiggurat)
+importFrom(Rcpp, evalCpp)
+exportPattern("^[[:alpha:]]+")

@@ -1,0 +1,16 @@
+Package: BayesMVPv2
+Type: Package
+Title: What the package does (short line)
+Version: 1.0
+Date: 2023-05-18
+Author: Who wrote it
+Maintainer: Who to complain to <yourfault@somewhere.net>
+Description: More about what it does (maybe more than one line)
+License: What license is it under?
+Imports: Rcpp (>= 1.0.10), RcppEigen, RcppZiggurat
+LinkingTo: Rcpp, RcppEigen, StanHeaders, BH, RcppParallel, sitmo, dqrng, RcppProgress, RcppZiggurat
+SystemRequirements: GNU make, C++17
+###SystemRequirements: GNU make, C++14
+
+
+
