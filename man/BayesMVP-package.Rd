@@ -1,7 +1,7 @@
 \name{BayesMVP-package}
 \alias{BayesMVP-package}
 \alias{BayesMVP}
-\docType{BayesMVP}
+\docType{package}
 \title{
 \packageTitle{BayesMVP}
 }
