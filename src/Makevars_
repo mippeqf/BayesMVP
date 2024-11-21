@@ -1,24 +1,17 @@
 
 
-
-
 #####    Compiler settings     ###  ccache
 ### set compiler types
-#CXX_COMPILER_TYPE =     ccache  g++
-#CPP_COMPILER_TYPE =     ccache  gcc
-#BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
+CXX_COMPILER_TYPE =    ccache  g++
+CPP_COMPILER_TYPE =    ccache  gcc
+BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
 
-
-#CXX_FLAGS += -fno-tree-vectorize  # for g++  -  Disable auto vectorization
-#CXX_FLAGS += -fno-optimize-sibling-calls  # for g++  -   Disable tail call optimization
-#CXX_FLAGS += -fno-schedule-insns2  # for g++  -   Disable instruction scheduling
 
 ## LD_LIBRARY_PATH += -L/usr/lib/
 
-
-CXX_COMPILER_TYPE =      ccache   /opt/AMD/aocc-compiler-5.0.0/bin/clang++
-CPP_COMPILER_TYPE =      ccache  /opt/AMD/aocc-compiler-5.0.0/bin/clang
-BASE_FLAGS =  -O3  -march=znver4  -mtune=znver4   -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
+# CXX_COMPILER_TYPE =    ccache   /opt/AMD/aocc-compiler-5.0.0/bin/clang++
+# CPP_COMPILER_TYPE =    ccache   /opt/AMD/aocc-compiler-5.0.0/bin/clang
+# BASE_FLAGS =  -O3  -march=znver4  -mtune=znver4   -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
 
 ## BASE_FLAGS +=  -mllvm --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
 
@@ -51,7 +44,7 @@ BASE_FLAGS +=  -fopenmp ### for g++
 
 
 
-#PKG_CXXFLAGS += -fopenmp
+PKG_CXXFLAGS += -fopenmp
 
 
 
@@ -63,13 +56,13 @@ BASE_FLAGS +=  -fopenmp ### for g++
 
 
 ####### OpenMP flags for AMD AOCC clang++:
-#LD_LIBRARY_PATH += /opt/AMD/aocc-compiler-5.0.0/lib
-#PKG_LIBS += /opt/AMD/aocc-compiler-5.0.0/lib/libomp.so
-#PKG_LIBS += -L/opt/AMD/aocc-compiler-5.0.0/lib -lomp -Wl,-rpath,/opt/AMD/aocc-compiler-5.0.0/lib
-#PKG_CXXFLAGS += -fopenmp=libomp ## for AMD AOCC clang++
-### PKG_LIBS += -lomp ### for AMD AOCC clang++
-## PKG_LIBS += -L/usr/lib/llvm-14/lib -lomp
 ## PKG_CXXFLAGS += -fopenmp
+## LD_LIBRARY_PATH += /opt/AMD/aocc-compiler-5.0.0/lib
+## PKG_LIBS += /opt/AMD/aocc-compiler-5.0.0/lib/libomp.so
+## PKG_LIBS += -L/opt/AMD/aocc-compiler-5.0.0/lib -lomp -Wl,-rpath,/opt/AMD/aocc-compiler-5.0.0/lib
+## PKG_CXXFLAGS += -fopenmp=libomp ## for AMD AOCC clang++
+## PKG_LIBS += -lomp ### for AMD AOCC clang++
+## PKG_LIBS += -L/usr/lib/llvm-14/lib -lomp
 
 ### BASE_FLAGS +=   /opt/AMD/aocc-compiler-5.0.0/lib/libomp.so
 ## PKG_CXXFLAGS += -Xclang -fopenmp
@@ -124,9 +117,7 @@ BRIDGESTAN_PATH = $(HOME)/bridgestan
 BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 STAN_PATH = $(HOME)/.cmdstan/cmdstan-2.35.0/stan
-#### STAN_PATH = $(HOME)/cmdstan/stan
-
-
+###STAN_PATH = $(HOME)/cmdstan/stan
 STAN_SRC =  $(STAN_PATH)/src
 STAN_MATH =  $(STAN_PATH)/lib/stan_math
 TBB_PATH = $(STAN_MATH)/lib/tbb
@@ -167,9 +158,6 @@ CXXFLAGS += $(PKG_CXXFLAGS)
 ### ---- load dummy model for bridgestan to compile (for Linux / Mac OS X)
 PKG_LIBS+=$(BAYESMVP_R_PKG_DIR)/dummy_stan_model_model.so      ### need to load dummy model compiled using BridgeStan!! (unfortunately... need to fix)
 ##### PKG_LIBS +=  /home/enzocerullo/Documents/Work/PhD_work/dummy_stan_model_model.so # need to load dummy model compiled using BridgeStan!! (unfortunately... need to fix)
-
-
-
 
 
 
