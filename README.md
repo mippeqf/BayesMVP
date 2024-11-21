@@ -15,7 +15,7 @@ Furthermore, specifically for the three built-in models (i.e. the MVP, LC_MVP, a
 it achieves rapid sampling by using: 
 manually-derived gradients,
 chunking, 
-and (on sysmtems with AVX-512 and/or AVX2) fast approximate, vectorised (SIMD) math functions. 
+and (on systems with AVX-512 and/or AVX2) fast approximate, vectorised (SIMD) math functions. 
 
 Users can also use the optimised manual-gradient lp_grad functions for the 3 built-in models with Stan directly 
 (via the cmdstanr R package) by downloading/installing the R package, and  then, when you compile your Stan model 
