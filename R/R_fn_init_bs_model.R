@@ -5,13 +5,13 @@ init_bs_model <- function(Stan_data_list,
                           ...) {
   
   
-        Stan_model_name <- "PO_LC_MVP_bin.stan"  #### TEMP
-        pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP" #### TEMP
+        ###  Stan_model_name <- "PO_LC_MVP_bin.stan"  #### TEMP
+       ###   pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP" #### TEMP
         
         Sys.setenv(STAN_THREADS = "true")
   
         # Get package directory paths
-        ## pkg_dir <- system.file(package = "BayesMVP")
+        pkg_dir <- system.file(package = "BayesMVP")
         stan_dir <- file.path(pkg_dir, "inst/stan_models")
         data_dir <- file.path(pkg_dir, "inst/stan_data")  # directory to store data inc. JSON data files
         
