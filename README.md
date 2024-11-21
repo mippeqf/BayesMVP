@@ -3,7 +3,7 @@ multivariate probit model (MVP) - which is used to model correlated binary data 
 model (LC-MVP) and the latent trait model, which are commonly used in medical applications to model diagnostic 
 and/or screening test accuracy data. 
 
-In addition, tt can also **sample any user-supplied Stan model**, and performs best for models with 
+In addition, it can also **sample any user-supplied Stan model**, and performs best for models with 
 a high-dimensional latent variable vector (or "nuisance parameters"). 
 
 BayesMVP makes use of two state-of-the-art HMC algorithms. For the burnin phase, it uses an algorithm which 
