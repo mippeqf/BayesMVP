@@ -1,15 +1,15 @@
 BayesMVP uses diffusion-pathspace adaptive Hamiltonian Monte Carlo (HMC) to efficiently sample the 
-multivariate probit model (MVP) to model correlated binary data, as well as the latent class MVP
-model (LC-MVP) and the latent trait model. It can also **sample any user-supplied Stan model**, and performs 
-best for models with high-dimensional latent variables.
+multivariate probit model (MVP) - which is used to model correlated binary data - as well as the latent class MVP
+model (LC-MVP) and the latent trait model, which are commonly used in medical applications to model diagnostic 
+and/or screening test accuracy data. 
 
-For sampling models which have a high-dimensional latent variable vector (or "nuisance parameters"), 
+In addition, tt can also **sample any user-supplied Stan model**, and performs best for models with 
+a high-dimensional latent variable vector (or "nuisance parameters"). 
+
 BayesMVP makes use of two state-of-the-art HMC algorithms. For the burnin phase, it uses an algorithm which 
-is based on the recently proposed SNAPER-HMC (Sountsov et al, 2022). 
-
-For the sampling (i.e., post-burnin)
-phase, it uses standard HMC (with randomized path length) to sample the main model parameters, and then 
-it samples the nuisance parameters using diffusion-pathspace HMC (Beskos et al, 2013). 
+is based on the recently proposed **SNAPER-HMC** (Sountsov et al, 2022). For the sampling (i.e., post-burnin)
+phase, it uses standard HMC _(with randomized path length)_ to sample the main model parameters, and then 
+it samples the nuisance parameters using **diffusion-pathspace HMC** (Beskos et al, 2013). 
 
 Furthermore, specifically for the three built-in models (i.e. the MVP, LC_MVP, and latent_trait), 
 it achieves rapid sampling by using: 
