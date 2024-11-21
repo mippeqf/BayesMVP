@@ -44,17 +44,21 @@
    static const __m256d minus_one_half = _mm256_set1_pd(-0.5);
    static const __m256d small = _mm256_set1_pd(1e-4);
    
+   static const __m256d half = _mm256_set1_pd(0.5);
+   
    static const __m256d  pos_inf  =    _mm256_set1_pd(INFINITY);
    static const __m256d  neg_inf  =    _mm256_set1_pd(-INFINITY);
+ 
+   static const __m256d sign_bit = _mm256_set1_pd(-0.0);
    
-   // definition for is_finite_mask
-   inline __mmask8 is_finite_mask(__m256d x) {
+   // is_finite_mask and is_not_NaN_mask for AVX2
+   inline __m256d is_finite_mask(__m256d x) {
      const __m256d INF = _mm256_set1_pd(std::numeric_limits<double>::infinity());
-     return _mm256_cmp_pd(_mm256_andnot_pd(sign_bit, x), INF, _CMP_NEQ_OQ);
+     __m256d abs_x = _mm256_andnot_pd(sign_bit, x);
+     return _mm256_cmp_pd(abs_x, INF, _CMP_NEQ_OQ);
    }
    
-   // definition for is_not_NaN_mask
-   inline __mmask8 is_not_NaN_mask(__m256d x) {
+   inline __m256d is_not_NaN_mask(__m256d x) {
      return _mm256_cmp_pd(x, x, _CMP_EQ_OQ);
    }
  
@@ -407,10 +411,7 @@ inline    __m512d fast_exp_1_wo_checks_AVX512(const __m512d x)  {
  
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
  
- static const __m256d   zero  =  _mm256_setzero_pd();
  static const __m256d   exp_bound  =   _mm256_set1_pd(708.4);
- static const __m256d   pos_inf  =    _mm256_set1_pd(INFINITY);
- static const __m256d   neg_inf  =    _mm256_set1_pd(-INFINITY);
  
 // see https://stackoverflow.com/questions/39587752/difference-between-ldexp1-x-and-exp2x
 inline __m256d fast_exp_1_AVX2(const __m256d a) {
@@ -2197,18 +2198,16 @@ inline     __m256d fast_inv_erf_wo_checks_part_2_lower_AVX2(  const __m256d a,
 
 inline __m256d fast_inv_erf_wo_checks_AVX2(const __m256d a) {
   
-  __m256d p, t;
-  t = _mm256_fmadd_pd(a, _mm256_sub_pd(zero, a), one);
+  const __m256d t = _mm256_fmadd_pd(a, _mm256_sub_pd(zero, a), one);
   t = fast_log_1_AVX2(t);
   
   return _mm256_blendv_pd(
-    fast_inv_erf_wo_checks_part_2_lower_AVX2(a, p, t),
-    fast_inv_erf_wo_checks_part_1_upper_AVX2(a, p, t),
-    _mm256_cmp_pd(_mm256_abs_pd(t), inv_erf_c0, _CMP_GT_OQ) 
+    fast_inv_erf_wo_checks_part_2_lower_AVX2(a, t),
+    fast_inv_erf_wo_checks_part_1_upper_AVX2(a, t),
+    _mm256_cmp_pd(_mm256_abs_pd(t), inv_erf_c0, _CMP_GT_OQ)
   );
   
-} 
- 
+}
 
 #endif
 
