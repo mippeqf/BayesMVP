@@ -42,24 +42,28 @@
    static const __m256d zero = _mm256_setzero_pd();
    static const __m256d minus_one = _mm256_set1_pd(-1.0);
    static const __m256d minus_one_half = _mm256_set1_pd(-0.5);
-   static const __m256d small = _mm256_set1_pd(1e-4);
-   
-   static const __m256d half = _mm256_set1_pd(0.5);
+   static const __m256d one_half = _mm256_set1_pd(0.5);
    
    static const __m256d  pos_inf  =    _mm256_set1_pd(INFINITY);
    static const __m256d  neg_inf  =    _mm256_set1_pd(-INFINITY);
  
    static const __m256d sign_bit = _mm256_set1_pd(-0.0);
    
+   static const __m256d small = _mm256_set1_pd(1e-4);
+   
    // is_finite_mask and is_not_NaN_mask for AVX2
    inline __m256d is_finite_mask(__m256d x) {
-     const __m256d INF = _mm256_set1_pd(std::numeric_limits<double>::infinity());
-     __m256d abs_x = _mm256_andnot_pd(sign_bit, x);
-     return _mm256_cmp_pd(abs_x, INF, _CMP_NEQ_OQ);
+     
+         const __m256d INF = _mm256_set1_pd(std::numeric_limits<double>::infinity());
+         __m256d abs_x = _mm256_andnot_pd(sign_bit, x);
+         return _mm256_cmp_pd(abs_x, INF, _CMP_NEQ_OQ);
+     
    }
    
    inline __m256d is_not_NaN_mask(__m256d x) {
-     return _mm256_cmp_pd(x, x, _CMP_EQ_OQ);
+     
+         return _mm256_cmp_pd(x, x, _CMP_EQ_OQ);
+     
    }
  
 #endif
@@ -77,8 +81,6 @@
  
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
- 
- static const __m256d sign_bit = _mm256_set1_pd(-0.0);
  
 inline    __m256d  _mm256_abs_pd(const __m256d x) {
  
@@ -1961,12 +1963,11 @@ inline __m256d fast_erf_wo_checks_AVX2(const __m256d a) {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256d one_half =     _mm256_set1_pd(0.5);
 static const __m256d sqrt_2_recip = _mm256_set1_pd(0.707106781186547461715);
 
 inline    __m256d fast_Phi_wo_checks_AVX2(const __m256d x) {
   
-    return _mm256_mul_pd(half, _mm256_add_pd(one, fast_erf_wo_checks_AVX2( _mm256_mul_pd(x, sqrt_2_recip)) ) ) ;
+    return _mm256_mul_pd(one_half, _mm256_add_pd(one, fast_erf_wo_checks_AVX2( _mm256_mul_pd(x, sqrt_2_recip)) ) ) ;
     
 }
  
@@ -2198,7 +2199,7 @@ inline     __m256d fast_inv_erf_wo_checks_part_2_lower_AVX2(  const __m256d a,
 
 inline __m256d fast_inv_erf_wo_checks_AVX2(const __m256d a) {
   
-  const __m256d t = _mm256_fmadd_pd(a, _mm256_sub_pd(zero, a), one);
+  __m256d t = _mm256_fmadd_pd(a, _mm256_sub_pd(zero, a), one);
   t = fast_log_1_AVX2(t);
   
   return _mm256_blendv_pd(
