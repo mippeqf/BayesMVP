@@ -333,8 +333,8 @@ inline    __m256d fast_exp_1_wo_checks_AVX2(const __m256d x)  {
   
   /* exp(x) = 2^i * e^f; i = rint (log2(e) * a), f = a - log(2) * i */
   const __m256d t = _mm256_mul_pd(x, exp_l2e);      /* t = log2(e) * a */
-  const __m256i i = _mm256_cvtpd_epi64(t);       /* i = (int)rint(t) */
-  const __m256d x_2 = _mm256_roundscale_pd(t, _MM_FROUND_TO_NEAREST_INT) ; // ((0<<4)| _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC|_MM_FROUND_NO_EXC));
+  const __m256i i = _mm256_cvttpd_epi32(t);       /* i = (int)rint(t) */
+  const __m256d x_2 = _mm256_round_pd(t, _MM_FROUND_TO_NEAREST_INT) ; // ((0<<4)| _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC|_MM_FROUND_NO_EXC));
   const __m256d f = _mm256_fmadd_pd(x_2, exp_l2l, _mm256_fmadd_pd (x_2, exp_l2h, input));  /* a - log(2)_hi * r */    /* f = a - log(2)_hi * r - log(2)_lo * r */
   
   /* p ~= exp (f), -log(2)/2 <= f <= log(2)/2 */
@@ -926,16 +926,16 @@ inline     __m256d  fast_inv_logit_for_x_neg_AVX2(const __m256d x )  {
   
           const __m256d  exp_x =  fast_exp_1_AVX2(x) ;
           
-          return _mm256_mask_blend_pd(_mm256_cmp_pd_mask(x,  log_eps, _CMP_GT_OQ),
-                                      exp_x,
-                                      _mm256_div_pd(exp_x, _mm256_add_pd(one, exp_x)));
+          return _mm256_blendv_pd(    exp_x,
+                                      _mm256_div_pd(exp_x, _mm256_add_pd(one, exp_x)), 
+                                      _mm256_cmp_pd(x,  log_eps, _CMP_GT_OQ));
 }
 
 inline     __m256d  fast_inv_logit_AVX2(const __m256d x )  {
   
-    return  _mm256_mask_blend_pd(_mm256_cmp_pd_mask(x, zero, _CMP_GE_OQ),  // x > 0
-                               fast_inv_logit_for_x_neg_AVX2(x),
-                               fast_inv_logit_for_x_pos_AVX2(x));  // x > 0
+    return  _mm256_blendv_pd(  fast_inv_logit_for_x_neg_AVX2(x),
+                               fast_inv_logit_for_x_pos_AVX2(x), 
+                               _mm256_cmp_pd(x, zero, _CMP_GE_OQ));  // x > 0
   
 }
 
@@ -1004,17 +1004,17 @@ inline     __m256d  fast_inv_logit_for_x_neg_wo_checks_AVX2(const __m256d x )  {
   
 
   const __m256d  exp_x =  fast_exp_1_wo_checks_AVX2(x) ;
-  return _mm256_mask_blend_pd(_mm256_cmp_pd_mask(x,  log_eps, _CMP_GT_OQ),
-                               exp_x,
-                              _mm256_div_pd(exp_x, _mm256_add_pd(one, exp_x)));
+  return _mm256_blendv_pd(    exp_x,
+                              _mm256_div_pd(exp_x, _mm256_add_pd(one, exp_x)), 
+                              _mm256_cmp_pd(x,  log_eps, _CMP_GT_OQ));
   
 }
 
 inline      __m256d  fast_inv_logit_wo_checks_AVX2(const __m256d x )  {
   
-  return  _mm256_mask_blend_pd(_mm256_cmp_pd_mask(x,  zero, _CMP_GT_OQ),  // x > 0
-                               fast_inv_logit_for_x_neg_wo_checks_AVX2(x),
-                               fast_inv_logit_for_x_pos_wo_checks_AVX2(x));  // x > 0
+  return  _mm256_blendv_pd(    fast_inv_logit_for_x_neg_wo_checks_AVX2(x),
+                               fast_inv_logit_for_x_pos_wo_checks_AVX2(x), 
+                               _mm256_cmp_pd(x,  zero, _CMP_GT_OQ));  // x > 0
   
 }
 
@@ -1082,17 +1082,17 @@ inline     __m256d  fast_log_inv_logit_for_x_pos_AVX2(const __m256d x )  {
 
 inline     __m256d  fast_log_inv_logit_for_x_neg_AVX2(const __m256d x )  {
 
-    return _mm256_mask_blend_pd(_mm256_cmp_pd_mask(x,  log_eps, _CMP_GT_OQ), /// if x > log_eps = -18.420680743952367
-                                x,
-                                _mm256_sub_pd(x,   fast_log1p_1_AVX2(fast_exp_1_AVX2(x))));
+    return _mm256_blendv_pd(    x,
+                                _mm256_sub_pd(x,   fast_log1p_1_AVX2(fast_exp_1_AVX2(x))),
+                                _mm256_cmp_pd(x,  log_eps, _CMP_GT_OQ));
   
 }
 
 inline     __m256d  fast_log_inv_logit_AVX2(const __m256d x )  {
   
-    return  _mm256_mask_blend_pd(_mm256_cmp_pd_mask(x,  zero, _CMP_GE_OQ),  // x > 0
-                                 fast_log_inv_logit_for_x_neg_AVX2(x),
-                                 fast_log_inv_logit_for_x_pos_AVX2(x));  // x > 0
+    return  _mm256_blendv_pd(    fast_log_inv_logit_for_x_neg_AVX2(x),
+                                 fast_log_inv_logit_for_x_pos_AVX2(x), 
+                                 _mm256_cmp_pd(x,  zero, _CMP_GE_OQ));  // x > 0
 }
 
 #endif
@@ -1208,17 +1208,17 @@ inline     __m256d  fast_log_inv_logit_for_x_pos_wo_checks_AVX2(const __m256d x 
 
 inline     __m256d  fast_log_inv_logit_for_x_neg_wo_checks_AVX2(const __m256d x )  {
   
-    return _mm256_mask_blend_pd(_mm256_cmp_pd_mask(x,  log_eps, _CMP_GT_OQ),
-                                x,
-                                _mm256_sub_pd(x,   fast_log1p_1_wo_checks_AVX2(fast_exp_1_wo_checks_AVX2(x))));
+    return _mm256_blendv_pd(    x,
+                                _mm256_sub_pd(x,   fast_log1p_1_wo_checks_AVX2(fast_exp_1_wo_checks_AVX2(x))),
+                                _mm256_cmp_pd(x,  log_eps, _CMP_GT_OQ));
     
 }
 
 inline     __m256d  fast_log_inv_logit_wo_checks_AVX2(const __m256d x )  {
   
-    return  _mm256_mask_blend_pd(_mm256_cmp_pd_mask(x,  zero, _CMP_GE_OQ),  // x > 0
-                                 fast_log_inv_logit_for_x_neg_wo_checks_AVX2(x),
-                                 fast_log_inv_logit_for_x_pos_wo_checks_AVX2(x));  // x > 0
+    return  _mm256_blendv_pd(    fast_log_inv_logit_for_x_neg_wo_checks_AVX2(x),
+                                 fast_log_inv_logit_for_x_pos_wo_checks_AVX2(x),
+                                 _mm256_cmp_pd(x,  zero, _CMP_GE_OQ));  // x > 0
   
 }
 #endif
