@@ -21,18 +21,45 @@
  
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
  
- static const __m512d zero =  _mm512_setzero_pd();
- static const __m512d one  =  _mm512_set1_pd(1.0);
- static const __m512d minus_one  =  _mm512_set1_pd(-1.0);
- static const __m512d one_half = _mm512_set1_pd(0.5);
- static const __m512d minus_one_half = _mm512_set1_pd(-0.5);
+   static const __m512d zero =  _mm512_setzero_pd();
+   static const __m512d one  =  _mm512_set1_pd(1.0);
+   static const __m512d minus_one  =  _mm512_set1_pd(-1.0);
+   static const __m512d one_half = _mm512_set1_pd(0.5);
+   static const __m512d minus_one_half = _mm512_set1_pd(-0.5);
+   
+   static const __m512d  pos_inf  =    _mm512_set1_pd(INFINITY);
+   static const __m512d  neg_inf  =    _mm512_set1_pd(-INFINITY);
+  
+   static const __m512d small =  _mm512_set1_pd(1e-4);
+   
+#endif
  
- static const __m512d  pos_inf  =    _mm512_set1_pd(INFINITY);
- static const __m512d  neg_inf  =    _mm512_set1_pd(-INFINITY);
-
- static const __m512d small =  _mm512_set1_pd(1e-4);
+ 
+ 
+#if defined(__AVX2__)
+ 
+   static const __m256d one = _mm256_set1_pd(1.0);
+   static const __m256d zero = _mm256_setzero_pd();
+   static const __m256d minus_one = _mm256_set1_pd(-1.0);
+   static const __m256d minus_one_half = _mm256_set1_pd(-0.5);
+   static const __m256d small = _mm256_set1_pd(1e-4);
+   
+   static const __m256d  pos_inf  =    _mm256_set1_pd(INFINITY);
+   static const __m256d  neg_inf  =    _mm256_set1_pd(-INFINITY);
+   
+   // definition for is_finite_mask
+   inline __mmask8 is_finite_mask(__m256d x) {
+     const __m256d INF = _mm256_set1_pd(std::numeric_limits<double>::infinity());
+     return _mm256_cmp_pd(_mm256_andnot_pd(sign_bit, x), INF, _CMP_NEQ_OQ);
+   }
+   
+   // definition for is_not_NaN_mask
+   inline __mmask8 is_not_NaN_mask(__m256d x) {
+     return _mm256_cmp_pd(x, x, _CMP_EQ_OQ);
+   }
  
 #endif
+ 
  
  
  
@@ -469,8 +496,8 @@ inline    __m512d fast_exp_1_AVX512(const __m512d a) {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256d log_i1 =   _mm256_set1_epi64x(0x3fe5555555555555);
-static const __m256d log_i2 =   _mm256_set1_epi64x(0xFFF0000000000000);
+static const __m256i log_i1 =   _mm256_set1_epi64x(0x3fe5555555555555);
+static const __m256i log_i2 =   _mm256_set1_epi64x(0xFFF0000000000000);
 
 static const __m256d log_c1 =   _mm256_set1_pd(0.000000000000000222044604925031308085);
 static const __m256d log_c2 =   _mm256_set1_pd(-0.13031005859375);
@@ -2101,6 +2128,8 @@ inline __m512d fast_Phi_AVX512(const __m512d x) {
 // see: https://math.stackexchange.com/questions/42920/efficient-and-accurate-approximation-of-error-function   // max ulp error = 0.97749 (USE_EXPM1 = 1); 1.05364 (USE_EXPM1 = 0)
 inline     __m256d fast_inv_erf_wo_checks_part_1_upper_AVX2(const __m256d a, 
                                                             const __m256d t) {
+  
+  __m256d p = inv_erf_part_1_c0; 
     
     p =            inv_erf_part_1_c0; //  0x1.4deb44p-32
     p = _mm256_fmadd_pd (p, t,  inv_erf_part_1_c1); //  0x1.f7c9aep-26
