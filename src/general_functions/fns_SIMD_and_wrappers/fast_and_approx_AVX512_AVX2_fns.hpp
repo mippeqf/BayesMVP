@@ -304,7 +304,6 @@ inline __m512d fast_ldexp_2(const __m512d AVX_a,
 
 
  
-
  
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
@@ -515,6 +514,35 @@ static const __m256d log_c8 =   _mm256_set1_pd(-0.249996200203895568848);
 static const __m256d log_c9 =   _mm256_set1_pd(0.333331972360610961914);
 static const __m256d log_c10 =  _mm256_set1_pd(-0.5);
 static const __m256d log_c11 =  _mm256_set1_pd(0.693147182464599609375);
+
+
+
+
+
+ /// const __m256d i = _mm256_fmadd_pd(_mm256_cvtepi64_pd(e), log_c1, zero); // Replace as needs AVX-512
+ /// replace with manual fn:
+
+ 
+inline __m256d avx2_cvtepi64_pd(__m256i v) {
+  
+      // Extract high and low 64-bit integers
+      __m128i low = _mm256_castsi256_si128(v);
+      __m128i high = _mm256_extracti128_si256(v, 1);
+      
+      // Convert to doubles one element at a time
+      double vals[4];
+      vals[0] = (double)_mm_extract_epi64(low, 0);
+      vals[1] = (double)_mm_extract_epi64(low, 1);
+      vals[2] = (double)_mm_extract_epi64(high, 0);
+      vals[3] = (double)_mm_extract_epi64(high, 1);
+      
+      // Load back into __m256d
+      return _mm256_loadu_pd(vals);
+  
+}
+
+
+
  
 
 //https://stackoverflow.com/a/65537754/9007125 // vectorized version of the answer by njuffa
@@ -522,7 +550,7 @@ inline     __m256d fast_log_1_wo_checks_AVX2(const __m256d a ) {
   
   const __m256i aInt = _mm256_castpd_si256(a);
   const __m256i e = _mm256_and_epi64( _mm256_sub_epi64(aInt, log_i1),  log_i2); //    e = (__double_as_int (a) - i1 )    &   i2   ;
-  const __m256d i = _mm256_fmadd_pd ( _mm256_cvtepi64_pd(e), log_c1, zero); // 0x1.0p-52
+  const __m256d i = _mm256_fmadd_pd ( avx2_cvtepi64_pd(e), log_c1, zero); // 0x1.0p-52
   const __m256d m = _mm256_sub_pd(_mm256_castsi256_pd( _mm256_sub_epi64(aInt, e)), one) ;  //   m = __int_as_double (__double_as_int (a) - e);   //  m = _mm256_sub_pd(m, one) ; // m - 1.0;  /* m in [2/3, 4/3] */
   const __m256d s = _mm256_mul_pd(m, m);  // m = _mm256_sub_pd(m, one) ; // m - 1.0;  /* m in [2/3, 4/3] */
   
