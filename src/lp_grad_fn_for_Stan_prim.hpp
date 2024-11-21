@@ -38,24 +38,24 @@
  
  
  
- 
- 
 #include "eigen_config.hpp"
 
 
 #include "general_functions/var_fns.hpp"
 #include "general_functions/double_fns.hpp" 
  
- ///// include custom SIMD functions (if available) and/or stan::math functions.
-#if defined(__AVX2__) || defined(__AVX512F__)
-#include "general_functions/vectorised_fns_AVX/mvp_AVX512_AVX2_fns.hpp"
-#endif
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Stan.hpp"
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Loop.hpp"
+#include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_AVX2_fns.hpp" // will only compile if AVX2 or AVX-512 is available 
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available 
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available 
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_overall.hpp" 
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_dbl.hpp"
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_SIMD.hpp"
  
-#include "general_functions/mvp_colvec_and_array_fn_wrappers.hpp" 
-
 #include "general_functions/structures.hpp"
 #include "general_functions/array_creators_Eigen_fns.hpp"
-
+#include "general_functions/misc_helper_fns_1.hpp"
  
 ////// Now load in (mostly) MVP-specific (and MVP-LC) model functions
 #include "MVP_functions/MVP_manual_grad_calc_fns.hpp" 
@@ -251,9 +251,17 @@ Eigen::Matrix<double, -1, 1>     Stan_wrapper_lp_fn(                      const 
                          force_autodiff, force_PartialLog, multi_attempts, 
                          theta_main_vec, theta_us_vec, y, grad_option,
                          Model_args_as_cpp_struct, Stan_model_as_cpp_struct);
+   
+   Eigen::Matrix<double, -1, 1> log_lik = lp_grad_outs.tail(N);
+   double log_posterior = lp_grad_outs(0);
+   
+   Eigen::Matrix<double, -1, 1> outs(1 + N);
+   outs(0) = log_posterior;
+   outs.tail(N) = log_lik;
+   
+   return outs;
 
-   return lp_grad_outs.tail(N);
-
+   
 }
 
 

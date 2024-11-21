@@ -194,10 +194,15 @@ Eigen::Matrix<double, -1, 1>                    Stan_wrapper_lp_fn_var(         
      theta_main_vec(i).adj() = main_grad(i);
    }
    
-   // Return the log_lik vector (of length N)
-   return lp_grad_outs.tail(N);
+   Eigen::Matrix<double, -1, 1> log_lik = lp_grad_outs.tail(N);
+   double log_posterior = lp_grad_outs(0);
    
-  /// return result;
+   Eigen::Matrix<double, -1, 1> outs(1 + N);
+   outs(0) = log_posterior;
+   outs.tail(N) = log_lik;
+   
+   return outs;
+   
    
 }
  
