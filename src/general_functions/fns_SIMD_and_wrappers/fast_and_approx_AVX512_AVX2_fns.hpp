@@ -333,7 +333,9 @@ inline    __m256d fast_exp_1_wo_checks_AVX2(const __m256d x)  {
   
   /* exp(x) = 2^i * e^f; i = rint (log2(e) * a), f = a - log(2) * i */
   const __m256d t = _mm256_mul_pd(x, exp_l2e);      /* t = log2(e) * a */
-  const __m256i i = _mm256_cvttpd_epi32(t);       /* i = (int)rint(t) */
+  ///  const __m256i i = _mm256_cvttpd_epi32(t);       /* i = (int)rint(t) */
+  const __m128i i_32 = _mm256_cvttpd_epi32(t); // 1st convert to 32-bit integers
+  const __m256i i = _mm256_cvtepi32_epi64(i_32); // then convert 32-bit integers to 64-bit integers and place in 256-bit vector
   const __m256d x_2 = _mm256_round_pd(t, _MM_FROUND_TO_NEAREST_INT) ; // ((0<<4)| _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC|_MM_FROUND_NO_EXC));
   const __m256d f = _mm256_fmadd_pd(x_2, exp_l2l, _mm256_fmadd_pd (x_2, exp_l2h, input));  /* a - log(2)_hi * r */    /* f = a - log(2)_hi * r - log(2)_lo * r */
   
