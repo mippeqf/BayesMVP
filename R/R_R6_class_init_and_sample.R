@@ -434,6 +434,11 @@ MVP_model <- R6Class("MVP_model",
                                                       LR_us  <- LR
                                                     }
                                                     
+                                                    
+                                                    if (is.null(n_nuisance)) { 
+                                                      n_nuisance <- self$n_nuisance
+                                                    }
+                                                    
                   
                                                     if (n_nuisance == 0) {
                                                       diffusion_HMC <- FALSE ## diffusion_HMC only done for nuisance 
