@@ -414,7 +414,7 @@ MVP_model <- R6Class("MVP_model",
                                                       if (n_burnin %in% c(250:500)) LR <- 0.075
                                                       if (n_burnin %in% c(501:750)) LR <- 0.05
                                                       if (n_burnin > 750)           LR <- 0.025
-                                                      EHMC_burnin_as_Rcpp_List$LR_main  <- LR
+                                                      LR_main  <- LR
                                                     }
                                                     
                                                     
@@ -423,7 +423,7 @@ MVP_model <- R6Class("MVP_model",
                                                       if (n_burnin %in% c(250:500)) LR <- 0.075
                                                       if (n_burnin %in% c(501:750)) LR <- 0.05
                                                       if (n_burnin > 750)           LR <- 0.025
-                                                      EHMC_burnin_as_Rcpp_List$LR_us  <- LR
+                                                      LR_us  <- LR
                                                     }
                                                     
                   
