@@ -25,12 +25,8 @@ fn_Rcpp_wrapper_update_M_dense_main_Hessian <- function(M_dense_main, M_inv_dens
     .Call(`_BayesMVP_fn_Rcpp_wrapper_update_M_dense_main_Hessian`, M_dense_main, M_inv_dense_main, M_inv_dense_main_chol, shrinkage_factor, ratio_Hess_main, interval_width, num_diff_e, Model_type, force_autodiff, force_PartialLog, multi_attempts, theta_main_vec, theta_us_vec, y, Model_args_as_Rcpp_List, ii, n_burnin, metric_type)
 }
 
-fn_find_initial_eps_main <- function(theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List) {
-    .Call(`_BayesMVP_fn_find_initial_eps_main`, theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List)
-}
-
-fn_find_initial_eps_us <- function(theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List) {
-    .Call(`_BayesMVP_fn_find_initial_eps_us`, theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List)
+fn_find_initial_eps_main_and_us <- function(theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List) {
+    .Call(`_BayesMVP_fn_find_initial_eps_main_and_us`, theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List)
 }
 
 fn_Rcpp_wrapper_adapt_eps_ADAM <- function(eps, eps_m_adam, eps_v_adam, iter, n_burnin, LR, p_jump, adapt_delta, beta1_adam, beta2_adam, eps_adam) {
