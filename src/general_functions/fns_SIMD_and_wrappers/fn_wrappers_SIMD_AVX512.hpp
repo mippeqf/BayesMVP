@@ -102,11 +102,17 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
    const int n_rows = x.rows();
    const int n_cols = x.cols();
    
-   for (int j = 0; j < n_cols; ++j) {  
-        const Eigen::Matrix<double, -1, 1> x_col = x.col(j);
-        x.col(j) = fn_AVX512_row_or_col_vector(x_col);
+   if (n_rows > n_cols) { // if data in "long" format
+       for (int j = 0; j < n_cols; ++j) {  
+            Eigen::Matrix<double, -1, 1> x_col = x.col(j);
+            x.col(j) = fn_AVX512_row_or_col_vector(x_col);
+       }
+   } else { 
+     for (int j = 0; j < n_rows; ++j) {  
+       Eigen::Matrix<double, 1, -1> x_row = x.row(j);
+       x.row(j) = fn_AVX512_row_or_col_vector(x_row);
+     }
    }
- 
    
    
  }
