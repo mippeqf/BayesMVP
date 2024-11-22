@@ -1,5 +1,5 @@
 
- 
+
 
 
 {
@@ -19,7 +19,7 @@
   
 }
 
- 
+
 
 
 rm(Rcpp_compute_MCMC_diagnostics,
@@ -36,8 +36,8 @@ rm(Rcpp_compute_MCMC_diagnostics,
 detach("package:BayesMVP", unload = TRUE)
 remove.packages("BayesMVP")
 
- 
- ####  rm(list = ls())
+
+####  rm(list = ls())
 
 ## source("load_R_packages.R")
 
@@ -92,7 +92,7 @@ BASE_FLAGS <- "-O3  -march=znver4  -mtune=znver4   -D_REENTRANT    -DSTAN_THREAD
 #BASE_FLAGS <- "-O3  -march=znver3  -mtune=znver3   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC" # if your AMD CPU architecture is zen3
 
 
- 
+
 
 
 Sys.setenv(CXX=CXX_COMPILER_TYPE,
@@ -143,8 +143,6 @@ remove.packages("BayesMVP")
 
 
 devtools::document("~/Documents/Work/PhD_work/R_packages/BayesMVP")   # Rebuild documentation
-
-
 Rcpp::compileAttributes( "~/Documents/Work/PhD_work/R_packages/BayesMVP")
 options(buildtools.check = function(action) TRUE )   #
 devtools::clean_dll("~/Documents/Work/PhD_work/R_packages/BayesMVP")
@@ -255,6 +253,92 @@ devtools::check()
 # - Add proper version numbers in DESCRIPTION
 
 
+
+
+
+
+
+
+
+remotes::install_github("https://github.com/CerulloE1996/BayesMVP", force = TRUE)
+rstudioapi::restartSession()
+
+
+
+
+
+
+
+
+
+# Install if needed
+install.packages(c( "git2r"))
+
+
+::use_git_config(user.name = "CerulloE1996",  user.email = "enzo.cerullo@bath.edu") # Configure Git credentials
+
+
+# usethis::create_github_token() # # Create a PAT
+# gitcreds::gitcreds_set() # Store it
+
+# Make changes, then:
+devtools::document()  # Update documentation
+### devtools::check()    # Run checks
+usethis::use_git()   # Stage changes
+usethis::use_github() # Push to GitHub
+
+
+# In your package directory
+try({  setwd("/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP/")   }, silent = TRUE)
+try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/")    }, silent = TRUE)
+
+usethis::use_git()
+usethis::use_github(organisation = "CerulloE1996", repo  = "BayesMVP")
+
+
+# Stage changes
+usethis::use_git()
+
+# Commit changes
+git2r::commit(repo = "https://github.com/CerulloE1996/BayesMVP", message = "Update package")
+
+# Push to GitHub
+git2r::push(repo = "https://github.com/CerulloE1996/BayesMVP", name = "origin", refspec = "refs/heads/main")
+
+
+# 
+# # Set the remote (if not already set)
+# system('git remote add origin https://github.com/CerulloE1996/BayesMVP.git')
+# 
+# # Add and push changes
+# system("git add .")
+# system("git commit -m 'Update package'")
+# system("git push origin main")
+# 
+# 
+# system("git branch")  # See current branch
+# system("git checkout -b main")  # Create and switch to main branch
+# system("git add .")
+# system("git commit -m 'Update package'")
+# system("git pull origin main")
+# system("git push origin main")
+# 
+# # Set rebase strategy
+# system("git config pull.rebase true")
+# # Abort the current rebase
+# system("git rebase --abort")
+
+
+
+
+# Get a fresh copy from remote
+system("git fetch origin")
+system("git reset --hard origin/main")
+
+# Now add your changes
+system("git add .")
+system("git commit -m 'Update package'")
+system("git push origin main")
 
 
 
