@@ -115,7 +115,8 @@ init_inits    <- function(init_model_outs,
               
             } else {  ### use the inputted cmdstanr_model_fit_obj to re-initialise the model
               
-              model_fit <- cmdstanr_model_fit_obj
+              # model_fit <- cmdstanr_model_fit_obj
+              mod <- cmdstanr_model_fit_obj
               
             }
             
@@ -423,7 +424,8 @@ init_inits    <- function(init_model_outs,
       
     } else {  ### use the inputted cmdstanr_model_fit_obj to re-initialise the model
       
-      model_fit <- cmdstanr_model_fit_obj
+      # model_fit <- cmdstanr_model_fit_obj
+      mod <- cmdstanr_model_fit_obj
       
     }
     
@@ -483,7 +485,7 @@ init_inits    <- function(init_model_outs,
   
   
   
-  return(list(  cmdstanr_model_fit_obj = model_fit,
+  return(list(  cmdstanr_model_fit_obj = mod,
                 bs_model = bs_model,
                 json_file_path = json_file_path,
                 model_so_file = model_so_file,

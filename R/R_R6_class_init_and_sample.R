@@ -205,6 +205,8 @@ MVP_model <- R6Class("MVP_model",
                           #'@param Stan_data_list List of Stan data (optional). See class documentation for details.
                           #'@param sample_nuisance Whether to sample nuisance parameters. See class documentation for details.
                           #'@param n_chains_burnin Number of chains used for burnin. See class documentation for details.
+                          #'@param compile Compile the (possibly dummy if using built-in models) Stan model. 
+                          #'@param force_recompile Force-compile the (possibly dummy if using built-in models) Stan model. 
                           #'@param Stan_model_file_path The file path to the Stan model, only needed if \code{Model_type = "Stan"}.
                           #'@param Stan_cpp_user_header The file path to a C++ .hpp file to be compiled together with the Stan model.
                           #' This is optional and only needed if you want to use custom C++ functions in your Stan model. 
