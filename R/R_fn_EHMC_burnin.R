@@ -338,113 +338,98 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   shrinkage_factor <- NULL
   
 
-  #  Start burnin   ------------------------------------------------------------------------------------------------------------------------------------------------
-   for (ii in iter_seq_burnin) {
+ #  Start burnin   ------------------------------------------------------------------------------------------------------------------------------------------------
+  for (ii in iter_seq_burnin) {
      
-     
-     
-     #if (is.null(shrinkage_factor)) {
-     if (ii < 0.5 * n_burnin)  {
-       shrinkage_factor <- 0.75
-       main_vec_for_Hessian <- theta_vec_current_main
-     } else {
-       shrinkage_factor <- 0.25
-       main_vec_for_Hessian <- EHMC_burnin_as_Rcpp_List$snaper_m_vec_main
-     }
-     # }
-     
+  
 
-     # if (ii < 25) {
-     #   Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,6,7,8,9,10,11),1] <-    "Stan"
-     #   Model_args_as_Rcpp_List$Model_args_strings[6,1] <- "Stan"
-     # } else {
-     #   Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,6,7,8,9,10,11),1] <-   vect_type #  "AVX512"
-     #   Model_args_as_Rcpp_List$Model_args_strings[6,1] <-  vect_type # "AVX512"
-     #
-     #   Model_args_as_Rcpp_List$Model_args_strings[8,1] <-  "Stan" # Phi  - fine (clang)
-     #   Model_args_as_Rcpp_List$Model_args_strings[9,1] <-  "Stan" # log_Phi - fine (clang)
-     # }
-
-
-  #  for (ii in 1:100) {
-
-    if (ii %% 10 == 0) {
-          comment(print(ii))
-    }
-
-    if (ii %% 50 == 0) {
-      gc(reset = TRUE)
-    }
-
-
-      if (ii < clip_iter) {
-        EHMC_args_as_Rcpp_List$tau_us  <-    1 *   EHMC_args_as_Rcpp_List$eps_us   ;
-        EHMC_args_as_Rcpp_List$tau_main  <-  1 *   EHMC_args_as_Rcpp_List$eps_main ;
-      }
-
-
-
-      try({
-
-        vec_points <-   c( c(gap:(gap+1)),
-                               max(c(round( 0.35 * n_adapt, 0) ), gap)  ,
-                               max(c(round( 0.45 * n_adapt, 0) ), gap)   ,
-                               max(c(round( 0.55 * n_adapt, 0) ), gap)   ,
-                               max(c(round( 0.65 * n_adapt, 0) ), gap)
-                            )
-
-        # print(vec_points)
-
-        if (ii %in% vec_points  )     {
-
-           # EHMC_args_as_Rcpp_List$tau_main  <-     5.0
-          EHMC_args_as_Rcpp_List$tau_main  <-     tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
-          EHMC_args_as_Rcpp_List$tau_us  <-        3.0 #  tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us ) # initial tau set to a constant
-
-        }
-      })
-
-
-
-       if (ii %in% c(clip_iter:gap)) {
-
-            if (ii <  round((clip_iter + gap) / 4) )   {
-              EHMC_args_as_Rcpp_List$tau_main  <-  2 *   EHMC_args_as_Rcpp_List$eps_main
-            } else if (ii %in% c( round((clip_iter + gap) / 4):round((clip_iter + gap) / 2)  )) {
-              EHMC_args_as_Rcpp_List$tau_main  <-  4 *   EHMC_args_as_Rcpp_List$eps_main
-            } else if (ii %in% c( round((clip_iter + gap) / 2):round((clip_iter + gap) * 0.75 )  )) {
-              EHMC_args_as_Rcpp_List$tau_main  <-  8 *   EHMC_args_as_Rcpp_List$eps_main
-            } else {
-              EHMC_args_as_Rcpp_List$tau_main  <-  0.75 *  tau_mult *   sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
+          #  for (ii in 1:100) {
+        
+            if (ii %% 10 == 0) {
+                  comment(print(ii))
             }
-
-       }
-
-
-          if ( EHMC_args_as_Rcpp_List$tau_main  > 25) {
-            EHMC_args_as_Rcpp_List$tau_main  <- 25
-          }
-          if ( EHMC_args_as_Rcpp_List$tau_us  > 25) {
-            EHMC_args_as_Rcpp_List$tau_us  <- 25
-          }
-
-
-      if (ii < clip_iter) {
-        EHMC_args_as_Rcpp_List$tau_us  <-    1 *   EHMC_args_as_Rcpp_List$eps_us   ;
-        EHMC_args_as_Rcpp_List$tau_main  <-  1 *   EHMC_args_as_Rcpp_List$eps_main;
-      }
-
-
-      # #           ### current mean theta across all K chains
-     if (sample_nuisance == TRUE) { 
-          theta_vec_current_mean <- rowMeans(rbind(theta_us_vectors_all_chains_input_from_R, theta_main_vectors_all_chains_input_from_R))
-          theta_vec_current_us <-   theta_vec_current_mean[index_nuisance]
-          theta_vec_current_main <- theta_vec_current_mean[index_main]
-     } else { 
-          theta_vec_current_mean <- rowMeans(rbind(theta_main_vectors_all_chains_input_from_R))
-          theta_vec_current_main <- theta_vec_current_mean
-     }
-     
+        
+            if (ii %% 50 == 0) {
+              gc(reset = TRUE)
+            }
+        
+        
+              if (ii < clip_iter) {
+                EHMC_args_as_Rcpp_List$tau_us  <-    1 *   EHMC_args_as_Rcpp_List$eps_us   ;
+                EHMC_args_as_Rcpp_List$tau_main  <-  1 *   EHMC_args_as_Rcpp_List$eps_main ;
+              }
+        
+        
+        
+              try({
+        
+                vec_points <-   c( c(gap:(gap+1)),
+                                       max(c(round( 0.35 * n_adapt, 0) ), gap)  ,
+                                       max(c(round( 0.45 * n_adapt, 0) ), gap)   ,
+                                       max(c(round( 0.55 * n_adapt, 0) ), gap)   ,
+                                       max(c(round( 0.65 * n_adapt, 0) ), gap)
+                                    )
+        
+                # print(vec_points)
+        
+                if (ii %in% vec_points  )     {
+        
+                   # EHMC_args_as_Rcpp_List$tau_main  <-     5.0
+                  EHMC_args_as_Rcpp_List$tau_main  <-     tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
+                  EHMC_args_as_Rcpp_List$tau_us  <-        3.0 #  tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us ) # initial tau set to a constant
+        
+                }
+              })
+        
+               if (ii %in% c(clip_iter:gap)) {
+        
+                    if (ii <  round((clip_iter + gap) / 4) )   {
+                      EHMC_args_as_Rcpp_List$tau_main  <-  2 *   EHMC_args_as_Rcpp_List$eps_main
+                    } else if (ii %in% c( round((clip_iter + gap) / 4):round((clip_iter + gap) / 2)  )) {
+                      EHMC_args_as_Rcpp_List$tau_main  <-  4 *   EHMC_args_as_Rcpp_List$eps_main
+                    } else if (ii %in% c( round((clip_iter + gap) / 2):round((clip_iter + gap) * 0.75 )  )) {
+                      EHMC_args_as_Rcpp_List$tau_main  <-  8 *   EHMC_args_as_Rcpp_List$eps_main
+                    } else {
+                      EHMC_args_as_Rcpp_List$tau_main  <-  0.75 *  tau_mult *   sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
+                    }
+        
+               }
+        
+                  if ( EHMC_args_as_Rcpp_List$tau_main  > 25) {
+                    EHMC_args_as_Rcpp_List$tau_main  <- 25
+                  }
+                  if ( EHMC_args_as_Rcpp_List$tau_us  > 25) {
+                    EHMC_args_as_Rcpp_List$tau_us  <- 25
+                  }
+        
+        
+              if (ii < clip_iter) {
+                EHMC_args_as_Rcpp_List$tau_us  <-    1 *   EHMC_args_as_Rcpp_List$eps_us   ;
+                EHMC_args_as_Rcpp_List$tau_main  <-  1 *   EHMC_args_as_Rcpp_List$eps_main;
+              }
+        
+        
+              # #           ### current mean theta across all K chains
+             if (sample_nuisance == TRUE) { 
+                  theta_vec_current_mean <- rowMeans(rbind(theta_us_vectors_all_chains_input_from_R, theta_main_vectors_all_chains_input_from_R))
+                  theta_vec_current_us <-   theta_vec_current_mean[index_nuisance]
+                  theta_vec_current_main <- theta_vec_current_mean[index_main]
+             } else { 
+                  theta_vec_current_mean <- rowMeans(rbind(theta_main_vectors_all_chains_input_from_R))
+                  theta_vec_current_main <- theta_vec_current_mean
+             }
+             
+             
+             #if (is.null(shrinkage_factor)) {
+             if (ii < 0.5 * n_burnin)  {
+               shrinkage_factor <- 0.75
+               main_vec_for_Hessian <- theta_vec_current_main
+             } else {
+               shrinkage_factor <- 0.25
+               main_vec_for_Hessian <- EHMC_burnin_as_Rcpp_List$snaper_m_vec_main
+             }
+             # }
+             
  
 
       if (ii < n_adapt) {
