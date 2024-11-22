@@ -19,7 +19,7 @@ is_valid <- function(x) {
 #' @keywords internal
 #' @export
 R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
-                                                vect_type ,
+                                                vect_type,
                                                 y,
                                                 N,
                                                 sample_nuisance,

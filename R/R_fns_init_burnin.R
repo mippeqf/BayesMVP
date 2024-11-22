@@ -45,8 +45,7 @@ init_and_run_burnin   <- function(  init_object,
                                     force_PartialLog,
                                     multi_attempts,
                                     n_nuisance_to_track,
-                                    inits_list = list(),
-                                    ...) {
+                                    Model_args_as_Rcpp_List) {
   
   
   ###  Model_args_as_Rcpp_List <- init_object$Model_args_as_Rcpp_List
@@ -167,7 +166,7 @@ init_and_run_burnin   <- function(  init_object,
     ##### set ADAM-related params (initialise)
     ### for main params
     adapt_delta_main <- adapt_delta
-    LR_main <- LR_us
+    LR_main <- LR_main
     eps_m_adam_main <-  1.0
     eps_v_adam_main <-  1.0
     tau_m_adam_main <-  1.0

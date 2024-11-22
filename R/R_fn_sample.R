@@ -82,22 +82,6 @@ sample_model  <-    function(     Model_type,
                 
                  if (Model_type != "Stan") {
 
-                                # Model_args_as_Rcpp_List$Model_args_mats_int[[1]] <- (Model_args_as_Rcpp_List$Model_args_mats_int[[1]])
-                                #
-                                # print((Model_args_as_Rcpp_List$Model_args_mats_int[[1]]))
-                                # ##  print(paste("hello", Model_args_as_Rcpp_List$Model_args_mats_int[[1]]))
-                                #
-                                # Model_args_as_Rcpp_List$Model_args_ints[4, 1] <- num_chunks # num_chunks
-                                #
-                                # Model_args_as_Rcpp_List$Model_args_doubles[3, 1] <- +5
-                                # Model_args_as_Rcpp_List$Model_args_doubles[4, 1] <- -5
-                                #
-                                # Model_args_bools <- matrix(rep(NA, 15))
-                                # Model_args_bools[1:14, 1] <-  Model_args_as_Rcpp_List$Model_args_bools
-                                # Model_args_as_Rcpp_List$Model_args_bools <- Model_args_bools
-                                #
-                                # Model_args_as_Rcpp_List$Model_args_bools[15, 1] <- FALSE # debug
-
                                  # nuisance transformation
                                  Model_args_as_Rcpp_List$Model_args_strings[13, 1] <- "Phi"
                    
@@ -105,37 +89,10 @@ sample_model  <-    function(     Model_type,
                                   # Model_args_as_Rcpp_List$Model_args_strings[2,1] <-    "Phi"
                                   # Model_args_as_Rcpp_List$Model_args_strings[3,1] <-    "inv_Phi"
                                  
-                                 
                                   try({
                                     Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,6,7,8,9,10,11),1] <-     vect_type
                                     Model_args_as_Rcpp_List$Model_args_strings[6,1] <-  vect_type
                                   }, silent = TRUE)
-
-                              # Model_args_as_Rcpp_List$Model_args_strings[1,1] <-  "AVX512" # general  - fine (clang)
-                              # Model_args_as_Rcpp_List$Model_args_strings[4,1] <-  "AVX512" # exp  - fine (clang)
-                              # Model_args_as_Rcpp_List$Model_args_strings[5,1] <-  "AVX512" # log    - fine (clang)
-                              # Model_args_as_Rcpp_List$Model_args_strings[6,1] <-  "AVX512" # lse
-                              # Model_args_as_Rcpp_List$Model_args_strings[7,1] <-  "AVX512" # tanh     - fine (clang)
-                              # Model_args_as_Rcpp_List$Model_args_strings[8,1] <-  "AVX512" # Phi  - not working w/ chunking   ?!
-                              # Model_args_as_Rcpp_List$Model_args_strings[9,1] <-  "AVX512" # log_Phi - not working w/ chunking  ?!
-                              # Model_args_as_Rcpp_List$Model_args_strings[10,1] <- "AVX512" # inv_Phi   - fine (clang)
-                              # Model_args_as_Rcpp_List$Model_args_strings[11,1] <- "AVX512" # inv_Phi_approx_from_logit_prob - fine (clang)
-
-
-
-
-
-                            #
-                            #       # Model_args_as_Rcpp_List$Model_args_doubles[[3]] <- +0.0000001
-                            #       # Model_args_as_Rcpp_List$Model_args_doubles[[4]] <- -0.0000001
-                            #
-                                  # #  set.seed(123)
-                                  # n_params <-  n_nuisance + n_params_main
-                                  # index_main <- (n_nuisance + 1):n_params
-                                  # index_us <- 1:n_nuisance
-                                  # theta_vec <- rnorm(n = n_params, mean = 0, sd = 0.01)
-                                  #
-                                  #
 
 
                  }
@@ -164,48 +121,16 @@ sample_model  <-    function(     Model_type,
                            # Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]] <-  (Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]])
                             
                       }
-                      
-                      
-                      
-                
-                # Model_args_as_Rcpp_List$model_so_file <-  "none"
-                # Model_args_as_Rcpp_List$json_file_path <- "none"
-                      
-                      # print(Model_args_as_Rcpp_List$Model_args_col_vecs_double)
-                      # print(paste("marker 1"))
-                      #  (str(Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]]))
-                      # print(paste("marker 2"))
-                      # 
-                      # Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]] <- list(Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]])
-                      # 
-                      # print(paste("marker 1"))
-                      # (str(Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]]))
-                      # print(paste("marker 2"))
-                #       
-                #       str((Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double))
-                #       str((Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]]))
-                #       
-                # theta_vec <- rep(0.01, n_params)
-                # print(n_params_main)
-                # print(n_nuisance)
-                # lp_grad_outs <- parallel::mcparallel(fn_Rcpp_wrapper_fn_lp_grad( Model_type = "MVP",
-                #                                             force_autodiff = FALSE,
-                #                                             force_PartialLog = FALSE,
-                #                                             theta_main_vec = matrix(theta_vec[index_main]),
-                #                                             theta_us_vec = matrix(theta_vec[index_us]),
-                #                                             y = y,
-                #                                             grad_option = "main_only",
-                #                                             Model_args_as_Rcpp_List = Model_args_as_Rcpp_List))
-                # #
-                # 
-                # lp_grad_outs <- parallel::mccollect(lp_grad_outs)
+ 
  
                 
                 # # parallel::mcparallel
                 
                 RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
                 
-                init_burnin_object <-                (          init_and_run_burnin( Model_type = Model_type,
+                print(paste("hello 1"))
+                
+                init_burnin_object <-                           init_and_run_burnin( Model_type = Model_type,
                                                                                      sample_nuisance = sample_nuisance,
                                                                                      y = y,
                                                                                      N = N,
@@ -230,10 +155,6 @@ sample_model  <-    function(     Model_type,
                                                                                      gap =gap,
                                                                                      max_eps_main = max_eps_main,
                                                                                      max_eps_us = max_eps_us,
-                                                                                     main_L_manual = main_L_manual,
-                                                                                     L_main_if_manual = L_main_if_manual,
-                                                                                     us_L_manual = us_L_manual,
-                                                                                     L_us_if_manual = L_us_if_manual,
                                                                                      max_L = max_L,
                                                                                      ratio_M_us = ratio_M_us,
                                                                                      ratio_M_main = ratio_M_main,
@@ -244,9 +165,10 @@ sample_model  <-    function(     Model_type,
                                                                                      force_autodiff = force_autodiff,
                                                                                      force_PartialLog = force_PartialLog,
                                                                                      multi_attempts = multi_attempts,
-                                                                                     Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
-                                                                                     ...
-                                                                                     ))
+                                                                                     Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)
+                
+                
+                print(paste("hello 2"))
         
 
                 {
