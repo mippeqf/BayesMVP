@@ -543,7 +543,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES) HMC_output_single_chain {
              Eigen::Matrix<double, -1, -1> main;
              Eigen::Matrix<double, -1, -1> div;
              Eigen::Matrix<double, -1, -1> nuisance;
-             Eigen::Matrix<double, -1, -1> log_lik;
+             Eigen::Matrix<float, -1, -1> log_lik;
            } traces;
 
            // Group diagnostic vectors together

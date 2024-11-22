@@ -118,6 +118,23 @@ inline void copy_to_global(int chain_idx,
 
 
 
+
+inline void copy_to_global_float(int chain_idx, 
+                                 int n_iter, 
+                                 const Eigen::Matrix<float, -1, -1> &local_buffer,
+                                 std::vector<Eigen::Matrix<float, -1, -1>> &global_trace) {
+  
+  // if (global_trace.size() <= chain_idx) {
+  //   global_trace.resize(chain_idx + 1);
+  // }
+  
+  global_trace[chain_idx] = local_buffer;
+  
+}
+
+
+
+
 // inline void copy_to_global_tbb(   int chain_index,
 //                                   int n_iter,
 //                                   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> Eigen_thread_local_trace_buffer,
@@ -135,7 +152,7 @@ inline void copy_to_global(int chain_idx,
 
 inline void copy_to_global_tbb(int chain_index,
                                int n_iter,
-                               const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> Eigen_thread_local_trace_buffer,
+                               const Eigen::Matrix<double, -1, -1> &Eigen_thread_local_trace_buffer,
                                tbb::concurrent_vector<RcppParallel::RMatrix<double>> &trace_output_to_R_RcppPar) {
   
   auto& target_matrix = trace_output_to_R_RcppPar[chain_index];
