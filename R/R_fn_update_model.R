@@ -1,16 +1,17 @@
 # source("R_fn_init_model_and_vals.R")
 
 update_model    <- function(init_object, ### this is the object to update 
-                            Model_type = NULL,
-                            y = NULL,
-                            N = NULL,
-                            init_lists_per_chain = NULL,
-                            sample_nuisance = NULL,
-                            model_args_list = NULL,
-                            Stan_data_list = NULL,
-                            n_params_main = NULL, 
-                            n_nuisance = NULL,
-                            n_chains_burnin = NULL,
+                            Model_type,
+                            y,
+                            N,
+                            init_lists_per_chain,
+                            sample_nuisance,
+                            model_args_list,
+                            Stan_data_list,
+                            n_params_main,
+                            n_nuisance,
+                            n_chains_burnin,
+                            force_recompile,
                             ...) {
   
  
@@ -95,6 +96,7 @@ update_model    <- function(init_object, ### this is the object to update
   ### now re-initialise but WITHOUT re-compiling the model
     init_object <- BayesMVP::initialise_model(   Model_type = Model_type,
                                                  compile = FALSE,
+                                                 force_recompile = force_recompile,
                                                  cmdstanr_model_fit_obj = init_object$cmdstanr_model_fit_obj,
                                                  y = y,
                                                  N = N,

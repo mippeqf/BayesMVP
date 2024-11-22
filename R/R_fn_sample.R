@@ -51,8 +51,7 @@ sample_model  <-    function(     Model_type,
                                   force_autodiff,
                                   force_PartialLog,
                                   multi_attempts,
-                                  n_nuisance_to_track,
-                                  ...) { 
+                                  n_nuisance_to_track) { 
   
   
                 if (sample_nuisance == FALSE) { 

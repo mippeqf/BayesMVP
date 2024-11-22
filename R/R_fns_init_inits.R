@@ -4,17 +4,18 @@
 #' init_inits
 #' @keywords internal
 #' @export
-init_inits    <- function(init_model_outs = NULL, 
-                          init_lists_per_chain = NULL,
-                          compile = TRUE,
-                          cmdstanr_model_fit_obj = NULL,
-                          n_chains_burnin = NULL,
+init_inits    <- function(init_model_outs,
+                          init_lists_per_chain,
+                          compile,
+                          force_recompile,
+                          cmdstanr_model_fit_obj,
+                          n_chains_burnin,
                           n_params_main,
                           n_nuisance,
                           N,
-                          Stan_model_file_path = NULL,
-                          Stan_data_list = NULL,
-                          Stan_cpp_user_header = NULL,
+                          Stan_model_file_path,
+                          Stan_data_list,
+                          Stan_cpp_user_header,
                           sample_nuisance,
                           ...) {
   
@@ -100,33 +101,36 @@ init_inits    <- function(init_model_outs = NULL,
                         
                         mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
                                                        compile_model_methods = TRUE,
-                                                       force_recompile = TRUE
+                                                       force_recompile = force_recompile
                         )
                         
                       } else {
                         
                         mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
                                                        compile_model_methods = TRUE,
-                                                       force_recompile = TRUE,
+                                                       force_recompile = force_recompile,
                                                        user_header =  Stan_cpp_user_header)  
                       }
-                      
-              
-              model_fit <- mod$sample(  data = Stan_data_list,
-                                        seed = 123,
-                                        chains = n_chains_burnin,
-                                        parallel_chains = n_chains_burnin,
-                                        iter_warmup = 1,
-                                        iter_sampling = 1,
-                                        init = init_lists_per_chain,
-                                        adapt_delta = 0.10,
-                                        max_treedepth = 1)
+
               
             } else {  ### use the inputted cmdstanr_model_fit_obj to re-initialise the model
               
               model_fit <- cmdstanr_model_fit_obj
               
             }
+            
+            
+            
+            
+            model_fit <- mod$sample(  data = Stan_data_list,
+                                      seed = 123,
+                                      chains = n_chains_burnin,
+                                      parallel_chains = n_chains_burnin,
+                                      iter_warmup = 1,
+                                      iter_sampling = 1,
+                                      init = init_lists_per_chain,
+                                      adapt_delta = 0.10,
+                                      max_treedepth = 1)
             
               
               
@@ -247,33 +251,6 @@ init_inits    <- function(init_model_outs = NULL,
                   json_file_path <- outs_init_bs_model$json_file_path         
                   Stan_model_file_path <- outs_init_bs_model$Stan_model_file_path  
                   
-                  # Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))  
-                  # #    Stan_model_file_path <- system.file("stan_models", "PO_LC_MVP_bin.stan", package = "BayesMVP")
-                  # 
-                  # Stan_model <- file.path(Stan_model_file_path)   
-                  # 
-                  # # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-                  #  r_data_JSON <- tempfile(fileext = ".json") # i need this to not be temp!!!
-                  # 
-                  # cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-                  # json_file_path <- r_data_JSON
-                  # Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-                  # 
-                  # Sys.setenv(STAN_THREADS="true")
-                  # 
-                  # bs_model <- bridgestan::StanModel$new(lib = Stan_model, 
-                  #                                       data = r_data_JSON, 
-                  #                                       seed = 123) # creates the .so file 
-                  #
-                  #  # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-                  #  r_data_JSON <- tempfile(fileext = ".json")
-                  #  cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-                  #  json_file_path <- r_data_JSON
-                  # ## Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-                  # 
-                  #  Sys.setenv(STAN_THREADS="true")
-                  #  bs_model <- StanModel$new(Stan_model_file_path, data = r_data_JSON, 1234) # creates .so file
-                  
                   dummy_json_file_path <- json_file_path
                   dummy_model_so_file <- transform_stan_path(Stan_model_file_path)
                   
@@ -342,39 +319,6 @@ init_inits    <- function(init_model_outs = NULL,
                   
                   
                   
-                  # Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_MVP_bin.stan"))  
-                  # #    Stan_model_file_path <- system.file("stan_models", "PO_LC_MVP_bin.stan", package = "BayesMVP")
-                  # 
-                  # Stan_model <- file.path(Stan_model_file_path)  
-                  # 
-                  # # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-                  # ## r_data_JSON <- tempfile(fileext = ".json")
-                  # # make a models directory in the user's workspace
-                  # r_data_JSON <- "~/.BayesMVP/compiled_models"
-                  # if (!dir.exists(r_data_JSON)) dir.create(r_data_JSON, recursive = TRUE)
-                  # 
-                  # cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-                  # json_file_path <- r_data_JSON
-                  # Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-                  # 
-                  # Sys.setenv(STAN_THREADS="true")
-                  # 
-                  # bs_model <- bridgestan::StanModel$new(lib = Stan_model, 
-                  #                                       data = r_data_JSON, 
-                  #                                       seed = 123) # creates the .so file 
-                  # 
-                  # 
-                  # #  
-                  #  # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-                  #  r_data_JSON <- tempfile(fileext = ".json")
-                  #  cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-                  #  json_file_path <- r_data_JSON
-                  # ## Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-                  # 
-                  #  Sys.setenv(STAN_THREADS="true")
-                  #  bs_model <- StanModel$new(Stan_model_file_path, data = r_data_JSON, 1234) # creates .so file
-                  
-                  
                   
                   outs_init_bs_model <- init_bs_model(Stan_data_list = Stan_data_list,
                                                       Stan_model_name = "PO_MVP_bin.stan")
@@ -435,43 +379,7 @@ init_inits    <- function(init_model_outs = NULL,
                                          ####
                                          prior_p_alpha =  array(rep(prev_prior_a, n_pops)),
                                          prior_p_beta =  array(rep(prev_prior_b, n_pops))) 
- 
-                  
-                  
-                  # Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_latent_trait_bin.stan"))  ### TEMP
-                  # #    Stan_model_file_path <- system.file("stan_models", "PO_latent_trait_bin.stan", package = "BayesMVP")
-                  # 
-                  # # 
-                  # Stan_model <- file.path(Stan_model_file_path)   
-                  # 
-                  # # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-                  # ## r_data_JSON <- tempfile(fileext = ".json")
-                  # # make a models directory in the user's workspace
-                  # r_data_JSON <- "~/.BayesMVP/compiled_models"
-                  # if (!dir.exists(r_data_JSON)) dir.create(r_data_JSON, recursive = TRUE)
-                  # 
-                  # cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-                  # json_file_path <- r_data_JSON
-                  # Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-                  # 
-                  # Sys.setenv(STAN_THREADS="true")
-                  # 
-                  # bs_model <- bridgestan::StanModel$new(lib = Stan_model, 
-                  #                                       data = r_data_JSON, 
-                  #                                       seed = 123) # creates the .so file 
-                  # 
-                  # 
-                  # #  
-                  # #  # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-                  # #  r_data_JSON <- tempfile(fileext = ".json")
-                  # #  cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-                  # #  json_file_path <- r_data_JSON
-                  # # ## Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-                  # # 
-                  # #  Sys.setenv(STAN_THREADS="true")
-                  # #  bs_model <- StanModel$new(Stan_model_file_path, data = r_data_JSON, 1234) # creates .so file
-                  # 
-                  
+         
                   
                   outs_init_bs_model <- init_bs_model(Stan_data_list = Stan_data_list,
                                                       Stan_model_name = "PO_latent_trait_bin.stan")
@@ -501,32 +409,35 @@ init_inits    <- function(init_model_outs = NULL,
               
               mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
                                              compile_model_methods = TRUE,
-                                             force_recompile = TRUE
+                                             force_recompile = force_recompile
               )
               
             } else {
               
               mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
                                              compile_model_methods = TRUE,
-                                             force_recompile = TRUE,
+                                             force_recompile = force_recompile,
                                              user_header =  Stan_cpp_user_header)  
             }
-      
-      model_fit <- mod$sample(  data = Stan_data_list,
-                                seed = 123,
-                                chains = n_chains_burnin,
-                                parallel_chains = n_chains_burnin,
-                                iter_warmup = 1,
-                                iter_sampling = 1,
-                                init = init_lists_per_chain,
-                                adapt_delta = 0.10,
-                                max_treedepth = 1)
+
       
     } else {  ### use the inputted cmdstanr_model_fit_obj to re-initialise the model
       
       model_fit <- cmdstanr_model_fit_obj
       
     }
+    
+    
+    model_fit <- mod$sample(  data = Stan_data_list,
+                              seed = 123,
+                              chains = n_chains_burnin,
+                              parallel_chains = n_chains_burnin,
+                              iter_warmup = 1,
+                              iter_sampling = 1,
+                              init = init_lists_per_chain,
+                              adapt_delta = 0.10,
+                              max_treedepth = 1)
+    
     
           cmdstanr_model_out <- model_fit$summary()
           param_names <- cmdstanr_model_out$variable

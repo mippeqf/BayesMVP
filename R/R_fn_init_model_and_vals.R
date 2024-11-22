@@ -5,19 +5,20 @@
 #' @keywords internal
 #' @export
 initialise_model  <-    function(     Model_type,
-                                      compile = TRUE,
-                                      cmdstanr_model_fit_obj = NULL,
-                                      y = NULL,
+                                      compile,
+                                      force_recompile,
+                                      cmdstanr_model_fit_obj ,
+                                      y,
                                       N,
                                       n_params_main,
                                       n_nuisance,
                                       init_lists_per_chain,
-                                      sample_nuisance = NULL,
-                                      n_chains_burnin = NULL,
-                                      model_args_list = NULL,
-                                      Stan_data_list = NULL,
-                                      Stan_model_file_path = NULL,
-                                      Stan_cpp_user_header = NULL,
+                                      sample_nuisance,
+                                      n_chains_burnin,
+                                      model_args_list,
+                                      Stan_data_list,
+                                      Stan_model_file_path,
+                                      Stan_cpp_user_header,
                                       ...) { 
   
   
@@ -41,6 +42,7 @@ initialise_model  <-    function(     Model_type,
                 
                 init_vals_object <- init_inits(          init_model_outs = init_model_object,
                                                          compile = compile,
+                                                         force_recompile = force_recompile,
                                                          cmdstanr_model_fit_obj = cmdstanr_model_fit_obj,
                                                          sample_nuisance = sample_nuisance,
                                                          init_lists_per_chain = init_lists_per_chain,

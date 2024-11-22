@@ -218,10 +218,12 @@ MVP_model <- R6Class("MVP_model",
                                                 n_params_main,
                                                 n_nuisance,
                                                 init_lists_per_chain,
+                                                n_chains_burnin,  
+                                                compile = TRUE,
+                                                force_recompile = TRUE,
                                                 model_args_list = NULL,  
                                                 Stan_data_list = NULL,  
                                                 sample_nuisance = NULL,
-                                                n_chains_burnin,  
                                                 Stan_model_file_path = NULL,
                                                 Stan_cpp_user_header = NULL,
                                                 ...) {
@@ -240,7 +242,8 @@ MVP_model <- R6Class("MVP_model",
                                           
                                     # -----------  call initialising fn -------------------------------------------------------------------------------------------------------------------
                                     self$init_object <-           initialise_model( Model_type = Model_type,
-                                                                                    compile = TRUE,
+                                                                                    compile = compile,
+                                                                                    force_recompile = force_recompile,
                                                                                     cmdstanr_model_fit_obj = NULL,
                                                                                     y = y,
                                                                                     N = N,
@@ -309,6 +312,7 @@ MVP_model <- R6Class("MVP_model",
                           #'@param metric_shape_main The shape of the metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"diag"} or 
                           #'\code{"dense"}. The default is \code{"dense"} if \code{n_params_main < 250} and \code{"diag"} otherwise. 
                           #'@param n_nuisance_to_track The number of nuisance parameters to track (i.e. to generate a trace for). By default the first 5 nuisance parameters are tracked.
+                          #'@param force_recompile Recompile the (possibly dummy if using built-in model) Stan model. 
                           #'@param ... Additional arguments passed to sampling.
                           #'@return Returns self invisibly, allowing for method chaining of this classes (MVP_model) methods. E.g.: model$sample(...)$summary(...). 
                           sample = function(  init_lists_per_chain = NULL,
@@ -342,6 +346,7 @@ MVP_model <- R6Class("MVP_model",
                                               metric_type_main = "Hessian",
                                               metric_shape_main = "dense",
                                               n_nuisance_to_track = 5,
+                                              force_recompile = FALSE,
                                               ...) {
                             
                             
@@ -391,6 +396,7 @@ MVP_model <- R6Class("MVP_model",
                                                                                                           init_object = init_object,
                                                                                                           y = self$y,
                                                                                                           N = self$N,
+                                                                                                          force_recompile = force_recompile,
                                                                                                           init_lists_per_chain = self$init_lists_per_chain,
                                                                                                           sample_nuisance = self$sample_nuisance,
                                                                                                           model_args_list = self$model_args_list,
