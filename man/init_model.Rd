@@ -6,15 +6,15 @@
 \usage{
 init_model(
   Model_type,
-  y = NULL,
+  y,
   N,
   n_params_main,
   n_nuisance,
-  X = NULL,
-  model_args_list = list(),
-  Stan_model_file_path = NULL,
-  Stan_cpp_user_header = NULL,
-  Stan_data_list = NULL,
+  X,
+  model_args_list,
+  Stan_model_file_path,
+  Stan_cpp_user_header,
+  Stan_data_list,
   ...
 )
 }

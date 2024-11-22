@@ -207,10 +207,12 @@ Create a new MVP model object
   n_params_main,
   n_nuisance,
   init_lists_per_chain,
+  n_chains_burnin,
+  compile = TRUE,
+  force_recompile = TRUE,
   model_args_list = NULL,
   Stan_data_list = NULL,
   sample_nuisance = NULL,
-  n_chains_burnin,
   Stan_model_file_path = NULL,
   Stan_cpp_user_header = NULL,
   ...
@@ -232,13 +234,17 @@ Create a new MVP model object
 
 \item{\code{init_lists_per_chain}}{List of initial values for each chain. See class documentation for details.}
 
+\item{\code{n_chains_burnin}}{Number of chains used for burnin. See class documentation for details.}
+
+\item{\code{compile}}{Compile the (possibly dummy if using built-in models) Stan model.}
+
+\item{\code{force_recompile}}{Force-compile the (possibly dummy if using built-in models) Stan model.}
+
 \item{\code{model_args_list}}{List of model arguments. See class documentation for details.}
 
 \item{\code{Stan_data_list}}{List of Stan data (optional). See class documentation for details.}
 
 \item{\code{sample_nuisance}}{Whether to sample nuisance parameters. See class documentation for details.}
-
-\item{\code{n_chains_burnin}}{Number of chains used for burnin. See class documentation for details.}
 
 \item{\code{Stan_model_file_path}}{The file path to the Stan model, only needed if \code{Model_type = "Stan"}.}
 
@@ -266,9 +272,9 @@ Sample from the model
   model_args_list = NULL,
   Stan_data_list = NULL,
   parallel_method = "RcppParallel",
-  y = NULL,
+  y = self$y,
   N = NULL,
-  sample_nuisance = NULL,
+  sample_nuisance = self$sample_nuisance,
   diffusion_HMC = TRUE,
   vect_type = NULL,
   Phi_type = "Phi",
@@ -293,6 +299,7 @@ Sample from the model
   metric_type_main = "Hessian",
   metric_shape_main = "dense",
   n_nuisance_to_track = 5,
+  force_recompile = FALSE,
   ...
 )}\if{html}{\out{</div>}}
 }
@@ -374,6 +381,8 @@ is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwi
 \code{"dense"}. The default is \code{"dense"} if \code{n_params_main < 250} and \code{"diag"} otherwise.}
 
 \item{\code{n_nuisance_to_track}}{The number of nuisance parameters to track (i.e. to generate a trace for). By default the first 5 nuisance parameters are tracked.}
+
+\item{\code{force_recompile}}{Recompile the (possibly dummy if using built-in model) Stan model.}
 
 \item{\code{...}}{Additional arguments passed to sampling.}
 }

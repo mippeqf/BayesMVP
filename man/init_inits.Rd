@@ -5,17 +5,18 @@
 \title{init_inits}
 \usage{
 init_inits(
-  init_model_outs = NULL,
-  init_lists_per_chain = NULL,
-  compile = TRUE,
-  cmdstanr_model_fit_obj = NULL,
-  n_chains_burnin = NULL,
+  init_model_outs,
+  init_lists_per_chain,
+  compile,
+  force_recompile,
+  cmdstanr_model_fit_obj,
+  n_chains_burnin,
   n_params_main,
   n_nuisance,
   N,
-  Stan_model_file_path = NULL,
-  Stan_data_list = NULL,
-  Stan_cpp_user_header = NULL,
+  Stan_model_file_path,
+  Stan_data_list,
+  Stan_cpp_user_header,
   sample_nuisance,
   ...
 )

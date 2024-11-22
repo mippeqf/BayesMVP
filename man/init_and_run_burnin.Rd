@@ -6,7 +6,6 @@
 \usage{
 init_and_run_burnin(
   init_object,
-  Model_args_as_Rcpp_List,
   y,
   N,
   n_chains_burnin,
@@ -41,8 +40,7 @@ init_and_run_burnin(
   force_PartialLog,
   multi_attempts,
   n_nuisance_to_track,
-  inits_list = list(),
-  ...
+  Model_args_as_Rcpp_List
 )
 }
 \description{

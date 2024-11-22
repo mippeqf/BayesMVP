@@ -6,19 +6,20 @@
 \usage{
 initialise_model(
   Model_type,
-  compile = TRUE,
-  cmdstanr_model_fit_obj = NULL,
-  y = NULL,
+  compile,
+  force_recompile,
+  cmdstanr_model_fit_obj,
+  y,
   N,
   n_params_main,
   n_nuisance,
   init_lists_per_chain,
-  sample_nuisance = NULL,
-  n_chains_burnin = NULL,
-  model_args_list = NULL,
-  Stan_data_list = NULL,
-  Stan_model_file_path = NULL,
-  Stan_cpp_user_header = NULL,
+  sample_nuisance,
+  n_chains_burnin,
+  model_args_list,
+  Stan_data_list,
+  Stan_model_file_path,
+  Stan_cpp_user_header,
   ...
 )
 }

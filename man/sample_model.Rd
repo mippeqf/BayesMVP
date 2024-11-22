@@ -34,7 +34,6 @@ sample_model(
   metric_shape_main,
   metric_type_nuisance,
   metric_shape_nuisance,
-  shrinkage_factor,
   max_eps_main,
   max_eps_us,
   max_L,
@@ -46,8 +45,7 @@ sample_model(
   force_autodiff,
   force_PartialLog,
   multi_attempts,
-  n_nuisance_to_track,
-  ...
+  n_nuisance_to_track
 )
 }
 \description{
