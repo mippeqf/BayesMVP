@@ -293,17 +293,18 @@ try({  setwd("/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP/")   }, sil
 try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/")    }, silent = TRUE)
 
 usethis::use_git()
-usethis::use_github(organisation = "CerulloE1996", repo  = "BayesMVP")
+usethis::use_github(organisation = "CerulloE1996")
 
+usethis::use_git_remote("origin", url = NULL, overwrite = TRUE)
 
 # Stage changes
 usethis::use_git()
 
 # Commit changes
-git2r::commit(repo = "https://github.com/CerulloE1996/BayesMVP", message = "Update package")
+git2r::commit(repo = "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/", message = "Update package")
 
 # Push to GitHub
-git2r::push(repo = "https://github.com/CerulloE1996/BayesMVP", name = "origin", refspec = "refs/heads/main")
+git2r::push(object = "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/", name = "origin", refspec = "refs/heads/main")
 
 
 # 
