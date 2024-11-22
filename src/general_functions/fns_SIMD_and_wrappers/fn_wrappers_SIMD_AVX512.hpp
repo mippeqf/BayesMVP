@@ -56,35 +56,36 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
   const double vect_siz_dbl = 8.0;
   const int N_divisible_by_vect_size = std::floor( static_cast<double>(N) / vect_siz_dbl) * vect_size;
  
-  T x_temp = x; // make a copy 
+ // T x_temp = x; // make a copy 
   
   if (N >= vect_size) {
     
           for (int i = 0; i + 8 <= N_divisible_by_vect_size; i += vect_size) {
             const __m512d AVX_array = _mm512_loadu_pd(&x(i));
             const __m512d AVX_array_out = fn_AVX512(AVX_array);
-            _mm512_storeu_pd(&x_temp(i), AVX_array_out);
+            _mm512_storeu_pd(&x(i), AVX_array_out);
           }
           
           // if (N_divisible_by_vect_size != N) {    // Handle remainder 
-          //    const Eigen::Matrix<double, -1, 1> x_tail = x.tail(vect_size); // copy of last 8 elements 
+             const Eigen::Matrix<double, -1, 1> x_tail = x.tail(vect_size); // copy of last 8 elements 
              const int start_index = N - vect_size;
              const int end_index = N;
+             int counter = 0;
                for (int i = start_index; i < end_index; ++i) {
-                      ///  x(i) = fn_double(x_tail(i - start_index));
-                      x_temp(i) = fn_double(x(i));
+                        x(i) = fn_double(x_tail(counter));
+                        counter += 1;
                }
            // }
            
   }  else {   // If N < 8, handle everything with scalar operations
     
         for (int i = 0; i < N; ++i) {
-          x_temp(i) = fn_double(x(i));
+          x(i) = fn_double(x(i));
         }
         
   }
   
-  x = x_temp;
+  /// x = x_temp;
 
   
 }
@@ -103,7 +104,7 @@ inline void fn_AVX512_matrix(  Eigen::Ref<T> x,
    const double vect_siz_dbl = 8.0;
    const int rows_divisible_by_vect_size = std::floor( static_cast<double>(n_rows) / vect_siz_dbl) * vect_size;
  
-   T x_temp = x; // make a copy 
+  // T x_temp = x; // make a copy 
    
    for (int j = 0; j < n_cols; ++j) { /// loop through cols first as col-major storage
 
@@ -113,29 +114,29 @@ inline void fn_AVX512_matrix(  Eigen::Ref<T> x,
               for (int i = 0; i < rows_divisible_by_vect_size; i += vect_size) {
                 const __m512d AVX_array = _mm512_loadu_pd(&x(i, j));
                 const __m512d AVX_array_out = fn_AVX512(AVX_array);
-                _mm512_storeu_pd(&x_temp(i, j), AVX_array_out);
+                _mm512_storeu_pd(&x(i, j), AVX_array_out);
               }
               
               // Handle remaining rows with double fns
-            // if (rows_divisible_by_vect_size != n_rows) {
-            //   const Eigen::Matrix<double, -1, 1> x_tail = x.col(j).tail(vect_size); // copy of last 8 elements 
+              const Eigen::Matrix<double, -1, 1> x_tail = x.col(j).tail(vect_size); // copy of last 8 elements 
               const int start_index = n_rows - vect_size;
               const int end_index = n_rows;
+              int counter = 0;
                 for (int i = start_index; i < end_index; ++i) {
-                     /// x(i, j) = fn_double(x_tail(i - start_index));
-                    x_temp(i, j) = fn_double(x(i, j));
+                        x(i, j) = fn_double(x_tail(counter));
+                         counter += 1;
                 }
-            // }
+ 
               
         } else {    // If n_rows < 8, handle entire row with double operations
           for (int i = 0; i < n_rows; ++i) {
-            x_temp(i, j) = fn_double(x(i, j));
+            x(i, j) = fn_double(x(i, j));
           } 
         }
 
   }
    
-    x = x_temp;
+ //   x = x_temp;
    
 
 }
