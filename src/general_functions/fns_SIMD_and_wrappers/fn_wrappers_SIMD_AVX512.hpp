@@ -94,54 +94,76 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
  
  
  
-template<typename T, typename FuncAVX512, typename FuncDouble>
-inline void fn_AVX512_matrix(  Eigen::Ref<T> x,
-                               FuncAVX512 fn_AVX512,
-                               FuncDouble fn_double) {
-  
+ template<typename T, typename FuncAVX512, typename FuncDouble>
+ inline void fn_AVX512_matrix(  Eigen::Ref<T> x,
+                                FuncAVX512 fn_AVX512,
+                                FuncDouble fn_double) {
+   
    const int n_rows = x.rows();
    const int n_cols = x.cols();
-   const int vect_size = 8;
-   const double vect_siz_dbl = 8.0;
-   const int rows_divisible_by_vect_size = std::floor( static_cast<double>(n_rows) / vect_siz_dbl) * vect_size;
+   
+   for (int j = 0; j < n_cols; ++j) {  
+        const Eigen::Matrix<double, -1, 1> x_col = x.col(j);
+        x.col(j) = fn_AVX512_row_or_col_vector(x_col);
+   }
  
-  // T x_temp = x; // make a copy 
    
-   for (int j = 0; j < n_cols; ++j) { /// loop through cols first as col-major storage
-     
-     const Eigen::Matrix<double, -1, 1> x_tail = x.col(j).tail(vect_size); // copy of last 8 elements 
-
-        // Make sure we have at least 8 rows before trying AVX
-        if (n_rows >= vect_size) {
-          
-              for (int i = 0; i < rows_divisible_by_vect_size; i += vect_size) {
-                const __m512d AVX_array = _mm512_loadu_pd(&x(i, j));
-                const __m512d AVX_array_out = fn_AVX512(AVX_array);
-                _mm512_storeu_pd(&x(i, j), AVX_array_out);
-              }
-              
-              // Handle remaining rows with double fns
-              const int start_index = n_rows - vect_size;
-              const int end_index = n_rows;
-              int counter = 0;
-                for (int i = start_index; i < end_index; ++i) {
-                        x(i, j) = fn_double(x_tail(counter));
-                         counter += 1;
-                }
+   
+ }
  
-              
-        } else {    // If n_rows < 8, handle entire row with double operations
-          for (int i = 0; i < n_rows; ++i) {
-            x(i, j) = fn_double(x(i, j));
-          } 
-        }
-
-  }
-   
- //   x = x_temp;
-   
-
-}
+ 
+ 
+ 
+ 
+ 
+// template<typename T, typename FuncAVX512, typename FuncDouble>
+// inline void fn_AVX512_matrix(  Eigen::Ref<T> x,
+//                                FuncAVX512 fn_AVX512,
+//                                FuncDouble fn_double) {
+//   
+//    const int n_rows = x.rows();
+//    const int n_cols = x.cols();
+//    const int vect_size = 8;
+//    const double vect_siz_dbl = 8.0;
+//    const int rows_divisible_by_vect_size = std::floor( static_cast<double>(n_rows) / vect_siz_dbl) * vect_size;
+//  
+//   // T x_temp = x; // make a copy 
+//    
+//    for (int j = 0; j < n_cols; ++j) { /// loop through cols first as col-major storage
+//      
+//      const Eigen::Matrix<double, -1, 1> x_tail = x.col(j).tail(vect_size); // copy of last 8 elements 
+// 
+//         // Make sure we have at least 8 rows before trying AVX
+//         if (n_rows >= vect_size) {
+//           
+//               for (int i = 0; i < rows_divisible_by_vect_size; i += vect_size) {
+//                 const __m512d AVX_array = _mm512_loadu_pd(&x(i, j));
+//                 const __m512d AVX_array_out = fn_AVX512(AVX_array);
+//                 _mm512_storeu_pd(&x(i, j), AVX_array_out);
+//               }
+//               
+//               // Handle remaining rows with double fns
+//               const int start_index = n_rows - vect_size;
+//               const int end_index = n_rows;
+//               int counter = 0;
+//                 for (int i = start_index; i < end_index; ++i) {
+//                         x(i, j) = fn_double(x_tail(counter));
+//                          counter += 1;
+//                 }
+//  
+//               
+//         } else {    // If n_rows < 8, handle entire row with double operations
+//           for (int i = 0; i < n_rows; ++i) {
+//             x(i, j) = fn_double(x(i, j));
+//           } 
+//         }
+// 
+//   }
+//    
+//  //   x = x_temp;
+//    
+// 
+// }
 
  
 
