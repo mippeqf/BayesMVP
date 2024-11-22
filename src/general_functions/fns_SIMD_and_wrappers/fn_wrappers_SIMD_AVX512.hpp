@@ -63,9 +63,9 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
   if (N >= vect_size) {
     
           for (int i = 0; i + 8 <= N_divisible_by_vect_size; i += vect_size) {
-            const __m512d AVX_array = _mm512_loadu_pd(&x(i));
+            const __m512d AVX_array = _mm512_load_pd(&x(i));
             const __m512d AVX_array_out = fn_AVX512(AVX_array);
-            _mm512_storeu_pd(&x(i), AVX_array_out);
+            _mm512_store_pd(&x(i), AVX_array_out);
           }
           
            if (N_divisible_by_vect_size != N) {    // Handle remainder 
@@ -104,16 +104,19 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
    
    if (n_rows > n_cols) { // if data in "long" format
        for (int j = 0; j < n_cols; ++j) {  
-          fn_AVX512_row_or_col_vector<typename T::ColXpr>(x.col(j), fn_AVX512, fn_double);
+          Eigen::Matrix<double, -1, 1> x_col = x.col(j);
+          Eigen::Ref<Eigen::Matrix<double, -1, 1> x_col_Ref(x_col);
+          fn_AVX512_row_or_col_vector<typename T::ColXpr>(x_col_Ref, fn_AVX512, fn_double);
+          x.col(j) = x_col_Ref;
        }
    } else { 
-     // for (int j = 0; j < n_rows; ++j) {  
-     //      Eigen::Matrix<double, 1, -1> row = x.row(j);
-     //      using RowType = decltype(row);
-     //      Eigen::Ref<Eigen::Matrix<double, 1, -1>> row_Ref(row);
-     //      fn_AVX512_row_or_col_vector<RowType>(row_Ref, fn_AVX512, fn_double);
-     //      x.row(j) = row;
-     // }
+     for (int j = 0; j < n_rows; ++j) {
+          Eigen::Matrix<double, 1, -1> row = x.row(j);
+          using RowType = decltype(row);
+          Eigen::Ref<Eigen::Matrix<double, 1, -1>> row_Ref(row);
+          fn_AVX512_row_or_col_vector<RowType>(row_Ref, fn_AVX512, fn_double);
+          x.row(j) = row_Ref;
+     }
    }
    
    
