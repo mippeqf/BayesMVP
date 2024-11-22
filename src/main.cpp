@@ -96,7 +96,8 @@
 #include "general_functions/structures.hpp"
 #include "general_functions/array_creators_Eigen_fns.hpp"
 #include "general_functions/array_creators_other_fns.hpp"
-#include "general_functions/misc_helper_fns.hpp"
+#include "general_functions/misc_helper_fns_1.hpp"
+#include "general_functions/misc_helper_fns_2.hpp"
 #include "general_functions/compute_diagnostics.hpp"
 
 //////// #include "BayesMVP_Stan_fast_approx_fns.hpp"
@@ -1767,7 +1768,8 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
   std::vector<NumericMatrix> trace_output_nuisance = vec_of_mats_Rcpp(n_nuisance_to_track, n_iter_R, n_threads_R);
   
   const int N = Model_args_as_cpp_struct.N;
-  std::vector<NumericMatrix> trace_output_log_lik = vec_of_mats_Rcpp(N, n_iter_R, n_threads_R);
+  //  std::vector<NumericMatrix> trace_output_log_lik = vec_of_mats_Rcpp(N, n_iter_R, n_threads_R);
+  std::vector<Eigen::Matrix<float, -1, -1>> trace_output_log_lik = vec_of_mats<float>(N, n_iter_R, n_threads_R);
   
    // tbb::task_scheduler_init init(n_threads_R);
 
@@ -1881,7 +1883,7 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
    std::vector<Eigen::Matrix<double, -1, -1>> trace_output_nuisance = vec_of_mats<double>(n_nuisance_to_track, n_iter_R, n_threads_R);
    
    const int N = Model_args_as_cpp_struct.N;
-   std::vector<Eigen::Matrix<double, -1, -1>> trace_output_log_lik = vec_of_mats<double>(N, n_iter_R, n_threads_R);
+   std::vector<Eigen::Matrix<float, -1, -1>> trace_output_log_lik = vec_of_mats<float>(N, n_iter_R, n_threads_R);
    
          // call openmp function
           EHMC_sampling_openmp(    n_threads_R,
