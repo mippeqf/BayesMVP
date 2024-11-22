@@ -354,6 +354,7 @@ MVP_model <- R6Class("MVP_model",
                             
                                                     #### Set HMC adaptations params that are fixed
                                                     gap <- NULL
+                                                    clip_iter <- NULL
                                                     ratio_M_us <- 0.25
                                                     ratio_M_main <- 0.25
                                                     n_adapt <- NULL
@@ -502,17 +503,12 @@ MVP_model <- R6Class("MVP_model",
                                                                                             parallel_method = parallel_method,
                                                                                             Phi_type = Phi_type,
                                                                                             inv_Phi_type = inv_Phi_type,
-                                                                                            ## args which can be updated 
                                                                                             y =  self$y,
                                                                                             N =  self$N,
                                                                                             n_params_main = self$n_params_main,
                                                                                             n_nuisance = self$n_nuisance,
-                                                                                            # init_lists_per_chain = self$init_lists_per_chain,
-                                                                                            # model_args_list =    self$model_args_list,
-                                                                                            # Stan_data_list =    self$Stan_data_list,
                                                                                             sample_nuisance =   self$sample_nuisance,
                                                                                             n_chains_burnin =  self$n_chains_burnin,
-                                                                                            ## rest of args
                                                                                             seed = seed,
                                                                                             n_iter = n_iter,
                                                                                             n_burnin = n_burnin,
@@ -541,8 +537,7 @@ MVP_model <- R6Class("MVP_model",
                                                                                             metric_shape_main = metric_shape_main,
                                                                                             metric_type_nuisance = metric_type_nuisance,
                                                                                             metric_shape_nuisance = metric_shape_nuisance,
-                                                                                            n_nuisance_to_track = n_nuisance_to_track,
-                                                                                            ...)
+                                                                                            n_nuisance_to_track = n_nuisance_to_track)
                                                     
                                                     return(self)
                                               

@@ -197,7 +197,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
         }
         
         
-        par_res <- (fn_R_RcppParallel_EHMC_single_iter_burnin(    theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
+        par_res <- (fn_find_initial_eps_main_and_us(         theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
                                                              theta_us_vec_initial_ref = theta_us_vec,
                                                              seed = seed,
                                                              Model_type = Model_type,
@@ -212,8 +212,12 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
         #par_res <- parallel::mccollect(par_proc)
         par_res <- par_res  ## [[1]]
         
+        print(paste("step_sizes = ", par_res))
+        ## main
         EHMC_args_as_Rcpp_List$eps_main <- par_res[[1]]
+        ## nuisance
         EHMC_args_as_Rcpp_List$eps_us <-   par_res[[2]]
+        EHMC_args_as_Rcpp_List$eps_us <- 0.01
     
   })
   
@@ -335,7 +339,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   #     min_LC_N_estimate_class_min <- N * sum(y)/(N*n_tests)
   # }
   
-  shrinkage_factor <- NULL
+  shrinkage_factor <- 1
   
 
  #  Start burnin   ------------------------------------------------------------------------------------------------------------------------------------------------
