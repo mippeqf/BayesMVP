@@ -285,6 +285,9 @@ MVP_model <- R6Class("MVP_model",
                           #'@param n_iter The number of sampling (i.e., post-burnin) iterations. Default is 1000. 
                           #'@param adapt_delta The Metropolis-Hastings target acceptance rate. Default is 0.80. If there are divergences, sometimes increasing this can help, at the cost 
                           #'of efficiency (since this will decrease the step-size (epsilon) and increase the number of leapfrog steps (L) per iteration).
+                          #'@param learning_rate The ADAM learning rate (LR) for learning the appropriate HMC step-size (\eqn{\eps}) and HMC path length (\eqn{\tau = L \cdot \eps})
+                          #'during the burnin period. The default depends on the length of burnin chosen as follows: if \code{n_burnin} < 249, then LR=0.10, if it's between 250 and 
+                          #'500 then LR = 0.075, and if the burnin length is between 501 and 750 then LR=0.05, and finally if the burnin is >750 iterations then LR=0.025.
                           #'@param ... Additional arguments passed to sampling.
                           #'@return Returns self invisibly, allowing for method chaining of this classes (MVP_model) methods. E.g.: model$sample(...)$summary(...). 
                           sample = function(  init_lists_per_chain = NULL,
@@ -306,6 +309,7 @@ MVP_model <- R6Class("MVP_model",
                                               n_burnin = 500,
                                               n_iter = 1000,
                                               adapt_delta = 0.80,
+                                              learning_rate = NULL,
                                               ...) {
                             
                                                     # validate initialization
@@ -382,6 +386,8 @@ MVP_model <- R6Class("MVP_model",
                                                                                             diffusion_HMC = diffusion_HMC,
                                                                                             partitioned_HMC = partitioned_HMC,
                                                                                             adapt_delta = adapt_delta,
+                                                                                            LR_us = learning_rate,
+                                                                                            LR_main = learning_rate,
                                                                                             ## other args passed with (...)
                                                                                             ...)
                                                     
