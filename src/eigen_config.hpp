@@ -5,6 +5,7 @@
 
 #ifdef EIGEN_MAX_ALIGN_BYTES
 #undef EIGEN_MAX_ALIGN_BYTES
+#endif
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__) // use AVX-512 if available 
   #define EIGEN_VECTORIZE_AVX512
