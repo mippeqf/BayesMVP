@@ -259,6 +259,7 @@ MVP_model <- R6Class("MVP_model",
                           
                           
                           
+                          
                           ## --------  wrap the sample fn -----------------------------------------------------------------------------------------------------------------------------
                           #'@description
                           #'Sample from the model
@@ -288,6 +289,26 @@ MVP_model <- R6Class("MVP_model",
                           #'@param learning_rate The ADAM learning rate (LR) for learning the appropriate HMC step-size (\eqn{\eps}) and HMC path length (\eqn{\tau = L \cdot \eps})
                           #'during the burnin period. The default depends on the length of burnin chosen as follows: if \code{n_burnin} < 249, then LR=0.10, if it's between 250 and 
                           #'500 then LR = 0.075, and if the burnin length is between 501 and 750 then LR=0.05, and finally if the burnin is >750 iterations then LR=0.025.
+                          #'@param clip_iter The number of iterations to perform MALA (i.e., one leapfrog step) on (first clip_iter iterations) for the burnin period. 
+                          #'The default depends on the length of the burnin period. 
+                          #'@param interval_width_main How often to update the metric (which is either empirical or Hessian-informed, and can be diagonal or dense) for the 
+                          #'main parameters during the burnin period. The default used depends on the length of the burnin period. 
+                          #'@param interval_width_nuisance How often to update the metric (which is empirical and diagonal) for the nuisance parameters during the burnin period.
+                          #'The default used depends on the length of the burnin period. 
+                          #'@param force_autodiff Whether to use (force) autodiff instead of the built-in manual gradients. This is only relevant for the built-in models, not 
+                          #'Stan models. The default is \code{FALSE}. 
+                          #'@param force_PartialLog Whether to use (force) use of gradients on the log-scale (for stability). Note that if \code{force_autodiff = TRUE} then this will 
+                          #'automatically be set to \code{TRUE}, since autodiff is only available for partial-log-scale gradients. The default is \code{FALSE}. 
+                          #'@param multi_attempts Whether 
+                          #'@param max_L The maximum number of leapfrog steps. This is similar to \code{max_treedepth} in Stan. The default is 1024 (which is equivalent to the default
+                          #'\code{max_treedepth = 10} in Stan). 
+                          #'@param tau_mult
+                          #'@param metric_type_main The type of metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"Hessian"} or 
+                          #'\code{"Empirical"}, where the former uses second derivative information and the latter uses the SD of the posterior computed whilst sampling. The default
+                          #'is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwise. 
+                          #'@param metric_shape_main The shape of the metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"diag"} or 
+                          #'\code{"dense"}. The default is \code{"dense"} if \code{n_params_main < 250} and \code{"diag"} otherwise. 
+                          #'@param n_nuisance_to_track The number of nuisance parameters to track (i.e. to generate a trace for). By default the first 5 nuisance parameters are tracked.
                           #'@param ... Additional arguments passed to sampling.
                           #'@return Returns self invisibly, allowing for method chaining of this classes (MVP_model) methods. E.g.: model$sample(...)$summary(...). 
                           sample = function(  init_lists_per_chain = NULL,
@@ -299,7 +320,7 @@ MVP_model <- R6Class("MVP_model",
                                               sample_nuisance = NULL,
                                               diffusion_HMC = TRUE,
                                               vect_type = NULL,
-                                              Phi_type = NULL,
+                                              Phi_type = "Phi",
                                               n_params_main = NULL,
                                               n_nuisance = NULL,
                                               n_chains_burnin = NULL,
@@ -310,7 +331,35 @@ MVP_model <- R6Class("MVP_model",
                                               n_iter = 1000,
                                               adapt_delta = 0.80,
                                               learning_rate = NULL,
+                                              clip_iter = NULL,
+                                              interval_width_main = NULL,
+                                              interval_width_nuisance = NULL,
+                                              force_autodiff = FALSE,
+                                              force_PartialLog = FALSE,
+                                              multi_attempts = TRUE,
+                                              max_L = 1024,
+                                              tau_mult = 1.60,
+                                              metric_type_main = "Hessian",
+                                              metric_shape_main = "dense",
+                                              n_nuisance_to_track = 5,
                                               ...) {
+                            
+                            
+                                                    #### Set HMC adaptations params that are fixed
+                                                    gap <- NULL
+                                                    ratio_M_us <- 0.25
+                                                    ratio_M_main <- 0.25
+                                                    n_adapt <- NULL
+                                                    max_eps_main <- 1.00
+                                                    max_eps_us <- 1.00
+                                                    #### Currently for nuisance sampling only diagonal-Euclidean metric is available 
+                                                    metric_type_nuisance = "Euclidean"
+                                                    metric_shape_nuisance = "diag"
+                                                    
+                                                    if (force_autodiff == TRUE) { 
+                                                      force_PartialLog <- TRUE
+                                                    }
+                                                    
                             
                                                     # validate initialization
                                                     if (is.null(self$init_object)) {
@@ -353,13 +402,86 @@ MVP_model <- R6Class("MVP_model",
                                                     }
                                                     
                                                     
-                                                    if (!is.null(adapt_delta) && (adapt_delta <= 0 || adapt_delta >= 1))
+                                                    if (!is.null(adapt_delta) && (adapt_delta <= 0 || adapt_delta >= 1)) {
                                                       stop("adapt_delta must be between 0 and 1")
+                                                    }
+                                                    
+                                                    LR_main <- learning_rate
+                                                    LR_us <- learning_rate
+                                                    
+                                                    if (is.null(LR_main))  { 
+                                                      if (n_burnin < 249) LR <- 0.10
+                                                      if (n_burnin %in% c(250:500)) LR <- 0.075
+                                                      if (n_burnin %in% c(501:750)) LR <- 0.05
+                                                      if (n_burnin > 750)           LR <- 0.025
+                                                      EHMC_burnin_as_Rcpp_List$LR_main  <- LR
+                                                    }
+                                                    
+                                                    
+                                                    if (is.null(LR_us))  { 
+                                                      if (n_burnin < 249) LR <- 0.10
+                                                      if (n_burnin %in% c(250:500)) LR <- 0.075
+                                                      if (n_burnin %in% c(501:750)) LR <- 0.05
+                                                      if (n_burnin > 750)           LR <- 0.025
+                                                      EHMC_burnin_as_Rcpp_List$LR_us  <- LR
+                                                    }
+                                                    
+                  
+                                                    if (n_nuisance == 0) {
+                                                      diffusion_HMC <- FALSE ## diffusion_HMC only done for nuisance 
+                                                    }
+                                                    
+                                                    if (is.null(diffusion_HMC)) {
+                                                      warning("'diffusion_HMC' not specificed (either TRUE of FALSE) - using default (diffusion HMC)")
+                                                    }
+                                                    
+                                                    if (is.null(metric_shape_main)) { 
+                                                      warning("metric_shape_main not supplied - using default (dense if n_params_main < 250, otherwise diagonal")
+                                                      if (n_params_main > 250) {
+                                                        metric_shape_main <- "dense"
+                                                      } else { 
+                                                        metric_shape_main <- "diag"
+                                                      }
+                                                    }
+                                                    
+                                                    
+                                                    
+                                                    if (is.null(n_adapt)) { 
+                                                      n_adapt <-  n_burnin - round(n_burnin/10)
+                                                    }
+                                                    
+                                                    
+                                                    if (is.null(clip_iter)) {
+                                                      if (n_burnin > 999) {
+                                                        clip_iter =  round(n_burnin/10, 0) # 50
+                                                      } else if ((n_burnin > 499) && (n_burnin < 1000)) { 
+                                                        clip_iter =  round(n_burnin/10, 0) # 50
+                                                      } else if (n_burnin %in% c(250:499)) { 
+                                                        clip_iter =  50 # 25 #  round(n_burnin/10, 0) # 50 # 15
+                                                      } else if (n_burnin %in% c(150:249)) { 
+                                                        clip_iter =  25 # 30 # 2  #  round(n_burnin/20, 0) # 25
+                                                      } else {  # 149 or less
+                                                        clip_iter =  20 #  20 # 10 # 5 
+                                                      }
+                                                    }
+                                                    
+                                                    
+                                                    
+                                                    if (is.null(gap)) { 
+                                                      gap <-  clip_iter  + round(n_adapt / 5)
+                                                    }
+                                                    if (is.null(interval_width_main)) { 
+                                                      interval_width_main <- round(n_burnin/10)
+                                                    }
+                                                    if (is.null(interval_width_nuisance)) { 
+                                                      interval_width_nuisance <- round(n_burnin/10)
+                                                    }
        
                                                     
                                                     partitioned_HMC <- TRUE # currently only TRUE is supported. 
                                                     inv_Phi_type <- ifelse(Phi_type == "Phi", "inv_Phi", "inv_Phi_approx") # inv_Phi_type is not modifiable 
-                                                    
+
+               
                                                     # -----------  call sample_model fn ---------------------------------------------------------------------------------------------------
                                                     self$result <-           sample_model(  Model_type = Model_type,
                                                                                             init_object = init_object,
@@ -388,7 +510,25 @@ MVP_model <- R6Class("MVP_model",
                                                                                             adapt_delta = adapt_delta,
                                                                                             LR_us = learning_rate,
                                                                                             LR_main = learning_rate,
-                                                                                            ## other args passed with (...)
+                                                                                            clip_iter = clip_iter,
+                                                                                            n_adapt = n_adapt,
+                                                                                            gap = gap,
+                                                                                            ratio_M_us = ratio_M_us,
+                                                                                            ratio_M_main = ratio_M_main,
+                                                                                            interval_width_main = interval_width_main,
+                                                                                            interval_width_nuisance = interval_width_nuisance,
+                                                                                            force_autodiff = force_autodiff,
+                                                                                            force_PartialLog = force_PartialLog,
+                                                                                            multi_attempts = multi_attempts,
+                                                                                            max_eps_main = max_eps_main,
+                                                                                            max_eps_us = max_eps_us,
+                                                                                            max_L = max_L,
+                                                                                            tau_mult = tau_mult,
+                                                                                            metric_type_main = metric_type_main,
+                                                                                            metric_shape_main = metric_shape_main,
+                                                                                            metric_type_nuisance = metric_type_nuisance,
+                                                                                            metric_shape_nuisance = metric_shape_nuisance,
+                                                                                            n_nuisance_to_track = n_nuisance_to_track,
                                                                                             ...)
                                                     
                                                     return(self)

@@ -38,15 +38,8 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                 metric_shape_main,# = "dense",
                                                 metric_type_nuisance ,#= "Euclidean",
                                                 metric_shape_nuisance ,#= "diag",
-                                                shrinkage_factor,
                                                 max_eps_main,
                                                 max_eps_us,
-                                                tau_main_target,
-                                                tau_us_target,
-                                                main_L_manual,
-                                                L_main_if_manual,
-                                                us_L_manual,
-                                                L_us_if_manual,
                                                 max_L,
                                                 tau_mult,
                                                 ratio_M_us,
@@ -62,8 +55,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                 Model_args_as_Rcpp_List,
                                                 EHMC_args_as_Rcpp_List,
                                                 EHMC_Metric_as_Rcpp_List,
-                                                EHMC_burnin_as_Rcpp_List,
-                                                ...) { 
+                                                EHMC_burnin_as_Rcpp_List) { 
   
   
    ### print(paste("start of R_fn_EHMC_SNAPER_ADAM_burnin fn"))
@@ -348,7 +340,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
            # EHMC_args_as_Rcpp_List$tau_main  <-     5.0
           EHMC_args_as_Rcpp_List$tau_main  <-     tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
-          EHMC_args_as_Rcpp_List$tau_us  <-         3.0 #  tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us ) # initial tau set to a constant
+          EHMC_args_as_Rcpp_List$tau_us  <-        3.0 #  tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us ) # initial tau set to a constant
 
         }
       })
@@ -394,8 +386,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
           theta_vec_current_main <- theta_vec_current_mean
      }
      
-    
-
+ 
 
       if (ii < n_adapt) {
 
@@ -512,7 +503,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                       try({
 
 
-                        if (is.null(shrinkage_factor)) {
+                        #if (is.null(shrinkage_factor)) {
                           if (ii < 0.5 * n_burnin)  {
                             shrinkage_factor <- 0.75
                             main_vec_for_Hessian <- theta_vec_current_main
@@ -520,7 +511,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                             shrinkage_factor <- 0.25
                             main_vec_for_Hessian <- EHMC_burnin_as_Rcpp_List$snaper_m_vec_main
                           }
-                        }
+                       # }
                         
                         
                           print(paste("updating Hessian"))
@@ -536,7 +527,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                                                            force_autodiff = force_autodiff,
                                                                                                                            force_PartialLog = force_PartialLog,
                                                                                                                            multi_attempts = multi_attempts,
-                                                                                                                           theta_main_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_main,
+                                                                                                                           theta_main_vec = main_vec_for_Hessian,
                                                                                                                            theta_us_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
                                                                                                                            y = y,
                                                                                                                            Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
@@ -693,8 +684,8 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                  shrinkage_factor = shrinkage_factor,
                                                                                  max_eps_main = max_eps_main,
                                                                                  max_eps_us = max_eps_us,
-                                                                                 tau_main_target = tau_main_target,
-                                                                                 tau_us_target = tau_us_target,
+                                                                                 tau_main_target = 0, # dummy arg
+                                                                                 tau_us_target = 0, # dummy arg
                                                                                  main_L_manual = main_L_manual,
                                                                                  L_main_if_manual = L_main_if_manual,
                                                                                  us_L_manual = us_L_manual,

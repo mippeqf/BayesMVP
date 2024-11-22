@@ -13,45 +13,38 @@ init_and_run_burnin   <- function(  init_object,
                                     Model_args_as_Rcpp_List,
                                     y,
                                     N,
-                                    n_chains_burnin = ifelse(0.5*parallel::detectCores() < 8, 0.5*parallel::detectCores(), 8),
+                                    n_chains_burnin,
                                     Model_type,
                                     sample_nuisance,
-                                    Phi_type = "Phi", 
+                                    Phi_type,
                                     n_params_main,
                                     n_nuisance,
                                     seed,
                                     n_burnin,
-                                    adapt_delta = NULL,
-                                    LR_main = NULL,
-                                    LR_us = NULL,
-                                    n_adapt  = NULL,
-                                    partitioned_HMC  = TRUE,
-                                    diffusion_HMC = TRUE,
-                                    clip_iter = NULL,
-                                    gap = NULL,
-                                    metric_type_main ,#= "Hessian",
-                                    metric_shape_main,# = "dense",
-                                    metric_type_nuisance,# = "Euclidean",
-                                    metric_shape_nuisance,# = "diag",
-                                    shrinkage_factor = NULL,
-                                    max_eps_main = 1.0, 
-                                    max_eps_us = 2.5,
-                                    tau_main_target = 0,
-                                    tau_us_target = 0,
-                                    main_L_manual = FALSE,
-                                    L_main_if_manual = 0,
-                                    us_L_manual = FALSE,
-                                    L_us_if_manual = 0,
-                                    max_L = 1024,
-                                    tau_mult = 1.60,
-                                    ratio_M_us = 0.25,
-                                    ratio_M_main = 0.25,
-                                    interval_width_main  = NULL,
-                                    interval_width_nuisance  = NULL,
-                                    force_autodiff = FALSE,  
-                                    force_PartialLog = FALSE,
-                                    multi_attempts = TRUE,
-                                    n_nuisance_to_track = 5,
+                                    adapt_delta,
+                                    LR_main,
+                                    LR_us,
+                                    n_adapt,
+                                    partitioned_HMC,
+                                    diffusion_HMC,
+                                    clip_iter,
+                                    gap ,
+                                    metric_type_main,
+                                    metric_shape_main,
+                                    metric_type_nuisance,
+                                    metric_shape_nuisance,
+                                    max_eps_main,
+                                    max_eps_us,
+                                    max_L,
+                                    tau_mult,
+                                    ratio_M_us,
+                                    ratio_M_main,
+                                    interval_width_main,
+                                    interval_width_nuisance,
+                                    force_autodiff,
+                                    force_PartialLog,
+                                    multi_attempts,
+                                    n_nuisance_to_track,
                                     inits_list = list(),
                                     ...) {
   
@@ -110,69 +103,8 @@ init_and_run_burnin   <- function(  init_object,
 
   ## NOTE:        metric_shape_nuisance = "diag" is the only option for nuisance !!
   
-  if (is.null(init_object)) {
-    warning("init_object not specified - please create init_object using init_model() and then pass as an argument to init_burnin()")
-  }
-  
-  if (is.null(n_params_main)) {
-    warning("n_params_main not specified - please specify")
-  }
-  
-  if (is.null(n_nuisance)) {
-    warning("n_nuisance not specified - assuming 0 nuisance parameters")
-  }
-  
-  
-  if (is.null(diffusion_HMC)) {
-    warning("'diffusion_HMC' not specificed (either TRUE of FALSE) - using default (diffusion HMC)")
-  }
-  
-  if (n_nuisance == 0) {
-    diffusion_HMC <- FALSE ## diffusion_HMC only done for nuisance 
-  }
-  
-  if (is.null(metric_shape_main)) { 
-      warning("metric_shape_main not supplied - using default (dense if n_params_main < 250, otherwise diagonal")
-      if (n_params_main > 250) {
-        metric_shape_main <- "dense"
-      } else { 
-        metric_shape_main <- "diag"
-      }
-  }
- 
-  
- 
-  if (is.null(n_adapt)) { 
-    n_adapt <-  n_burnin - round(n_burnin/10)
-  }
-  
-  
-  if (is.null(clip_iter)) {
-    if (n_burnin > 999) {
-      clip_iter =  round(n_burnin/10, 0) # 50
-    } else if ((n_burnin > 499) && (n_burnin < 1000)) { 
-      clip_iter =  round(n_burnin/10, 0) # 50
-    } else if (n_burnin %in% c(250:499)) { 
-      clip_iter =  50 # 25 #  round(n_burnin/10, 0) # 50 # 15
-    } else if (n_burnin %in% c(150:249)) { 
-      clip_iter =  25 # 30 # 2  #  round(n_burnin/20, 0) # 25
-    } else {  # 149 or less
-      clip_iter =  20 #  20 # 10 # 5 
-    }
-  }
-  
-  
-  
-  if (is.null(gap)) { 
-    gap <-  clip_iter  + round(n_adapt / 5)
-  }
-  if (is.null(interval_width_main)) { 
-    interval_width_main <- round(n_burnin/10)
-  }
-  if (is.null(interval_width_nuisance)) { 
-    interval_width_nuisance <- round(n_burnin/10)
-  }
-  
+
+
  
 
   
@@ -227,6 +159,7 @@ init_and_run_burnin   <- function(  init_object,
       diffusion_HMC = diffusion_HMC)
     
   }
+
   
   
   {  # ----------------------------------------------------------------- list for EHMC params / EHMC struct in C++
@@ -318,23 +251,7 @@ init_and_run_burnin   <- function(  init_object,
     
     
     
-    if (is.null(LR_main))  { 
-      if (n_burnin < 249) LR <- 0.10
-      if (n_burnin %in% c(250:500)) LR <- 0.075
-      if (n_burnin %in% c(501:750)) LR <- 0.05
-      if (n_burnin > 750)           LR <- 0.025
-      EHMC_burnin_as_Rcpp_List$LR_main  <- LR
-    }
-    
-    
-    if (is.null(LR_us))  { 
-      if (n_burnin < 249) LR <- 0.10
-      if (n_burnin %in% c(250:500)) LR <- 0.075
-      if (n_burnin %in% c(501:750)) LR <- 0.05
-      if (n_burnin > 750)           LR <- 0.025
-      EHMC_burnin_as_Rcpp_List$LR_us  <- LR
-    }
-    
+
 
     
     
@@ -383,15 +300,10 @@ init_and_run_burnin   <- function(  init_object,
                                                   metric_shape_main = metric_shape_main,
                                                   metric_type_nuisance = metric_type_nuisance,
                                                   metric_shape_nuisance = metric_shape_nuisance,
-                                                  shrinkage_factor = shrinkage_factor,
                                                   max_eps_main = max_eps_main,
                                                   max_eps_us = max_eps_us,
                                                   tau_main_target = tau_main_target,
                                                   tau_us_target = tau_us_target,
-                                                  main_L_manual = main_L_manual,
-                                                  L_main_if_manual = L_main_if_manual,
-                                                  us_L_manual = us_L_manual,
-                                                  L_us_if_manual = L_us_if_manual,
                                                   max_L = max_L,
                                                   tau_mult = tau_mult,
                                                   ratio_M_us = ratio_M_us,
@@ -407,8 +319,7 @@ init_and_run_burnin   <- function(  init_object,
                                                   Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
                                                   EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
                                                   EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List,
-                                                  EHMC_burnin_as_Rcpp_List = EHMC_burnin_as_Rcpp_List,
-                                                  ...)
+                                                  EHMC_burnin_as_Rcpp_List = EHMC_burnin_as_Rcpp_List)
   
   
   ### update Rcpp lists to pass onto sampling / post-burnin function 
