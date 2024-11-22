@@ -108,8 +108,8 @@ generate_summary_tibble <- function(n_threads = NULL,
                     summary_df$mean[i] <- means_between_chains[i]
                     summary_df$sd[i] <- SDs_between_chains[i]
                     try({  
-                     ###   summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[i, ]
-                       summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[, i]
+                        summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[i, ]
+                        #### summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[, i]
                     })
                     summary_df$n_eff[i] <- round(ess_vec[i])
                     summary_df$Rhat[i] <- rhat_vec[i]
@@ -125,26 +125,7 @@ generate_summary_tibble <- function(n_threads = NULL,
                       nested_rhat_vec[i] <- posterior::rhat_nested(trace[i, , ], superchain_ids = superchain_ids)
                       summary_df$n_Rhat[i] <- nested_rhat_vec[i]
                     }
-                    
-                    # library(foreach)
-                    # library(doParallel)
-                    # library(parallel)
-                    
-                    # n_cores <- min(n_to_compute, n_cores)
-                    # cl <- parallel::makeCluster(n_cores)
-                    # doParallel::registerDoParallel(cl)
-                    # 
-                    # # Parallel computation using foreach
-                    # nested_rhat_results <- foreach(i = seq_len(n_to_compute),
-                    #                                .combine = 'c',
-                    #                                .packages = 'posterior',
-                    #                                .export = c('trace', 'superchain_ids')) %dopar% {
-                    #                                  posterior::rhat_nested(trace[i, , ], superchain_ids = superchain_ids)
-                    #                                }
-                    # 
-                    # summary_df$n_Rhat <- nested_rhat_results   # Update summary_df
-                    # parallel::stopCluster(cl)   # Clean up
-                
+                                    
               }
               
               summary_tibble <- tibble::tibble(summary_df)
