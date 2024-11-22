@@ -710,11 +710,11 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                  max_eps_main = max_eps_main,
                                                                                  max_eps_us = max_eps_us,
                                                                                  tau_main_target = 0, # dummy arg
-                                                                                 tau_us_target = 0, # dummy arg
-                                                                                 main_L_manual = main_L_manual,
-                                                                                 L_main_if_manual = L_main_if_manual,
-                                                                                 us_L_manual = us_L_manual,
-                                                                                 L_us_if_manual = L_us_if_manual,
+                                                                                 tau_us_target = 0,   # dummy arg
+                                                                                 main_L_manual = FALSE,  # dummy arg
+                                                                                 L_main_if_manual = 0,   # dummy arg
+                                                                                 us_L_manual = FALSE,    # dummy arg
+                                                                                 L_us_if_manual = 0,     # dummy arg
                                                                                  max_L = max_L,
                                                                                  tau_mult = tau_mult,
                                                                                  ratio_M_us = ratio_M_us,
