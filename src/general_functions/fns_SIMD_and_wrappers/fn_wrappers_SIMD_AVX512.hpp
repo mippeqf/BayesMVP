@@ -105,7 +105,7 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
    if (n_rows > n_cols) { // if data in "long" format
        for (int j = 0; j < n_cols; ++j) {  
           Eigen::Matrix<double, -1, 1> x_col = x.col(j);
-          Eigen::Ref<Eigen::Matrix<double, -1, 1> x_col_Ref(x_col);
+          Eigen::Ref<Eigen::Matrix<double, -1, 1>> x_col_Ref(x_col);
           fn_AVX512_row_or_col_vector<typename T::ColXpr>(x_col_Ref, fn_AVX512, fn_double);
           x.col(j) = x_col_Ref;
        }
