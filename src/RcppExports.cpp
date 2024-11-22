@@ -108,9 +108,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// fn_find_initial_eps_main
-double fn_find_initial_eps_main(Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref, Eigen::Matrix<double, -1, 1> theta_us_vec_initial_ref, const double seed, const std::string Model_type, const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts, Eigen::Matrix<int, -1, -1> y_ref, const Rcpp::List Model_args_as_Rcpp_List, Rcpp::List EHMC_args_as_Rcpp_List, const Rcpp::List EHMC_Metric_as_Rcpp_List);
-RcppExport SEXP _BayesMVP_fn_find_initial_eps_main(SEXP theta_main_vec_initial_refSEXP, SEXP theta_us_vec_initial_refSEXP, SEXP seedSEXP, SEXP Model_typeSEXP, SEXP force_autodiffSEXP, SEXP force_PartialLogSEXP, SEXP multi_attemptsSEXP, SEXP y_refSEXP, SEXP Model_args_as_Rcpp_ListSEXP, SEXP EHMC_args_as_Rcpp_ListSEXP, SEXP EHMC_Metric_as_Rcpp_ListSEXP) {
+// fn_find_initial_eps_main_and_us
+Rcpp::List fn_find_initial_eps_main_and_us(Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref, Eigen::Matrix<double, -1, 1> theta_us_vec_initial_ref, const double seed, const std::string Model_type, const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts, Eigen::Matrix<int, -1, -1> y_ref, const Rcpp::List Model_args_as_Rcpp_List, Rcpp::List EHMC_args_as_Rcpp_List, const Rcpp::List EHMC_Metric_as_Rcpp_List);
+RcppExport SEXP _BayesMVP_fn_find_initial_eps_main_and_us(SEXP theta_main_vec_initial_refSEXP, SEXP theta_us_vec_initial_refSEXP, SEXP seedSEXP, SEXP Model_typeSEXP, SEXP force_autodiffSEXP, SEXP force_PartialLogSEXP, SEXP multi_attemptsSEXP, SEXP y_refSEXP, SEXP Model_args_as_Rcpp_ListSEXP, SEXP EHMC_args_as_Rcpp_ListSEXP, SEXP EHMC_Metric_as_Rcpp_ListSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -125,28 +125,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Rcpp::List >::type Model_args_as_Rcpp_List(Model_args_as_Rcpp_ListSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type EHMC_args_as_Rcpp_List(EHMC_args_as_Rcpp_ListSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List >::type EHMC_Metric_as_Rcpp_List(EHMC_Metric_as_Rcpp_ListSEXP);
-    rcpp_result_gen = Rcpp::wrap(fn_find_initial_eps_main(theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List));
-    return rcpp_result_gen;
-END_RCPP
-}
-// fn_find_initial_eps_us
-double fn_find_initial_eps_us(Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref, Eigen::Matrix<double, -1, 1> theta_us_vec_initial_ref, const double seed, const std::string Model_type, const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts, Eigen::Matrix<int, -1, -1> y_ref, const Rcpp::List Model_args_as_Rcpp_List, Rcpp::List EHMC_args_as_Rcpp_List, const Rcpp::List EHMC_Metric_as_Rcpp_List);
-RcppExport SEXP _BayesMVP_fn_find_initial_eps_us(SEXP theta_main_vec_initial_refSEXP, SEXP theta_us_vec_initial_refSEXP, SEXP seedSEXP, SEXP Model_typeSEXP, SEXP force_autodiffSEXP, SEXP force_PartialLogSEXP, SEXP multi_attemptsSEXP, SEXP y_refSEXP, SEXP Model_args_as_Rcpp_ListSEXP, SEXP EHMC_args_as_Rcpp_ListSEXP, SEXP EHMC_Metric_as_Rcpp_ListSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::Matrix<double, -1, 1> >::type theta_main_vec_initial_ref(theta_main_vec_initial_refSEXP);
-    Rcpp::traits::input_parameter< Eigen::Matrix<double, -1, 1> >::type theta_us_vec_initial_ref(theta_us_vec_initial_refSEXP);
-    Rcpp::traits::input_parameter< const double >::type seed(seedSEXP);
-    Rcpp::traits::input_parameter< const std::string >::type Model_type(Model_typeSEXP);
-    Rcpp::traits::input_parameter< const bool >::type force_autodiff(force_autodiffSEXP);
-    Rcpp::traits::input_parameter< const bool >::type force_PartialLog(force_PartialLogSEXP);
-    Rcpp::traits::input_parameter< const bool >::type multi_attempts(multi_attemptsSEXP);
-    Rcpp::traits::input_parameter< Eigen::Matrix<int, -1, -1> >::type y_ref(y_refSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List >::type Model_args_as_Rcpp_List(Model_args_as_Rcpp_ListSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type EHMC_args_as_Rcpp_List(EHMC_args_as_Rcpp_ListSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List >::type EHMC_Metric_as_Rcpp_List(EHMC_Metric_as_Rcpp_ListSEXP);
-    rcpp_result_gen = Rcpp::wrap(fn_find_initial_eps_us(theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List));
+    rcpp_result_gen = Rcpp::wrap(fn_find_initial_eps_main_and_us(theta_main_vec_initial_ref, theta_us_vec_initial_ref, seed, Model_type, force_autodiff, force_PartialLog, multi_attempts, y_ref, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -473,8 +452,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BayesMVP_Rcpp_wrapper_EIGEN_double", (DL_FUNC) &_BayesMVP_Rcpp_wrapper_EIGEN_double, 4},
     {"_BayesMVP_Rcpp_wrapper_fn_lp_grad", (DL_FUNC) &_BayesMVP_Rcpp_wrapper_fn_lp_grad, 9},
     {"_BayesMVP_fn_Rcpp_wrapper_update_M_dense_main_Hessian", (DL_FUNC) &_BayesMVP_fn_Rcpp_wrapper_update_M_dense_main_Hessian, 18},
-    {"_BayesMVP_fn_find_initial_eps_main", (DL_FUNC) &_BayesMVP_fn_find_initial_eps_main, 11},
-    {"_BayesMVP_fn_find_initial_eps_us", (DL_FUNC) &_BayesMVP_fn_find_initial_eps_us, 11},
+    {"_BayesMVP_fn_find_initial_eps_main_and_us", (DL_FUNC) &_BayesMVP_fn_find_initial_eps_main_and_us, 11},
     {"_BayesMVP_fn_Rcpp_wrapper_adapt_eps_ADAM", (DL_FUNC) &_BayesMVP_fn_Rcpp_wrapper_adapt_eps_ADAM, 11},
     {"_BayesMVP_fn_update_snaper_m_and_s", (DL_FUNC) &_BayesMVP_fn_update_snaper_m_and_s, 4},
     {"_BayesMVP_fn_update_eigen_max_and_eigen_vec", (DL_FUNC) &_BayesMVP_fn_update_eigen_max_and_eigen_vec, 3},
