@@ -68,17 +68,17 @@ generate_summary_tibble <- function(n_threads = NULL,
               
               if (n_params < n_threads) { n_threads = n_params }
               
-              #### Compute summary stats using custom Rcpp/C++ functions 
+              #### Compute summary stats using custom Rcpp/C++ functions
               outs <-  (Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "mean",
                                                     n_threads = n_threads))
               means_between_chains <- outs$statistics[, 1]
-              
+
               outs <-  (Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "sd",
                                                     n_threads = n_threads))
               SDs_between_chains <- outs$statistics[, 1]
-              
+
               outs <-  (Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "quantiles",
                                                     n_threads = n_threads))
@@ -107,7 +107,10 @@ generate_summary_tibble <- function(n_threads = NULL,
                     #### Calculate summary statistics
                     summary_df$mean[i] <- means_between_chains[i]
                     summary_df$sd[i] <- SDs_between_chains[i]
-                    summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[i, ]
+                    try({  
+                     ###   summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[i, ]
+                       summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[, i]
+                    })
                     summary_df$n_eff[i] <- round(ess_vec[i])
                     summary_df$Rhat[i] <- rhat_vec[i]
                 
@@ -649,7 +652,8 @@ create_summary_and_traces <- function(    model_results,
                                trace_generated_quantities_tibble = trace_generated_quantities_tibble)
     
     ## list to store efficiency information
-    efficiency_info <- list(              Min_ESS_main = Min_ESS_main, 
+    efficiency_info <- list(              n_iter = n_iter,
+                                          Min_ESS_main = Min_ESS_main, 
                                           ESS_per_sec_samp = ESS_per_sec_samp, 
                                           ESS_per_sec_total = ESS_per_sec_total,
                                           time_burnin = time_burnin, 

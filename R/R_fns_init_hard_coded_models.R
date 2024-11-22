@@ -672,7 +672,8 @@ init_hard_coded_model <- function(Model_type,
       # names(Model_args_vecs_of_mats_int)[1] <- c("LKJ prior for corr matrices (MVP/LC_MVP only")
       # names(Model_args_mats_double)[1] <- c("LKJ prior for corr matrices (MVP/LC_MVP only")
     
-    print(n_params_main)
+    print(paste("n_params_main = ", n_params_main))
+    
   #    print(Model_args_mats_int)
     
     Model_args_as_Rcpp_List <- list(

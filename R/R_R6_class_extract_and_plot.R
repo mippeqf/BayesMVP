@@ -180,7 +180,7 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                     
                                     
                                     
-                                    ## -- Convenience fn to compute "time to X ESS" using the "$time_to_ESS()" method --------------------------------------
+                                    ## -- Convenience fn to compute "time to X ESS" using the "$time_to_target_ESS()" method --------------------------------------
                                     #'@param target_ESS The target ESS. 
                                     #'@return Returns a list called "target_ESS_times" which contains the estimated sampling time to reach the target ESS 
                                     #'("sampling_time_to_target_ESS"), the estimated total time excluding the time it takes to compute model summaries 
@@ -217,6 +217,32 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                                                total_time_to_target_ESS_with_summaries = total_time_to_target_ESS_with_summaries)
                                       
                                       return(target_ESS_times)
+                                      
+                                      
+                                    },
+                                    
+                                    ## -- Convenience fn to compute "n_iter to X ESS" using the "$iter_to_target_ESS()" method --------------------------------------
+                                    #'@param target_ESS The target ESS. 
+                                    #'@return Returns a list called "target_ESS_iter" which contains the estimated number of sampling iterations (n_iter) to 
+                                    #'reach the target ESS ("sampling_iter_to_target_ESS").
+                                    iter_to_target_ESS = function(target_ESS) {
+                                      
+                                      if (is.null(self$summary_object)) {
+                                        stop("No summary object available")   
+                                      }
+                                      
+                                      # get required efficiency info first
+                                      Min_ESS_main   <- self$summary_object$summaries$efficiency_info$Min_ESS_main
+                                      n_iter <- self$summary_object$summaries$efficiency_info$n_iter
+                                      n_iter_to_min_ESS <- n_iter
+                                      
+                                      ## est. sampling time to target_ESS
+                                      sampling_iter_to_target_ESS <- (target_ESS / Min_ESS_main) * n_iter_to_min_ESS
+                                      
+                                      
+                                      target_ESS_iter <- list(sampling_iter_to_target_ESS = sampling_iter_to_target_ESS)
+                                      
+                                      return(target_ESS_iter)
                                       
                                       
                                     },
