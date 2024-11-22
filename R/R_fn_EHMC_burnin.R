@@ -348,7 +348,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
            # EHMC_args_as_Rcpp_List$tau_main  <-     5.0
           EHMC_args_as_Rcpp_List$tau_main  <-     tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
-          EHMC_args_as_Rcpp_List$tau_us  <-       3.0 #  tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us ) # initial tau set to a constant
+          EHMC_args_as_Rcpp_List$tau_us  <-       5.0 #  3.0 #  tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us ) # initial tau set to a constant
 
         }
       })
