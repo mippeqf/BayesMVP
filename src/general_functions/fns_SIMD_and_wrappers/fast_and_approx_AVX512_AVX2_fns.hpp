@@ -29,6 +29,8 @@
    
    static const __m512d  pos_inf  =    _mm512_set1_pd(INFINITY);
    static const __m512d  neg_inf  =    _mm512_set1_pd(-INFINITY);
+   
+   static const __m512d sign_bit = _mm512_set1_pd(-0.0);
   
    static const __m512d small =  _mm512_set1_pd(1e-4);
    
@@ -36,7 +38,7 @@
  
  
  
-#if defined(__AVX2__)
+#if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
  
    static const __m256d one = _mm256_set1_pd(1.0);
    static const __m256d zero = _mm256_setzero_pd();
@@ -100,7 +102,6 @@ inline    __m256d  _mm256_abs_pd(const __m256d x) {
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
  
- static const __m512d sign_bit = _mm512_set1_pd(-0.0);
  static const __m512d INF = _mm512_set1_pd(std::numeric_limits<double>::infinity());
   
 inline    __mmask8 is_NaN_mask(const __m512d x)  {
@@ -302,10 +303,11 @@ inline __m512d fast_ldexp_2(const __m512d AVX_a,
 
 
 
-
  
  
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
+ 
+
 
   static const __m256d exp_l2e = _mm256_set1_pd (1.442695040888963387); /* log2(e) */
   static const __m256d exp_l2h = _mm256_set1_pd (-0.693145751999999948367); /* -log(2)_hi */
@@ -323,6 +325,24 @@ inline __m512d fast_ldexp_2(const __m512d AVX_a,
   static const __m256d exp_c8 =     _mm256_set1_pd(1.00000000000001221245);
   static const __m256d exp_c9 =     _mm256_set1_pd(1.00000000000001332268);
  
+     
+     // Helper function for AVX2 64-bit conversion
+     inline __m256i avx2_cvtpd_epi64(__m256d x) {
+       
+       // Extract doubles and convert to int64 one at a time
+       alignas(32) int64_t result[4];
+       alignas(32) double temp[4];
+       _mm256_store_pd(temp, x);
+       
+       for(int i = 0; i < 4; i++) {
+         result[i] = (int64_t)std::llrint(temp[i]);  // Use llrint for proper rounding
+       } 
+       
+       return _mm256_load_si256((__m256i*)result);
+     }
+     
+ 
+ 
 // Adapted from: https://stackoverflow.com/questions/48863719/fastest-implementation-of-exponential-function-using-avx
 // added   (optional) extra degree(s) for poly approx (oroginal float fn had 4 degrees) - using "minimaxApprox" R package to find coefficient terms
 // R code:    minimaxApprox::minimaxApprox(fn = exp, lower = -0.346573590279972643113, upper = 0.346573590279972643113, degree = 5, basis ="Chebyshev")
@@ -333,8 +353,7 @@ inline    __m256d fast_exp_1_wo_checks_AVX2(const __m256d x)  {
   /* exp(x) = 2^i * e^f; i = rint (log2(e) * a), f = a - log(2) * i */
   const __m256d t = _mm256_mul_pd(x, exp_l2e);      /* t = log2(e) * a */
   ///  const __m256i i = _mm256_cvttpd_epi32(t);       /* i = (int)rint(t) */
-  const __m128i i_32 = _mm256_cvttpd_epi32(t); // 1st convert to 32-bit integers
-  const __m256i i = _mm256_cvtepi32_epi64(i_32); // then convert 32-bit integers to 64-bit integers and place in 256-bit vector
+  const __m256i i = avx2_cvtpd_epi64(t);  
   const __m256d x_2 = _mm256_round_pd(t, _MM_FROUND_TO_NEAREST_INT) ; // ((0<<4)| _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC|_MM_FROUND_NO_EXC));
   const __m256d f = _mm256_fmadd_pd(x_2, exp_l2l, _mm256_fmadd_pd (x_2, exp_l2h, input));  /* a - log(2)_hi * r */    /* f = a - log(2)_hi * r - log(2)_lo * r */
   

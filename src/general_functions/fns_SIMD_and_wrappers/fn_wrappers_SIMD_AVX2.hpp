@@ -17,7 +17,7 @@
 #include <Eigen/Core>
  
  
-#if defined(__AVX2__)// use AVX2
+#if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2 if AVX-512 not available 
  
  
 #include <immintrin.h>
