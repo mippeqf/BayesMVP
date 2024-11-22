@@ -111,7 +111,7 @@ HMC_output_single_chain                     fn_sample_HMC_multi_iter_single_thre
                    
                      //////////////////////////////////////// sample nuisance (GIVEN main)
                      if (sample_nuisance == true)   {
-                                 stan::math::start_nested();
+                                // stan::math::start_nested();
                                  fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(    result_input,    
                                                                                                 burnin,  rng, seed,
                                                                                                 Model_type, 
@@ -119,17 +119,15 @@ HMC_output_single_chain                     fn_sample_HMC_multi_iter_single_thre
                                                                                                 y_Eigen_i,
                                                                                                 Model_args_as_cpp_struct,  EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
                                                                                                 Stan_model_as_cpp_struct);
-                                 stan::math::recover_memory_nested(); 
+                                // stan::math::recover_memory_nested(); 
                                
                                HMC_output_single_chain_i.diagnostics.p_jump_us(ii) =  result_input.us_p_jump;
                                HMC_output_single_chain_i.diagnostics.div_us(ii) =  result_input.us_div;
-                               
-
                          
                        } /// end of nuisance-part of iteration
                        
                        {
-                           stan::math::start_nested();
+                          // stan::math::start_nested();
                            fn_standard_HMC_main_only_single_iter_InPlace_process(      result_input,   
                                                                                        burnin,  rng, seed,
                                                                                        Model_type,  
@@ -137,7 +135,7 @@ HMC_output_single_chain                     fn_sample_HMC_multi_iter_single_thre
                                                                                        y_Eigen_i,
                                                                                        Model_args_as_cpp_struct,  EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
                                                                                        Stan_model_as_cpp_struct);
-                           stan::math::recover_memory_nested(); 
+                         //  stan::math::recover_memory_nested(); 
                          
                          HMC_output_single_chain_i.diagnostics.p_jump_main(ii) =  result_input.main_p_jump;
                          HMC_output_single_chain_i.diagnostics.div_main(ii) =  result_input.main_div;
@@ -155,7 +153,7 @@ HMC_output_single_chain                     fn_sample_HMC_multi_iter_single_thre
                        }
                        
                        if (Model_type != "Stan") {
-                         HMC_output_single_chain_i.traces.log_lik.col(ii) = result_input.lp_and_grad_outs.tail(N); 
+                         HMC_output_single_chain_i.traces.log_lik.col(ii) = result_input.lp_and_grad_outs.tail(N).cast<float>(); 
                        }
                        
 
@@ -223,14 +221,14 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
       std::vector<Eigen::Matrix<double, -1, -1>> local_trace_divs;
       std::vector<Eigen::Matrix<double, -1, -1>> local_trace_nuisance;
       //// this only gets used for built-in models, for Stan models log_lik must be defined in the "transformed parameters" block. 
-      std::vector<Eigen::Matrix<double, -1, -1>> local_trace_log_lik; 
+      std::vector<Eigen::Matrix<float, -1, -1>> local_trace_log_lik; 
       
       // references to R trace matrices
       std::vector<Rcpp::NumericMatrix> &R_trace_output;
       std::vector<Rcpp::NumericMatrix> &R_trace_divs;
       std::vector<Rcpp::NumericMatrix> &R_trace_nuisance;
       //// this only gets used for built-in models, for Stan models log_lik must be defined in the "transformed parameters" block.
-      std::vector<Rcpp::NumericMatrix> &R_trace_log_lik;
+      std::vector<Eigen::Matrix<float, -1, -1>> &R_trace_log_lik;
       
       int n_nuisance_to_track;
       
@@ -278,7 +276,7 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
                                std::vector<Rcpp::NumericMatrix> &trace_output_divs,
                                const int &n_nuisance_to_track_R,
                                std::vector<Rcpp::NumericMatrix> &trace_output_nuisance,
-                               std::vector<Rcpp::NumericMatrix> &trace_output_log_lik
+                               std::vector<Eigen::Matrix<float, -1, -1>> &trace_output_log_lik
                                )
     :
     n_threads(n_threads_R),
@@ -329,7 +327,7 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
     {
     
       static thread_local stan::math::ChainableStack ad_tape;
-    ////  static thread_local stan::math::nested_rev_autodiff nested;
+      static thread_local stan::math::nested_rev_autodiff nested;
       
       static thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i + 1));
       
@@ -398,20 +396,12 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
                           
             }
             
-            // //////// compute summaries at end of iterations from each chain
-            // copy_to_global_tbb(i, n_iter, HMC_output_single_chain_i.Eigen_thread_local_trace_buffer, trace_output_to_R_RcppPar);
-            // copy_to_global_tbb(i, n_iter, HMC_output_single_chain_i.Eigen_thread_local_trace_buffer_div, trace_output_divs_to_R_RcppPar);
-            // if (sample_nuisance == true) {
-            //    copy_to_global_tbb(i, n_iter, HMC_output_single_chain_i.Eigen_thread_local_trace_buffer_nuisance, trace_output_nuisance_to_R_RcppPar);
-            // }
-            
             local_trace_buffers[i] = std::move(HMC_output_single_chain_i.traces.main);
             local_trace_divs[i] = std::move(HMC_output_single_chain_i.traces.div);
             if (sample_nuisance == true) {
               local_trace_nuisance[i] = std::move(HMC_output_single_chain_i.traces.nuisance);
             }
             local_trace_log_lik[i] = std::move(HMC_output_single_chain_i.traces.log_lik);
-            
           
         } // end of parallel stuff
           
@@ -516,7 +506,7 @@ void EHMC_sampling_openmp( const int  n_threads,
                            std::vector<Eigen::Matrix<double, -1, -1>>  &trace_output_divs_to_R_RcppPar,
                            const int n_nuisance_to_track,
                            std::vector<Eigen::Matrix<double, -1, -1>>  &trace_output_nuisance_to_R_RcppPar,
-                           std::vector<Eigen::Matrix<double, -1, -1>>  &trace_output_log_lik_to_R_RcppPar) {
+                           std::vector<Eigen::Matrix<float,  -1, -1>>  &trace_output_log_lik_to_R_RcppPar) {
   
   
             //// const int N = y_Eigen.rows();
@@ -539,7 +529,7 @@ void EHMC_sampling_openmp( const int  n_threads,
             std::vector<Eigen::Matrix<double, -1, -1>> chain_buffers = vec_of_mats<double>(n_params_main, n_iter, n_threads);
             std::vector<Eigen::Matrix<double, -1, -1>> chain_div_buffers = vec_of_mats<double>(1, n_iter, n_threads);
             std::vector<Eigen::Matrix<double, -1, -1>> chain_nuisance_buffers = vec_of_mats<double>(n_nuisance_to_track, n_iter, n_threads);
-            std::vector<Eigen::Matrix<double, -1, -1>> chain_log_lik_buffers = vec_of_mats<double>(N, n_iter, n_threads);
+            std::vector<Eigen::Matrix<float, -1, -1>> chain_log_lik_buffers = vec_of_mats<float>(N, n_iter, n_threads);
             
          //// #pragma omp parallel for schedule(guided)
             
@@ -657,7 +647,7 @@ void EHMC_sampling_openmp( const int  n_threads,
                      copy_to_global(i, n_iter, chain_nuisance_buffers[i], trace_output_nuisance_to_R_RcppPar);
                    }
                    if (Model_type != "Stan") {
-                     copy_to_global(i, n_iter, chain_log_lik_buffers[i], trace_output_log_lik_to_R_RcppPar);
+                     copy_to_global_float(i, n_iter, chain_log_lik_buffers[i], trace_output_log_lik_to_R_RcppPar);
                    }
                
              }
