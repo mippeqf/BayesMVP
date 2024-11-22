@@ -10,7 +10,6 @@
 #' @keywords internal
 #' @export
 init_and_run_burnin   <- function(  init_object, 
-                                    Model_args_as_Rcpp_List,
                                     y,
                                     N,
                                     n_chains_burnin,
