@@ -57,6 +57,8 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
   const int N_divisible_by_vect_size = std::floor( static_cast<double>(N) / vect_siz_dbl) * vect_size;
  
  // T x_temp = x; // make a copy 
+ 
+ const Eigen::Matrix<double, -1, 1> x_tail = x.tail(vect_size); // copy of last 8 elements 
   
   if (N >= vect_size) {
     
@@ -67,7 +69,6 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
           }
           
           // if (N_divisible_by_vect_size != N) {    // Handle remainder 
-             const Eigen::Matrix<double, -1, 1> x_tail = x.tail(vect_size); // copy of last 8 elements 
              const int start_index = N - vect_size;
              const int end_index = N;
              int counter = 0;
@@ -107,6 +108,8 @@ inline void fn_AVX512_matrix(  Eigen::Ref<T> x,
   // T x_temp = x; // make a copy 
    
    for (int j = 0; j < n_cols; ++j) { /// loop through cols first as col-major storage
+     
+     const Eigen::Matrix<double, -1, 1> x_tail = x.col(j).tail(vect_size); // copy of last 8 elements 
 
         // Make sure we have at least 8 rows before trying AVX
         if (n_rows >= vect_size) {
@@ -118,7 +121,6 @@ inline void fn_AVX512_matrix(  Eigen::Ref<T> x,
               }
               
               // Handle remaining rows with double fns
-              const Eigen::Matrix<double, -1, 1> x_tail = x.col(j).tail(vect_size); // copy of last 8 elements 
               const int start_index = n_rows - vect_size;
               const int end_index = n_rows;
               int counter = 0;
