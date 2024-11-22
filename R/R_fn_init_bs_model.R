@@ -3,8 +3,7 @@
 init_bs_model <- function(Stan_data_list, 
                           Stan_model_name,
                           ...) {
-  
-  
+    
         ###  Stan_model_name <- "PO_LC_MVP_bin.stan"  #### TEMP
        ###   pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP" #### TEMP
         
@@ -12,8 +11,8 @@ init_bs_model <- function(Stan_data_list,
   
         # Get package directory paths
         pkg_dir <- system.file(package = "BayesMVP")
-        stan_dir <- file.path(pkg_dir, "inst/stan_models")
-        data_dir <- file.path(pkg_dir, "inst/stan_data")  # directory to store data inc. JSON data files
+        stan_dir <- file.path(pkg_dir, "/stan_models")
+        data_dir <- file.path(pkg_dir, "/stan_data")  # directory to store data inc. JSON data files
         
         # Create data directory if it doesn't exist
         if (!dir.exists(data_dir)) {
