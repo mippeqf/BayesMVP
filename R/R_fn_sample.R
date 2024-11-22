@@ -63,6 +63,8 @@ sample_model  <-    function(     Model_type,
  
                 Model_args_as_Rcpp_List <- init_object$Model_args_as_Rcpp_List
                 
+                Model_args_as_Rcpp_List$n_nuisance <- n_nuisance
+                
                 if (Model_type != "Stan")  {
                     n_params_main <- Model_args_as_Rcpp_List$n_params_main # <- n_params_main
                     n_nuisance <- Model_args_as_Rcpp_List$n_nuisance #<- n_nuisance
@@ -187,8 +189,8 @@ sample_model  <-    function(     Model_type,
 
                   post_burnin_prep_inits <-  R_fn_post_burnin_prep_for_sampling(n_chains_sampling = n_chains_sampling,
                                                                                 n_superchains = n_superchains,
-                                                                                n_params_main = Model_args_as_Rcpp_List$n_params_main,
-                                                                                n_nuisance = Model_args_as_Rcpp_List$n_nuisance,
+                                                                                n_params_main = n_params_main,
+                                                                                n_nuisance = n_nuisance,
                                                                                 theta_main_vectors_all_chains_input_from_R,
                                                                                 theta_us_vectors_all_chains_input_from_R)
 
@@ -230,6 +232,11 @@ sample_model  <-    function(     Model_type,
                   }
                   
                   
+                  print(Model_args_as_Rcpp_List)
+                  print(dim(theta_us_vectors_all_chains_input_from_R))
+                  print(dim(y))
+                  print(EHMC_args_as_Rcpp_List)
+                  
                   ### Call C++ parallel sampling function
                   result <-       (Rcpp_parallel_sampling_fn(   n_threads_R = n_chains_sampling,
                                                                 sample_nuisance_R = sample_nuisance,
@@ -251,7 +258,7 @@ sample_model  <-    function(     Model_type,
 
 
 
-                   # result <- parallel::mccollect(result) ; result <- result[[1]]
+                  ##  result <- parallel::mccollect(result) ; result <- result[[1]]
 
 
                   try({

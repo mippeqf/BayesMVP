@@ -321,9 +321,9 @@ MVP_model <- R6Class("MVP_model",
                                               model_args_list = NULL,
                                               Stan_data_list = NULL,
                                               parallel_method = "RcppParallel",
-                                              y = NULL,
+                                              y = self$y,
                                               N = NULL,
-                                              sample_nuisance = NULL,
+                                              sample_nuisance =   self$sample_nuisance,
                                               diffusion_HMC = TRUE,
                                               vect_type = NULL,
                                               Phi_type = "Phi",
@@ -354,7 +354,8 @@ MVP_model <- R6Class("MVP_model",
                             
                                                     #### Set HMC adaptations params that are fixed
                                                     gap <- NULL
-                                                    clip_iter <- NULL
+                                                   ##  clip_iter <- NULL
+                                                    
                                                     ratio_M_us <- 0.25
                                                     ratio_M_main <- 0.25
                                                     n_adapt <- NULL
@@ -498,7 +499,7 @@ MVP_model <- R6Class("MVP_model",
                
                                                     # -----------  call sample_model fn ---------------------------------------------------------------------------------------------------
                                                     self$result <-           sample_model(  Model_type = Model_type,
-                                                                                            init_object = init_object,
+                                                                                            init_object = self$init_object ,
                                                                                             vect_type = vect_type,
                                                                                             parallel_method = parallel_method,
                                                                                             Phi_type = Phi_type,
