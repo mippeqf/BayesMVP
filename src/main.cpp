@@ -783,7 +783,7 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
 
 
 // [[Rcpp::export]]
-Rcpp::List                         Rcpp_fn_find_initial_eps_main_and_us(      Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref,
+Rcpp::List                         fn_find_initial_eps_main_and_us(      Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref,
                                                                               Eigen::Matrix<double, -1, 1> theta_us_vec_initial_ref,
                                                                               const double seed,
                                                                               const std::string Model_type,
@@ -833,91 +833,9 @@ Rcpp::List                         Rcpp_fn_find_initial_eps_main_and_us(      Ei
 
 
 
-
-// [[Rcpp::export]]
-double                                   Rcpp_fn_find_initial_eps_main(          Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref,
-                                                                            Eigen::Matrix<double, -1, 1> theta_us_vec_initial_ref,
-                                                                            const double seed,
-                                                                            const std::string Model_type,
-                                                                            const bool  force_autodiff,
-                                                                            const bool  force_PartialLog,
-                                                                            const bool  multi_attempts,
-                                                                            Eigen::Matrix<int, -1, -1> y_ref,
-                                                                            const Rcpp::List Model_args_as_Rcpp_List,
-                                                                            Rcpp::List  EHMC_args_as_Rcpp_List, /// pass by ref. to modify (???)
-                                                                            const Rcpp::List   EHMC_Metric_as_Rcpp_List
-) {
-
-
-      const bool burnin = false;
-      const int n_params_main = theta_main_vec_initial_ref.rows();
-      const int n_us = theta_us_vec_initial_ref.rows();
-      const int n_params = n_params_main + n_us;
-      const int N = y_ref.rows();
-
-      HMCResult result_input(n_params_main, n_params, N);
-      result_input.main_theta_vec = theta_main_vec_initial_ref;
-      result_input.main_theta_vec_0 = theta_main_vec_initial_ref;
-      result_input.main_theta_vec_proposed = theta_main_vec_initial_ref;
-      result_input.main_velocity_0_vec = theta_main_vec_initial_ref;
-      result_input.main_velocity_vec_proposed = theta_main_vec_initial_ref;
-      result_input.main_velocity_vec = theta_main_vec_initial_ref;
-
-      // convert Rcpp::List to cpp structs and pass by reference
-      const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-      EHMC_fn_args_struct  EHMC_args_as_cpp_struct =  convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
-      const EHMC_Metric_struct   EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
-
-      return fn_find_initial_eps_main(   result_input,
-                                         seed, burnin,  Model_type,  
-                                         force_autodiff, force_PartialLog, multi_attempts, 
-                                         y_ref,
-                                         Model_args_as_cpp_struct,  EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct);
-
-}
-
-
-
-
-// [[Rcpp::export]]
-double                                   Rcpp_fn_find_initial_eps_us(            Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref,
-                                                                            Eigen::Matrix<double, -1, 1> theta_us_vec_initial_ref,
-                                                                            const double seed,
-                                                                            const std::string Model_type,
-                                                                            const bool  force_autodiff,
-                                                                            const bool  force_PartialLog,
-                                                                            const bool  multi_attempts,
-                                                                            Eigen::Matrix<int, -1, -1> y_ref,
-                                                                            const Rcpp::List Model_args_as_Rcpp_List,
-                                                                            Rcpp::List  EHMC_args_as_Rcpp_List, /// pass by ref. to modify (???)
-                                                                            const Rcpp::List   EHMC_Metric_as_Rcpp_List
-) {
-
-  const bool burnin = false;
-  const int n_params_main = theta_main_vec_initial_ref.rows();
-  const int n_us = theta_us_vec_initial_ref.rows();
-  const int n_params = n_params_main + n_us;
-  const int N = y_ref.rows();
-
-  HMCResult result_input(n_us, n_params, N);
-  result_input.us_theta_vec = theta_us_vec_initial_ref;
-  result_input.us_theta_vec_0 = theta_us_vec_initial_ref;
-
-  // convert Rcpp::List to cpp structs and pass by reference
-  const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-  EHMC_fn_args_struct  EHMC_args_as_cpp_struct =  convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
-  const EHMC_Metric_struct   EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
-
-  return fn_find_initial_eps_us(     result_input,
-                                     seed, burnin,  Model_type,  
-                                     force_autodiff, force_PartialLog, multi_attempts, 
-                                     y_ref,
-                                     Model_args_as_cpp_struct,  EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct);
-
-}
-
-
-
+ 
+ 
+ 
 
 
 
