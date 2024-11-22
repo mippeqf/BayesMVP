@@ -678,9 +678,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
               }
             }
 
-
-                           EHMC_args_as_Rcpp_List$tau_us <-  EHMC_args_as_Rcpp_List$eps_us
-            
+ 
 # #
                                         result <-    fn_R_RcppParallel_EHMC_single_iter_burnin( n_threads_R = n_chains_burnin,
                                                                                  seed_R = seed,
