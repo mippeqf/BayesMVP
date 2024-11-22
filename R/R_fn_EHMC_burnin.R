@@ -197,7 +197,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
         }
         
         
-        par_res <- (Rcpp_fn_find_initial_eps_main_and_us(    theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
+        par_res <- (fn_R_RcppParallel_EHMC_single_iter_burnin(    theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
                                                              theta_us_vec_initial_ref = theta_us_vec,
                                                              seed = seed,
                                                              Model_type = Model_type,
