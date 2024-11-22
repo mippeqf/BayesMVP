@@ -185,66 +185,110 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
    
    
   EHMC_args_as_Rcpp_List$eps_main <- 0.01 # just in case fn_find_initial_eps fails
+  EHMC_args_as_Rcpp_List$eps_us <- 0.01 # just in case fn_find_initial_eps fails
+  
+  
   try({
-
-    if (sample_nuisance == TRUE) {
-       theta_us_vec <-  matrix(theta_vec_mean[index_nuisance])
-    } else {
-       theta_us_vec <- matrix(rep(1, n_nuisance))
-    }
-
-
-      par_res <- (fn_find_initial_eps_main(theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
-                                           theta_us_vec_initial_ref = theta_us_vec,
-                                           seed = seed,
-                                           Model_type = Model_type,
-                                           force_autodiff = force_autodiff,
-                                           force_PartialLog = force_PartialLog,
-                                           multi_attempts = multi_attempts,
-                                           y_ref = y,
-                                           Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
-                                           EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
-                                           EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
-
-      #par_res <- parallel::mccollect(par_proc)
-      par_res <- par_res[[1]]
-
-      EHMC_args_as_Rcpp_List$eps_main <- par_res#[[1]]
+    
+        if (sample_nuisance == TRUE) {
+          theta_us_vec <-  matrix(theta_vec_mean[index_nuisance])
+        } else {
+          theta_us_vec <- matrix(rep(1, n_nuisance))
+        }
+        
+        
+        par_res <- (Rcpp_fn_find_initial_eps_main_and_us(    theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
+                                                             theta_us_vec_initial_ref = theta_us_vec,
+                                                             seed = seed,
+                                                             Model_type = Model_type,
+                                                             force_autodiff = force_autodiff,
+                                                             force_PartialLog = force_PartialLog,
+                                                             multi_attempts = multi_attempts,
+                                                             y_ref = y,
+                                                             Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+                                                             EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
+                                                             EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
+        
+        #par_res <- parallel::mccollect(par_proc)
+        par_res <- par_res  ## [[1]]
+        
+        EHMC_args_as_Rcpp_List$eps_main <- par_res[[1]]
+        EHMC_args_as_Rcpp_List$eps_us <-   par_res[[2]]
+    
   })
+  
+  
+  print(  EHMC_args_as_Rcpp_List$eps_main)
+  print(  EHMC_args_as_Rcpp_List$eps_us)
+  
+  
+  
+  
+#   
+#   try({
+# 
+#     if (sample_nuisance == TRUE) {
+#        theta_us_vec <-  matrix(theta_vec_mean[index_nuisance])
+#     } else {
+#        theta_us_vec <- matrix(rep(1, n_nuisance))
+#     }
+# 
+# 
+#       par_res <- (fn_find_initial_eps_main(theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
+#                                            theta_us_vec_initial_ref = theta_us_vec,
+#                                            seed = seed,
+#                                            Model_type = Model_type,
+#                                            force_autodiff = force_autodiff,
+#                                            force_PartialLog = force_PartialLog,
+#                                            multi_attempts = multi_attempts,
+#                                            y_ref = y,
+#                                            Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+#                                            EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
+#                                            EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
+# 
+#       #par_res <- parallel::mccollect(par_proc)
+#       par_res <- par_res[[1]]
+# 
+#       EHMC_args_as_Rcpp_List$eps_main <- par_res#[[1]]
+#   })
+# 
+#   
+#   # if (sample_nuisance == FALSE) { 
+#   #   EHMC_args_as_Rcpp_List$eps_main <- 0.01
+#   # }
+#  
+# 
+#   print(  EHMC_args_as_Rcpp_List$eps_main)
+# #
+# #
+#   ### Get initial step-size (epsilon) for nuisance params
+#   if (sample_nuisance == TRUE) {
+#       EHMC_args_as_Rcpp_List$eps_us <- 0.01 # just in case fn_find_initial_eps fails
+#       try({
+#       par_res <-  (fn_find_initial_eps_us(theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
+#                                           theta_us_vec_initial_ref =  matrix(theta_vec_mean[index_nuisance]),
+#                                           seed = seed,
+#                                           Model_type = Model_type,
+#                                           force_autodiff = force_autodiff,
+#                                           force_PartialLog = force_PartialLog,
+#                                           multi_attempts = multi_attempts,
+#                                           y_ref = y,
+#                                           Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+#                                           EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
+#                                           EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
+#       #
+#       #par_res <- parallel::mccollect(par_proc)
+#       par_res
+#     
+#       EHMC_args_as_Rcpp_List$eps_us <- par_res[[1]]
+#       })
+#   }
 
   
-  # if (sample_nuisance == FALSE) { 
-  #   EHMC_args_as_Rcpp_List$eps_main <- 0.01
-  # }
- 
+  
+  
+  
 
-  print(  EHMC_args_as_Rcpp_List$eps_main)
-#
-#
-  ### Get initial step-size (epsilon) for nuisance params
-  if (sample_nuisance == TRUE) {
-      EHMC_args_as_Rcpp_List$eps_us <- 0.01 # just in case fn_find_initial_eps fails
-      try({
-      par_res <-  (fn_find_initial_eps_us(theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
-                                          theta_us_vec_initial_ref =  matrix(theta_vec_mean[index_nuisance]),
-                                          seed = seed,
-                                          Model_type = Model_type,
-                                          force_autodiff = force_autodiff,
-                                          force_PartialLog = force_PartialLog,
-                                          multi_attempts = multi_attempts,
-                                          y_ref = y,
-                                          Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
-                                          EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
-                                          EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
-      #
-      #par_res <- parallel::mccollect(par_proc)
-      par_res
-    
-      EHMC_args_as_Rcpp_List$eps_us <- par_res[[1]]
-      })
-  }
-
-  print(  EHMC_args_as_Rcpp_List$eps_us)
 
   
   {
