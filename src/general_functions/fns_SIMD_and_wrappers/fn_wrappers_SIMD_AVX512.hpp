@@ -104,11 +104,15 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
    
    if (n_rows > n_cols) { // if data in "long" format
        for (int j = 0; j < n_cols; ++j) {  
-          fn_AVX512_row_or_col_vector(x.col(j), fn_AVX512, fn_double);
+          fn_AVX512_row_or_col_vector<typename T::ColXpr>(x.col(j), fn_AVX512, fn_double);
        }
    } else { 
      for (int j = 0; j < n_rows; ++j) {  
-          fn_AVX512_row_or_col_vector(x.row(j), fn_AVX512, fn_double);
+          Eigen::Matrix<double, 1, -1> row = x.row(j);
+          using RowType = decltype(row);
+          Eigen::Ref<Eigen::Matrix<double, 1, -1>> row_Ref(row);
+          fn_AVX512_row_or_col_vector<RowType>(row_Ref, fn_AVX512, fn_double);
+          x.row(j) = row;
      }
    }
    
