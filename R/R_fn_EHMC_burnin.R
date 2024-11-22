@@ -335,9 +335,24 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   #     min_LC_N_estimate_class_min <- N * sum(y)/(N*n_tests)
   # }
   
+  shrinkage_factor <- NULL
+  
 
   #  Start burnin   ------------------------------------------------------------------------------------------------------------------------------------------------
    for (ii in iter_seq_burnin) {
+     
+     
+     
+     #if (is.null(shrinkage_factor)) {
+     if (ii < 0.5 * n_burnin)  {
+       shrinkage_factor <- 0.75
+       main_vec_for_Hessian <- theta_vec_current_main
+     } else {
+       shrinkage_factor <- 0.25
+       main_vec_for_Hessian <- EHMC_burnin_as_Rcpp_List$snaper_m_vec_main
+     }
+     # }
+     
 
      # if (ii < 25) {
      #   Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,6,7,8,9,10,11),1] <-    "Stan"
@@ -547,16 +562,6 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                       try({
 
 
-                        #if (is.null(shrinkage_factor)) {
-                          if (ii < 0.5 * n_burnin)  {
-                            shrinkage_factor <- 0.75
-                            main_vec_for_Hessian <- theta_vec_current_main
-                          } else {
-                            shrinkage_factor <- 0.25
-                            main_vec_for_Hessian <- EHMC_burnin_as_Rcpp_List$snaper_m_vec_main
-                          }
-                       # }
-                        
                         
                           print(paste("updating Hessian"))
                         
@@ -701,16 +706,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
           ## //////////////////   --------------------------------  Perform iteration(s)  ------------------------------------------------------------------------------
           try({
-
-
-            if (is.null(shrinkage_factor)) {
-              if (ii < 0.5 * n_burnin)  {
-                shrinkage_factor <- 0.75
-              } else {
-                shrinkage_factor <- 0.25
-              }
-            }
-
+ 
  
 # #
                                         result <-    fn_R_RcppParallel_EHMC_single_iter_burnin( n_threads_R = n_chains_burnin,
