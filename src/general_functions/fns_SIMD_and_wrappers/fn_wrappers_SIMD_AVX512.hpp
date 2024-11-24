@@ -46,7 +46,7 @@ typedef __m512d (*FuncAVX512_wo_checks)(const __m512d);
  
  
 template <typename T, typename FuncAVX512, typename FuncDouble>
-inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x, 
+inline  void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x, 
                                            FuncAVX512 fn_AVX512, 
                                            FuncDouble fn_double) {
   
@@ -95,7 +95,7 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
  
  
  template<typename T, typename FuncAVX512, typename FuncDouble>
- inline void fn_AVX512_matrix(  Eigen::Ref<T> x,
+ inline  void fn_AVX512_matrix(  Eigen::Ref<T> x,
                                 FuncAVX512 fn_AVX512,
                                 FuncDouble fn_double) {
    
@@ -180,7 +180,7 @@ inline void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
 
 
 template <typename T, typename FuncAVX512, typename FuncDouble>
-inline void fn_AVX512_dbl_Eigen(Eigen::Ref<T> x, 
+inline  void fn_AVX512_dbl_Eigen(Eigen::Ref<T> x, 
                                 FuncAVX512 fn_AVX512, 
                                 FuncDouble fn_double) {
   
@@ -211,7 +211,7 @@ inline void fn_AVX512_dbl_Eigen(Eigen::Ref<T> x,
  
 
 template<typename FuncAVX512, typename FuncDouble, typename FuncAVX512_wo_checks, typename FuncDouble_wo_checks, typename T>
-inline void                   fn_process_double_AVX512_sub_function(     Eigen::Ref<T> x, // since this is helper function we call x by reference "&" not "&&"
+inline  void                   fn_process_double_AVX512_sub_function(     Eigen::Ref<T> x, // since this is helper function we call x by reference "&" not "&&"
                                                                          FuncAVX512 fn_fast_AVX512_function,
                                                                          FuncDouble fn_fast_double_function,
                                                                          FuncAVX512_wo_checks fn_fast_AVX512_function_wo_checks,
@@ -240,7 +240,7 @@ inline void                   fn_process_double_AVX512_sub_function(     Eigen::
  
   
 template <typename T>
-inline   void        fn_return_Ref_double_AVX512(  Eigen::Ref<T> x,
+inline    void        fn_return_Ref_double_AVX512(  Eigen::Ref<T> x,
                                                    const std::string &fn,
                                                    const bool &skip_checks) {
   

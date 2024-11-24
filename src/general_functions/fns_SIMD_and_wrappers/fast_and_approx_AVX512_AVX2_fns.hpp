@@ -17,58 +17,70 @@
 // // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-////// first define commonly-used static constants
+// ////// first define commonly-used static constants
+//  
+// #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
+//  
+//    static const __m512d zero =  _mm512_setzero_pd();
+//    static const __m512d one  =  _mm512_set1_pd(1.0);
+//    static const __m512d minus_one  =  _mm512_set1_pd(-1.0);
+//    static const __m512d one_half = _mm512_set1_pd(0.5);
+//    static const __m512d minus_one_half = _mm512_set1_pd(-0.5);
+//    
+//    static const __m512d  pos_inf  =    _mm512_set1_pd(INFINITY);
+//    static const __m512d  neg_inf  =    _mm512_set1_pd(-INFINITY);
+//    
+//    static const __m512d sign_bit = _mm512_set1_pd(-0.0);
+//   
+//    static const __m512d small =  _mm512_set1_pd(1e-4);
+//    
+// #endif
+//  
+//  
+//  
+// #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
+//  
+//    static const __m256d one = _mm256_set1_pd(1.0);
+//    static const __m256d zero = _mm256_setzero_pd();
+//    static const __m256d minus_one = _mm256_set1_pd(-1.0);
+//    static const __m256d minus_one_half = _mm256_set1_pd(-0.5);
+//    static const __m256d one_half = _mm256_set1_pd(0.5);
+//    
+//    static const __m256d  pos_inf  =    _mm256_set1_pd(INFINITY);
+//    static const __m256d  neg_inf  =    _mm256_set1_pd(-INFINITY);
+//  
+//    static const __m256d sign_bit = _mm256_set1_pd(-0.0);
+//    
+//    static const __m256d small = _mm256_set1_pd(1e-4);
+//  
+//  
+// #endif
  
-#if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
  
-   static const __m512d zero =  _mm512_setzero_pd();
-   static const __m512d one  =  _mm512_set1_pd(1.0);
-   static const __m512d minus_one  =  _mm512_set1_pd(-1.0);
-   static const __m512d one_half = _mm512_set1_pd(0.5);
-   static const __m512d minus_one_half = _mm512_set1_pd(-0.5);
-   
-   static const __m512d  pos_inf  =    _mm512_set1_pd(INFINITY);
-   static const __m512d  neg_inf  =    _mm512_set1_pd(-INFINITY);
-   
-   static const __m512d sign_bit = _mm512_set1_pd(-0.0);
-  
-   static const __m512d small =  _mm512_set1_pd(1e-4);
-   
-#endif
+ 
  
  
  
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
  
-   static const __m256d one = _mm256_set1_pd(1.0);
-   static const __m256d zero = _mm256_setzero_pd();
-   static const __m256d minus_one = _mm256_set1_pd(-1.0);
-   static const __m256d minus_one_half = _mm256_set1_pd(-0.5);
-   static const __m256d one_half = _mm256_set1_pd(0.5);
-   
-   static const __m256d  pos_inf  =    _mm256_set1_pd(INFINITY);
-   static const __m256d  neg_inf  =    _mm256_set1_pd(-INFINITY);
  
-   static const __m256d sign_bit = _mm256_set1_pd(-0.0);
+ // is_finite_mask and is_not_NaN_mask for AVX2
+ inline __m256d is_finite_mask(__m256d x) {
    
-   static const __m256d small = _mm256_set1_pd(1e-4);
+   const __m256d INF = _mm256_set1_pd(std::numeric_limits<double>::infinity());
+   __m256d abs_x = _mm256_andnot_pd(sign_bit, x);
+   return _mm256_cmp_pd(abs_x, INF, _CMP_NEQ_OQ); 
    
-   // is_finite_mask and is_not_NaN_mask for AVX2
-   inline __m256d is_finite_mask(__m256d x) {
-     
-         const __m256d INF = _mm256_set1_pd(std::numeric_limits<double>::infinity());
-         __m256d abs_x = _mm256_andnot_pd(sign_bit, x);
-         return _mm256_cmp_pd(abs_x, INF, _CMP_NEQ_OQ);
-     
-   }
+ }
+ 
+ inline __m256d is_not_NaN_mask(__m256d x) {
    
-   inline __m256d is_not_NaN_mask(__m256d x) {
-     
-         return _mm256_cmp_pd(x, x, _CMP_EQ_OQ);
-     
-   }
+   return _mm256_cmp_pd(x, x, _CMP_EQ_OQ);
+   
+ }
  
 #endif
+ 
  
  
  
@@ -102,9 +114,11 @@ inline    __m256d  _mm256_abs_pd(const __m256d x) {
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
  
- static const __m512d INF = _mm512_set1_pd(std::numeric_limits<double>::infinity());
+
   
 inline    __mmask8 is_NaN_mask(const __m512d x)  {
+  
+
  
  const __mmask8 mask_is_NaN =_mm512_cmp_pd_mask(x, x, _CMP_NEQ_OQ); // comparing value to itself checks for  NaN. is NaN then this = FALSE
  //  __mmask8 mask_is_NaN = f(mask_is_not_NaN); // there is no "NOT" or "complement" mask  !!!!
@@ -128,6 +142,9 @@ inline    __mmask8 is_not_NaN_mask(const __m512d x)  {
 
 // adapted from: https://stackoverflow.com/questions/30674291/how-to-check-inf-for-avx-intrinsic-m256
 inline    __mmask8 is_finite_mask(const __m512d x){
+  
+  const __m512d INF = _mm512_set1_pd(std::numeric_limits<double>::infinity());
+  const __m512d sign_bit = _mm512_set1_pd(-0.0);
  
  //x = _mm512_andnot_pd(sign_bit, x); // x  = NOT -0.0 AND x
  return _mm512_cmp_pd_mask(_mm512_andnot_pd(sign_bit, x), INF, _CMP_NEQ_OQ);
@@ -138,6 +155,9 @@ inline    __mmask8 is_finite_mask(const __m512d x){
 
 // adapted from: https://stackoverflow.com/questions/30674291/how-to-check-inf-for-avx-intrinsic-m256
 inline    __mmask8 is_infinity_mask(const __m512d x){
+  
+  const __m512d INF = _mm512_set1_pd(std::numeric_limits<double>::infinity());
+  const __m512d sign_bit = _mm512_set1_pd(-0.0);
  
  // x = _mm512_andnot_pd(sign_bit, x);
  return _mm512_cmp_pd_mask(_mm512_andnot_pd(sign_bit, x), INF, _CMP_EQ_OQ);
@@ -308,22 +328,6 @@ inline __m512d fast_ldexp_2(const __m512d AVX_a,
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
  
 
-
-  static const __m256d exp_l2e = _mm256_set1_pd (1.442695040888963387); /* log2(e) */
-  static const __m256d exp_l2h = _mm256_set1_pd (-0.693145751999999948367); /* -log(2)_hi */
-  static const __m256d exp_l2l = _mm256_set1_pd (-0.00000142860676999999996193); /* -log(2)_lo */
-  
-  // /* coefficients for core approximation to exp() in [-log(2)/2, log(2)/2] */
-  static const __m256d exp_c0 =     _mm256_set1_pd(0.00000276479776161191821278);
-  static const __m256d exp_c1 =     _mm256_set1_pd(0.0000248844480527491290235);
-  static const __m256d exp_c2 =     _mm256_set1_pd(0.000198411488032534342194);
-  static const __m256d exp_c3 =     _mm256_set1_pd(0.00138888017711994078175);
-  static const __m256d exp_c4 =     _mm256_set1_pd(0.00833333340524595143906);
-  static const __m256d exp_c5 =     _mm256_set1_pd(0.0416666670404215802592);
-  static const __m256d exp_c6 =     _mm256_set1_pd(0.166666666664891632843);
-  static const __m256d exp_c7 =     _mm256_set1_pd(0.499999999994389376923);
-  static const __m256d exp_c8 =     _mm256_set1_pd(1.00000000000001221245);
-  static const __m256d exp_c9 =     _mm256_set1_pd(1.00000000000001332268);
  
      
      // Helper function for AVX2 64-bit conversion
@@ -347,6 +351,24 @@ inline __m512d fast_ldexp_2(const __m512d AVX_a,
 // added   (optional) extra degree(s) for poly approx (oroginal float fn had 4 degrees) - using "minimaxApprox" R package to find coefficient terms
 // R code:    minimaxApprox::minimaxApprox(fn = exp, lower = -0.346573590279972643113, upper = 0.346573590279972643113, degree = 5, basis ="Chebyshev")
 inline    __m256d fast_exp_1_wo_checks_AVX2(const __m256d x)  {
+  
+  
+  
+  const __m256d exp_l2e = _mm256_set1_pd (1.442695040888963387); /* log2(e) */
+  const __m256d exp_l2h = _mm256_set1_pd (-0.693145751999999948367); /* -log(2)_hi */
+  const __m256d exp_l2l = _mm256_set1_pd (-0.00000142860676999999996193); /* -log(2)_lo */
+  
+  // /* coefficients for core approximation to exp() in [-log(2)/2, log(2)/2] */
+  const __m256d exp_c0 =     _mm256_set1_pd(0.00000276479776161191821278);
+  const __m256d exp_c1 =     _mm256_set1_pd(0.0000248844480527491290235);
+  const __m256d exp_c2 =     _mm256_set1_pd(0.000198411488032534342194);
+  const __m256d exp_c3 =     _mm256_set1_pd(0.00138888017711994078175);
+  const __m256d exp_c4 =     _mm256_set1_pd(0.00833333340524595143906);
+  const __m256d exp_c5 =     _mm256_set1_pd(0.0416666670404215802592);
+  const __m256d exp_c6 =     _mm256_set1_pd(0.166666666664891632843);
+  const __m256d exp_c7 =     _mm256_set1_pd(0.499999999994389376923);
+  const __m256d exp_c8 =     _mm256_set1_pd(1.00000000000001221245);
+  const __m256d exp_c9 =     _mm256_set1_pd(1.00000000000001332268);
   
   const __m256d input  = x;
   
@@ -378,27 +400,29 @@ inline    __m256d fast_exp_1_wo_checks_AVX2(const __m256d x)  {
 
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
- 
-  static const __m512d exp_l2e = _mm512_set1_pd (1.442695040888963387); /* log2(e) */
-  static const __m512d exp_l2h = _mm512_set1_pd (-0.693145751999999948367); /* -log(2)_hi */
-  static const __m512d exp_l2l = _mm512_set1_pd (-0.00000142860676999999996193); /* -log(2)_lo */
-  
-  // /* coefficients for core approximation to exp() in [-log(2)/2, log(2)/2] */
-  static const __m512d exp_c0 =     _mm512_set1_pd(0.00000276479776161191821278);
-  static const __m512d exp_c1 =     _mm512_set1_pd(0.0000248844480527491290235);
-  static const __m512d exp_c2 =     _mm512_set1_pd(0.000198411488032534342194);
-  static const __m512d exp_c3 =     _mm512_set1_pd(0.00138888017711994078175);
-  static const __m512d exp_c4 =     _mm512_set1_pd(0.00833333340524595143906);
-  static const __m512d exp_c5 =     _mm512_set1_pd(0.0416666670404215802592);
-  static const __m512d exp_c6 =     _mm512_set1_pd(0.166666666664891632843);
-  static const __m512d exp_c7 =     _mm512_set1_pd(0.499999999994389376923);
-  static const __m512d exp_c8 =     _mm512_set1_pd(1.00000000000001221245);
-  static const __m512d exp_c9 =     _mm512_set1_pd(1.00000000000001332268);
+
   
 // Adapted from: https://stackoverflow.com/questions/48863719/fastest-implementation-of-exponential-function-using-avx
 // added   (optional) extra degree(s) for poly approx (oroginal float fn had 4 degrees) - using "minimaxApprox" R package to find coefficient terms
 // R code:    minimaxApprox::minimaxApprox(fn = exp, lower = -0.346573590279972643113, upper = 0.346573590279972643113, degree = 5, basis ="Chebyshev")
 inline    __m512d fast_exp_1_wo_checks_AVX512(const __m512d x)  {
+  
+  
+      const __m512d exp_l2e = _mm512_set1_pd (1.442695040888963387); /* log2(e) */
+      const __m512d exp_l2h = _mm512_set1_pd (-0.693145751999999948367); /* -log(2)_hi */
+      const __m512d exp_l2l = _mm512_set1_pd (-0.00000142860676999999996193); /* -log(2)_lo */
+      
+      // /* coefficients for core approximation to exp() in [-log(2)/2, log(2)/2] */
+      const __m512d exp_c0 =     _mm512_set1_pd(0.00000276479776161191821278);
+      const __m512d exp_c1 =     _mm512_set1_pd(0.0000248844480527491290235);
+      const __m512d exp_c2 =     _mm512_set1_pd(0.000198411488032534342194);
+      const __m512d exp_c3 =     _mm512_set1_pd(0.00138888017711994078175);
+      const __m512d exp_c4 =     _mm512_set1_pd(0.00833333340524595143906);
+      const __m512d exp_c5 =     _mm512_set1_pd(0.0416666670404215802592);
+      const __m512d exp_c6 =     _mm512_set1_pd(0.166666666664891632843);
+      const __m512d exp_c7 =     _mm512_set1_pd(0.499999999994389376923);
+      const __m512d exp_c8 =     _mm512_set1_pd(1.00000000000001221245);
+      const __m512d exp_c9 =     _mm512_set1_pd(1.00000000000001332268);
   
       const __m512d input  = x;
   
@@ -433,10 +457,12 @@ inline    __m512d fast_exp_1_wo_checks_AVX512(const __m512d x)  {
  
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
  
- static const __m256d   exp_bound  =   _mm256_set1_pd(708.4);
+
  
 // see https://stackoverflow.com/questions/39587752/difference-between-ldexp1-x-and-exp2x
 inline __m256d fast_exp_1_AVX2(const __m256d a) {
+  
+  const __m256d   exp_bound  =   _mm256_set1_pd(708.4);
   
   return _mm256_blendv_pd(
     _mm256_blendv_pd(
@@ -462,10 +488,12 @@ inline __m256d fast_exp_1_AVX2(const __m256d a) {
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
 
-static const __m512d   exp_bound  =   _mm512_set1_pd(708.4);
+
 
 //// see https://stackoverflow.com/questions/39587752/difference-between-ldexp1-x-and-exp2x
 inline    __m512d fast_exp_1_AVX512(const __m512d a) {
+  
+  const __m512d   exp_bound  =   _mm512_set1_pd(708.4);
 
   const __mmask8 is_a_abs_lt_700_mask =      _mm512_cmp_pd_mask(  _mm512_abs_pd(a), exp_bound, _CMP_LT_OQ);  // if fabs(a) < 708.4
 
@@ -474,7 +502,7 @@ inline    __m512d fast_exp_1_AVX512(const __m512d a) {
                                                     _mm512_set1_pd(INFINITY - INFINITY),  // if NaN -  r  = a + a - silence NaN's if necessary
                                                     _mm512_mask_blend_pd(_mm512_cmp_pd_mask(a, _mm512_setzero_pd(), _CMP_LT_OQ),   //   if      (a < 0.0) r = zero;
                                                                          _mm512_set1_pd(INFINITY),   //   if      (a == 0.0) r = zero;
-                                                                         zero)),
+                                                                         _mm512_setzero_pd())),
                                  fast_exp_1_wo_checks_AVX512(a));
 
 }
@@ -519,30 +547,13 @@ inline    __m512d fast_exp_1_AVX512(const __m512d a) {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256i log_i1 =   _mm256_set1_epi64x(0x3fe5555555555555);
-static const __m256i log_i2 =   _mm256_set1_epi64x(0xFFF0000000000000);
-
-static const __m256d log_c1 =   _mm256_set1_pd(0.000000000000000222044604925031308085);
-static const __m256d log_c2 =   _mm256_set1_pd(-0.13031005859375);
-static const __m256d log_c3 =   _mm256_set1_pd(0.140869140625);
-static const __m256d log_c4 =   _mm256_set1_pd(-0.121483512222766876221);
-static const __m256d log_c5 =   _mm256_set1_pd(0.139814853668212890625);
-static const __m256d log_c6 =   _mm256_set1_pd(-0.166846126317977905273);
-static const __m256d log_c7 =   _mm256_set1_pd(0.200120344758033752441);
-static const __m256d log_c8 =   _mm256_set1_pd(-0.249996200203895568848);
-static const __m256d log_c9 =   _mm256_set1_pd(0.333331972360610961914);
-static const __m256d log_c10 =  _mm256_set1_pd(-0.5);
-static const __m256d log_c11 =  _mm256_set1_pd(0.693147182464599609375);
-
-
-
-
 
  /// const __m256d i = _mm256_fmadd_pd(_mm256_cvtepi64_pd(e), log_c1, zero); // Replace as needs AVX-512
  /// replace with manual fn:
 
  
 inline __m256d avx2_cvtepi64_pd(__m256i v) {
+
   
       // Extract high and low 64-bit integers
       __m128i low = _mm256_castsi256_si128(v);
@@ -566,6 +577,24 @@ inline __m256d avx2_cvtepi64_pd(__m256i v) {
 
 //https://stackoverflow.com/a/65537754/9007125 // vectorized version of the answer by njuffa
 inline     __m256d fast_log_1_wo_checks_AVX2(const __m256d a ) {
+  
+  
+  
+  const __m256i log_i1 =   _mm256_set1_epi64x(0x3fe5555555555555);
+  const __m256i log_i2 =   _mm256_set1_epi64x(0xFFF0000000000000);
+  
+  const __m256d log_c1 =   _mm256_set1_pd(0.000000000000000222044604925031308085);
+  const __m256d log_c2 =   _mm256_set1_pd(-0.13031005859375);
+  const __m256d log_c3 =   _mm256_set1_pd(0.140869140625);
+  const __m256d log_c4 =   _mm256_set1_pd(-0.121483512222766876221);
+  const __m256d log_c5 =   _mm256_set1_pd(0.139814853668212890625);
+  const __m256d log_c6 =   _mm256_set1_pd(-0.166846126317977905273);
+  const __m256d log_c7 =   _mm256_set1_pd(0.200120344758033752441);
+  const __m256d log_c8 =   _mm256_set1_pd(-0.249996200203895568848);
+  const __m256d log_c9 =   _mm256_set1_pd(0.333331972360610961914);
+  const __m256d log_c10 =  _mm256_set1_pd(-0.5);
+  const __m256d log_c11 =  _mm256_set1_pd(0.693147182464599609375);
+  
   
   const __m256i aInt = _mm256_castpd_si256(a);
   const __m256i e = _mm256_and_epi64( _mm256_sub_epi64(aInt, log_i1),  log_i2); //    e = (__double_as_int (a) - i1 )    &   i2   ;
@@ -651,10 +680,12 @@ inline __m256d fast_log_1_AVX2(const __m256d a) {
 
 // //  compute log(1+x) without losing precision for small values of x.
 // //  see: https://www.johndcook.com/cpp_log_one_plus_x.html
-static const __m256d minus_1 =  _mm256_set1_pd(-1.0);
-static const __m256d neg_half = _mm256_set1_pd(-0.5);
+
 
 inline __m256d fast_log1p_1_AVX2(const __m256d x) {
+  
+  const __m256d minus_1 =  _mm256_set1_pd(-1.0);
+  const __m256d neg_half = _mm256_set1_pd(-0.5);
   
   return _mm256_blendv_pd(
     _mm256_blendv_pd(
@@ -773,32 +804,34 @@ inline     __m256d fast_logit_AVX2(const __m256d x)   {
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__) // use AVX-512
 
 
-static const __m512i log_i1 =   _mm512_set1_epi64(0x3fe5555555555555);
-static const __m512i log_i2 =   _mm512_set1_epi64(0xFFF0000000000000);
-
-static const __m512d log_c1 =   _mm512_set1_pd(0.000000000000000222044604925031308085);
-static const __m512d log_c2 =   _mm512_set1_pd(-0.13031005859375);
-static const __m512d log_c3 =   _mm512_set1_pd(0.140869140625);
-static const __m512d log_c4 =   _mm512_set1_pd(-0.121483512222766876221);
-static const __m512d log_c5 =   _mm512_set1_pd(0.139814853668212890625);
-static const __m512d log_c6 =   _mm512_set1_pd(-0.166846126317977905273);
-static const __m512d log_c7 =   _mm512_set1_pd(0.200120344758033752441);
-static const __m512d log_c8 =   _mm512_set1_pd(-0.249996200203895568848);
-static const __m512d log_c9 =   _mm512_set1_pd(0.333331972360610961914);
-static const __m512d log_c10 =  _mm512_set1_pd(-0.5);
-static const __m512d log_c11 =  _mm512_set1_pd(0.693147182464599609375);
-
 
 
 
 ////// ------  log fn  --------   https://stackoverflow.com/a/65537754/9007125 // vectorized version of the answer by njuffa
 inline       __m512d fast_log_1_wo_checks_AVX512(const __m512d a ) {
+  
+  
+        
+        const __m512i log_i1 =   _mm512_set1_epi64(0x3fe5555555555555);
+        const __m512i log_i2 =   _mm512_set1_epi64(0xFFF0000000000000);
+        
+        const __m512d log_c1 =   _mm512_set1_pd(0.000000000000000222044604925031308085);
+        const __m512d log_c2 =   _mm512_set1_pd(-0.13031005859375);
+        const __m512d log_c3 =   _mm512_set1_pd(0.140869140625);
+        const __m512d log_c4 =   _mm512_set1_pd(-0.121483512222766876221);
+        const __m512d log_c5 =   _mm512_set1_pd(0.139814853668212890625);
+        const __m512d log_c6 =   _mm512_set1_pd(-0.166846126317977905273);
+        const __m512d log_c7 =   _mm512_set1_pd(0.200120344758033752441);
+        const __m512d log_c8 =   _mm512_set1_pd(-0.249996200203895568848);
+        const __m512d log_c9 =   _mm512_set1_pd(0.333331972360610961914);
+        const __m512d log_c10 =  _mm512_set1_pd(-0.5);
+        const __m512d log_c11 =  _mm512_set1_pd(0.693147182464599609375);
         
         const __m512i aInt = _mm512_castpd_si512(a);
 
         const __m512i e = _mm512_and_epi64( _mm512_sub_epi64(aInt, log_i1),  log_i2); //    e = (__double_as_int (a) - i1 )    &   i2   ;
-        const __m512d i = _mm512_fmadd_pd ( _mm512_cvtepi64_pd(e), log_c1, zero); // 0x1.0p-52
-        const __m512d m = _mm512_sub_pd(_mm512_castsi512_pd( _mm512_sub_epi64(aInt, e)), one) ;  //   m = __int_as_double (__double_as_int (a) - e);   //  m = _mm256_sub_pd(m, one) ; // m - 1.0;  /* m in [2/3, 4/3] */
+        const __m512d i = _mm512_fmadd_pd ( _mm512_cvtepi64_pd(e), log_c1, _mm512_setzero_pd()); // 0x1.0p-52
+        const __m512d m = _mm512_sub_pd(_mm512_castsi512_pd( _mm512_sub_epi64(aInt, e)), _mm512_set1_pd(1.0)) ;  //   m = __int_as_double (__double_as_int (a) - e);   //  m = _mm256_sub_pd(m, one) ; // m - 1.0;  /* m in [2/3, 4/3] */
         const __m512d s = _mm512_mul_pd(m, m);  // m = _mm512_sub_pd(m, one) ; // m - 1.0;  /* m in [2/3, 4/3] */
 
         /* Compute log1p(m) for m in [-1/3, 1/3] */
@@ -822,17 +855,21 @@ inline       __m512d fast_log_1_wo_checks_AVX512(const __m512d a ) {
 ///// compute log(1+x) without losing precision for small values of x. //  see: https://www.johndcook.com/cpp_log_one_plus_x.html
 inline  __m512d fast_log1p_1_wo_checks_AVX512(const __m512d x)   {
   
+          const __m512d small =  _mm512_set1_pd(1e-4);
+          const __m512d minus_one_half  =  _mm512_set1_pd(-0.50);
+  
           const __mmask8 is_abs_x_gr_1e_m_4 =      _mm512_cmp_pd_mask(_mm512_abs_pd(x), small, _CMP_GT_OQ); /// if abs(x) > small
+          
           return       _mm512_mask_blend_pd(is_abs_x_gr_1e_m_4,
-                                            _mm512_mul_pd(_mm512_fmadd_pd( minus_one_half, x,  one), x) , 
-                                            fast_log_1_wo_checks_AVX512( _mm512_add_pd(x, one) ) ) ;  ////  if fabs(x) > small
+                                            _mm512_mul_pd(_mm512_fmadd_pd( minus_one_half, x,  _mm512_set1_pd(1.0)), x) , 
+                                            fast_log_1_wo_checks_AVX512( _mm512_add_pd(x, _mm512_set1_pd(1.0)) ) ) ;  ////  if fabs(x) > small
           
 }
 
 // ///////  compute log(1+x) without losing precision for small values of x. //  see: https://www.johndcook.com/cpp_log_one_plus_x.html
 inline      __m512d fast_log1m_1_wo_checks_AVX512(const __m512d x)   {
   
-    const __m512d neg_x = _mm512_sub_pd(zero, x);
+    const __m512d neg_x = _mm512_sub_pd(_mm512_setzero_pd(), x);
     return fast_log1p_1_wo_checks_AVX512(neg_x) ; // -x);
   
 }
@@ -840,8 +877,8 @@ inline      __m512d fast_log1m_1_wo_checks_AVX512(const __m512d x)   {
 
 inline      __m512d fast_log1p_exp_1_wo_checks_AVX512(const __m512d x)   {
   
-  const __m512d neg_x =  _mm512_sub_pd(zero, x);
-  const __mmask8 is_x_gr_0_mask =      _mm512_cmp_pd_mask(x,  zero, _CMP_GT_OQ);
+  const __m512d neg_x =  _mm512_sub_pd(_mm512_setzero_pd(), x);
+  const __mmask8 is_x_gr_0_mask =      _mm512_cmp_pd_mask(x,  _mm512_setzero_pd(), _CMP_GT_OQ);
   
   return       _mm512_mask_blend_pd(is_x_gr_0_mask,
                                     fast_log1p_1_wo_checks_AVX512(fast_exp_1_wo_checks_AVX512(x)),  /// if x < 0
@@ -857,10 +894,12 @@ inline      __m512d fast_log1p_exp_1_wo_checks_AVX512(const __m512d x)   {
 //////https://stackoverflow.com/a/65537754/9007125
 inline      __m512d fast_log_1_AVX512(const __m512d a ) {
   
-  const __mmask8 is_a_finite_and_gr0_mask =  is_finite_mask(a) & _mm512_cmp_pd_mask(a, zero, _CMP_GT_OQ);
+  const __mmask8 is_a_finite_and_gr0_mask =  is_finite_mask(a) & _mm512_cmp_pd_mask(a, _mm512_setzero_pd(), _CMP_GT_OQ);
+  const __m512d  pos_inf  =    _mm512_set1_pd(INFINITY);
+  const __m512d  neg_inf  =    _mm512_set1_pd(-INFINITY);
   
   return  _mm512_mask_blend_pd(is_a_finite_and_gr0_mask,
-                               _mm512_mask_blend_pd(_mm512_cmp_pd_mask(zero, a, _CMP_EQ_OQ),     // cond is "if a = 0"
+                               _mm512_mask_blend_pd(_mm512_cmp_pd_mask(_mm512_setzero_pd(), a, _CMP_EQ_OQ),     // cond is "if a = 0"
                                                     _mm512_sub_pd(pos_inf, pos_inf),  // if a =/= 0  (which implies "if a < 0.0" !!!!!)
                                                     neg_inf),  // if a = 0 (i.e. cond=TRUE)
                                 fast_log_1_wo_checks_AVX512(a));  // if a is finite and a > 0 
@@ -872,14 +911,18 @@ inline      __m512d fast_log_1_AVX512(const __m512d a ) {
 /////see: https://www.johndcook.com/cpp_log_one_plus_x.html 
 inline      __m512d fast_log1p_1_AVX512(const __m512d x)   {
   
+  const __m512d minus_one  =  _mm512_set1_pd(-1.0);
+  const __m512d minus_one_half  =  _mm512_set1_pd(-0.50);
+  const __m512d small =  _mm512_set1_pd(1e-4);
+  
   const __mmask8 is_x_le_or_eq_to_m1_mask =     _mm512_cmp_pd_mask(x,  minus_one, _CMP_LE_OQ); /// if x <= -1.0
   const __mmask8 is_abs_x_gr_1e_m_4_mask  =     _mm512_cmp_pd_mask(_mm512_abs_pd(x), small, _CMP_GT_OQ);  //// if abs(x) > small
   
   return  _mm512_mask_blend_pd(is_x_le_or_eq_to_m1_mask,              // is x <= -1? (i.e., is x+1 <= 0?)
                                _mm512_mask_blend_pd(is_abs_x_gr_1e_m_4_mask, // if "is_x_le_or_eq_to_m1_mask" is FALSE (i.e., x+1 > 0)
-                                                    _mm512_mul_pd(_mm512_fmadd_pd(minus_one_half, x,  one), x),
-                                                    fast_log_1_AVX512(_mm512_add_pd(x,  one))), // if x > 1e-4 - evaluate using normal log fn!
-                               fast_log_1_AVX512(_mm512_add_pd(x,  one))) ;  // if FALSE (i.e., x+1  > 0 ) then still pass onto normal log fn as this will handle NaNs etc!
+                                                    _mm512_mul_pd(_mm512_fmadd_pd(minus_one_half, x,  _mm512_set1_pd(1.0)), x),
+                                                    fast_log_1_AVX512(_mm512_add_pd(x,  _mm512_set1_pd(1.0)))), // if x > 1e-4 - evaluate using normal log fn!
+                               fast_log_1_AVX512(_mm512_add_pd(x,  _mm512_set1_pd(1.0)))) ;  // if FALSE (i.e., x+1  > 0 ) then still pass onto normal log fn as this will handle NaNs etc!
   
 }
 
@@ -887,7 +930,7 @@ inline      __m512d fast_log1p_1_AVX512(const __m512d x)   {
 // //  see: https://www.johndcook.com/cpp_log_one_plus_x.html
 inline     __m512d fast_log1m_1_AVX512(const __m512d x)   {
    
-  const __m512d neg_x =  _mm512_sub_pd(zero, x);
+  const __m512d neg_x =  _mm512_sub_pd(_mm512_setzero_pd(), x);
   return fast_log1p_1_AVX512(neg_x) ;  
   
 } 
@@ -895,8 +938,8 @@ inline     __m512d fast_log1m_1_AVX512(const __m512d x)   {
 
 inline      __m512d fast_log1p_exp_1_AVX512(const  __m512d x)   {
    
-  const __m512d neg_x =  _mm512_sub_pd(zero, x);
-  const __mmask8 is_x_gr_0_mask =      _mm512_cmp_pd_mask(x,  zero, _CMP_GT_OQ);
+  const __m512d neg_x =  _mm512_sub_pd(_mm512_setzero_pd(), x);
+  const __mmask8 is_x_gr_0_mask =      _mm512_cmp_pd_mask(x,  _mm512_setzero_pd(), _CMP_GT_OQ);
    
   return       _mm512_mask_blend_pd(is_x_gr_0_mask, /// if x > 0
                                     fast_log1p_1_AVX512(fast_exp_1_AVX512(x)), /// if x < 0  ----log1p(exp(x))
@@ -969,10 +1012,11 @@ inline     __m256d  fast_inv_logit_for_x_pos_AVX2(const __m256d x )  {
           return    _mm256_div_pd(one, _mm256_add_pd(one, exp_m_x))  ;
 }
 
-static const __m256d  log_eps  =   _mm256_set1_pd(-18.420680743952367);
+
 
 inline     __m256d  fast_inv_logit_for_x_neg_AVX2(const __m256d x )  {
   
+          const __m256d  log_eps  =   _mm256_set1_pd(-18.420680743952367);
           const __m256d  exp_x =  fast_exp_1_AVX2(x) ;
           
           return _mm256_blendv_pd(    exp_x,
@@ -1002,28 +1046,31 @@ inline     __m256d  fast_inv_logit_AVX2(const __m256d x )  {
 
 inline     __m512d  fast_inv_logit_for_x_pos_AVX512(const __m512d x )  {
 
-      const __m512d  exp_m_x =  fast_exp_1_AVX512(_mm512_sub_pd(zero, x)) ;
-      return    _mm512_div_pd(one, _mm512_add_pd(one, exp_m_x))  ;
+      const __m512d  exp_m_x =  fast_exp_1_AVX512(_mm512_sub_pd(_mm512_setzero_pd(), x)) ;
+      return    _mm512_div_pd(_mm512_set1_pd(1.0), _mm512_add_pd(_mm512_set1_pd(1.0), exp_m_x))  ;
           
 }
 
-static const __m512d  log_eps  =   _mm512_set1_pd(-18.420680743952367);
+
 
 inline     __m512d  fast_inv_logit_for_x_neg_AVX512(const __m512d x )  {
-
+  
+      const __m512d  log_eps  =   _mm512_set1_pd(-18.420680743952367);
       const __m512d exp_x =  fast_exp_1_AVX512(x) ;
+      
       return _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  log_eps, _CMP_GT_OQ),
                                   exp_x,
-                                  _mm512_div_pd(exp_x, _mm512_add_pd(one, exp_x)));
+                                  _mm512_div_pd(exp_x, _mm512_add_pd(_mm512_set1_pd(1.0), exp_x)));
   
 }
+
 inline     __m512d  fast_inv_logit_AVX512(const __m512d x )  {
   
-  __m512d result =   _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  zero, _CMP_GE_OQ),
+  __m512d result =   _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  _mm512_setzero_pd(), _CMP_GE_OQ),
                                    fast_inv_logit_for_x_neg_AVX512(x),
                                    fast_inv_logit_for_x_pos_AVX512(x));
   
-  return  _mm512_min_pd(one, _mm512_max_pd(zero, result));
+  return  _mm512_min_pd(_mm512_set1_pd(1.0), _mm512_max_pd(_mm512_setzero_pd(), result));
   
 }
 
@@ -1079,27 +1126,29 @@ inline      __m256d  fast_inv_logit_wo_checks_AVX2(const __m256d x )  {
 
 inline     __m512d  fast_inv_logit_for_x_pos_wo_checks_AVX512(const __m512d x )  {
   
-   const __m512d  exp_m_x =  fast_exp_1_wo_checks_AVX512(_mm512_sub_pd(zero, x)) ;
-   return    _mm512_div_pd(one, _mm512_add_pd(one, exp_m_x))  ;
+   const __m512d  exp_m_x =  fast_exp_1_wo_checks_AVX512(_mm512_sub_pd(_mm512_setzero_pd(), x)) ;
+   return    _mm512_div_pd(_mm512_set1_pd(1.0), _mm512_add_pd(_mm512_set1_pd(1.0), exp_m_x))  ;
    
 }
 
 inline      __m512d  fast_inv_logit_for_x_neg_wo_checks_AVX512(const __m512d x )  {
   
+  const __m512d  log_eps  =   _mm512_set1_pd(-18.420680743952367);
   const __m512d  exp_x =  fast_exp_1_wo_checks_AVX512(x) ;
+  
   return _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  log_eps, _CMP_GT_OQ),
                               exp_x,
-                              _mm512_div_pd(exp_x, _mm512_add_pd(one, exp_x)));
+                              _mm512_div_pd(exp_x, _mm512_add_pd(_mm512_set1_pd(1.0), exp_x)));
   
 }
 
 inline     __m512d  fast_inv_logit_wo_checks_AVX512(const __m512d x )  {
   
-  __m512d result =   _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  zero, _CMP_GT_OQ),
+  __m512d result =   _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  _mm512_setzero_pd(), _CMP_GT_OQ),
                                   fast_inv_logit_for_x_neg_wo_checks_AVX512(x),
                                   fast_inv_logit_for_x_pos_wo_checks_AVX512(x));
   
-  return  _mm512_min_pd(one, _mm512_max_pd(zero, result));
+  return  _mm512_min_pd(_mm512_set1_pd(1.0), _mm512_max_pd(_mm512_setzero_pd(), result));
   
 }
 
@@ -1177,10 +1226,10 @@ inline     __m256d  fast_log_inv_logit_AVX2(const __m256d x )  {
 // For positive x: log(1/(1 + exp(-x))) = -log(1 + exp(-x))
 inline __m512d fast_log_inv_logit_for_x_pos_AVX512(const __m512d x) {
   
-      const __m512d m_x = _mm512_sub_pd(zero, x);  // -x
+      const __m512d m_x = _mm512_sub_pd(_mm512_setzero_pd(), x);  // -x
       const __m512d exp_m_x = fast_exp_1_AVX512(m_x);             // exp(-x)
       const __m512d log_sum = fast_log1p_1_AVX512(exp_m_x);       // log(1 + exp(-x))
-      return _mm512_sub_pd(zero, log_sum);         // -log(1 + exp(-x))
+      return _mm512_sub_pd(_mm512_setzero_pd(), log_sum);         // -log(1 + exp(-x))
   
 }
 
@@ -1202,7 +1251,7 @@ inline __m512d fast_log_inv_logit_for_x_neg_AVX512(const __m512d x) {
 
 inline __m512d fast_log_inv_logit_AVX512(const __m512d x) {
   
-      __mmask8 is_pos = _mm512_cmp_pd_mask(x, zero, _CMP_GE_OQ);
+      __mmask8 is_pos = _mm512_cmp_pd_mask(x, _mm512_setzero_pd(), _CMP_GE_OQ);
       
       return _mm512_mask_blend_pd(is_pos,
                                   fast_log_inv_logit_for_x_neg_AVX512(x),  // if x < 0 
@@ -1280,14 +1329,15 @@ inline     __m256d  fast_log_inv_logit_wo_checks_AVX2(const __m256d x )  {
 
 inline     __m512d  fast_log_inv_logit_for_x_pos_wo_checks_AVX512(const __m512d x )  {
  
-  return   _mm512_sub_pd(zero, fast_log1p_exp_1_wo_checks_AVX512((_mm512_sub_pd(zero, x)) ) );
+  return   _mm512_sub_pd(_mm512_setzero_pd(), fast_log1p_exp_1_wo_checks_AVX512((_mm512_sub_pd(_mm512_setzero_pd(), x)) ) );
   
 }
 
 
 
 inline     __m512d  fast_log_inv_logit_for_x_neg_wo_checks_AVX512(const __m512d x )  {
- 
+  
+  const __m512d  log_eps  =   _mm512_set1_pd(-18.420680743952367);
   
   return _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  log_eps, _CMP_GT_OQ), /// if x > log_eps = -18.420680743952367
                               x,
@@ -1299,7 +1349,7 @@ inline     __m512d  fast_log_inv_logit_for_x_neg_wo_checks_AVX512(const __m512d 
 
 inline     __m512d  fast_log_inv_logit_wo_checks_AVX512(const __m512d x )  {
   
-  return  _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  zero, _CMP_GE_OQ),  // x > 0
+  return  _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x,  _mm512_setzero_pd(), _CMP_GE_OQ),  // x > 0
                                fast_log_inv_logit_for_x_neg_wo_checks_AVX512(x),
                                fast_log_inv_logit_for_x_pos_wo_checks_AVX512(x));  // x > 0
   
@@ -1318,10 +1368,12 @@ inline     __m512d  fast_log_inv_logit_wo_checks_AVX512(const __m512d x )  {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256d a =     _mm256_set1_pd(0.07056);
-static const __m256d b =     _mm256_set1_pd(1.5976);
+
  
 inline     __m256d  fast_Phi_approx_wo_checks_AVX2(const __m256d x)  {
+  
+  const __m256d a =     _mm256_set1_pd(0.07056);
+  const __m256d b =     _mm256_set1_pd(1.5976);
   
   const __m256d   x_sq =  _mm256_mul_pd(x, x);
   const __m256d   a_x_sq_plus_b = _mm256_fmadd_pd(a, x_sq, b);
@@ -1336,10 +1388,12 @@ inline     __m256d  fast_Phi_approx_wo_checks_AVX2(const __m256d x)  {
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
 
-static const __m512d a =     _mm512_set1_pd(0.07056);
-static const __m512d b =     _mm512_set1_pd(1.5976);
 
 inline      __m512d  fast_Phi_approx_wo_checks_AVX512( const __m512d x)  {
+  
+  
+  const __m512d a =     _mm512_set1_pd(0.07056);
+  const __m512d b =     _mm512_set1_pd(1.5976);
 
   const __m512d  x_sq =  _mm512_mul_pd(x, x);
   const __m512d  a_x_sq_plus_b = _mm512_fmadd_pd(a, x_sq, b);
@@ -1377,6 +1431,9 @@ inline     __m256d  fast_Phi_approx_AVX2(const __m256d x )  {
 
 inline     __m512d  fast_Phi_approx_AVX512(const __m512d x )  {
   
+  const __m512d a =     _mm512_set1_pd(0.07056);
+  const __m512d b =     _mm512_set1_pd(1.5976);
+  
   const __m512d  x_sq =  _mm512_mul_pd(x, x);
   const __m512d  a_x_sq_plus_b = _mm512_fmadd_pd(a, x_sq, b);
   const __m512d  stuff_to_inv_logit =  _mm512_mul_pd(x, a_x_sq_plus_b);
@@ -1400,11 +1457,13 @@ inline     __m512d  fast_Phi_approx_AVX512(const __m512d x )  {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
   
-static const __m256d  inv_Phi_approx_c1 = _mm256_set1_pd(-0.3418);
-static const __m256d  inv_Phi_approx_c2 = _mm256_set1_pd(2.74699999999999988631);
-static const __m256d  one_third =  _mm256_set1_pd(0.33333333333333331483);
+
 
 inline      __m256d  fast_inv_Phi_approx_wo_checks_AVX2(const __m256d x )  {
+  
+  const __m256d  inv_Phi_approx_c1 = _mm256_set1_pd(-0.3418);
+  const __m256d  inv_Phi_approx_c2 = _mm256_set1_pd(2.74699999999999988631);
+  const __m256d  one_third =  _mm256_set1_pd(0.33333333333333331483);
   
   const __m256d  m_logit_p = fast_log_1_wo_checks_AVX2( _mm256_sub_pd(_mm256_div_pd(one,  x), one ) ); // logit first
   const __m256d  x_i =  _mm256_mul_pd(m_logit_p, inv_Phi_approx_c1) ; // -0.3418*m_logit_p;
@@ -1419,18 +1478,20 @@ inline      __m256d  fast_inv_Phi_approx_wo_checks_AVX2(const __m256d x )  {
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
 
-static const __m512d  inv_Phi_approx_c1 = _mm512_set1_pd(-0.3418);
-static const __m512d  inv_Phi_approx_c2 = _mm512_set1_pd(2.74699999999999988631);
-static const __m512d  one_third =  _mm512_set1_pd(0.33333333333333331483);
 
 inline     __m512d  fast_inv_Phi_approx_wo_checks_AVX512(const __m512d x )  {
   
-  const __m512d  m_logit_p = fast_log_1_wo_checks_AVX512( _mm512_sub_pd(_mm512_div_pd(one,  x), one ) ); // logit first
+  
+  const __m512d  inv_Phi_approx_c1 = _mm512_set1_pd(-0.3418);
+  const __m512d  inv_Phi_approx_c2 = _mm512_set1_pd(2.74699999999999988631);
+  const __m512d  one_third =  _mm512_set1_pd(0.33333333333333331483);
+  
+  const __m512d  m_logit_p = fast_log_1_wo_checks_AVX512( _mm512_sub_pd(_mm512_div_pd(_mm512_set1_pd(1.0),  x), _mm512_set1_pd(1.0) ) ); // logit first
   const __m512d  x_i =  _mm512_mul_pd(m_logit_p, inv_Phi_approx_c1) ; // -0.3418*m_logit_p;
-  const __m512d  asinh_stuff_div_3 =  _mm512_mul_pd(  one_third,  fast_log_1_wo_checks_AVX512(  _mm512_add_pd(x_i, (  _mm512_sqrt_pd(  _mm512_fmadd_pd(x_i, x_i, one) ) )  ) ) ) ;          // now do arc_sinh part
+  const __m512d  asinh_stuff_div_3 =  _mm512_mul_pd(  one_third,  fast_log_1_wo_checks_AVX512(  _mm512_add_pd(x_i, (  _mm512_sqrt_pd(  _mm512_fmadd_pd(x_i, x_i, _mm512_set1_pd(1.0)) ) )  ) ) ) ;          // now do arc_sinh part
   const __m512d  exp_x_i = fast_exp_1_wo_checks_AVX512(asinh_stuff_div_3);
   
-  return _mm512_mul_pd(inv_Phi_approx_c2,   _mm512_div_pd(_mm512_sub_pd(_mm512_mul_pd(exp_x_i, exp_x_i), one), exp_x_i) );
+  return _mm512_mul_pd(inv_Phi_approx_c2,   _mm512_div_pd(_mm512_sub_pd(_mm512_mul_pd(exp_x_i, exp_x_i), _mm512_set1_pd(1.0)), exp_x_i) );
   
 }
 
@@ -1462,12 +1523,16 @@ inline     __m256d  fast_inv_Phi_approx_AVX2(const __m256d x )  {
 
 inline     __m512d  fast_inv_Phi_approx_AVX512(const __m512d x )  {
   
-  const __m512d m_logit_p = fast_log_1_AVX512( _mm512_sub_pd(_mm512_div_pd(one,  x), one ) ); // logit first
+  const __m512d  inv_Phi_approx_c1 = _mm512_set1_pd(-0.3418);
+  const __m512d  inv_Phi_approx_c2 = _mm512_set1_pd(2.74699999999999988631);
+  const __m512d  one_third =  _mm512_set1_pd(0.33333333333333331483);
+  
+  const __m512d m_logit_p = fast_log_1_AVX512( _mm512_sub_pd(_mm512_div_pd(_mm512_set1_pd(1.0),  x), _mm512_set1_pd(1.0) ) ); // logit first
   const __m512d x_i =  _mm512_mul_pd(m_logit_p, inv_Phi_approx_c1) ; // -0.3418*m_logit_p;
-  const __m512d asinh_stuff_div_3 =  _mm512_mul_pd( one_third,  fast_log_1_AVX512(  _mm512_add_pd(x_i, (  _mm512_sqrt_pd(  _mm512_fmadd_pd(x_i, x_i, one) ) )  ) ) ) ;          // now do arc_sinh part
+  const __m512d asinh_stuff_div_3 =  _mm512_mul_pd( one_third,  fast_log_1_AVX512(  _mm512_add_pd(x_i, (  _mm512_sqrt_pd(  _mm512_fmadd_pd(x_i, x_i, _mm512_set1_pd(1.0)) ) )  ) ) ) ;          // now do arc_sinh part
   const __m512d exp_x_i = fast_exp_1_AVX512(asinh_stuff_div_3);
   
-  return    _mm512_mul_pd(inv_Phi_approx_c2,   _mm512_div_pd(_mm512_sub_pd(_mm512_mul_pd(exp_x_i, exp_x_i), one), exp_x_i) );
+  return    _mm512_mul_pd(inv_Phi_approx_c2,   _mm512_div_pd(_mm512_sub_pd(_mm512_mul_pd(exp_x_i, exp_x_i), _mm512_set1_pd(1.0)), exp_x_i) );
   
   // __mmask8 is_x_valid_prob =  _mm512_cmp_pd_mask(x,  zero, _CMP_GT_OQ) & _mm512_cmp_pd_mask(x,  one, _CMP_LT_OQ); // if x in (0, 1)
   // return   _mm512_mask_blend_pd(is_x_valid_prob,
@@ -1502,6 +1567,10 @@ inline     __m512d  fast_inv_Phi_approx_AVX512(const __m512d x )  {
 
 inline      __m256d  fast_inv_Phi_approx_from_logit_prob_wo_checks_AVX2(const __m256d logit_p )  {
   
+  const __m512d  inv_Phi_approx_c1 = _mm512_set1_pd(-0.3418);
+  const __m512d  inv_Phi_approx_c2 = _mm512_set1_pd(2.74699999999999988631);
+  const __m512d  one_third =  _mm512_set1_pd(0.33333333333333331483);
+  
   const __m256d  x_i =  _mm256_mul_pd(logit_p,  inv_Phi_approx_c1) ;
   const __m256d  asinh_stuff_div_3 =  _mm256_mul_pd(  one_third,  fast_log_1_wo_checks_AVX2( _mm256_add_pd(x_i  , _mm256_sqrt_pd(  _mm256_fmadd_pd(x_i, x_i, one) ) )  ) ) ;          // now do arc_sinh part
   const __m256d  exp_x_i = fast_exp_1_wo_checks_AVX2(asinh_stuff_div_3);
@@ -1515,12 +1584,16 @@ inline      __m256d  fast_inv_Phi_approx_from_logit_prob_wo_checks_AVX2(const __
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
 
 inline      __m512d  fast_inv_Phi_approx_from_logit_prob_wo_checks_AVX512(const __m512d logit_p )  {
+  
+  const __m512d  inv_Phi_approx_c1 = _mm512_set1_pd(-0.3418);
+  const __m512d  inv_Phi_approx_c2 = _mm512_set1_pd(2.74699999999999988631);
+  const __m512d  one_third =  _mm512_set1_pd(0.33333333333333331483);
  
   const __m512d  x_i =   _mm512_mul_pd(logit_p, inv_Phi_approx_c1) ;
-  const __m512d  asinh_stuff_div_3 =  _mm512_mul_pd(one_third,  fast_log_1_wo_checks_AVX512(  _mm512_add_pd(x_i, (  _mm512_sqrt_pd(  _mm512_fmadd_pd(x_i, x_i, one) ) )  ) ) ) ;          // now do arc_sinh part
+  const __m512d  asinh_stuff_div_3 =  _mm512_mul_pd(one_third,  fast_log_1_wo_checks_AVX512(  _mm512_add_pd(x_i, (  _mm512_sqrt_pd(  _mm512_fmadd_pd(x_i, x_i, _mm512_set1_pd(1.0)) ) )  ) ) ) ;          // now do arc_sinh part
   const __m512d  exp_x_i = fast_exp_1_wo_checks_AVX512(asinh_stuff_div_3);
   
-  return _mm512_mul_pd(inv_Phi_approx_c2,   _mm512_div_pd(_mm512_sub_pd(_mm512_mul_pd(exp_x_i, exp_x_i), one), exp_x_i) );
+  return _mm512_mul_pd(inv_Phi_approx_c2,   _mm512_div_pd(_mm512_sub_pd(_mm512_mul_pd(exp_x_i, exp_x_i), _mm512_set1_pd(1.0)), exp_x_i) );
   
 }
 
@@ -1533,6 +1606,10 @@ inline      __m512d  fast_inv_Phi_approx_from_logit_prob_wo_checks_AVX512(const 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
 inline     __m256d  fast_inv_Phi_approx_from_logit_prob_AVX2(const __m256d logit_p )  {
+  
+  const __m512d  inv_Phi_approx_c1 = _mm512_set1_pd(-0.3418);
+  const __m512d  inv_Phi_approx_c2 = _mm512_set1_pd(2.74699999999999988631);
+  const __m512d  one_third =  _mm512_set1_pd(0.33333333333333331483);
   
   const __m256d  x_i =  _mm256_mul_pd(logit_p,  inv_Phi_approx_c1) ;
   const __m256d  asinh_stuff_div_3 =  _mm256_mul_pd( one_third,  fast_log_1_AVX2( _mm256_add_pd(x_i  , _mm256_sqrt_pd(  _mm256_fmadd_pd(x_i, x_i, one) ) )  ) ) ;          // now do arc_sinh part
@@ -1548,12 +1625,16 @@ inline     __m256d  fast_inv_Phi_approx_from_logit_prob_AVX2(const __m256d logit
 
 
 inline      __m512d  fast_inv_Phi_approx_from_logit_prob_AVX512(const __m512d logit_p )  {
+  
+  const __m512d  inv_Phi_approx_c1 = _mm512_set1_pd(-0.3418);
+  const __m512d  inv_Phi_approx_c2 = _mm512_set1_pd(2.74699999999999988631);
+  const __m512d  one_third =  _mm512_set1_pd(0.33333333333333331483);
  
   const __m512d  x_i =   _mm512_mul_pd(logit_p,  inv_Phi_approx_c1) ;
-  const __m512d  asinh_stuff_div_3 =  _mm512_mul_pd(one_third,  fast_log_1_AVX512(  _mm512_add_pd(x_i, (  _mm512_sqrt_pd(  _mm512_fmadd_pd(x_i, x_i, one) ) )  ) ) ) ;          // now do arc_sinh part
+  const __m512d  asinh_stuff_div_3 =  _mm512_mul_pd(one_third,  fast_log_1_AVX512(  _mm512_add_pd(x_i, (  _mm512_sqrt_pd(  _mm512_fmadd_pd(x_i, x_i, _mm512_set1_pd(1.0)) ) )  ) ) ) ;          // now do arc_sinh part
   const __m512d  exp_x_i = fast_exp_1_AVX512(asinh_stuff_div_3);
   
-  return _mm512_mul_pd(inv_Phi_approx_c2,   _mm512_div_pd(_mm512_sub_pd(_mm512_mul_pd(exp_x_i, exp_x_i), one), exp_x_i) );
+  return _mm512_mul_pd(inv_Phi_approx_c2,   _mm512_div_pd(_mm512_sub_pd(_mm512_mul_pd(exp_x_i, exp_x_i), _mm512_set1_pd(1.0)), exp_x_i) );
   
 }
 
@@ -1588,6 +1669,9 @@ inline      __m256d  fast_log_Phi_approx_wo_checks_AVX2(const __m256d x )  {
 
 inline      __m512d  fast_log_Phi_approx_wo_checks_AVX512(const __m512d x )  {
   
+  const __m512d a =     _mm512_set1_pd(0.07056);
+  const __m512d b =     _mm512_set1_pd(1.5976);
+  
  const __m512d  x_sq =  _mm512_mul_pd(x, x);
  const __m512d  a_x_sq_plus_b = _mm512_fmadd_pd(a, x_sq, b);
  const __m512d  stuff_to_inv_logit =  _mm512_mul_pd(x, a_x_sq_plus_b);
@@ -1608,10 +1692,11 @@ inline      __m512d  fast_log_Phi_approx_wo_checks_AVX512(const __m512d x )  {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256d Phi_upper_bound =  _mm256_set1_pd(8.25);
-static const __m256d Phi_lower_bound =  _mm256_set1_pd(-37.5);
 
 inline __m256d fast_log_Phi_approx_AVX2(const __m256d x) {
+  
+  const __m256d Phi_upper_bound =  _mm256_set1_pd(8.25);
+  const __m256d Phi_lower_bound =  _mm256_set1_pd(-37.5);
   
   const __m256d x_sq = _mm256_mul_pd(x, x);
   const __m256d x_cubed = _mm256_mul_pd(x_sq, x);
@@ -1628,13 +1713,13 @@ inline __m256d fast_log_Phi_approx_AVX2(const __m256d x) {
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
 
-
- 
-
-static const __m512d Phi_upper_bound =  _mm512_set1_pd(8.25);
-static const __m512d Phi_lower_bound =  _mm512_set1_pd(-37.5);
-
 inline __m512d fast_log_Phi_approx_AVX512(const __m512d x) {
+      
+      const __m512d Phi_upper_bound =  _mm512_set1_pd(8.25);
+      const __m512d Phi_lower_bound =  _mm512_set1_pd(-37.5);
+      
+      const __m512d a =     _mm512_set1_pd(0.07056);
+      const __m512d b =     _mm512_set1_pd(1.5976);
   
       const __m512d x_sq = _mm512_mul_pd(x, x);
       const __m512d x_cubed = _mm512_mul_pd(x_sq, x);
@@ -1654,10 +1739,12 @@ inline __m512d fast_log_Phi_approx_AVX512(const __m512d x) {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256d  two =     _mm256_set1_pd(2.0);
-static const __m256d  m_two =   _mm256_set1_pd(-2.0);
 
 inline      __m256d    fast_tanh_AVX2( const  __m256d x  )   {
+  
+  
+  const __m256d  two =     _mm256_set1_pd(2.0);
+  const __m256d  m_two =   _mm256_set1_pd(-2.0);
   
   return        _mm256_sub_pd( _mm256_div_pd(two,   _mm256_add_pd(one, fast_exp_1_AVX2(  _mm256_mul_pd(x, m_two)   ) ) ), one ) ;
   
@@ -1667,12 +1754,14 @@ inline      __m256d    fast_tanh_AVX2( const  __m256d x  )   {
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
 
 
-static const __m512d  two =     _mm512_set1_pd(2.0);
-static const __m512d  m_two =   _mm512_set1_pd(-2.0);
 
 inline      __m512d    fast_tanh_AVX512( const  __m512d  x  )   {
   
-  return        _mm512_sub_pd( _mm512_div_pd(two,   _mm512_add_pd(one, fast_exp_1_AVX512(  _mm512_mul_pd(x, m_two)   ) ) ), one ) ;
+  
+  const __m512d  two =     _mm512_set1_pd(2.0);
+  const __m512d  m_two =   _mm512_set1_pd(-2.0);
+  
+  return        _mm512_sub_pd( _mm512_div_pd(two,   _mm512_add_pd(_mm512_set1_pd(1.0), fast_exp_1_AVX512(  _mm512_mul_pd(x, m_two)   ) ) ), _mm512_set1_pd(1.0) ) ;
   
 }
 #endif
@@ -1693,7 +1782,10 @@ inline      __m256d    fast_tanh_wo_checks_AVX2(const   __m256d x  )   {
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
 inline       __m512d    fast_tanh_wo_checks_AVX512( const  __m512d x  )   {
   
-  return        _mm512_sub_pd( _mm512_div_pd(two,   _mm512_add_pd(one, fast_exp_1_wo_checks_AVX512(  _mm512_mul_pd(x, m_two)   ) ) ), one ) ;
+  const __m512d  two =     _mm512_set1_pd(2.0);
+  const __m512d  m_two =   _mm512_set1_pd(-2.0);
+  
+  return        _mm512_sub_pd( _mm512_div_pd(two,   _mm512_add_pd(_mm512_set1_pd(1.0), fast_exp_1_wo_checks_AVX512(  _mm512_mul_pd(x, m_two)   ) ) ), _mm512_set1_pd(1.0) ) ;
   
 }
 #endif
@@ -1707,11 +1799,13 @@ inline       __m512d    fast_tanh_wo_checks_AVX512( const  __m512d x  )   {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256d mask0 = _mm256_set1_pd(-0.);
+
 
   // from: https://stackoverflow.com/questions/57870896/writing-a-portable-sse-avx-version-of-stdcopysign
   inline    __m256d CopySign(const __m256d srcSign, 
                              const __m256d srcValue) {
+    
+    const __m256d mask0 = _mm256_set1_pd(-0.);
     
     __m256d tmp0 = _mm256_and_pd(srcSign, mask0); // Extract the signed bit from srcSign
     __m256d tmp1 = _mm256_andnot_pd(mask0, srcValue); // Extract the number without sign of srcValue (abs(srcValue))
@@ -1725,11 +1819,13 @@ static const __m256d mask0 = _mm256_set1_pd(-0.);
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
 
-static const __m512d mask0 = _mm512_set1_pd(-0.);
 
 // from: https://stackoverflow.com/questions/57870896/writing-a-portable-sse-avx-version-of-stdcopysign
 inline     __m512d CopySign(const __m512d srcSign, 
                             const __m512d srcValue) {
+  
+  
+  const __m512d mask0 = _mm512_set1_pd(-0.);
   
   __m512d tmp0 = _mm512_and_pd(srcSign, mask0); // Extract the signed bit from srcSign
   __m512d tmp1 = _mm512_andnot_pd(mask0, srcValue); // Extract the number without sign of srcValue (abs(srcValue))
@@ -1750,34 +1846,36 @@ inline     __m512d CopySign(const __m512d srcSign,
  
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
- static const __m256d erf_part_1_c0 =      _mm256_set1_pd(-5.6271698391213282e-18);
- static const __m256d erf_part_1_c1 =      _mm256_set1_pd(4.8565951797366214e-16);
- static const __m256d erf_part_1_c2 =      _mm256_set1_pd(-1.9912968283386570e-14);
- static const __m256d erf_part_1_c3 =      _mm256_set1_pd(5.1614612434698227e-13);
- static const __m256d erf_part_1_c4 =      _mm256_set1_pd(-9.4934693745934645e-12);
- static const __m256d erf_part_1_c5 =      _mm256_set1_pd(1.3183034417605052e-10);
- static const __m256d erf_part_1_c6 =      _mm256_set1_pd(-1.4354030030292210e-09);
- static const __m256d erf_part_1_c7 =      _mm256_set1_pd(1.2558925114413972e-08);
- static const __m256d erf_part_1_c8 =      _mm256_set1_pd(-8.9719702096303798e-08);
- static const __m256d erf_part_1_c9 =      _mm256_set1_pd(5.2832013824348913e-07);
- static const __m256d erf_part_1_c10 =     _mm256_set1_pd(-2.5730580226082933e-06);
- static const __m256d erf_part_1_c11 =     _mm256_set1_pd(1.0322052949676148e-05);
- static const __m256d erf_part_1_c12 =     _mm256_set1_pd(-3.3555264836700767e-05);
- static const __m256d erf_part_1_c13 =     _mm256_set1_pd(8.4667486930266041e-05);
- static const __m256d erf_part_1_c14 =     _mm256_set1_pd(-1.4570926486271945e-04);
- static const __m256d erf_part_1_c15 =     _mm256_set1_pd(7.1877160107954648e-05);
- static const __m256d erf_part_1_c16 =     _mm256_set1_pd(4.9486959714661590e-04);
- static const __m256d erf_part_1_c17 =     _mm256_set1_pd(-1.6221099717135270e-03);
- static const __m256d erf_part_1_c18 =     _mm256_set1_pd(1.6425707149019379e-04);
- static const __m256d erf_part_1_c19 =     _mm256_set1_pd(1.9148914196620660e-02);
- static const __m256d erf_part_1_c20 =     _mm256_set1_pd(-1.0277918343487560e-1);
- static const __m256d erf_part_1_c21 =     _mm256_set1_pd(-6.3661844223699315e-1);
- static const __m256d erf_part_1_c22 =     _mm256_set1_pd(-1.2837929411398119e-1);
 
 // see: https://math.stackexchange.com/questions/42920/efficient-and-accurate-approximation-of-error-function   // max ulp error = 0.97749 (USE_EXPM1 = 1); 1.05364 (USE_EXPM1 = 0)
 inline     __m256d fast_erf_wo_checks_part_1_upper_AVX2(  const __m256d a,
                                                           const __m256d t,
                                                           const __m256d s) {
+  
+  
+  const __m256d erf_part_1_c0 =      _mm256_set1_pd(-5.6271698391213282e-18);
+  const __m256d erf_part_1_c1 =      _mm256_set1_pd(4.8565951797366214e-16);
+  const __m256d erf_part_1_c2 =      _mm256_set1_pd(-1.9912968283386570e-14);
+  const __m256d erf_part_1_c3 =      _mm256_set1_pd(5.1614612434698227e-13);
+  const __m256d erf_part_1_c4 =      _mm256_set1_pd(-9.4934693745934645e-12);
+  const __m256d erf_part_1_c5 =      _mm256_set1_pd(1.3183034417605052e-10);
+  const __m256d erf_part_1_c6 =      _mm256_set1_pd(-1.4354030030292210e-09);
+  const __m256d erf_part_1_c7 =      _mm256_set1_pd(1.2558925114413972e-08);
+  const __m256d erf_part_1_c8 =      _mm256_set1_pd(-8.9719702096303798e-08);
+  const __m256d erf_part_1_c9 =      _mm256_set1_pd(5.2832013824348913e-07);
+  const __m256d erf_part_1_c10 =     _mm256_set1_pd(-2.5730580226082933e-06);
+  const __m256d erf_part_1_c11 =     _mm256_set1_pd(1.0322052949676148e-05);
+  const __m256d erf_part_1_c12 =     _mm256_set1_pd(-3.3555264836700767e-05);
+  const __m256d erf_part_1_c13 =     _mm256_set1_pd(8.4667486930266041e-05);
+  const __m256d erf_part_1_c14 =     _mm256_set1_pd(-1.4570926486271945e-04);
+  const __m256d erf_part_1_c15 =     _mm256_set1_pd(7.1877160107954648e-05);
+  const __m256d erf_part_1_c16 =     _mm256_set1_pd(4.9486959714661590e-04);
+  const __m256d erf_part_1_c17 =     _mm256_set1_pd(-1.6221099717135270e-03);
+  const __m256d erf_part_1_c18 =     _mm256_set1_pd(1.6425707149019379e-04);
+  const __m256d erf_part_1_c19 =     _mm256_set1_pd(1.9148914196620660e-02);
+  const __m256d erf_part_1_c20 =     _mm256_set1_pd(-1.0277918343487560e-1);
+  const __m256d erf_part_1_c21 =     _mm256_set1_pd(-6.3661844223699315e-1);
+  const __m256d erf_part_1_c22 =     _mm256_set1_pd(-1.2837929411398119e-1);
 
     __m256d r, u;
 
@@ -1811,23 +1909,25 @@ inline     __m256d fast_erf_wo_checks_part_1_upper_AVX2(  const __m256d a,
   }
 
 
-  static const __m256d erf_part_2_c0 =      _mm256_set1_pd(-7.7794684889591997e-10);
-  static const __m256d erf_part_2_c1 =      _mm256_set1_pd(1.3710980398024347e-8);
-  static const __m256d erf_part_2_c2 =      _mm256_set1_pd(-1.6206313758492398e-7);
-  static const __m256d erf_part_2_c3 =      _mm256_set1_pd( 1.6447131571278227e-6);
-  static const __m256d erf_part_2_c4 =      _mm256_set1_pd(-1.4924712302009488e-5);
-  static const __m256d erf_part_2_c5 =      _mm256_set1_pd(1.2055293576900605e-4);
-  static const __m256d erf_part_2_c6 =      _mm256_set1_pd(-8.5483259293144627e-4);
-  static const __m256d erf_part_2_c7 =      _mm256_set1_pd(5.2239776061185055e-3);
-  static const __m256d erf_part_2_c8 =      _mm256_set1_pd(-2.6866170643111514e-2);
-  static const __m256d erf_part_2_c9 =      _mm256_set1_pd(1.1283791670944182e-1);
-  static const __m256d erf_part_2_c10 =     _mm256_set1_pd(-3.7612638903183515e-1);
-  static const __m256d erf_part_2_c11 =     _mm256_set1_pd(1.2837916709551256e-1);
-
   // see: https://math.stackexchange.com/questions/42920/efficient-and-accurate-approximation-of-error-function //   // max ulp error = 1.01912
 inline     __m256d fast_erf_wo_checks_part_2_lower_AVX2(const __m256d a,
                                                           const __m256d t,
                                                           const __m256d s) {
+  
+  
+  
+  const __m256d erf_part_2_c0 =      _mm256_set1_pd(-7.7794684889591997e-10);
+  const __m256d erf_part_2_c1 =      _mm256_set1_pd(1.3710980398024347e-8);
+  const __m256d erf_part_2_c2 =      _mm256_set1_pd(-1.6206313758492398e-7);
+  const __m256d erf_part_2_c3 =      _mm256_set1_pd( 1.6447131571278227e-6);
+  const __m256d erf_part_2_c4 =      _mm256_set1_pd(-1.4924712302009488e-5);
+  const __m256d erf_part_2_c5 =      _mm256_set1_pd(1.2055293576900605e-4);
+  const __m256d erf_part_2_c6 =      _mm256_set1_pd(-8.5483259293144627e-4);
+  const __m256d erf_part_2_c7 =      _mm256_set1_pd(5.2239776061185055e-3);
+  const __m256d erf_part_2_c8 =      _mm256_set1_pd(-2.6866170643111514e-2);
+  const __m256d erf_part_2_c9 =      _mm256_set1_pd(1.1283791670944182e-1);
+  const __m256d erf_part_2_c10 =     _mm256_set1_pd(-3.7612638903183515e-1);
+  const __m256d erf_part_2_c11 =     _mm256_set1_pd(1.2837916709551256e-1);
 
     __m256d r, u;
 
@@ -2012,9 +2112,11 @@ inline __m256d fast_erf_wo_checks_AVX2(const __m256d a) {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256d sqrt_2_recip = _mm256_set1_pd(0.707106781186547461715);
+
 
 inline    __m256d fast_Phi_wo_checks_AVX2(const __m256d x) {
+  
+    const __m256d sqrt_2_recip = _mm256_set1_pd(0.707106781186547461715);
   
     return _mm256_mul_pd(one_half, _mm256_add_pd(one, fast_erf_wo_checks_AVX2( _mm256_mul_pd(x, sqrt_2_recip)) ) ) ;
     
@@ -2078,9 +2180,9 @@ inline __m512d fast_Phi_wo_checks_AVX512(__m512d x) {
         
         const __m512d z = _mm512_abs_pd(x); /////  std::fabs(x);
         
-        const __m512d denom_t = _mm512_fmadd_pd(a, z, one);
+        const __m512d denom_t = _mm512_fmadd_pd(a, z, _mm512_set1_pd(1.0));
         
-        const __m512d t = _mm512_div_pd(one, denom_t);  //// double t = 1.0 / (1.0 + a * z);
+        const __m512d t = _mm512_div_pd(_mm512_set1_pd(1.0), denom_t);  //// double t = 1.0 / (1.0 + a * z);
         const __m512d t_2 = _mm512_mul_pd(t, t);
         const __m512d t_3 = _mm512_mul_pd(t_2, t);
         const __m512d t_4 = _mm512_mul_pd(t_2, t_2);
@@ -2095,11 +2197,11 @@ inline __m512d fast_Phi_wo_checks_AVX512(__m512d x) {
         
         const __m512d poly = _mm512_add_pd(_mm512_add_pd(_mm512_add_pd(poly_term_1, poly_term_2),  _mm512_add_pd(poly_term_3, poly_term_4)), poly_term_5);
         
-        const __mmask8 is_x_gr_0 = _mm512_cmp_pd_mask(x, zero, _CMP_GT_OQ);
+        const __mmask8 is_x_gr_0 = _mm512_cmp_pd_mask(x, _mm512_setzero_pd(), _CMP_GT_OQ);
         
         const __m512d exp_stuff = fast_exp_1_AVX512(_mm512_mul_pd(_mm512_set1_pd(-0.50), _mm512_mul_pd(z, z)) ); 
         const __m512d res = _mm512_mul_pd(_mm512_mul_pd(rsqrt_2pi, exp_stuff), poly);
-        const __m512d one_m_res = _mm512_sub_pd(one, res);
+        const __m512d one_m_res = _mm512_sub_pd(_mm512_set1_pd(1.0), res);
         
         return _mm512_mask_blend_pd(is_x_gr_0, 
                                     res,  //// if x < 0
@@ -2129,6 +2231,10 @@ inline __m512d fast_Phi_wo_checks_AVX512(__m512d x) {
 
 inline __m512d fast_Phi_AVX512(const __m512d x) {
       
+      
+      const __m512d Phi_upper_bound =  _mm512_set1_pd(8.25);
+      const __m512d Phi_lower_bound =  _mm512_set1_pd(-37.5);
+  
       const __mmask8 is_x_gr_lower = _mm512_cmp_pd_mask(x, Phi_lower_bound, _CMP_GT_OQ); // true where x > -37.5 (in range)
       const __mmask8 is_x_lt_upper = _mm512_cmp_pd_mask(x, Phi_upper_bound, _CMP_LT_OQ); // true where x < 8.25 (in range)
       const __mmask8 is_x_in_range = is_x_gr_lower & is_x_lt_upper;
@@ -2137,13 +2243,13 @@ inline __m512d fast_Phi_AVX512(const __m512d x) {
       __m512d result = _mm512_mask_blend_pd(
         is_x_in_range,
         _mm512_mask_blend_pd(_mm512_cmp_pd_mask(x, Phi_lower_bound, _CMP_LT_OQ),
-                             one,    // if x NOT in range and x NOT < -37.5 i.e. x must be > 8.25
-                             zero),  // if x NOT in range and x < -37.5
+                             _mm512_set1_pd(1.0),    // if x NOT in range and x NOT < -37.5 i.e. x must be > 8.25
+                             _mm512_setzero_pd()),  // if x NOT in range and x < -37.5
                              fast_Phi_wo_checks_AVX512(x) // if x is in range
       );
       
       // Clamp results between 0 and 1
-      result = _mm512_min_pd(one, _mm512_max_pd(zero, result));
+      result = _mm512_min_pd(_mm512_set1_pd(1.0), _mm512_max_pd(_mm512_setzero_pd(), result));
       
       return result;
   
@@ -2164,21 +2270,23 @@ inline __m512d fast_Phi_AVX512(const __m512d x) {
 //  compute inverse error functions with maximum error of 2.35793 ulp  // see: https://stackoverflow.com/questions/27229371/inverse-error-function-in-c
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
- 
- static const __m256d inv_erf_part_1_c0 =     _mm256_set1_pd(3.03697567e-10);
- static const __m256d inv_erf_part_1_c1 =     _mm256_set1_pd(2.93243101e-8);
- static const __m256d inv_erf_part_1_c2 =     _mm256_set1_pd(1.22150334e-6);
- static const __m256d inv_erf_part_1_c3 =     _mm256_set1_pd(2.84108955e-5);
- static const __m256d inv_erf_part_1_c4 =     _mm256_set1_pd(3.93552968e-4);
- static const __m256d inv_erf_part_1_c5 =     _mm256_set1_pd(3.02698812e-3);
- static const __m256d inv_erf_part_1_c6 =     _mm256_set1_pd(4.83185798e-3);
- static const __m256d inv_erf_part_1_c7 =     _mm256_set1_pd(-2.64646143e-1);
- static const __m256d inv_erf_part_1_c8 =     _mm256_set1_pd(8.40016484e-1);
+
  
 
 // see: https://math.stackexchange.com/questions/42920/efficient-and-accurate-approximation-of-error-function   // max ulp error = 0.97749 (USE_EXPM1 = 1); 1.05364 (USE_EXPM1 = 0)
 inline     __m256d fast_inv_erf_wo_checks_part_1_upper_AVX2(const __m256d a, 
                                                             const __m256d t) {
+  
+  
+  const __m256d inv_erf_part_1_c0 =     _mm256_set1_pd(3.03697567e-10);
+  const __m256d inv_erf_part_1_c1 =     _mm256_set1_pd(2.93243101e-8);
+  const __m256d inv_erf_part_1_c2 =     _mm256_set1_pd(1.22150334e-6);
+  const __m256d inv_erf_part_1_c3 =     _mm256_set1_pd(2.84108955e-5);
+  const __m256d inv_erf_part_1_c4 =     _mm256_set1_pd(3.93552968e-4);
+  const __m256d inv_erf_part_1_c5 =     _mm256_set1_pd(3.02698812e-3);
+  const __m256d inv_erf_part_1_c6 =     _mm256_set1_pd(4.83185798e-3);
+  const __m256d inv_erf_part_1_c7 =     _mm256_set1_pd(-2.64646143e-1);
+  const __m256d inv_erf_part_1_c8 =     _mm256_set1_pd(8.40016484e-1);
   
   __m256d p = inv_erf_part_1_c0; 
     
@@ -2196,23 +2304,25 @@ inline     __m256d fast_inv_erf_wo_checks_part_1_upper_AVX2(const __m256d a,
     
 }
   
-  
-  
-  static const __m256d inv_erf_part_2_c0 =     _mm256_set1_pd(5.43877832e-9);
-  static const __m256d inv_erf_part_2_c1 =     _mm256_set1_pd(1.43285448e-7);
-  static const __m256d inv_erf_part_2_c2 =     _mm256_set1_pd(1.22774793e-6);
-  static const __m256d inv_erf_part_2_c3 =     _mm256_set1_pd(1.12963626e-7);
-  static const __m256d inv_erf_part_2_c4 =     _mm256_set1_pd(-5.61530760e-5);
-  static const __m256d inv_erf_part_2_c5 =     _mm256_set1_pd(-1.47697632e-4);
-  static const __m256d inv_erf_part_2_c6 =     _mm256_set1_pd(2.31468678e-3);
-  static const __m256d inv_erf_part_2_c7 =     _mm256_set1_pd(1.15392581e-2);
-  static const __m256d inv_erf_part_2_c8 =     _mm256_set1_pd(-2.32015476e-1);
-  static const __m256d inv_erf_part_2_c9 =     _mm256_set1_pd(8.86226892e-1);
+
   
   
 // see: https://math.stackexchange.com/questions/42920/efficient-and-accurate-approximation-of-error-function //   // max ulp error = 1.01912
 inline     __m256d fast_inv_erf_wo_checks_part_2_lower_AVX2(  const __m256d a, 
                                                               const __m256d t) {
+  
+  
+  
+  const __m256d inv_erf_part_2_c0 =     _mm256_set1_pd(5.43877832e-9);
+  const __m256d inv_erf_part_2_c1 =     _mm256_set1_pd(1.43285448e-7);
+  const __m256d inv_erf_part_2_c2 =     _mm256_set1_pd(1.22774793e-6);
+  const __m256d inv_erf_part_2_c3 =     _mm256_set1_pd(1.12963626e-7);
+  const __m256d inv_erf_part_2_c4 =     _mm256_set1_pd(-5.61530760e-5);
+  const __m256d inv_erf_part_2_c5 =     _mm256_set1_pd(-1.47697632e-4);
+  const __m256d inv_erf_part_2_c6 =     _mm256_set1_pd(2.31468678e-3);
+  const __m256d inv_erf_part_2_c7 =     _mm256_set1_pd(1.15392581e-2);
+  const __m256d inv_erf_part_2_c8 =     _mm256_set1_pd(-2.32015476e-1);
+  const __m256d inv_erf_part_2_c9 =     _mm256_set1_pd(8.86226892e-1);
     
     __m256d p =            inv_erf_part_2_c0; //  0x1.4deb44p-32
     p = _mm256_fmadd_pd (p, t,  inv_erf_part_2_c1); //  0x1.f7c9aep-26
@@ -2229,7 +2339,6 @@ inline     __m256d fast_inv_erf_wo_checks_part_2_lower_AVX2(  const __m256d a,
     
 }
 
-  static const __m256d inv_erf_c0 =      _mm256_set1_pd(6.125);
   
 // // see: https://math.stackexchange.com/questions/42920/efficient-and-accurate-approximation-of-error-function
 // inline     __m256d fast_inv_erf_wo_checks_AVX2(const __m256d a) {
@@ -2247,6 +2356,9 @@ inline     __m256d fast_inv_erf_wo_checks_part_2_lower_AVX2(  const __m256d a,
 // }
 
 inline __m256d fast_inv_erf_wo_checks_AVX2(const __m256d a) {
+  
+  
+  const __m256d inv_erf_c0 =      _mm256_set1_pd(6.125);
   
   __m256d t = _mm256_fmadd_pd(a, _mm256_sub_pd(zero, a), one);
   t = fast_log_1_AVX2(t);
@@ -2351,9 +2463,11 @@ inline __m256d fast_inv_erf_wo_checks_AVX2(const __m256d a) {
 
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
 
-static const __m256d sqrt_2 =  _mm256_set1_pd(1.41421356237309514547);
+
 
 inline    __m256d fast_inv_Phi_wo_checks_AVX2(const __m256d x) {
+  
+      const __m256d sqrt_2 =  _mm256_set1_pd(1.41421356237309514547);
   
       return _mm256_mul_pd(sqrt_2, fast_inv_erf_wo_checks_AVX2( _mm256_sub_pd(_mm256_mul_pd(two, x), one )))  ;
     
@@ -2374,7 +2488,6 @@ inline    __m256d fast_inv_Phi_wo_checks_AVX2(const __m256d x) {
 // }
 
 
-static const __m512d neg_one =     _mm512_set1_pd(-1.0);
 
 /// vectorised, AVX-512 version of Stan fn provided by Sean Pinkney:  https://github.com/stan-dev/math/issues/2555 
 
@@ -2382,7 +2495,7 @@ static const __m512d neg_one =     _mm512_set1_pd(-1.0);
 inline __m512d fast_inv_Phi_wo_checks_case_2a_AVX512(const __m512d p,
                                                      __m512d r) { ///  CASE 2(a): if abs(q) > 0.425  AND   if r <= 5.0 
   
-  std::cout << "calling  fast_Phi_wo_checks_case_2a_AVX512"   << "\n"; 
+ // std::cout << "calling  fast_Phi_wo_checks_case_2a_AVX512"   << "\n"; 
   //std::cout << "r = " <<  r  << "\n";
   
   r = _mm512_add_pd(r, _mm512_set1_pd(-1.60));
@@ -2415,7 +2528,7 @@ inline __m512d fast_inv_Phi_wo_checks_case_2a_AVX512(const __m512d p,
 inline __m512d fast_inv_Phi_wo_checks_case_2b_AVX512(const __m512d p,
                                                      __m512d r) { ///  CASE 2(a): if abs(q) > 0.425  AND   if r > 5.0 
   
-  std::cout << "calling  fast_Phi_wo_checks_case_2b_AVX512"   << "\n";
+ // std::cout << "calling  fast_Phi_wo_checks_case_2b_AVX512"   << "\n";
   //std::cout << "r = " <<  r  << "\n";
   
   r = _mm512_add_pd(r, _mm512_set1_pd(-5.0));
@@ -2450,13 +2563,13 @@ inline __m512d fast_inv_Phi_wo_checks_case_2b_AVX512(const __m512d p,
 inline __m512d fast_inv_Phi_wo_checks_case_2_AVX512(const __m512d p,
                                                     const __m512d q) {  /// CASE 2 (i.e. one of case 2(a) or 2(b) depending on value of r)
   
-  const __mmask8 is_q_gr_0 = _mm512_cmp_pd_mask(q, zero, _CMP_GT_OQ);
+  const __mmask8 is_q_gr_0 = _mm512_cmp_pd_mask(q, _mm512_setzero_pd(), _CMP_GT_OQ);
    
   ////   compute r 
-  __m512d r_if_q_gr_0 =  _mm512_sub_pd(one, p);
+  __m512d r_if_q_gr_0 =  _mm512_sub_pd(_mm512_set1_pd(1.0), p);
   __m512d r_if_q_lt_0 = p;
   __m512d r = _mm512_mask_blend_pd(is_q_gr_0, r_if_q_gr_0, r_if_q_lt_0);
-  r = _mm512_sqrt_pd(_mm512_sub_pd(zero, fast_log_1_AVX512(r)));
+  r = _mm512_sqrt_pd(_mm512_sub_pd(_mm512_setzero_pd(), fast_log_1_AVX512(r)));
   
   /// then call either case 2(a) fn (if r <= 5.0) or case 2(b) fn (if r > 5.0)  
   const __mmask8 is_r_gr_5 = _mm512_cmp_pd_mask(r, _mm512_set1_pd(5.0), _CMP_GT_OQ);
@@ -2465,10 +2578,10 @@ inline __m512d fast_inv_Phi_wo_checks_case_2_AVX512(const __m512d p,
                                        fast_inv_Phi_wo_checks_case_2a_AVX512(p, r));
   
   // Flip the sign if q is negative
-  const __mmask8 is_q_lt_zero = _mm512_cmp_pd_mask(q, zero, _CMP_LT_OQ); // _mm512_cmplt_pd_mask(q, _mm512_set1_pd(0.0));
+  const __mmask8 is_q_lt_zero = _mm512_cmp_pd_mask(q, _mm512_setzero_pd(), _CMP_LT_OQ); // _mm512_cmplt_pd_mask(q, _mm512_set1_pd(0.0));
   
   val = _mm512_mask_blend_pd(is_q_lt_zero, 
-                             _mm512_sub_pd(zero, val),   //// if q < 0
+                             _mm512_sub_pd(_mm512_setzero_pd(), val),   //// if q < 0
                              val); //// if   q => 0 
   
   return val;
@@ -2500,7 +2613,7 @@ inline __m512d fast_inv_Phi_wo_checks_case_1_AVX512(const __m512d p,
       denominator = _mm512_fmadd_pd(denominator, r, _mm512_set1_pd(5394.1960214247511077));
       denominator = _mm512_fmadd_pd(denominator, r, _mm512_set1_pd(687.1870074920579083));
       denominator = _mm512_fmadd_pd(denominator, r, _mm512_set1_pd(42.313330701600911252));
-      denominator = _mm512_fmadd_pd(denominator, r,  one);
+      denominator = _mm512_fmadd_pd(denominator, r,  _mm512_set1_pd(1.0));
       
       __m512d val = _mm512_div_pd(numerator, denominator); 
       val = _mm512_mul_pd(q, val);
