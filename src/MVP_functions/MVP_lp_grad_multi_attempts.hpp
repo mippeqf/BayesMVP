@@ -121,7 +121,8 @@ void                             fn_lp_grad_MVP_multi_attempts_InPlace_process( 
                                                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
                                                                                     const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                                                     const std::string grad_option,
-                                                                                    const Model_fn_args_struct &Model_args_as_cpp_struct
+                                                                                    const Model_fn_args_struct &Model_args_as_cpp_struct,
+                                                                                    MVP_ThreadLocalWorkspace &MVP_workspace
 ) {
 
  
@@ -144,7 +145,8 @@ void                             fn_lp_grad_MVP_multi_attempts_InPlace_process( 
                                                                    theta_us_vec_ref,
                                                                    y_ref,
                                                                    grad_option,
-                                                                   Model_args_as_cpp_struct);
+                                                                   Model_args_as_cpp_struct,
+                                                                   MVP_workspace);
         
         if (is_NaN_or_Inf_Eigen(out_mat)) { 
           NaN_or_Inf_indicator = 1;

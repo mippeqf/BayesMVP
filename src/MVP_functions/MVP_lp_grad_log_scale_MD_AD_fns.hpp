@@ -725,9 +725,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
         ////// Nuisance parameter transformation step
         u_unc_vec_chunk = u_unc_vec.segment( chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests);
         
-        u_vec_chunk =  fn_MVP_compute_nuisance(    u_vec_chunk,
-                                                   u_unc_vec_chunk,
-                                                   Model_args_as_cpp_struct);
+        fn_MVP_compute_nuisance(    u_vec_chunk, 
+                                    u_unc_vec_chunk, Model_args_as_cpp_struct);
          
         log_jac_u +=    fn_MVP_compute_nuisance_log_jac_u(   u_vec_chunk,
                                                              u_unc_vec_chunk,
@@ -828,22 +827,22 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                               Model_args_as_cpp_struct);   
               
                    ////// compute/update important grad quantities for GHK-MVP
-                   phi_Z_recip[c].col(t) = fn_MVP_compute_phi_Z_recip_cols(    t,
-                                                                               phi_Z_recip[c], // computing this
-                                                                               Phi_Z[c],
-                                                                               Z_std_norm[c],
-                                                                               Model_args_as_cpp_struct);
+                   fn_MVP_compute_phi_Z_recip_cols(    t,
+                                                       phi_Z_recip[c], // computing this
+                                                       Phi_Z[c],
+                                                       Z_std_norm[c],
+                                                       Model_args_as_cpp_struct);
 
-                   phi_Bound_Z[c].col(t) = fn_MVP_compute_phi_Bound_Z_cols(     t,
-                                                                                phi_Bound_Z[c], // computing this
-                                                                                Bound_U_Phi_Bound_Z[c],
-                                                                                Bound_Z[c], 
-                                                                                Model_args_as_cpp_struct);
+                   fn_MVP_compute_phi_Bound_Z_cols(     t,
+                                                        phi_Bound_Z[c], // computing this
+                                                        Bound_U_Phi_Bound_Z[c],
+                                                        Bound_Z[c], 
+                                                        Model_args_as_cpp_struct);
                                 
                    /// compute log-scale quantities (for grad)
-                   log_phi_Bound_Z[c].col(t).array() =   (fn_EIGEN_double(  phi_Bound_Z[c].col(t).array().abs().matrix(),  "log", vect_type_log));
-                   log_phi_Z_recip[c].col(t).array() =   (fn_EIGEN_double(  phi_Z_recip[c].col(t).array().abs().matrix(),  "log", vect_type_log));
-                   log_Z_std_norm[c].col(t).array()  =   (fn_EIGEN_double(  Z_std_norm[c].col(t).array().abs().matrix(), "log", vect_type_log));
+                   log_phi_Bound_Z[c].col(t).array() =   (fn_EIGEN_double(  phi_Bound_Z[c].col(t).array().abs(),  "log", vect_type_log));
+                   log_phi_Z_recip[c].col(t).array() =   (fn_EIGEN_double(  phi_Z_recip[c].col(t).array().abs(),  "log", vect_type_log));
+                   log_Z_std_norm[c].col(t).array()  =   (fn_EIGEN_double(  Z_std_norm[c].col(t).array().abs(),   "log", vect_type_log));
               
             if   (n_OK == chunk_size)  { // carry on as normal as (likely) no * problematic * overflows/underflows
                    
@@ -1065,11 +1064,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                         out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array()  =  u_grad_array_CM_chunk.reshaped();
                         
                         //// account for unconstrained -> constrained transformations and Jacobian adjustments
-                        du_wrt_duu_chunk =  fn_MVP_nuisance_first_deriv(du_wrt_duu_chunk, 
-                                                                        u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
+                        fn_MVP_nuisance_first_deriv(du_wrt_duu_chunk, 
+                                                    u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
                         
-                        d_J_wrt_duu_chunk =  fn_MVP_nuisance_deriv_of_log_det_J(    d_J_wrt_duu_chunk,
-                                                                                    u_vec_chunk, u_unc_vec_chunk, du_wrt_duu_chunk, Model_args_as_cpp_struct);
+                        fn_MVP_nuisance_deriv_of_log_det_J(    d_J_wrt_duu_chunk,
+                                                               u_vec_chunk, u_unc_vec_chunk, du_wrt_duu_chunk, Model_args_as_cpp_struct);
                          
                         out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() =  
                                out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() * du_wrt_duu_chunk.array() + d_J_wrt_duu_chunk.array() ;
