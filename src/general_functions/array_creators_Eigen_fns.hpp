@@ -7,12 +7,12 @@
 
 
 
-inline std::vector< Eigen::Matrix<double, -1, -1>> vec_of_mats_double(int n_rows,
+__attribute__((always_inline)) inline std::vector< Eigen::Matrix<double, -1, -1>> vec_of_mats_double(int n_rows,
                                                                       int n_cols, 
                                                                       int n_matrices) {
   
   std::vector< Eigen::Matrix<double, -1, -1> > vec_of_mats(n_matrices);
-  Eigen::Matrix<double, -1, -1> zero_mat = Eigen::Matrix<double, -1, -1>::Zero(n_rows, n_cols);
+  const Eigen::Matrix<double, -1, -1> &zero_mat = Eigen::Matrix<double, -1, -1>::Zero(n_rows, n_cols);
   
   for (int i = 0; i < n_matrices; ++i) {
     vec_of_mats[i] = zero_mat;
@@ -31,7 +31,7 @@ inline std::vector< Eigen::Matrix<double, -1, -1>> vec_of_mats_double(int n_rows
 
 
 template<typename T = double>
-inline std::vector<Eigen::Matrix<T, -1, -1>> vec_of_mats(int n_rows,
+__attribute__((always_inline)) inline std::vector<Eigen::Matrix<T, -1, -1>> vec_of_mats(int n_rows,
                                                          int n_cols, 
                                                          int n_mats) {
   
@@ -61,7 +61,7 @@ inline std::vector<Eigen::Matrix<T, -1, -1>> vec_of_mats(int n_rows,
  
  
 template<typename T = double>
-inline std::vector<std::vector<Eigen::Matrix<T, -1, -1>>> vec_of_vec_of_mats(int n_rows,
+__attribute__((always_inline)) inline std::vector<std::vector<Eigen::Matrix<T, -1, -1>>> vec_of_vec_of_mats(int n_rows,
                                                                              int n_cols, 
                                                                              int n_mats_inner,
                                                                              int n_mats_outer) {

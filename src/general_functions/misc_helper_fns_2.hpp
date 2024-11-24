@@ -155,7 +155,7 @@ inline void copy_to_global_tbb(int chain_index,
                                const Eigen::Matrix<double, -1, -1> &Eigen_thread_local_trace_buffer,
                                tbb::concurrent_vector<RcppParallel::RMatrix<double>> &trace_output_to_R_RcppPar) {
   
-  auto& target_matrix = trace_output_to_R_RcppPar[chain_index];
+  auto &target_matrix = trace_output_to_R_RcppPar[chain_index];
   const int n_params = Eigen_thread_local_trace_buffer.rows();
   
   // Copy by columns, getting the actual data pointer
@@ -176,7 +176,7 @@ inline tbb::concurrent_vector<RcppParallel::RMatrix<double>>    convert_vec_of_R
    
   //  result.reserve(input_matrices.size());
   
-  for (const auto& matrix : input_matrices) {
+  for (const auto &matrix : input_matrices) {
     result.emplace_back(RcppParallel::RMatrix<double>( 
         const_cast<double*>(&matrix[0]),  // Pointer to data
         matrix.nrow(),                    // Number of rows
@@ -185,10 +185,27 @@ inline tbb::concurrent_vector<RcppParallel::RMatrix<double>>    convert_vec_of_R
   }
   
   return result;
+  
 } 
 
  
  
+template <typename T> 
+inline tbb::concurrent_vector<T>    convert_std_vec_to_concurrent_vector(const std::vector<T> &inputs, 
+                                                                         tbb::concurrent_vector<T> &result) {
+   
+   const int dim = inputs.size();
+  
+   /// tbb::concurrent_vector<T> result; 
+  
+   for (int i = 0; i < dim; ++i) {
+     result.emplace_back(inputs[i]);
+   }
+   
+   return result;
+   
+ } 
+
  
  
 
