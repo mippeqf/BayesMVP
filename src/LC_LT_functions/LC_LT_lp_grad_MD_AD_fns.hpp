@@ -641,9 +641,8 @@ void         fn_lp_grad_LT_LC_NoLog_MD_and_AD_InPlace_process(     Eigen::Ref<Ei
       ////// Nuisance parameter transformation step
       u_unc_vec_chunk = u_unc_vec.segment( chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests);
       
-      u_vec_chunk =  fn_MVP_compute_nuisance(    u_vec_chunk,
-                                                 u_unc_vec_chunk,
-                                                 Model_args_as_cpp_struct);
+      fn_MVP_compute_nuisance(     u_vec_chunk, 
+                                   u_unc_vec_chunk, Model_args_as_cpp_struct);
       
       log_jac_u +=    fn_MVP_compute_nuisance_log_jac_u(   u_vec_chunk,
                                                            u_unc_vec_chunk,
@@ -738,11 +737,11 @@ void         fn_lp_grad_LT_LC_NoLog_MD_and_AD_InPlace_process(     Eigen::Ref<Ei
             out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * nc , chunk_size * n_tests).array()  =  u_grad_array_CM_chunk.reshaped();
             
             //// account for unconstrained -> constrained transformations and Jacobian adjustments
-            du_wrt_duu_chunk =  fn_MVP_nuisance_first_deriv(du_wrt_duu_chunk, 
-                                                            u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
+            fn_MVP_nuisance_first_deriv(du_wrt_duu_chunk, 
+                                        u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
             
-            d_J_wrt_duu_chunk =  fn_MVP_nuisance_deriv_of_log_det_J(    d_J_wrt_duu_chunk,
-                                                                        u_vec_chunk, u_unc_vec_chunk, du_wrt_duu_chunk, Model_args_as_cpp_struct);
+            fn_MVP_nuisance_deriv_of_log_det_J(    d_J_wrt_duu_chunk, 
+                                                   u_vec_chunk, u_unc_vec_chunk, du_wrt_duu_chunk, Model_args_as_cpp_struct);
              
             out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() =  
                  out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() * du_wrt_duu_chunk.array() + d_J_wrt_duu_chunk.array(); 
