@@ -53,9 +53,9 @@ using namespace Eigen;
 
 
 
-inline void generate_random_std_norm_vec(Eigen::Matrix<double, -1, 1> &std_norm_vec,
-                                       int n_params, 
-                                       std::mt19937  &rng) {
+inline void generate_random_std_norm_vec( Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                                                  int n_params, 
+                                                                  std::mt19937  &rng) {
 
   std::normal_distribution<double> dist(0.0, 1.0); 
   for (int d = 0; d < n_params; d++) {
@@ -81,9 +81,9 @@ inline void generate_random_std_norm_vec(Eigen::Matrix<double, -1, 1> &std_norm_
 
 
 // Another function using the same RNG
-inline void generate_random_tau_ii(double &tau, 
-                                   double &tau_ii, 
-                                   std::mt19937  &rng) {
+inline void generate_random_tau_ii(  double tau, 
+                                                             double &tau_ii,  // ref because assigning
+                                                             std::mt19937  &rng) {
 
   std::uniform_real_distribution<double> dist(0.0, 2.0 * tau);
   tau_ii = dist(rng); // assign random value
@@ -96,20 +96,20 @@ inline void generate_random_tau_ii(double &tau,
 
 
 
-inline bool check_divergence_Eigen(     const HMCResult &result_input,
-                                        const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
-                                        const double &hamiltonian_energy,
-                                        const double &previous_hamiltonian_energy) {
+inline bool check_divergence_Eigen(   const HMCResult &result_input,
+                                                              const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
+                                                              const double hamiltonian_energy,
+                                                              const double previous_hamiltonian_energy) {
   
   /// first check is any NaN or Inf values 
   if ( (is_NaN_or_Inf_Eigen(lp_and_grad_outs) == true)  )  { 
  
-        for (int i = 0; i < lp_and_grad_outs.size(); ++i) {
-          if (std::isnan(lp_and_grad_outs(i)) || std::isinf(lp_and_grad_outs(i))) {
-            std::cout  << "NaN or Inf detected at indices: "  << "\n"   ;
-            std::cout  << i << " "  << "\n"    << std::endl; 
-          }
-        }
+        // for (int i = 0; i < lp_and_grad_outs.size(); ++i) {
+        //   if (std::isnan(lp_and_grad_outs(i)) || std::isinf(lp_and_grad_outs(i))) {
+        //     std::cout  << "NaN or Inf detected at indices: "  << "\n"   ;
+        //     std::cout  << i << " "  << "\n"    << std::endl; 
+        //   }
+        // }
         
         return true;
     
@@ -139,8 +139,8 @@ inline bool check_divergence_Eigen(     const HMCResult &result_input,
 
 
 
-// Define the function that performs the leapfrog integration
-inline void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+ 
+ inline  void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                       Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                       Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                       const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
@@ -152,15 +152,17 @@ inline void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Mat
                                                                       const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts,
                                                                       const std::string &grad_option,
                                                                       const Model_fn_args_struct &Model_args_as_cpp_struct,
+                                                                      MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                       const Stan_model_struct &Stan_model_as_cpp_struct,
                                                                       std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
-                                                                                         const std::string,
+                                                                                         const std::string &,
                                                                                          const bool, const bool, const bool,
                                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
                                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
                                                                                          const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
-                                                                                         const std::string,
+                                                                                         const std::string &,
                                                                                          const Model_fn_args_struct &,
+                                                                                         MVP_ThreadLocalWorkspace &,
                                                                                          const Stan_model_struct &)> fn_lp_grad_InPlace
                                                                         
 ) {
@@ -184,7 +186,8 @@ inline void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Mat
         fn_lp_grad_InPlace(lp_and_grad_outs, 
                            Model_type, force_autodiff, force_PartialLog, multi_attempts,
                            theta_main_vec_proposed_ref, theta_us_vec_initial_ref, y_ref, grad_option, 
-                           Model_args_as_cpp_struct, Stan_model_as_cpp_struct);
+                           Model_args_as_cpp_struct, MVP_workspace, 
+                           Stan_model_as_cpp_struct);
         grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
         
         // Update velocity (second half step)
@@ -201,29 +204,31 @@ inline void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Mat
 
 
 
-// Define the function that performs the leapfrog integration
-inline void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(         Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
-                                                                          Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
-                                                                          Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
-                                                                          const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
-                                                                          const Eigen::Matrix<double, -1, -1> &M_inv_main_vec,
-                                                                          const Eigen::Matrix<int, -1, -1> &y_ref,
-                                                                          const int L_ii,  
-                                                                          const double eps,
-                                                                          const std::string &Model_type,
-                                                                          const bool force_autodiff, const bool force_PartialLog,  const bool multi_attempts,
-                                                                          const std::string &grad_option,
-                                                                          const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                          const Stan_model_struct &Stan_model_as_cpp_struct,
-                                                                          std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
-                                                                                             const std::string,
-                                                                                             const bool, const bool, const bool,
-                                                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
-                                                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
-                                                                                             const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
-                                                                                             const std::string,
-                                                                                             const Model_fn_args_struct&,
-                                                                                             const Stan_model_struct& )> fn_lp_grad_InPlace
+ 
+ inline   void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+                                                                                                Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
+                                                                                                Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
+                                                                                                const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
+                                                                                                const Eigen::Matrix<double, -1, -1> &M_inv_main_vec,
+                                                                                                const Eigen::Matrix<int, -1, -1> &y_ref,
+                                                                                                const int L_ii,  
+                                                                                                const double eps,
+                                                                                                const std::string &Model_type,
+                                                                                                const bool force_autodiff, const bool force_PartialLog,  const bool multi_attempts,
+                                                                                                const std::string &grad_option,
+                                                                                                const Model_fn_args_struct &Model_args_as_cpp_struct,
+                                                                                                MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                                                const Stan_model_struct &Stan_model_as_cpp_struct,
+                                                                                                std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
+                                                                                                                   const std::string &,
+                                                                                                                   const bool, const bool, const bool,
+                                                                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
+                                                                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
+                                                                                                                   const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
+                                                                                                                   const std::string &,
+                                                                                                                   const Model_fn_args_struct &,
+                                                                                                                   MVP_ThreadLocalWorkspace &,
+                                                                                                                   const Stan_model_struct & )> fn_lp_grad_InPlace
                                                                       
 ) {
   
@@ -246,7 +251,8 @@ inline void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(         Eigen:
         fn_lp_grad_InPlace(lp_and_grad_outs, 
                            Model_type, force_autodiff, force_PartialLog, multi_attempts,
                            theta_main_vec_proposed_ref, theta_us_vec_initial_ref, y_ref, grad_option, 
-                           Model_args_as_cpp_struct, Stan_model_as_cpp_struct);
+                           Model_args_as_cpp_struct, MVP_workspace, 
+                           Stan_model_as_cpp_struct);
         grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
         
         // Update velocity (second half step)
@@ -266,7 +272,7 @@ inline void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(         Eigen:
 
 
 
-void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
+inline  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
                                                                                                      const bool  burnin, 
                                                                                                      std::mt19937  &rng,
                                                                                                      const int seed,
@@ -276,6 +282,7 @@ void                                        fn_standard_HMC_main_only_single_ite
                                                                                                      const bool  multi_attempts,
                                                                                                      const Eigen::Matrix<int, -1, -1> &y_ref,
                                                                                                      const Model_fn_args_struct &Model_args_as_cpp_struct,
+                                                                                                     MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                                                      EHMC_fn_args_struct  &EHMC_args_as_cpp_struct, /// pass by ref. to modify (???)
                                                                                                      const EHMC_Metric_struct   &EHMC_Metric_struct_as_cpp_struct,
                                                                                                      const Stan_model_struct &Stan_model_as_cpp_struct
@@ -333,8 +340,11 @@ void                                        fn_standard_HMC_main_only_single_ite
           fn_lp_grad_InPlace(     result_input.lp_and_grad_outs, 
                                   Model_type, 
                                   force_autodiff, force_PartialLog, multi_attempts,
-                                  result_input.main_theta_vec,  result_input.us_theta_vec, y_ref, grad_option,
-                                  Model_args_as_cpp_struct, Stan_model_as_cpp_struct);
+                                  result_input.main_theta_vec,  result_input.us_theta_vec, 
+                                  y_ref, 
+                                  grad_option,
+                                  Model_args_as_cpp_struct, MVP_workspace, 
+                                  Stan_model_as_cpp_struct);
           
           log_posterior_0 =  result_input.lp_and_grad_outs(0);
           U_x_initial = - log_posterior_0; //// initial energy
@@ -351,7 +361,8 @@ void                                        fn_standard_HMC_main_only_single_ite
                                                                         Model_type, 
                                                                         force_autodiff, force_PartialLog, multi_attempts, 
                                                                         grad_option,
-                                                                        Model_args_as_cpp_struct, Stan_model_as_cpp_struct, 
+                                                                        Model_args_as_cpp_struct, MVP_workspace, 
+                                                                        Stan_model_as_cpp_struct, 
                                                                         fn_lp_grad_InPlace);
             
           } else if (metric_shape_main == "diag") {
@@ -366,7 +377,8 @@ void                                        fn_standard_HMC_main_only_single_ite
                                                                           Model_type, 
                                                                           force_autodiff, force_PartialLog, multi_attempts, 
                                                                           grad_option,
-                                                                          Model_args_as_cpp_struct, Stan_model_as_cpp_struct, 
+                                                                          Model_args_as_cpp_struct, MVP_workspace, 
+                                                                          Stan_model_as_cpp_struct, 
                                                                           fn_lp_grad_InPlace);
           }
  
@@ -378,10 +390,10 @@ void                                        fn_standard_HMC_main_only_single_ite
           //////////////////////////////////////////////////////////////////    M-H acceptance step  (i.e, Accept/Reject step)
           if (metric_shape_main == "dense") {
        
-              Eigen::Matrix<double, 1, -1>  velocity_0_x_M_dense_main = result_input.main_velocity_0_vec.transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
+              const Eigen::Matrix<double, 1, -1>  &velocity_0_x_M_dense_main = result_input.main_velocity_0_vec.transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
               energy_old = U_x_initial  +   0.5 * ( velocity_0_x_M_dense_main * result_input.main_velocity_0_vec ).eval()(0, 0) ;
               
-              Eigen::Matrix<double, 1, -1>  velocity_prop_x_M_dense_main =  result_input.main_velocity_vec_proposed.transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
+              const Eigen::Matrix<double, 1, -1>  &velocity_prop_x_M_dense_main =  result_input.main_velocity_vec_proposed.transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
               energy_new  =  U_x_prop +  0.5 * ( velocity_prop_x_M_dense_main *  result_input.main_velocity_vec_proposed  ).eval()(0, 0) ;
     
               log_ratio = - energy_new + energy_old;

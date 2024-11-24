@@ -94,6 +94,7 @@ Eigen::Matrix<double, -1, -1> num_diff_Hessian_main_given_nuisance(   const doub
                                                                       const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
                                                                       const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                                       const Model_fn_args_struct &Model_args_as_cpp_struct,
+                                                                      MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                       const Stan_model_struct &Stan_model_as_cpp_struct) {
   
   const int n_params_main = theta_main_vec_ref.rows();
@@ -118,7 +119,8 @@ Eigen::Matrix<double, -1, -1> num_diff_Hessian_main_given_nuisance(   const doub
                        Model_type,
                        force_autodiff, force_PartialLog, multi_attemps,
                        theta_main_vec_perturbed, theta_us_vec_ref, y_ref, grad_option, 
-                       Model_args_as_cpp_struct, Stan_model_as_cpp_struct);
+                       Model_args_as_cpp_struct, MVP_workspace, 
+                       Stan_model_as_cpp_struct);
     grad_plus.array() = - lp_and_grad_outs.segment(1 + n_us, n_params_main).array();
     
     // Compute g(x - hⱼeⱼ)
@@ -127,7 +129,8 @@ Eigen::Matrix<double, -1, -1> num_diff_Hessian_main_given_nuisance(   const doub
                        Model_type, 
                        force_autodiff, force_PartialLog, multi_attemps,
                        theta_main_vec_perturbed, theta_us_vec_ref, y_ref, grad_option, 
-                       Model_args_as_cpp_struct, Stan_model_as_cpp_struct);
+                       Model_args_as_cpp_struct, MVP_workspace,
+                       Stan_model_as_cpp_struct);
     grad_minus.array() = - lp_and_grad_outs.segment(1 + n_us, n_params_main).array();
     
     // Compute j-th column of Hessian
@@ -175,6 +178,7 @@ void update_M_dense_main_Hessian_InPlace( Eigen::Ref<Eigen::Matrix<double, -1, -
                                           const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
                                           const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                           const Model_fn_args_struct  &Model_args_as_cpp_struct,
+                                          MVP_ThreadLocalWorkspace &MVP_workspace,
                                           const double   &ii, 
                                           const double   &n_burnin, 
                                           const std::string &metric_type) {
@@ -204,6 +208,7 @@ void update_M_dense_main_Hessian_InPlace( Eigen::Ref<Eigen::Matrix<double, -1, -
                                                                                                       theta_us_vec_ref, 
                                                                                                       y_ref,
                                                                                                       Model_args_as_cpp_struct, 
+                                                                                                      MVP_workspace,
                                                                                                       Stan_model_as_cpp_struct);
   
   

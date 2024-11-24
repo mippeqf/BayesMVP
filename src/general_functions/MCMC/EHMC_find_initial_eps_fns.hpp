@@ -42,6 +42,7 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                                                                                             const bool  multi_attempts,
                                                                                             const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                                                             const Model_fn_args_struct &Model_args_as_cpp_struct,
+                                                                                            MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                                             EHMC_fn_args_struct  &EHMC_args_as_cpp_struct, /// pass by ref. to modify (???)
                                                                                             const EHMC_Metric_struct   &EHMC_Metric_struct_as_cpp_struct
 ) {
@@ -84,7 +85,8 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                          Model_type, 
                          force_autodiff, force_PartialLog, multi_attempts,
                          result_input.main_theta_vec,  result_input.us_theta_vec, y_ref, grad_option,
-                         Model_args_as_cpp_struct, Stan_model_as_cpp_struct); 
+                         Model_args_as_cpp_struct, MVP_workspace, 
+                         Stan_model_as_cpp_struct); 
    log_posterior =  result_input.lp_and_grad_outs(0);
    
    
@@ -101,7 +103,9 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                                                                        Model_type,  
                                                                        force_autodiff, force_PartialLog, multi_attempts, 
                                                                        y_ref,
-                                                                       Model_args_as_cpp_struct,  EHMC_args_as_cpp_struct, EHMC_Metric_struct_as_cpp_struct, 
+                                                                       Model_args_as_cpp_struct,  MVP_workspace, 
+                                                                       EHMC_args_as_cpp_struct, 
+                                                                       EHMC_Metric_struct_as_cpp_struct, 
                                                                        Stan_model_as_cpp_struct); 
        
        
@@ -111,7 +115,9 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                                                                        Model_type,  
                                                                        force_autodiff, force_PartialLog, multi_attempts, 
                                                                        y_ref,
-                                                                       Model_args_as_cpp_struct,  EHMC_args_as_cpp_struct, EHMC_Metric_struct_as_cpp_struct, 
+                                                                       Model_args_as_cpp_struct,  MVP_workspace, 
+                                                                       EHMC_args_as_cpp_struct, 
+                                                                       EHMC_Metric_struct_as_cpp_struct, 
                                                                        Stan_model_as_cpp_struct); 
        
        
