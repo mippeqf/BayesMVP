@@ -46,6 +46,7 @@ Rcpp_wrapper_fn_lp_grad <- function(Model_type,
 }
 
  
+## Rcpp_fn_openMP_EHMC_sampling
 
 
 #' @useDynLib BayesMVP, .registration = TRUE

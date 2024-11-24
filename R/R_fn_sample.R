@@ -128,7 +128,7 @@ sample_model  <-    function(     Model_type,
                 
                 RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
                 
-                print(paste("hello 1"))
+               # print(paste("hello 1"))
                 
                 init_burnin_object <-                           init_and_run_burnin( Model_type = Model_type,
                                                                                      sample_nuisance = sample_nuisance,
@@ -167,7 +167,7 @@ sample_model  <-    function(     Model_type,
                                                                                      Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)
                 
                 
-                print(paste("hello 2"))
+               ## print(paste("hello 2"))
         
 
                 {
@@ -181,6 +181,9 @@ sample_model  <-    function(     Model_type,
                   EHMC_burnin_as_Rcpp_List <- init_burnin_object$EHMC_burnin_as_Rcpp_List
 
                   time_burnin <- init_burnin_object$time_burnin
+                  
+                  n_chains_burnin <-  init_burnin_object$n_chains_burnin
+                  n_burnin <-  init_burnin_object$n_burnin
 
                 }
 
@@ -232,10 +235,10 @@ sample_model  <-    function(     Model_type,
                   }
                   
                   
-                  print(Model_args_as_Rcpp_List)
-                  print(dim(theta_us_vectors_all_chains_input_from_R))
-                  print(dim(y))
-                  print(EHMC_args_as_Rcpp_List)
+                  # print(Model_args_as_Rcpp_List)
+                  # print(dim(theta_us_vectors_all_chains_input_from_R))
+                  # print(dim(y))
+                  # print(EHMC_args_as_Rcpp_List)
                   
                   ### Call C++ parallel sampling function
                   result <-       (Rcpp_parallel_sampling_fn(   n_threads_R = n_chains_sampling,
@@ -283,7 +286,24 @@ sample_model  <-    function(     Model_type,
                 
                 time_total <- time_sampling + time_burnin
 
-  out_list <- list(time_burnin = time_burnin,
+  out_list <- list(LR_main = LR_main, 
+                   LR_us = LR_us, 
+                   adapt_delta = adapt_delta,
+                   n_chains_burnin = n_chains_burnin,
+                   n_burnin = n_burnin,
+                   metric_type_main = metric_type_main,
+                   metric_shape_main = metric_shape_main,
+                   metric_type_nuisance = metric_type_nuisance,
+                   metric_shape_nuisance = metric_shape_nuisance,
+                   diffusion_HMC = diffusion_HMC,
+                   partitioned_HMC = partitioned_HMC,
+                   n_superchains = n_superchains,
+                   interval_width_main = interval_width_main,
+                   interval_width_nuisance = interval_width_nuisance,
+                   force_autodiff = force_autodiff,
+                   force_PartialLog = force_PartialLog,
+                   multi_attempts = multi_attempts,
+                   time_burnin = time_burnin,
                    time_sampling = time_sampling,
                    time_total = time_total,
                    result = result, 

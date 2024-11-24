@@ -178,6 +178,73 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                       )
                                     },
                                     
+                                    ## Convenience methods for HMC algorithm metrics
+                                    #' @return Returns a list containing HMC algorithm metrics including:
+                                    #' \itemize{
+                                    #'   \item tau_main: The HMC path length (\eqn{\tau}) for sampling the main parameters. 
+                                    #'   \item eps_main: The HMC step-size (\eqn{\epsilon}) for sampling the main parameters. 
+                                    #'   \item tau_us: The HMC path length (\eqn{\tau}) for sampling the nuisance parameters. 
+                                    #'   \item eps_us: The HMC step-size (\eqn{\epsilon}) for sampling the nuisance parameters.                                     
+                                    #'   \item n_chains_sampling: The number of parallel chains used during the sampling phase. 
+                                    #'   \item n_chains_burnin: The number of parallel chains used during the burnin phase. 
+                                    #'   \item n_iter: The number of iterations used during the sampling phase. 
+                                    #'   \item n_burnin:  The number of iterations used during the burnin phase.                                  
+                                    #'   \item LR_main: The ADAM learning rate (main parameters). 
+                                    #'   \item LR_us:  The ADAM learning rate (nuisance parameters). 
+                                    #'   \item adapt_delta: The target Metropolis-Hastings acceptance probability.                                     
+                                    #'   \item metric_type_main: The type of HMC metric used for main parameters (Hessian or Empirical). 
+                                    #'   \item metric_shape_main: The shape of HMC metric used for main parameters (dense or diag).
+                                    #'   \item metric_type_nuisance: The type of HMC metric used for the nuisance parameters (Hessian or Empirical). 
+                                    #'   \item metric_shape_nuisance: The shape of HMC metric used for the nuisance parameters (dense or diag).                                    
+                                    #'   \item diffusion_HMC: Whether diffusion HMC was used to sample the nuisance parameters or not. 
+                                    #'   \item partitioned_HMC: Whether partitioned HMC was used or not (if \code{FALSE}, then parameters were sampled all 
+                                    #'   at once, and if \code{TRUE}, then the nuisance are sampled conditional on the main parameters).                                        
+                                    #'   \item n_superchains: The number of superchains.                                      
+                                    #'   \item interval_width_main: The interval width for the main parameters. The metric is computed at the end of 
+                                    #'   each interval. 
+                                    #'   \item interval_width_nuisance: The interval width for the nuisance parameters. The metric is computed at the end of 
+                                    #'   each interval.                                  
+                                    #'   \item force_autodiff: Whether autodiff was used (forced) - only relevant for built-in models, as Stan models always 
+                                    #'   use autodiff. 
+                                    #'   \item force_PartialLog: Whether a partial-log-scale version of the model was used (forced) - only relevant 
+                                    #'   for built-in models.
+                                    #'   \item multi_attempts: Whether multiple attempts were made when evaluating the lp_grad function (i.e. first try normal param., 
+                                    #'   then partial-log-scale, and finally autodiff + partial-log-scale) - only relevant for built-in models.
+                                    #' }
+                                    get_HMC_info = function () { 
+                                      list( 
+                                        tau_main = self$summary_object$summaries$HMC_info$tau_main,
+                                        eps_main = self$summary_object$summaries$HMC_info$eps_main,
+                                        tau_us = self$summary_object$summaries$HMC_info$tau_us,
+                                        eps_us = self$summary_object$summaries$HMC_info$eps_us,
+                                        
+                                        n_chains_sampling = self$summary_object$summaries$HMC_info$n_chains_sampling,
+                                        n_chains_burnin = self$summary_object$summaries$HMC_info$n_chains_burnin,
+                                        n_iter = self$summary_object$summaries$HMC_info$n_iter,
+                                        n_burnin = self$summary_object$summaries$HMC_info$n_burnin,
+                                        
+                                        LR_main = self$summary_object$summaries$HMC_info$LR_main,
+                                        LR_us = self$summary_object$summaries$HMC_info$LR_us,
+                                        adapt_delta = self$summary_object$summaries$HMC_info$adapt_delta,
+                                        
+                                        metric_type_main = self$summary_object$summaries$HMC_info$metric_type_main,
+                                        metric_shape_main = self$summary_object$summaries$HMC_info$metric_shape_main,
+                                        metric_type_nuisance = self$summary_object$summaries$HMC_info$metric_type_nuisance,
+                                        metric_shape_nuisance = self$summary_object$summaries$HMC_info$metric_shape_nuisance,
+                                        
+                                        diffusion_HMC = self$summary_object$summaries$HMC_info$diffusion_HMC,
+                                        partitioned_HMC = self$summary_object$summaries$HMC_info$partitioned_HMC,
+                                        
+                                        n_superchains = self$summary_object$summaries$HMC_info$n_superchains,
+                                        
+                                        interval_width_main = self$summary_object$summaries$HMC_info$interval_width_main,
+                                        interval_width_nuisance = self$summary_object$summaries$HMC_info$interval_width_nuisance,
+                                        
+                                        force_autodiff = self$summary_object$summaries$HMC_info$force_autodiff,
+                                        force_PartialLog = self$summary_object$summaries$HMC_info$force_PartialLog,
+                                        multi_attempts = self$summary_object$summaries$HMC_info$multi_attempts
+                                      )
+                                    },
                                     
                                     
                                     ## -- Convenience fn to compute "time to X ESS" using the "$time_to_target_ESS()" method --------------------------------------

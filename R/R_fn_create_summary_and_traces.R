@@ -173,8 +173,36 @@ create_summary_and_traces <- function(    model_results,
   time_sampling <- model_results$time_sampling
   time_total_wo_summaries <- time_burnin + time_sampling
   
- 
+  #### Other HMC info
+  n_chains_burnin <- model_results$n_chains_burnin
+  n_burnin <- model_results$n_burnin
+  
+  LR_main <- model_results$LR_main
+  LR_us <- model_results$LR_us
+  adapt_delta <- model_results$adapt_delta
+  
+  metric_type_main <- model_results$metric_type_main
+  metric_shape_main <- model_results$metric_shape_main
+  metric_type_nuisance <- model_results$metric_type_nuisance
+  metric_shape_nuisance <- model_results$metric_shape_nuisance
+  
+  diffusion_HMC <- model_results$diffusion_HMC
+  partitioned_HMC <- model_results$partitioned_HMC
+  
+  n_superchains <- model_results$n_superchains
+  interval_width_main <- model_results$interval_width_main
+  interval_width_nuisance <- model_results$interval_width_nuisance
+  force_autodiff <- model_results$force_autodiff
+  force_PartialLog <- model_results$force_PartialLog
+  multi_attempts <- model_results$multi_attempts
 
+ 
+  
+  
+  
+  
+  
+  
   {
 
   tictoc::tic()
@@ -405,6 +433,7 @@ create_summary_and_traces <- function(    model_results,
 
   
 
+   n_cores <- parallel::detectCores()
    
   ### --------- MAIN PARAMETERS / "PARAMETERS" BLOCK IN STAN  ----------------------------------------
   Min_ESS_main <- NULL
@@ -413,18 +442,16 @@ create_summary_and_traces <- function(    model_results,
   
   if (compute_main_params == TRUE) { 
     
-    n_cores <- parallel::detectCores()
-    
-    summary_tibble_main_params <- generate_summary_tibble(  n_threads = n_cores,
-                                                            trace = trace_params_main,
-                                                            param_names = names_main,
-                                                            n_to_compute = n_params_main,
-                                                            compute_nested_rhat = compute_nested_rhat,
-                                                            n_chains = n_chains, 
-                                                            n_superchains = n_superchains)
-              
-              
-    Min_ESS_main <- min(na.rm = TRUE, summary_tibble_main_params$n_eff[1:n_params_main])
+        summary_tibble_main_params <- generate_summary_tibble(  n_threads = n_cores,
+                                                                trace = trace_params_main,
+                                                                param_names = names_main,
+                                                                n_to_compute = n_params_main,
+                                                                compute_nested_rhat = compute_nested_rhat,
+                                                                n_chains = n_chains, 
+                                                                n_superchains = n_superchains)
+                  
+                  
+        Min_ESS_main <- min(na.rm = TRUE, summary_tibble_main_params$n_eff[1:n_params_main])
               
   }
  
@@ -434,13 +461,13 @@ create_summary_and_traces <- function(    model_results,
   
   if  ((compute_generated_quantities == TRUE) && (n_gq > 0))  { 
             
-    summary_tibble_generated_quantities <- generate_summary_tibble(   n_threads = n_cores,
-                                                                      trace = trace_gq,
-                                                                      param_names = names_gq,
-                                                                      n_to_compute = n_gq,
-                                                                      compute_nested_rhat = compute_nested_rhat,
-                                                                      n_chains = n_chains, 
-                                                                      n_superchains = n_superchains)
+        summary_tibble_generated_quantities <- generate_summary_tibble(   n_threads = n_cores,
+                                                                          trace = trace_gq,
+                                                                          param_names = names_gq,
+                                                                          n_to_compute = n_gq,
+                                                                          compute_nested_rhat = compute_nested_rhat,
+                                                                          n_chains = n_chains, 
+                                                                          n_superchains = n_superchains)
                   
     
   }
@@ -449,14 +476,14 @@ create_summary_and_traces <- function(    model_results,
   ### --------- TRANSFORMED PARAMETERS -------------------------------------------------------------- 
   summary_tibble_transformed_parameters <- NULL
   if ((compute_transformed_parameters == TRUE) && (n_tp > 0)) {
-    
-    summary_tibble_transformed_parameters <- generate_summary_tibble(     n_threads = n_cores,
-                                                                          trace = trace_tp,
-                                                                          param_names = names_tp,
-                                                                          n_to_compute = n_tp,
-                                                                          compute_nested_rhat = compute_nested_rhat,
-                                                                          n_chains = n_chains, 
-                                                                          n_superchains = n_superchains)
+        
+        summary_tibble_transformed_parameters <- generate_summary_tibble(     n_threads = n_cores,
+                                                                              trace = trace_tp,
+                                                                              param_names = names_tp,
+                                                                              n_to_compute = n_tp,
+                                                                              compute_nested_rhat = compute_nested_rhat,
+                                                                              n_chains = n_chains, 
+                                                                              n_superchains = n_superchains)
     
   }
   
@@ -632,6 +659,30 @@ create_summary_and_traces <- function(    model_results,
                                trace_transformed_params_tibble = trace_transformed_params_tibble,
                                trace_generated_quantities_tibble = trace_generated_quantities_tibble)
     
+    HMC_info <- list( tau_main = EHMC_args_as_Rcpp_List$tau_main,
+                      eps_main = EHMC_args_as_Rcpp_List$eps_main,
+                      tau_us = EHMC_args_as_Rcpp_List$tau_us,
+                      eps_us = EHMC_args_as_Rcpp_List$eps_us,
+                      n_chains_sampling = n_chains_sampling,
+                      n_chains_burnin = n_chains_burnin,
+                      n_iter = n_iter,
+                      n_burnin = n_burnin,
+                      LR_main = LR_main,
+                      LR_us = LR_us,
+                      adapt_delta = adapt_delta,
+                      metric_type_main = metric_type_main,
+                      metric_shape_main = metric_shape_main,
+                      metric_type_nuisance = metric_type_nuisance,
+                      metric_shape_nuisance = metric_shape_nuisance,
+                      diffusion_HMC = diffusion_HMC,
+                      partitioned_HMC = partitioned_HMC,
+                      n_superchains = n_superchains,
+                      interval_width_main = interval_width_main,
+                      interval_width_nuisance = interval_width_nuisance,
+                      force_autodiff = force_autodiff,
+                      force_PartialLog = force_PartialLog,
+                      multi_attempts = multi_attempts)
+    
     ## list to store efficiency information
     efficiency_info <- list(              n_iter = n_iter,
                                           Min_ESS_main = Min_ESS_main, 
@@ -673,7 +724,8 @@ create_summary_and_traces <- function(    model_results,
     
     summaries <- list(summary_tibbles = summary_tibbles,
                       divergences = divergences,
-                      efficiency_info = efficiency_info)
+                      efficiency_info = efficiency_info, 
+                      HMC_info = HMC_info)
     
     
     output_list <- list(  summaries = summaries, ### summary info (incl. efficiency info + divergences)

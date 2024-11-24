@@ -275,6 +275,8 @@ MVP_model <- R6Class("MVP_model",
                           #'@param y The dataset. See class documentation for details.
                           #'@param N The sample size. See class documentation for details.
                           #'@param sample_nuisance Whether to sample nuisance parameters. See class documentation for details.
+                          #'@param partitioned_HMC Whether to sample all parameters at once (note: wont use diffusion HMC) or whether to alternate between sampling the nuisance 
+                          #'parameters and the main model parameters. 
                           #'@param diffusion_HMC Whether to use diffusion-pathspace HMC (Beskos et al) to sample nuisance parameters. Default is TRUE. 
                           #'@param vect_type The SIMD (single-nstruction, multiple-data) vectorisation type to use for math functions (such as log, exp, Phi, etc).
                           #'The default is AVX-512 if available, then AVX2 if not, and if neither AVX-512 nor AVX2 are available
@@ -313,23 +315,26 @@ MVP_model <- R6Class("MVP_model",
                           #'is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwise. 
                           #'@param metric_shape_main The shape of the metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"diag"} or 
                           #'\code{"dense"}. The default is \code{"dense"} if \code{n_params_main < 250} and \code{"diag"} otherwise. 
+                          #'@param ratio_M_main Ratio to use for the metric. Main parameters. 
+                          #'@param ratio_M_us Ratio to use for the metric. Nuisance parameters. 
                           #'@param n_nuisance_to_track The number of nuisance parameters to track (i.e. to generate a trace for). By default the first 5 nuisance parameters are tracked.
                           #'@param force_recompile Recompile the (possibly dummy if using built-in model) Stan model. 
                           #'@param ... Additional arguments passed to sampling.
                           #'@return Returns self invisibly, allowing for method chaining of this classes (MVP_model) methods. E.g.: model$sample(...)$summary(...). 
-                          sample = function(  init_lists_per_chain = NULL,
-                                              model_args_list = NULL,
-                                              Stan_data_list = NULL,
+                          sample = function(  init_lists_per_chain = self$init_lists_per_chain,
+                                              model_args_list = self$model_args_list,
+                                              Stan_data_list = self$Stan_data_list,
                                               parallel_method = "RcppParallel",
                                               y = self$y,
-                                              N = NULL,
+                                              N = self$N,
                                               sample_nuisance =   self$sample_nuisance,
+                                              partitioned_HMC = TRUE,
                                               diffusion_HMC = TRUE,
                                               vect_type = NULL,
                                               Phi_type = "Phi",
-                                              n_params_main = NULL,
-                                              n_nuisance = NULL,
-                                              n_chains_burnin = NULL,
+                                              n_params_main = self$n_params_main,
+                                              n_nuisance = self$n_nuisance,
+                                              n_chains_burnin = self$n_chains_burnin,
                                               n_chains_sampling = NULL,
                                               n_superchains = NULL,
                                               seed = NULL,
@@ -347,6 +352,8 @@ MVP_model <- R6Class("MVP_model",
                                               tau_mult = 1.60,
                                               metric_type_main = "Hessian",
                                               metric_shape_main = "dense",
+                                              ratio_M_main = 0.25,
+                                              ratio_M_us = 0.25,
                                               n_nuisance_to_track = 5,
                                               force_recompile = FALSE,
                                               ...) {
@@ -356,8 +363,9 @@ MVP_model <- R6Class("MVP_model",
                                                     gap <- NULL
                                                    ##  clip_iter <- NULL
                                                     
-                                                    ratio_M_us <- 0.25
-                                                    ratio_M_main <- 0.25
+                                                    # ratio_M_us <- 0.25
+                                                    # ratio_M_main <- 0.25
+                                                    
                                                     n_adapt <- NULL
                                                     max_eps_main <- 1.00
                                                     max_eps_us <- 1.00
@@ -379,21 +387,21 @@ MVP_model <- R6Class("MVP_model",
                                                     Model_type <- self$Model_type 
                                                     init_object <- self$init_object
                                                     
-                                                    # first update class members if new values provided
-                                                    if (!is.null(y)) self$y <- y
-                                                    if (!is.null(N)) self$N <- N
-                                                    if (!is.null(n_params_main)) self$n_params_main <- n_params_main
-                                                    if (!is.null(n_nuisance)) self$n_nuisance <- n_nuisance
-                                                    if (!is.null(init_lists_per_chain)) self$init_lists_per_chain <- init_lists_per_chain
-                                                    if (!is.null(model_args_list)) self$model_args_list <- model_args_list
-                                                    if (!is.null(Stan_data_list)) self$Stan_data_list <- Stan_data_list
-                                                    if (!is.null(sample_nuisance)) self$sample_nuisance <- sample_nuisance
-                                                    if (!is.null(n_chains_burnin)) self$n_chains_burnin <- n_chains_burnin
+                                                    params_same <- 1
                                                     
-                                                    # then update model if needed parameters changed
-                                                    if (!is.null(y) || !is.null(N) ||   !is.null(n_params_main) || !is.null(n_nuisance) # ... other conditions
-                                                        || !is.null(init_lists_per_chain) ||   !is.null(model_args_list) || 
-                                                        !is.null(Stan_data_list) ||   !is.null(sample_nuisance) ||  !is.null(n_chains_burnin) ) {
+                                                    # first update class members if new values provided
+                                                    if (!identical(self$y, y))  { self$y <- y ; params_same <- 0 }
+                                                    if (!identical(self$N, N))  { self$N <- N ; params_same <- 0 }
+                                                    if (!identical(self$n_params_main, n_params_main))  { self$n_params_main <- n_params_main ; params_same <- 0 }
+                                                    if (!identical(self$n_nuisance, n_nuisance))  { self$n_nuisance <- n_nuisance ; params_same <- 0 }
+                                                    if (!identical(self$init_lists_per_chain, init_lists_per_chain))  { self$init_lists_per_chain <- init_lists_per_chain ; params_same <- 0 }
+                                                    if (!identical(self$model_args_list, model_args_list))  { self$model_args_list <- model_args_list ; params_same <- 0 }
+                                                    if (!identical(self$Stan_data_list, Stan_data_list))  { self$Stan_data_list <- Stan_data_list ; params_same <- 0 }
+                                                    if (!identical(self$sample_nuisance, sample_nuisance))  { self$sample_nuisance <- sample_nuisance ; params_same <- 0 }
+                                                    if (!identical(self$n_chains_burnin, n_chains_burnin))  { self$n_chains_burnin <- n_chains_burnin ; params_same <- 0 }
+                                                    
+                                                    # then update model if any of needed parameters changed
+                                                    if (params_same == 0) {
                                                       
                                                         # ---------- call update_model fn  ------------------------------------------------------------------------------------------------ 
                                                             self$init_object <-           update_model(   Model_type = Model_type, 
@@ -493,7 +501,7 @@ MVP_model <- R6Class("MVP_model",
                                                     }
        
                                                     
-                                                    partitioned_HMC <- TRUE # currently only TRUE is supported. 
+                                                  ###  partitioned_HMC <- TRUE # currently only TRUE is supported. 
                                                     inv_Phi_type <- ifelse(Phi_type == "Phi", "inv_Phi", "inv_Phi_approx") # inv_Phi_type is not modifiable 
 
                
