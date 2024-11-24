@@ -67,12 +67,12 @@
 ////// #include "MVP_functions/MVP_manual_Hessian_calc_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_multi_attempts.hpp"
  
-////// Latent trait stuff
-#include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
-#include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
-#include "LC_LT_functions/LC_LT_lp_grad_AD_fns.hpp"
-#include "LC_LT_functions/LC_LT_lp_grad_MD_AD_fns.hpp"
-#include "LC_LT_functions/LC_LT_lp_grad_log_scale_MD_AD_fns.hpp"
+// ////// Latent trait stuff
+// #include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
+// #include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
+// #include "LC_LT_functions/LC_LT_lp_grad_AD_fns.hpp"
+// #include "LC_LT_functions/LC_LT_lp_grad_MD_AD_fns.hpp"
+// #include "LC_LT_functions/LC_LT_lp_grad_log_scale_MD_AD_fns.hpp"
  
 ////// general lp_grad fn  
 #if __has_include("bridgestan.h")
@@ -120,7 +120,8 @@ namespace math {
 
 
 
-Eigen::Matrix<double, -1, 1>     Stan_wrapper_lp_fn(                      const int Model_type_int,
+double                           Stan_wrapper_lp_fn_var(                  const int Model_type_int,
+                                                                          const int force_autodiff_int,
                                                                           const int multi_attempts_int,
                                                                           const Eigen::Matrix<double, -1, 1> &theta_main_vec,
                                                                           const Eigen::Matrix<double, -1, 1> &theta_us_vec,
@@ -160,8 +161,16 @@ Eigen::Matrix<double, -1, 1>     Stan_wrapper_lp_fn(                      const 
    if (multi_attempts_int == 0) multi_attempts = false;
 
    const std::string grad_option = "all";
-   const bool force_autodiff = false;
-   const bool force_PartialLog = false;
+   
+   
+   bool force_PartialLog = false;
+   bool force_autodiff = false;
+   
+   if (force_autodiff_int == 1) {
+     force_autodiff = true;
+     force_PartialLog = true;
+   }
+   
 
    int n_class = 2;
    if (Model_type == "MVP") n_class = 1;
@@ -174,6 +183,13 @@ Eigen::Matrix<double, -1, 1>     Stan_wrapper_lp_fn(                      const 
                                                  1, 1, 1, 1, 
                                                  1, 1, 7, 1, 
                                                  1, 1, 1, 1);
+   
+   const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
+   const int vec_size = 8;
+   ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
+   int chunk_size = chunk_size_info.chunk_size;
+   
+   thread_local MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class); 
    
    Model_args_as_cpp_struct.n_nuisance = n_nuisance;
    Model_args_as_cpp_struct.n_params_main = n_params_main;
@@ -250,16 +266,17 @@ Eigen::Matrix<double, -1, 1>     Stan_wrapper_lp_fn(                      const 
    fn_lp_grad_InPlace(   lp_grad_outs,  Model_type, 
                          force_autodiff, force_PartialLog, multi_attempts, 
                          theta_main_vec, theta_us_vec, y, grad_option,
-                         Model_args_as_cpp_struct, Stan_model_as_cpp_struct);
+                         Model_args_as_cpp_struct, MVP_workspace, 
+                         Stan_model_as_cpp_struct);
    
-   Eigen::Matrix<double, -1, 1> log_lik = lp_grad_outs.tail(N);
+   /// Eigen::Matrix<double, -1, 1> log_lik = lp_grad_outs.tail(N);
    double log_posterior = lp_grad_outs(0);
    
-   Eigen::Matrix<double, -1, 1> outs(1 + N);
-   outs(0) = log_posterior;
-   outs.tail(N) = log_lik;
+   // Eigen::Matrix<double, -1, 1> outs(1 + N);
+   // outs(0) = log_posterior;
+   // outs.tail(N) = log_lik;
    
-   return outs;
+   return log_posterior;
 
    
 }

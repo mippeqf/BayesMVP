@@ -45,7 +45,8 @@ namespace math {
  
  
  
-Eigen::Matrix<double, -1, 1>                    Stan_wrapper_lp_fn_var(                const int Model_type_int,
+double                                         Stan_wrapper_lp_fn_var(                 const int Model_type_int,
+                                                                                       const int force_autodiff_int,
                                                                                        const int multi_attempts_int,
                                                                                        const Eigen::Matrix<var_value<double>, -1, 1> &theta_main_vec,
                                                                                        const Eigen::Matrix<var_value<double>, -1, 1> &theta_us_vec,
@@ -69,7 +70,7 @@ Eigen::Matrix<double, -1, 1>                    Stan_wrapper_lp_fn_var(         
                                                                                        std::ostream* pstream__ = nullptr) {
    
    const int N = y.rows();
-   const int n_nuisance = theta_us_vec.rows()  ;
+   const int n_nuisance = theta_us_vec.rows()  ; 
    const int n_params_main =  theta_main_vec.rows();
    const int n_params = n_params_main + n_nuisance;
    
@@ -84,8 +85,15 @@ Eigen::Matrix<double, -1, 1>                    Stan_wrapper_lp_fn_var(         
    if (multi_attempts_int == 0) multi_attempts = false;
    
    const std::string grad_option = "all";
-   const bool force_autodiff = false;
-   const bool force_PartialLog = false;
+   
+   bool force_PartialLog = false;
+   bool force_autodiff = false;
+   
+   if (force_autodiff_int == 1) {
+     force_autodiff = true;
+     force_PartialLog = true;
+   }
+   
     
    int n_class = 2;
    if (Model_type == "MVP") n_class = 1;
@@ -98,6 +106,13 @@ Eigen::Matrix<double, -1, 1>                    Stan_wrapper_lp_fn_var(         
                                                  1, 1, 1, 1, 
                                                  1, 1, 7, 1, 
                                                  1, 1, 1, 1);
+   
+   const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
+   const int vec_size = 8;
+   ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
+   int chunk_size = chunk_size_info.chunk_size;
+ 
+   thread_local MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
    
    Model_args_as_cpp_struct.n_nuisance = n_nuisance;
    Model_args_as_cpp_struct.n_params_main = n_params_main;
@@ -170,38 +185,45 @@ Eigen::Matrix<double, -1, 1>                    Stan_wrapper_lp_fn_var(         
    Model_args_as_cpp_struct.Model_args_2_layer_vecs_of_mats_double[0] = X;
    
    /////  --------  call lp_grad function  --------------------------------
-   stan::arena_t<Eigen::Matrix<double, -1, 1>> lp_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);
+   // stan::arena_t<Eigen::Matrix<double, -1, 1>> theta_main_double = value_of(theta_main_vec);
+   // stan::arena_t<Eigen::Matrix<double, -1, 1>> theta_us_double =   value_of(theta_us_vec);
+   // Eigen::Matrix<double, -1, 1> theta_main_double = value_of(theta_main_vec);
+   // Eigen::Matrix<double, -1, 1> theta_us_double =   value_of(theta_us_vec);
    
-   stan::arena_t<Eigen::Matrix<double, -1, 1>> theta_main_double = value_of(theta_main_vec);
-   stan::arena_t<Eigen::Matrix<double, -1, 1>> theta_us_double =   value_of(theta_us_vec);
-   
+   //stan::arena_t<Eigen::Matrix<double, -1, 1>> lp_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);
+   Eigen::Matrix<double, -1, 1> lp_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);
+   //stan::math::start_nested();
    fn_lp_grad_InPlace(   lp_grad_outs,  Model_type, 
                          force_autodiff, force_PartialLog, multi_attempts, 
-                         theta_main_double, theta_us_double, y, grad_option,
-                         Model_args_as_cpp_struct, Stan_model_as_cpp_struct);
-   
-   // Set up gradients
-   Eigen::Matrix<double, -1, 1> nuisance_grad = lp_grad_outs.segment(1, n_nuisance);
-   Eigen::Matrix<double, -1, 1> main_grad = lp_grad_outs.segment(1 + n_nuisance, n_params_main);
-   
+                         value_of(theta_main_vec), value_of(theta_us_vec), y, grad_option,
+                         Model_args_as_cpp_struct, MVP_workspace, 
+                         Stan_model_as_cpp_struct);
+
+
    // set adjoints for nuisance
    for(int i = 0; i < n_nuisance; ++i) {
-     theta_us_vec(i).adj() = nuisance_grad(i);
+     theta_us_vec(i).adj() = lp_grad_outs(1 + i);
    }
+   
+ //  stan::math::set_zero_all_adjoints();
    
    // set adjoints for main
    for(int i = 0; i < n_params_main; ++i) {
-     theta_main_vec(i).adj() = main_grad(i);
+     theta_main_vec(i).adj() = lp_grad_outs(1 + n_nuisance + i);
    }
    
-   Eigen::Matrix<double, -1, 1> log_lik = lp_grad_outs.tail(N);
+ //  stan::math::set_zero_all_adjoints();
+   
+  // stan::math::recover_memory_nested();
+   
+   // Eigen::Matrix<double, -1, 1> log_lik = lp_grad_outs.tail(N);
    double log_posterior = lp_grad_outs(0);
    
-   Eigen::Matrix<double, -1, 1> outs(1 + N);
-   outs(0) = log_posterior;
-   outs.tail(N) = log_lik;
+   // Eigen::Matrix<double, -1, 1> outs(1 + N);
+   // outs(0) = log_posterior;
+   // outs.tail(N) = log_lik;
    
-   return outs;
+   return log_posterior;
    
    
 }
