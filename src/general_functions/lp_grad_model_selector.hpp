@@ -80,7 +80,7 @@ void  fn_lp_grad_InPlace(                Eigen::Ref<Eigen::Matrix<double, -1, 1>
                                          const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                          const std::string &grad_option,
                                          const Model_fn_args_struct  &Model_args_as_cpp_struct,
-                                         MVP_ThreadLocalWorkspace &MVP_workspace,
+                                        // MVP_ThreadLocalWorkspace &MVP_workspace,
                                          const Stan_model_struct &Stan_model_as_cpp_struct) {
 
   const int N = Model_args_as_cpp_struct.N;
@@ -95,7 +95,7 @@ void  fn_lp_grad_InPlace(                Eigen::Ref<Eigen::Matrix<double, -1, 1>
        
           if ((Model_type == "LC_MVP") || (Model_type == "MVP")) {
             
-                            fn_lp_grad_MVP_multi_attempts_InPlace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct, MVP_workspace);
+                            fn_lp_grad_MVP_multi_attempts_InPlace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct);
             
           } else if (Model_type == "latent_trait") {
             
@@ -116,7 +116,7 @@ void  fn_lp_grad_InPlace(                Eigen::Ref<Eigen::Matrix<double, -1, 1>
                                    if (force_PartialLog == true) {
                                           fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_InPlace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct);
                                    } else {
-                                          fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct, MVP_workspace);
+                                          fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct);
                                    }
                                    
                              } else if (Model_type == "latent_trait") {
@@ -211,7 +211,7 @@ Eigen::Matrix<double, -1, 1 >         fn_lp_grad(    const std::string  &Model_t
                                                      const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                      const std::string &grad_option,
                                                      const Model_fn_args_struct  &Model_args_as_cpp_struct,
-                                                     MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                    // MVP_ThreadLocalWorkspace &MVP_workspace,
                                                      const Stan_model_struct &Stan_model_as_cpp_struct) {
  
  
@@ -227,7 +227,7 @@ Eigen::Matrix<double, -1, 1 >         fn_lp_grad(    const std::string  &Model_t
                               Model_type, 
                               force_autodiff, force_PartialLog, multi_attempts,
                               theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option,
-                              Model_args_as_cpp_struct, MVP_workspace, 
+                              Model_args_as_cpp_struct,// MVP_workspace, 
                               Stan_model_as_cpp_struct);
    
    
@@ -256,7 +256,7 @@ void  fn_lp_only_InPlace(              double &lp,
                                        const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
                                        const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                        const Model_fn_args_struct  &Model_args_as_cpp_struct,
-                                       MVP_ThreadLocalWorkspace &MVP_workspace,
+                                     //  MVP_ThreadLocalWorkspace &MVP_workspace,
                                        const Stan_model_struct &Stan_model_as_cpp_struct) {
 
   const int N = Model_args_as_cpp_struct.N;
@@ -276,7 +276,7 @@ void  fn_lp_only_InPlace(              double &lp,
                         if (force_PartialLog == true) {
                           lp = (   fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD(theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct)  ).head(1).eval()(0);
                         } else {
-                          lp =  (  fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD(theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct, MVP_workspace) ).head(1).eval()(0);
+                          lp =  (  fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD(theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct) ).head(1).eval()(0);
                         }
                         
                   } else if (Model_type == "latent_trait") {

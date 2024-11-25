@@ -552,7 +552,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES) HMC_output_single_chain {
              Eigen::Matrix<double, -1, -1> main;
              Eigen::Matrix<double, -1, -1> div;
              Eigen::Matrix<double, -1, -1> nuisance;
-             Eigen::Matrix<float, -1, -1> log_lik;
+             Eigen::Matrix<double, -1, -1> log_lik;
            } traces;
 
            // Group diagnostic vectors together
@@ -833,6 +833,42 @@ ChunkSizeInfo calculate_chunk_sizes(const int N,
              d_J_wrt_duu_chunk.resize(last_chunk_size * n_tests);
              ///////////////////////////////////////////////
              lp_array.resize(last_chunk_size, n_class);
+             ///////////////////////////////////////////////
+             
+             /// Reset values (to zero)
+             ///////////////////////////////////////////////
+             y1_log_prob.setZero();
+             phi_Z_recip.setZero();
+             phi_Bound_Z.setZero();
+             ///////////////////////////////////////////////
+             u_grad_array_CM_chunk.setZero();
+             ///////////////////////////////////////////////
+             common_grad_term_1.setZero();
+             y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.setZero();
+             y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.setZero();
+             prob_rowwise_prod_temp.setZero();
+             prob_recip_rowwise_prod_temp.setZero();
+             ///////////////////////////////////////////////
+             prod_container_or_inc_array.setZero();
+             derivs_chain_container_vec.setZero();
+             prob_rowwise_prod_temp_all.setZero();
+             ///////////////////////////////////////////////
+             grad_prob.setZero();
+             z_grad_term.setZero();
+             ///////////////////////////////////////////////
+             y_chunk.setZero();
+             u_array.setZero();
+             y_sign.setZero();
+             y_m_y_sign_x_u.setZero();
+             ///////////////////////////////////////////////
+             u_grad_array_CM_chunk_block.setZero();
+             ///////////////////////////////////////////////
+             u_unc_vec_chunk.setZero();
+             u_vec_chunk.setZero();
+             du_wrt_duu_chunk.setZero();
+             d_J_wrt_duu_chunk.setZero();
+             ///////////////////////////////////////////////
+             lp_array.setZero();
              ///////////////////////////////////////////////
      
    }
