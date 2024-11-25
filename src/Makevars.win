@@ -1,7 +1,8 @@
 
 
-#####    Compiler settings     ###  ccache
+#####    Compiler settings     
 ### set compiler types
+CXX = C:/rtools44/x86_64-w64-mingw32.static.posix/bin/g++.exe
 CXX_COMPILER_TYPE =        g++
 CPP_COMPILER_TYPE =        gcc
 BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
