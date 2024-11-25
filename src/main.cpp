@@ -13,7 +13,15 @@
  
 #include "pch.hpp" 
   
- 
+
+
+#if defined(__GNUC__) || defined(__clang__)
+#define ALWAYS_INLINE __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+#define ALWAYS_INLINE __forceinline
+#else
+#define ALWAYS_INLINE inline
+#endif
  
 
  
@@ -579,7 +587,7 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
    int chunk_size = chunk_size_info.chunk_size;
    const int n_tests = y.cols();
    
-   MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
+ //  MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
 
       // stan::math::start_nested();
        fn_lp_grad_InPlace(   lp_grad_outs,
@@ -588,7 +596,7 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
                              theta_main_vec_Ref, theta_us_vec_Ref,
                              y_Ref,
                              grad_option,
-                             Model_args_as_cpp_struct, MVP_workspace, 
+                             Model_args_as_cpp_struct,//MVP_workspace, 
                              Stan_model_as_cpp_struct);
       // stan::math::recover_memory_nested();
 
@@ -699,7 +707,7 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
  int chunk_size = chunk_size_info.chunk_size;
  const int n_tests = y.cols();
  
- MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
+// MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
 
  update_M_dense_main_Hessian_InPlace(    M_dense_main_copy,
                                          M_inv_dense_main_copy,
@@ -716,7 +724,7 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
                                          theta_us_vec,
                                          y,
                                          Model_args_as_cpp_struct,
-                                         MVP_workspace,
+                                        // MVP_workspace,
                                          ii,
                                          n_burnin,
                                          metric_type);
@@ -858,13 +866,13 @@ Rcpp::List                         fn_find_initial_eps_main_and_us(      Eigen::
       int chunk_size = chunk_size_info.chunk_size;
       const int n_tests = y_ref.cols();
       
-      MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
+     // MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
       
       std::vector<double> eps_pair =  fn_find_initial_eps_main_and_us(   result_input,
                                                                          seed, burnin,  Model_type,  
                                                                          force_autodiff, force_PartialLog, multi_attempts, 
                                                                          y_ref,
-                                                                         Model_args_as_cpp_struct,  MVP_workspace, 
+                                                                         Model_args_as_cpp_struct, // MVP_workspace, 
                                                                          EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct);
       
       Rcpp::List outs(2);
@@ -1771,20 +1779,20 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
   const EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
   const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
   //// replicate these structs for thread-safety as we will be modifying them for burnin
-  std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  n_threads_R);
-  std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R);
-  std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, n_threads_R);
+  std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  1); // read-only
+  std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R); // need to edit these
+  std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, 1); // read-only
   
   ///// Traces
   const int N = Model_args_as_cpp_struct.N;
-  std::vector<Rcpp::NumericMatrix> trace_output = vec_of_mats_Rcpp(n_params_main, n_iter_R, n_threads_R);
-  std::vector<Rcpp::NumericMatrix> trace_output_divs = vec_of_mats_Rcpp(1, n_iter_R, n_threads_R);
-  std::vector<Rcpp::NumericMatrix> trace_output_nuisance = vec_of_mats_Rcpp(n_nuisance_to_track, n_iter_R, n_threads_R);
-  std::vector<Eigen::Matrix<float, -1, -1>> trace_output_log_lik = vec_of_mats<float>(N, n_iter_R, n_threads_R);
+  std::vector<Rcpp::NumericMatrix> trace_output =  vec_of_mats_Rcpp(n_params_main, n_iter_R, n_threads_R);
+  std::vector<Rcpp::NumericMatrix> trace_output_divs =  vec_of_mats_Rcpp(1, n_iter_R, n_threads_R);
+  std::vector<Rcpp::NumericMatrix> trace_output_nuisance =  vec_of_mats_Rcpp(n_nuisance_to_track, n_iter_R, n_threads_R);
+  std::vector<Rcpp::NumericMatrix> trace_output_log_lik = vec_of_mats_Rcpp(N, n_iter_R, n_threads_R);  //// possibly dummy
   
   ///// data copies
-  std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), n_threads_R);
-  for (int kk = 0; kk < n_threads_R; ++kk) {
+  std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), 1);
+  for (int kk = 0; kk < 1; ++kk) {
      y_copies_R[kk] = y_Eigen_R;
   }
   
@@ -1808,6 +1816,7 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
                                                            trace_output,
                                                            ///// data
                                                            y_copies_R,
+                                                           ///  y_Eigen_R,
                                                            ///// structs
                                                            Model_args_as_cpp_struct_copies_R, ///// ALWAYS read-only
                                                            EHMC_args_as_cpp_struct_copies_R,
@@ -1815,8 +1824,7 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
                                                            ///// traces
                                                            trace_output_divs,
                                                            n_nuisance_to_track,
-                                                           trace_output_nuisance,
-                                                           trace_output_log_lik);
+                                                           trace_output_nuisance);
 
    //// Call parallelFor
    RcppParallel::parallelFor(0, n_threads_R, parallel_hmc_sampling);

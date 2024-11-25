@@ -189,7 +189,7 @@ double                           Stan_wrapper_lp_fn_var(                  const 
    ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
    int chunk_size = chunk_size_info.chunk_size;
    
-   thread_local MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class); 
+   MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class); 
    
    Model_args_as_cpp_struct.n_nuisance = n_nuisance;
    Model_args_as_cpp_struct.n_params_main = n_params_main;
