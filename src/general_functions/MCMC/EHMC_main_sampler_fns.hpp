@@ -53,7 +53,7 @@ using namespace Eigen;
 
 
 
-inline void generate_random_std_norm_vec( Eigen::Matrix<double, -1, 1> &std_norm_vec,
+ALWAYS_INLINE void generate_random_std_norm_vec( Eigen::Matrix<double, -1, 1> &std_norm_vec,
                                                                   int n_params, 
                                                                   std::mt19937  &rng) {
 
@@ -66,7 +66,7 @@ inline void generate_random_std_norm_vec( Eigen::Matrix<double, -1, 1> &std_norm
 
 
 
-// inline void generate_random_std_norm_vec_zigg(Eigen::Matrix<double, -1, 1> &std_norm_vec,
+// ALWAYS_INLINE void generate_random_std_norm_vec_zigg(Eigen::Matrix<double, -1, 1> &std_norm_vec,
 //                                                const int n_params, 
 //                                                const int seed) {
 //   
@@ -81,7 +81,7 @@ inline void generate_random_std_norm_vec( Eigen::Matrix<double, -1, 1> &std_norm
 
 
 // Another function using the same RNG
-inline void generate_random_tau_ii(  double tau, 
+ALWAYS_INLINE void generate_random_tau_ii(  double tau, 
                                                              double &tau_ii,  // ref because assigning
                                                              std::mt19937  &rng) {
 
@@ -96,7 +96,7 @@ inline void generate_random_tau_ii(  double tau,
 
 
 
-inline bool check_divergence_Eigen(   const HMCResult &result_input,
+ALWAYS_INLINE bool check_divergence_Eigen(   const HMCResult &result_input,
                                                               const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                               const double hamiltonian_energy,
                                                               const double previous_hamiltonian_energy) {
@@ -140,7 +140,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
 
 
  
- inline  void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+ ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                       Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                       Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                       const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
@@ -152,7 +152,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
                                                                       const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts,
                                                                       const std::string &grad_option,
                                                                       const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                      MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                     // MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                       const Stan_model_struct &Stan_model_as_cpp_struct,
                                                                       std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
                                                                                          const std::string &,
@@ -162,7 +162,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
                                                                                          const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
                                                                                          const std::string &,
                                                                                          const Model_fn_args_struct &,
-                                                                                         MVP_ThreadLocalWorkspace &,
+                                                                                        // MVP_ThreadLocalWorkspace &,
                                                                                          const Stan_model_struct &)> fn_lp_grad_InPlace
                                                                         
 ) {
@@ -186,7 +186,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
         fn_lp_grad_InPlace(lp_and_grad_outs, 
                            Model_type, force_autodiff, force_PartialLog, multi_attempts,
                            theta_main_vec_proposed_ref, theta_us_vec_initial_ref, y_ref, grad_option, 
-                           Model_args_as_cpp_struct, MVP_workspace, 
+                           Model_args_as_cpp_struct, //MVP_workspace, 
                            Stan_model_as_cpp_struct);
         grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
         
@@ -205,7 +205,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
 
 
  
- inline   void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+ ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                                                 Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                                                 Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                                                 const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
@@ -217,7 +217,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
                                                                                                 const bool force_autodiff, const bool force_PartialLog,  const bool multi_attempts,
                                                                                                 const std::string &grad_option,
                                                                                                 const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                                                MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                                                //MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                                                 const Stan_model_struct &Stan_model_as_cpp_struct,
                                                                                                 std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
                                                                                                                    const std::string &,
@@ -227,7 +227,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
                                                                                                                    const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
                                                                                                                    const std::string &,
                                                                                                                    const Model_fn_args_struct &,
-                                                                                                                   MVP_ThreadLocalWorkspace &,
+                                                                                                                  // MVP_ThreadLocalWorkspace &,
                                                                                                                    const Stan_model_struct & )> fn_lp_grad_InPlace
                                                                       
 ) {
@@ -251,7 +251,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
         fn_lp_grad_InPlace(lp_and_grad_outs, 
                            Model_type, force_autodiff, force_PartialLog, multi_attempts,
                            theta_main_vec_proposed_ref, theta_us_vec_initial_ref, y_ref, grad_option, 
-                           Model_args_as_cpp_struct, MVP_workspace, 
+                           Model_args_as_cpp_struct, //MVP_workspace, 
                            Stan_model_as_cpp_struct);
         grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
         
@@ -272,7 +272,7 @@ inline bool check_divergence_Eigen(   const HMCResult &result_input,
 
 
 
-inline  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
+ALWAYS_INLINE  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
                                                                                                      const bool  burnin, 
                                                                                                      std::mt19937  &rng,
                                                                                                      const int seed,
@@ -282,7 +282,7 @@ inline  void                                        fn_standard_HMC_main_only_si
                                                                                                      const bool  multi_attempts,
                                                                                                      const Eigen::Matrix<int, -1, -1> &y_ref,
                                                                                                      const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                                                     MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                                                   //  MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                                                      EHMC_fn_args_struct  &EHMC_args_as_cpp_struct, /// pass by ref. to modify (???)
                                                                                                      const EHMC_Metric_struct   &EHMC_Metric_struct_as_cpp_struct,
                                                                                                      const Stan_model_struct &Stan_model_as_cpp_struct
@@ -343,7 +343,7 @@ inline  void                                        fn_standard_HMC_main_only_si
                                   result_input.main_theta_vec,  result_input.us_theta_vec, 
                                   y_ref, 
                                   grad_option,
-                                  Model_args_as_cpp_struct, MVP_workspace, 
+                                  Model_args_as_cpp_struct, //MVP_workspace, 
                                   Stan_model_as_cpp_struct);
           
           log_posterior_0 =  result_input.lp_and_grad_outs(0);
@@ -361,7 +361,7 @@ inline  void                                        fn_standard_HMC_main_only_si
                                                                         Model_type, 
                                                                         force_autodiff, force_PartialLog, multi_attempts, 
                                                                         grad_option,
-                                                                        Model_args_as_cpp_struct, MVP_workspace, 
+                                                                        Model_args_as_cpp_struct,//MVP_workspace, 
                                                                         Stan_model_as_cpp_struct, 
                                                                         fn_lp_grad_InPlace);
             
@@ -377,7 +377,7 @@ inline  void                                        fn_standard_HMC_main_only_si
                                                                           Model_type, 
                                                                           force_autodiff, force_PartialLog, multi_attempts, 
                                                                           grad_option,
-                                                                          Model_args_as_cpp_struct, MVP_workspace, 
+                                                                          Model_args_as_cpp_struct, //MVP_workspace, 
                                                                           Stan_model_as_cpp_struct, 
                                                                           fn_lp_grad_InPlace);
           }
@@ -464,88 +464,9 @@ inline  void                                        fn_standard_HMC_main_only_si
 
 
 
-
-
-
-
-// 
-// 
-// 
-// 
-// void fn_standard_HMC_main_only_single_iter_multi_attempts_InPlace_process(      HMCResult &result_input,
-//                                                                                 const bool &burnin, 
-//                                                                                 std::mt19937 &rng,
-//                                                                                 const int seed,
-//                                                                                 const std::string &Model_type,
-//                                                                                 const bool &force_autodiff,
-//                                                                                 const bool &force_PartialLog,
-//                                                                                 const Eigen::Matrix<int, -1, -1> &y_ref,
-//                                                                                 const Model_fn_args_struct &Model_args_as_cpp_struct,
-//                                                                                 EHMC_fn_args_struct &EHMC_args_as_cpp_struct, 
-//                                                                                 const EHMC_Metric_struct &EHMC_Metric_struct_as_cpp_struct,
-//                                                                                 const Stan_model_struct &Stan_model_as_cpp_struct
-// ) {
-//   
-//  
-//  
-//            result_input.main_div = 0;  // init main_div
-//            HMCResult result_input_orig = result_input;
-//   
-//             bool use_autodiff = false;
-//             bool use_PartialLog = false;
-//             
-//             ///// 1st attempt
-//             if  ( (force_autodiff == false) && (force_PartialLog == false)  )  {   // NOT log-scale and NOT autodiff (least numerically stable but fastest)
-//               result_input.main_div = 0;  // Reset main_div indicator
-//               fn_standard_HMC_main_only_single_iter_InPlace_process(result_input,  
-//                                                                                    burnin, rng, seed,
-//                                                                                    Model_type, use_autodiff, use_PartialLog, y_ref,
-//                                                                                    Model_args_as_cpp_struct, EHMC_args_as_cpp_struct, EHMC_Metric_struct_as_cpp_struct,
-//                                                                                    Stan_model_as_cpp_struct);
-//             }
-//             
-//             ///// 2nd attempt (if first fails) - uses log-scale but NOT autodiff 
-//             if ( (result_input.main_div == 1) || ( (force_autodiff == false) && (force_PartialLog == true)   ) ) {
-//               result_input = result_input_orig;
-//               result_input.main_div = 0;  // Reset main_div indicator
-//               use_PartialLog = true;
-//               fn_standard_HMC_main_only_single_iter_InPlace_process(   result_input,  
-//                                                                                       burnin, rng, seed, 
-//                                                                                       Model_type, use_autodiff, use_PartialLog, y_ref,
-//                                                                                       Model_args_as_cpp_struct, EHMC_args_as_cpp_struct, EHMC_Metric_struct_as_cpp_struct,
-//                                                                                       Stan_model_as_cpp_struct);
-//               // if  (result_input.main_div == 0) { 
-//               //   return result_input;
-//               // }
-//             }
-//             
-//             ///// 3rd attempt (if second fails)
-//             if ( (result_input.main_div == 1) ||  ( (force_autodiff == true) && (force_PartialLog == true)  )  )  {
-//               result_input.main_div = 0;  // Reset main_div indicator
-//               result_input = result_input_orig;
-//               use_autodiff = true;
-//               use_PartialLog = true;
-//               fn_standard_HMC_main_only_single_iter_InPlace_process( result_input,  
-//                                                                                     burnin, rng, seed, 
-//                                                                                     Model_type, use_autodiff, use_PartialLog, y_ref,
-//                                                                                     Model_args_as_cpp_struct, EHMC_args_as_cpp_struct, EHMC_Metric_struct_as_cpp_struct,
-//                                                                                     Stan_model_as_cpp_struct);
-//               // if  (result_input.main_div == 0) { 
-//               //   return result_input;
-//               // } 
-//             }
-//             
-//            // return result_input;
-//  
-// }
-// 
-// 
-//  
-//  
-//  
-//  
-//  
-//  
+ 
+ 
+ 
  
  
  

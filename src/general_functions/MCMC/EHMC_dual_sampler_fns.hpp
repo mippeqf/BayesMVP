@@ -57,7 +57,7 @@ using namespace Eigen;
                                                                                      const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts,
                                                                                      const std::string &grad_option,
                                                                                      const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                                     MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                                    // MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                                      const Stan_model_struct &Stan_model_as_cpp_struct,
                                                                                      std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
                                                                                                         const std::string,
@@ -67,7 +67,7 @@ using namespace Eigen;
                                                                                                         const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
                                                                                                         const std::string,
                                                                                                         const Model_fn_args_struct &,
-                                                                                                        MVP_ThreadLocalWorkspace &,
+                                                                                                       // MVP_ThreadLocalWorkspace &,
                                                                                                         const Stan_model_struct &)> fn_lp_grad_InPlace
                                                                                                  
  ) {
@@ -95,7 +95,7 @@ using namespace Eigen;
                          fn_lp_grad_InPlace(lp_and_grad_outs, 
                                             Model_type, force_autodiff, force_PartialLog, multi_attempts,
                                             theta_main_vec_proposed_ref, theta_us_vec_proposed_ref, y_ref, grad_option, 
-                                            Model_args_as_cpp_struct, MVP_workspace,
+                                            Model_args_as_cpp_struct, //MVP_workspace,
                                             Stan_model_as_cpp_struct);
                          grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
                          
@@ -127,7 +127,7 @@ using namespace Eigen;
                                                                                                  const bool  multi_attempts,
                                                                                                  const Eigen::Matrix<int, -1, -1> &y_ref,
                                                                                                  const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                                                 MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                                                 //MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                                                  EHMC_fn_args_struct  &EHMC_args_as_cpp_struct, /// pass by ref. to modify (???)
                                                                                                  const EHMC_Metric_struct   &EHMC_Metric_struct_as_cpp_struct,
                                                                                                  const Stan_model_struct &Stan_model_as_cpp_struct
@@ -166,7 +166,6 @@ using namespace Eigen;
       { /// draw velocity for nuisance
           Eigen::Matrix<double, -1, 1> std_norm_vec_us(n_nuisance); // testing if static thread_local makes more efficient
           generate_random_std_norm_vec(std_norm_vec_us, n_nuisance, rng);
-          ///  generate_random_std_norm_vec_zigg(std_norm_vec_us, n_nuisance, seed);
           result_input.us_velocity_0_vec.array() = ( std_norm_vec_us.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //.cast<float>() ;  
       }
       
@@ -192,7 +191,7 @@ using namespace Eigen;
                                   Model_type, 
                                   force_autodiff, force_PartialLog, multi_attempts,
                                   result_input.main_theta_vec,  result_input.us_theta_vec, y_ref, grad_option,
-                                  Model_args_as_cpp_struct, MVP_workspace, 
+                                  Model_args_as_cpp_struct, //MVP_workspace, 
                                   Stan_model_as_cpp_struct);
           
           log_posterior_0 =  result_input.lp_and_grad_outs(0);
@@ -216,7 +215,7 @@ using namespace Eigen;
                                                                             Model_type, 
                                                                             force_autodiff, force_PartialLog, multi_attempts, 
                                                                             grad_option,
-                                                                            Model_args_as_cpp_struct, MVP_workspace, 
+                                                                            Model_args_as_cpp_struct, //MVP_workspace, 
                                                                             Stan_model_as_cpp_struct, 
                                                                             fn_lp_grad_InPlace);
             
@@ -259,7 +258,7 @@ using namespace Eigen;
  
         if  (check_divergence_Eigen(result_input,   result_input.lp_and_grad_outs, energy_old, energy_new) == true)      {     /// if main_div, reject proposal 
             
-                 result_input.main_div = 1;  // and set main_div indiator to 1
+                result_input.main_div = 1;  // and set main_div indiator to 1
                 result_input.main_p_jump = 0.0;
                 result_input.main_theta_vec  =   result_input.main_theta_vec_0;    
                 result_input.main_velocity_vec = result_input.main_velocity_0_vec;

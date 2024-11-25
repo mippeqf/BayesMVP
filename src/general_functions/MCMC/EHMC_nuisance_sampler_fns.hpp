@@ -45,7 +45,7 @@ using namespace Eigen;
 
 
  
- inline   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
+ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                             Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
                                                                             Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                             const Eigen::Matrix<double, -1, 1> &theta_main_vec_initial_ref,
@@ -57,7 +57,7 @@ using namespace Eigen;
                                                                             const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts, 
                                                                             const std::string &grad_option,
                                                                             const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                            MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                            //MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                             const Stan_model_struct &Stan_model_as_cpp_struct,
                                                                             std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
                                                                                                const std::string &,
@@ -67,7 +67,7 @@ using namespace Eigen;
                                                                                                const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
                                                                                                const std::string &,
                                                                                                const Model_fn_args_struct &,
-                                                                                               MVP_ThreadLocalWorkspace &,
+                                                                                              // MVP_ThreadLocalWorkspace &,
                                                                                                const Stan_model_struct &)> fn_lp_grad_InPlace
                                                               
 ) {
@@ -85,7 +85,7 @@ using namespace Eigen;
           // Update lp and gradients
           fn_lp_grad_InPlace(lp_and_grad_outs, Model_type, force_autodiff, force_PartialLog, multi_attempts,
                              theta_main_vec_initial_ref, theta_us_vec_proposed_ref, y_ref, grad_option, 
-                             Model_args_as_cpp_struct, MVP_workspace, 
+                             Model_args_as_cpp_struct, //MVP_workspace, 
                              Stan_model_as_cpp_struct);
           
           // Update velocity (second half step)
@@ -104,7 +104,7 @@ using namespace Eigen;
 
 
  
- inline    void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
+ ALWAYS_INLINE    void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                         Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
                                                                         Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                         Eigen::Matrix<double, -1, 1> &theta_us_vec_current_segment,
@@ -118,7 +118,7 @@ using namespace Eigen;
                                                                         const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts, 
                                                                         const std::string &grad_option,
                                                                         const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                        MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                       // MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                         const Stan_model_struct &Stan_model_as_cpp_struct,
                                                                         std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
                                                                                            const std::string &,
@@ -128,7 +128,7 @@ using namespace Eigen;
                                                                                            const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
                                                                                            const std::string &,
                                                                                            const Model_fn_args_struct &,
-                                                                                           MVP_ThreadLocalWorkspace &,
+                                                                                          // MVP_ThreadLocalWorkspace &,
                                                                                            const Stan_model_struct &)> fn_lp_grad_InPlace
                                                                         
 ) {
@@ -149,7 +149,7 @@ using namespace Eigen;
           // Update lp and gradients
           fn_lp_grad_InPlace(lp_and_grad_outs, Model_type, force_autodiff, force_PartialLog, multi_attempts,
                              theta_main_vec_initial_ref, theta_us_vec_proposed_ref, y_ref, grad_option, 
-                             Model_args_as_cpp_struct, MVP_workspace, 
+                             Model_args_as_cpp_struct, //MVP_workspace, 
                              Stan_model_as_cpp_struct);
           
           // Update velocity (second half step)
@@ -172,7 +172,7 @@ using namespace Eigen;
 
 
  
- inline  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(              HMCResult &result_input,
+ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(              HMCResult &result_input,
                                                                                                const bool burnin,
                                                                                                std::mt19937  &rng,
                                                                                                const int seed,
@@ -182,7 +182,7 @@ using namespace Eigen;
                                                                                                const bool  multi_attempts, 
                                                                                                const Eigen::Matrix<int, -1, -1> &y_ref,
                                                                                                const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                                               MVP_ThreadLocalWorkspace &MVP_workspace,
+                                                                                               //MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                                                EHMC_fn_args_struct  &EHMC_args_as_cpp_struct,
                                                                                                const EHMC_Metric_struct  &EHMC_Metric_struct_as_cpp_struct,
                                                                                                const Stan_model_struct &Stan_model_as_cpp_struct
@@ -247,7 +247,7 @@ using namespace Eigen;
                                   force_autodiff, force_PartialLog, multi_attempts,
                                   result_input.main_theta_vec,  result_input.us_theta_vec, 
                                   y_ref,  grad_option,
-                                  Model_args_as_cpp_struct, MVP_workspace, 
+                                  Model_args_as_cpp_struct,// MVP_workspace, 
                                   Stan_model_as_cpp_struct);
           
           log_posterior_0 =  result_input.lp_and_grad_outs(0);
@@ -273,7 +273,7 @@ using namespace Eigen;
                                                                             force_autodiff, force_PartialLog, multi_attempts, 
                                                                             grad_option,
                                                                             Model_args_as_cpp_struct,
-                                                                            MVP_workspace,
+                                                                          //  MVP_workspace,
                                                                             Stan_model_as_cpp_struct,
                                                                             fn_lp_grad_InPlace);
               
@@ -291,7 +291,7 @@ using namespace Eigen;
                                                                           force_autodiff, force_PartialLog, multi_attempts, 
                                                                           grad_option,
                                                                           Model_args_as_cpp_struct,
-                                                                          MVP_workspace,
+                                                                         // MVP_workspace,
                                                                           Stan_model_as_cpp_struct,
                                                                           fn_lp_grad_InPlace);
               
