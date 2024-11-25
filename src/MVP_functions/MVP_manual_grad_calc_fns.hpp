@@ -35,7 +35,7 @@ using namespace Eigen;
  
  
 /// fn that computes important quantities needed for the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-inline void fn_MVP_compute_lp_GHK_cols(   const int t,
+ALWAYS_INLINE void fn_MVP_compute_lp_GHK_cols(   const int t,
                                                                           Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
                                                                           Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
                                                                           Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
@@ -75,7 +75,7 @@ inline void fn_MVP_compute_lp_GHK_cols(   const int t,
  
  
 /// fn that computes phi_Bound_Z needed for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-inline void fn_MVP_compute_phi_Bound_Z_cols(     const int t,
+ALWAYS_INLINE void fn_MVP_compute_phi_Bound_Z_cols(     const int t,
                                                                          Eigen::Matrix<double, -1, -1> &phi_Bound_Z, //// updating this
                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_U_Phi_Bound_Z,
                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
@@ -113,7 +113,7 @@ inline void fn_MVP_compute_phi_Bound_Z_cols(     const int t,
  
  
 // fn that computes phi_Z_recip auto for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-inline  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
+ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
                                                                          Eigen::Matrix<double, -1, -1> &phi_Z_recip,   //// updating this
                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Phi_Z,
                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Z_std_norm,
@@ -150,7 +150,7 @@ inline  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
  
  // Helper functions for matrix products
  template<typename M1, typename M2>
- inline void compute_rowwise_products( Eigen::Ref<M1> prod_temp,
+ ALWAYS_INLINE void compute_rowwise_products( Eigen::Ref<M1> prod_temp,
                                                                Eigen::Ref<M2> recip_temp, 
                                                                const Eigen::Ref<const Eigen::Matrix<double,-1,-1>> prob,
                                                                const Eigen::Ref<const Eigen::Matrix<double,-1,-1>> prob_recip,
@@ -168,7 +168,7 @@ inline  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
  
  // Helper for latent class calculations
  template<typename M>
- inline void compute_latent_class_terms( Eigen::Ref<M> common_grad,
+ ALWAYS_INLINE void compute_latent_class_terms( Eigen::Ref<M> common_grad,
                                                                  const Eigen::Ref<const Eigen::Matrix<double,-1,1>> prod_temp_all,
                                                                  const Eigen::Ref<const Eigen::Matrix<double,-1,-1>> recip_temp,
                                                                  const Eigen::Ref<const Eigen::Matrix<double,-1,1>> prob_n_recip,
@@ -186,7 +186,7 @@ inline  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
  
  // Helper for final transformations
  template<typename M1, typename M2>
- inline void compute_final_terms(  Eigen::Ref<M1> y_sign_out,
+ ALWAYS_INLINE void compute_final_terms(  Eigen::Ref<M1> y_sign_out,
                                                            Eigen::Ref<M2> y_m_ysign_out,
                                                            const Eigen::Ref<const Eigen::Matrix<double,-1,-1>>& y_sign_chunk,
                                                            const Eigen::Ref<const Eigen::Matrix<double,-1,-1>>& y_m_y_sign_x_u,
@@ -208,7 +208,7 @@ inline  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
  
  
 //// fn that computes important quantities needed for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-inline  void fn_MVP_grad_prep(           const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob,
+ALWAYS_INLINE  void fn_MVP_grad_prep(           const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob,
                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_sign_chunk,
                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_m_y_sign_x_u, // 10
                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_recip_double,
@@ -318,7 +318,7 @@ inline  void fn_MVP_grad_prep(           const Eigen::Ref<const Eigen::Matrix<do
 
 
 // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
- inline void fn_MVP_compute_nuisance_grad_v2(    Eigen::Ref<Eigen::Matrix<double, -1, -1>>   u_grad_array_CM_chunk,
+ALWAYS_INLINE void fn_MVP_compute_nuisance_grad_v2(    Eigen::Ref<Eigen::Matrix<double, -1, -1>>   u_grad_array_CM_chunk,
                                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   phi_Z_recip,
                                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   common_grad_term_1,
                                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   L_Omega_double,
@@ -450,7 +450,7 @@ inline  void fn_MVP_grad_prep(           const Eigen::Ref<const Eigen::Matrix<do
 
 
 // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
-inline void fn_MVP_compute_coefficients_grad_v2(    const int c, // latent class (0 for standard MVP)
+ALWAYS_INLINE void fn_MVP_compute_coefficients_grad_v2(    const int c, // latent class (0 for standard MVP)
                                                     Eigen::Matrix<double, -1, -1> &coefficients_array,
                                                     std::vector<Eigen::Matrix<double, -1, -1>> &beta_grad_array_for_each_n,
                                                     const int &chunk_counter,
@@ -648,7 +648,7 @@ inline void fn_MVP_compute_coefficients_grad_v2(    const int c, // latent class
  
  
  // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
- inline void fn_MVP_compute_coefficients_grad_v3(    const int c, // latent class (0 for standard MVP)
+ ALWAYS_INLINE void fn_MVP_compute_coefficients_grad_v3(    const int c, // latent class (0 for standard MVP)
                                                      Eigen::Matrix<double, -1, -1> &coefficients_array,
                                                     // std::vector<Eigen::Matrix<double, -1, -1>> &beta_grad_array_for_each_n,
                                                      const int &chunk_counter,
@@ -851,7 +851,7 @@ inline void fn_MVP_compute_coefficients_grad_v2(    const int c, // latent class
 
 
 // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
-inline void fn_MVP_compute_L_Omega_grad_v2(   Eigen::Ref<Eigen::Matrix<double, -1, -1>>   U_Omega_grad_array,
+ALWAYS_INLINE void fn_MVP_compute_L_Omega_grad_v2(   Eigen::Ref<Eigen::Matrix<double, -1, -1>>   U_Omega_grad_array,
                                               std::vector<Eigen::Matrix<double, -1, -1>> &Omega_grad_array_for_each_n,
                                               const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  common_grad_term_1,
                                               const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
@@ -1092,7 +1092,7 @@ inline void fn_MVP_compute_L_Omega_grad_v2(   Eigen::Ref<Eigen::Matrix<double, -
  
  
  // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
- inline void fn_MVP_compute_L_Omega_grad_v3(   Eigen::Ref<Eigen::Matrix<double, -1, -1>>   U_Omega_grad_array,
+ ALWAYS_INLINE void fn_MVP_compute_L_Omega_grad_v3(   Eigen::Ref<Eigen::Matrix<double, -1, -1>>   U_Omega_grad_array,
                                              //  std::vector<Eigen::Matrix<double, -1, -1>> &Omega_grad_array_for_each_n,
                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  common_grad_term_1,
                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
@@ -1328,7 +1328,7 @@ inline void fn_MVP_compute_L_Omega_grad_v2(   Eigen::Ref<Eigen::Matrix<double, -
 
 // 
 // // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
-//   inline  void fn_MVP_compute_nuisance_grad_v1(  Eigen::Ref<Eigen::Matrix<double, -1, -1>>   u_grad_array_CM_chunk,
+//   ALWAYS_INLINE  void fn_MVP_compute_nuisance_grad_v1(  Eigen::Ref<Eigen::Matrix<double, -1, -1>>   u_grad_array_CM_chunk,
 //                                               Eigen::Ref<Eigen::Matrix<double, -1, -1>>  prob_n_recip,
 //                                               Eigen::Ref<Eigen::Matrix<double, -1, -1>>  phi_Z_recip,
 //                                               Eigen::Ref<Eigen::Matrix<double, -1, -1>>  phi_Bound_Z,
@@ -1455,7 +1455,7 @@ inline void fn_MVP_compute_L_Omega_grad_v2(   Eigen::Ref<Eigen::Matrix<double, -
 //  
 // 
 // // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
-//   inline void fn_MVP_compute_coefficients_grad_v1(  Eigen::Ref<Eigen::Matrix<double, -1, -1>>   u_coefficients_array_chunk,
+//   ALWAYS_INLINE void fn_MVP_compute_coefficients_grad_v1(  Eigen::Ref<Eigen::Matrix<double, -1, -1>>   u_coefficients_array_chunk,
 //                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  prob_n_recip,
 //                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  phi_Z_recip,
 //                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  phi_Bound_Z,

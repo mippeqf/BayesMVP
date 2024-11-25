@@ -36,7 +36,7 @@ using namespace Eigen;
  
  
  
- __attribute__((always_inline)) inline  void  fn_MVP_compute_nuisance(  Eigen::Matrix<double, -1, 1> &u_vec,
+ALWAYS_INLINE  void  fn_MVP_compute_nuisance(  Eigen::Matrix<double, -1, 1> &u_vec,
                                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_unc_vec,
                                                                         const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
@@ -83,9 +83,9 @@ using namespace Eigen;
 
 
 
- __attribute__((always_inline)) inline double fn_MVP_compute_nuisance_log_jac_u(      const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_vec, // Eigen::Matrix<double, -1, 1>   &u_vec,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_unc_vec,
-                                                      const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE double fn_MVP_compute_nuisance_log_jac_u(       const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_vec, // Eigen::Matrix<double, -1, 1>   &u_vec,
+                                                              const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_unc_vec,
+                                                              const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
   
    
@@ -135,10 +135,10 @@ using namespace Eigen;
 
 
 // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
-__attribute__((always_inline)) inline void fn_MVP_nuisance_first_deriv(     Eigen::Matrix<double, -1, 1> &du_wrt_duu,
-                                                                            const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_vec,
-                                                                            const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_unc_vec,
-                                                                            const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE void fn_MVP_nuisance_first_deriv(     Eigen::Matrix<double, -1, 1> &du_wrt_duu,
+                                                    const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_vec,
+                                                    const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_unc_vec,
+                                                    const Model_fn_args_struct &Model_args_as_cpp_struct
                                                                         
 ) {
   
@@ -186,11 +186,11 @@ __attribute__((always_inline)) inline void fn_MVP_nuisance_first_deriv(     Eige
 
 
 // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
-__attribute__((always_inline)) inline void  fn_MVP_nuisance_deriv_of_log_det_J(   Eigen::Matrix<double, -1, 1> &d_J_wrt_duu,
-                                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_vec,
-                                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_unc_vec,
-                                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> du_wrt_duu,
-                                                                                  const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE void  fn_MVP_nuisance_deriv_of_log_det_J(   Eigen::Matrix<double, -1, 1> &d_J_wrt_duu,
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_vec,
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_unc_vec,
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> du_wrt_duu,
+                                                          const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
   
   const double a = 0.07056;

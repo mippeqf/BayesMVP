@@ -119,8 +119,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
                                                                                                const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                                                                const std::string &grad_option,
-                                                                                               const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                                               MVP_ThreadLocalWorkspace &MVP_workspace
+                                                                                               const Model_fn_args_struct &Model_args_as_cpp_struct
+                                                                                               //MVP_ThreadLocalWorkspace &MVP_workspace
 ) { 
   
   
@@ -230,28 +230,72 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   const double a_times_3 = 3.0 * 0.07056;
   const double s = 1.0 / 1.702;
 
-  //// ---- determine chunk size --------------------------------------------------
-  const int desired_n_chunks = n_chunks;
-
-  int vec_size;
-  if (vect_type == "AVX512") {
-    vec_size = 8;
-  } else  if (vect_type == "AVX2") {
-    vec_size = 4;
-  } else  if (vect_type == "AVX") {
-    vec_size = 2;
-  } else {
-    vec_size = 1;
-  }
- 
-  ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
+  // //// ---- determine chunk size --------------------------------------------------
+  // const int desired_n_chunks = n_chunks;
+  // 
+  // int vec_size;
+  // if (vect_type == "AVX512") {
+  //   vec_size = 8;
+  // } else  if (vect_type == "AVX2") {
+  //   vec_size = 4;
+  // } else  if (vect_type == "AVX") {
+  //   vec_size = 2;
+  // } else {
+  //   vec_size = 1;
+  // }
+  // 
+  // ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
+  // 
+  // int chunk_size = chunk_size_info.chunk_size;
+  // int chunk_size_orig = chunk_size_info.chunk_size_orig;
+  // int normal_chunk_size = chunk_size_info.normal_chunk_size;
+  // int last_chunk_size = chunk_size_info.last_chunk_size;
+  // int n_total_chunks = chunk_size_info.n_total_chunks;
+  // int n_full_chunks = chunk_size_info.n_full_chunks;
   
-  int chunk_size = chunk_size_info.chunk_size;
-  int chunk_size_orig = chunk_size_info.chunk_size_orig;
-  int normal_chunk_size = chunk_size_info.normal_chunk_size;
-  int last_chunk_size = chunk_size_info.last_chunk_size;
-  int n_total_chunks = chunk_size_info.n_total_chunks;
-  int n_full_chunks = chunk_size_info.n_full_chunks;
+  
+  //// ---- determine chunk size -------------------------- 
+  const int desired_n_chunks = n_chunks;
+  
+  int vec_size;
+  if (vect_type == "AVX512") { 
+    vec_size = 8;
+  } else  if (vect_type == "AVX2") {  
+    vec_size = 4;
+  } else  if (vect_type == "AVX") {  
+    vec_size = 2;
+  } else {  
+    vec_size = 1;
+  } 
+  
+  const double N_double = static_cast<double>(N);
+  const double vec_size_double =   static_cast<double>(vec_size);
+  const double desired_n_chunks_double = static_cast<double>(desired_n_chunks);
+  
+  int normal_chunk_size = vec_size_double * std::floor(N_double / (vec_size_double * desired_n_chunks_double));    // Make sure main chunks are divisible by 8
+  int n_full_chunks = std::floor(N_double / static_cast<double>(normal_chunk_size));    ///  How many complete chunks we can have
+  int last_chunk_size = N_double - (static_cast<double>(n_full_chunks) * static_cast<double>(normal_chunk_size));  //// remainder
+  
+  int n_total_chunks;
+  if (last_chunk_size == 0) { 
+    n_total_chunks = n_full_chunks;
+  } else {  
+    n_total_chunks = n_full_chunks + 1;
+  }   
+  
+  int chunk_size = normal_chunk_size; // set initial chunk_size (this may be modified later so non-const)
+  int chunk_size_orig = normal_chunk_size;     // store original chunk size for indexing
+  
+  if (desired_n_chunks == 1) { 
+    chunk_size = N;
+    chunk_size_orig = N;
+    normal_chunk_size = N;
+    last_chunk_size = N;
+    n_total_chunks = 1;
+    n_full_chunks = 1;
+  } 
+  
+  
   
   //////////////  ---------------------------------------------------------------------------------------------------------------------------------
   // corrs
@@ -536,50 +580,87 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   ////////////////////////////////////////////////
    
   {
-    
-    //////// thread-local storage that PERSISTS between function calls
-   ///   static thread_local MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
+    // //// Use MVP_workspace matrices instead of creating new ones
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // std::vector<Eigen::Matrix<double, -1, -1>> &Z_std_norm = MVP_workspace.Z_std_norm;
+    // std::vector<Eigen::Matrix<double, -1, -1>> &Bound_Z = MVP_workspace.Bound_Z;
+    // std::vector<Eigen::Matrix<double, -1, -1>> &Bound_U_Phi_Bound_Z = MVP_workspace.Bound_U_Phi_Bound_Z;
+    // std::vector<Eigen::Matrix<double, -1, -1>> &prob = MVP_workspace.prob;
+    // std::vector<Eigen::Matrix<double, -1, -1>> &Phi_Z = MVP_workspace.Phi_Z;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, -1> &y1_log_prob = MVP_workspace.y1_log_prob;
+    // Eigen::Matrix<double, -1, -1> &phi_Z_recip = MVP_workspace.phi_Z_recip;
+    // Eigen::Matrix<double, -1, -1> &phi_Bound_Z = MVP_workspace.phi_Bound_Z;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, -1> &u_grad_array_CM_chunk = MVP_workspace.u_grad_array_CM_chunk;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, -1> &common_grad_term_1 = MVP_workspace.common_grad_term_1;
+    // Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip = MVP_workspace.y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip;
+    // Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = MVP_workspace.y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip;
+    // Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = MVP_workspace.prob_rowwise_prod_temp;
+    // Eigen::Matrix<double, -1, -1> &prob_recip_rowwise_prod_temp = MVP_workspace.prob_recip_rowwise_prod_temp;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, 1> &prod_container_or_inc_array = MVP_workspace.prod_container_or_inc_array;
+    // Eigen::Matrix<double, -1, 1> &derivs_chain_container_vec =  MVP_workspace.derivs_chain_container_vec;
+    // Eigen::Matrix<double, -1, 1> &prob_rowwise_prod_temp_all =  MVP_workspace.prob_rowwise_prod_temp_all;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, -1> &grad_prob =   MVP_workspace.grad_prob;
+    // Eigen::Matrix<double, -1, -1> &z_grad_term = MVP_workspace.z_grad_term;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, -1> &y_chunk = MVP_workspace.y_chunk;
+    // Eigen::Matrix<double, -1, -1> &u_array = MVP_workspace.u_array;
+    // Eigen::Matrix<double, -1, -1> &y_sign =  MVP_workspace.y_sign;
+    // Eigen::Matrix<double, -1, -1> &y_m_y_sign_x_u = MVP_workspace.y_m_y_sign_x_u;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, -1> &u_grad_array_CM_chunk_block = MVP_workspace.u_grad_array_CM_chunk_block;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, 1> &u_unc_vec_chunk =   MVP_workspace.u_unc_vec_chunk;
+    // Eigen::Matrix<double, -1, 1> &u_vec_chunk =       MVP_workspace.u_vec_chunk;
+    // Eigen::Matrix<double, -1, 1> &du_wrt_duu_chunk =  MVP_workspace.du_wrt_duu_chunk;
+    // Eigen::Matrix<double, -1, 1> &d_J_wrt_duu_chunk = MVP_workspace.d_J_wrt_duu_chunk;
+    // ///////////////////////////////////////////////
+    // Eigen::Matrix<double, -1, -1> &lp_array = MVP_workspace.lp_array;
+    // ///////////////////////////////////////////////
+    //// Use MVP_workspace matrices instead of creating new ones
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Use MVP_workspace matrices instead of creating new ones
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    std::vector<Eigen::Matrix<double, -1, -1>> &Z_std_norm = MVP_workspace.Z_std_norm;
-    std::vector<Eigen::Matrix<double, -1, -1>> &Bound_Z = MVP_workspace.Bound_Z;
-    std::vector<Eigen::Matrix<double, -1, -1>> &Bound_U_Phi_Bound_Z = MVP_workspace.Bound_U_Phi_Bound_Z;
-    std::vector<Eigen::Matrix<double, -1, -1>> &prob = MVP_workspace.prob;
-    std::vector<Eigen::Matrix<double, -1, -1>> &Phi_Z = MVP_workspace.Phi_Z;
+    std::vector<Eigen::Matrix<double, -1, -1>> Z_std_norm = vec_of_mats<double>(chunk_size, n_tests, n_class);
+    std::vector<Eigen::Matrix<double, -1, -1>> Bound_Z = Z_std_norm;
+    std::vector<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z = Z_std_norm;
+    std::vector<Eigen::Matrix<double, -1, -1>> prob = Z_std_norm;
+    std::vector<Eigen::Matrix<double, -1, -1>> Phi_Z = Z_std_norm;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1> &y1_log_prob = MVP_workspace.y1_log_prob;
-    Eigen::Matrix<double, -1, -1> &phi_Z_recip = MVP_workspace.phi_Z_recip;
-    Eigen::Matrix<double, -1, -1> &phi_Bound_Z = MVP_workspace.phi_Bound_Z;
+    Eigen::Matrix<double, -1, -1> y1_log_prob =   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+    Eigen::Matrix<double, -1, -1> phi_Z_recip = y1_log_prob;
+    Eigen::Matrix<double, -1, -1> phi_Bound_Z = y1_log_prob;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1> &u_grad_array_CM_chunk = MVP_workspace.u_grad_array_CM_chunk;
+    Eigen::Matrix<double, -1, -1> u_grad_array_CM_chunk = y1_log_prob;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1> &common_grad_term_1 = MVP_workspace.common_grad_term_1;
-    Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip = MVP_workspace.y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip;
-    Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = MVP_workspace.y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip;
-    Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = MVP_workspace.prob_rowwise_prod_temp;
-    Eigen::Matrix<double, -1, -1> &prob_recip_rowwise_prod_temp = MVP_workspace.prob_recip_rowwise_prod_temp;
+    Eigen::Matrix<double, -1, -1> common_grad_term_1 = y1_log_prob;
+    Eigen::Matrix<double, -1, -1> y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip = y1_log_prob;
+    Eigen::Matrix<double, -1, -1> y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = y1_log_prob;
+    Eigen::Matrix<double, -1, -1> prob_rowwise_prod_temp = y1_log_prob;
+    Eigen::Matrix<double, -1, -1> prob_recip_rowwise_prod_temp = y1_log_prob;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, 1> &prod_container_or_inc_array = MVP_workspace.prod_container_or_inc_array;
-    Eigen::Matrix<double, -1, 1> &derivs_chain_container_vec = MVP_workspace.derivs_chain_container_vec;
-    Eigen::Matrix<double, -1, 1> &prob_rowwise_prod_temp_all = MVP_workspace.prob_rowwise_prod_temp_all;
+    Eigen::Matrix<double, -1, 1> prod_container_or_inc_array =    Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+    Eigen::Matrix<double, -1, 1> derivs_chain_container_vec =  prod_container_or_inc_array;
+    Eigen::Matrix<double, -1, 1> prob_rowwise_prod_temp_all =  prod_container_or_inc_array;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1> &grad_prob = MVP_workspace.grad_prob;
-    Eigen::Matrix<double, -1, -1> &z_grad_term = MVP_workspace.z_grad_term;
+    Eigen::Matrix<double, -1, -1> grad_prob =   y1_log_prob;
+    Eigen::Matrix<double, -1, -1> z_grad_term = y1_log_prob;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1> &y_chunk = MVP_workspace.y_chunk;
-    Eigen::Matrix<double, -1, -1> &u_array = MVP_workspace.u_array;
-    Eigen::Matrix<double, -1, -1> &y_sign = MVP_workspace.y_sign;
-    Eigen::Matrix<double, -1, -1> &y_m_y_sign_x_u = MVP_workspace.y_m_y_sign_x_u;
+    Eigen::Matrix<double, -1, -1> y_chunk = y1_log_prob;
+    Eigen::Matrix<double, -1, -1> u_array = y1_log_prob;
+    Eigen::Matrix<double, -1, -1> y_sign =  y1_log_prob;
+    Eigen::Matrix<double, -1, -1> y_m_y_sign_x_u = y1_log_prob;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1> &u_grad_array_CM_chunk_block = MVP_workspace.u_grad_array_CM_chunk_block;
+    Eigen::Matrix<double, -1, -1> u_grad_array_CM_chunk_block = y1_log_prob;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, 1> &u_unc_vec_chunk = MVP_workspace.u_unc_vec_chunk;
-    Eigen::Matrix<double, -1, 1> &u_vec_chunk = MVP_workspace.u_vec_chunk;
-    Eigen::Matrix<double, -1, 1> &du_wrt_duu_chunk = MVP_workspace.du_wrt_duu_chunk;
-    Eigen::Matrix<double, -1, 1> &d_J_wrt_duu_chunk = MVP_workspace.d_J_wrt_duu_chunk;
+    Eigen::Matrix<double, -1, 1> u_unc_vec_chunk =   Eigen::Matrix<double, -1, 1>::Zero(chunk_size * n_tests);
+    Eigen::Matrix<double, -1, 1> u_vec_chunk =       u_unc_vec_chunk;
+    Eigen::Matrix<double, -1, 1> du_wrt_duu_chunk =  u_unc_vec_chunk;
+    Eigen::Matrix<double, -1, 1> d_J_wrt_duu_chunk = u_unc_vec_chunk;
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1> &lp_array = MVP_workspace.lp_array;
+    Eigen::Matrix<double, -1, -1> lp_array = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_class);
     ///////////////////////////////////////////////
     double log_jac_u = 0.0;
     ///////////////////////////////////////////////
@@ -607,16 +688,102 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                         vect_type_inv_Phi = "Stan";
                         vect_type_inv_Phi_approx_from_logit_prob = "Stan";
               
-                        //// resize workspace when chunk_size changes (calls rezise method from "MVP_ThreadLocalWorkspace" struct)
-                        MVP_workspace.resize_for_last_chunk(last_chunk_size, n_tests, n_class); 
+                        // //// resize workspace when chunk_size changes (calls rezise method from "MVP_ThreadLocalWorkspace" struct)
+                        // MVP_workspace.resize_for_last_chunk(last_chunk_size, n_tests, n_class); 
+                        
+                        // //// re-assign 
+                        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // Z_std_norm = MVP_workspace.Z_std_norm;
+                        // Bound_Z = MVP_workspace.Bound_Z;
+                        // Bound_U_Phi_Bound_Z = MVP_workspace.Bound_U_Phi_Bound_Z;
+                        // prob = MVP_workspace.prob;
+                        // Phi_Z = MVP_workspace.Phi_Z;
+                        // ///////////////////////////////////////////////
+                        // y1_log_prob = MVP_workspace.y1_log_prob;
+                        // phi_Z_recip = MVP_workspace.phi_Z_recip;
+                        // phi_Bound_Z = MVP_workspace.phi_Bound_Z;
+                        // ///////////////////////////////////////////////
+                        // u_grad_array_CM_chunk = MVP_workspace.u_grad_array_CM_chunk;
+                        // ///////////////////////////////////////////////
+                        // common_grad_term_1 = MVP_workspace.common_grad_term_1;
+                        // y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip = MVP_workspace.y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip;
+                        // y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = MVP_workspace.y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip;
+                        // prob_rowwise_prod_temp = MVP_workspace.prob_rowwise_prod_temp;
+                        // prob_recip_rowwise_prod_temp = MVP_workspace.prob_recip_rowwise_prod_temp;
+                        // ///////////////////////////////////////////////
+                        // prod_container_or_inc_array = MVP_workspace.prod_container_or_inc_array;
+                        // derivs_chain_container_vec = MVP_workspace.derivs_chain_container_vec;
+                        // prob_rowwise_prod_temp_all = MVP_workspace.prob_rowwise_prod_temp_all;
+                        // ///////////////////////////////////////////////
+                        // grad_prob = MVP_workspace.grad_prob;
+                        // z_grad_term = MVP_workspace.z_grad_term;
+                        // ///////////////////////////////////////////////
+                        // y_chunk = MVP_workspace.y_chunk;
+                        // u_array = MVP_workspace.u_array;
+                        // y_sign = MVP_workspace.y_sign;
+                        // y_m_y_sign_x_u = MVP_workspace.y_m_y_sign_x_u;
+                        // ///////////////////////////////////////////////
+                        // u_grad_array_CM_chunk_block = MVP_workspace.u_grad_array_CM_chunk_block;
+                        // ///////////////////////////////////////////////
+                        // u_unc_vec_chunk = MVP_workspace.u_unc_vec_chunk;
+                        // u_vec_chunk = MVP_workspace.u_vec_chunk;
+                        // du_wrt_duu_chunk = MVP_workspace.du_wrt_duu_chunk;
+                        // d_J_wrt_duu_chunk = MVP_workspace.d_J_wrt_duu_chunk;
+                        // ///////////////////////////////////////////////
+                        // lp_array = MVP_workspace.lp_array;
+                        // ///////////////////////////////////////////////
+                        
+                        ///////////////////////////////////////////////
+                        for (int c = 0; c < n_class; c++) {
+                          Z_std_norm[c].resize(last_chunk_size, n_tests);
+                          Bound_Z[c].resize(last_chunk_size, n_tests);
+                          Bound_U_Phi_Bound_Z[c].resize(last_chunk_size, n_tests);
+                          prob[c].resize(last_chunk_size, n_tests);
+                          Phi_Z[c].resize(last_chunk_size, n_tests);
+                        }
+                        ///////////////////////////////////////////////
+                        y1_log_prob.resize(last_chunk_size, n_tests);
+                        phi_Z_recip.resize(last_chunk_size, n_tests);
+                        phi_Bound_Z.resize(last_chunk_size, n_tests);
+                        ///////////////////////////////////////////////
+                        u_grad_array_CM_chunk.resize(last_chunk_size, n_tests);
+                        ///////////////////////////////////////////////
+                        common_grad_term_1.resize(last_chunk_size, n_tests);
+                        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.resize(last_chunk_size, n_tests);
+                        y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.resize(last_chunk_size, n_tests);
+                        prob_rowwise_prod_temp.resize(last_chunk_size, n_tests);
+                        prob_recip_rowwise_prod_temp.resize(last_chunk_size, n_tests);
+                        ///////////////////////////////////////////////
+                        prod_container_or_inc_array.resize(last_chunk_size);
+                        derivs_chain_container_vec.resize(last_chunk_size);
+                        prob_rowwise_prod_temp_all.resize(last_chunk_size);
+                        ///////////////////////////////////////////////
+                        grad_prob.resize(last_chunk_size, n_tests);
+                        z_grad_term.resize(last_chunk_size, n_tests);
+                        ///////////////////////////////////////////////
+                        y_chunk.resize(last_chunk_size, n_tests);
+                        u_array.resize(last_chunk_size, n_tests);
+                        y_sign.resize(last_chunk_size, n_tests);
+                        y_m_y_sign_x_u.resize(last_chunk_size, n_tests);
+                        ///////////////////////////////////////////////
+                        u_grad_array_CM_chunk_block.resize(last_chunk_size, n_tests);
+                        ///////////////////////////////////////////////
+                        u_unc_vec_chunk.resize(last_chunk_size * n_tests);
+                        u_vec_chunk.resize(last_chunk_size * n_tests);
+                        du_wrt_duu_chunk.resize(last_chunk_size * n_tests);
+                        d_J_wrt_duu_chunk.resize(last_chunk_size * n_tests);
+                        ///////////////////////////////////////////////
+                        lp_array.resize(last_chunk_size, n_class);
+                        ///////////////////////////////////////////////
+                        
           
         }
         
-        u_grad_array_CM_chunk.setZero(); /// reset to 0
+        u_grad_array_CM_chunk.setZero(); //// reset to 0
          
         y_chunk = y_ref.middleRows( chunk_size_orig * chunk_counter , chunk_size).array().cast<double>() ;
          
-        ////// Nuisance parameter transformation step
+        //// Nuisance parameter transformation step
         u_unc_vec_chunk = u_unc_vec.segment( chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests);
          
         fn_MVP_compute_nuisance(    u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
@@ -627,12 +794,12 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
         y_m_y_sign_x_u = ( y_chunk.array()  - y_sign.array() * u_array.array() ).matrix();
          
         {
-          // START of c loop
+          //// START of c loop
           for (int c = 0; c < n_class; c++) {
              
-            prod_container_or_inc_array.setZero(); /// reset to 0
+            prod_container_or_inc_array.setZero(); //// reset to 0
             
-            // start of t loop
+            //// start of t loop
             for (int t = 0; t < n_tests; t++) {
               
               if (n_covariates_max > 1) {
@@ -751,7 +918,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                                    u_vec_chunk, u_unc_vec_chunk, du_wrt_duu_chunk, Model_args_as_cpp_struct);
             
             out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() =
-              out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() * du_wrt_duu_chunk.array() + d_J_wrt_duu_chunk.array();
+                     out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() * du_wrt_duu_chunk.array() + d_J_wrt_duu_chunk.array();
             
           }
           
@@ -952,8 +1119,8 @@ void     fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_InPlace(    Eigen::Matrix<dou
                                                                const Eigen::Matrix<double, -1, 1> &&theta_us_vec_R_val,
                                                                const Eigen::Matrix<int, -1, -1> &&y_R_val,
                                                                const std::string &grad_option,
-                                                               const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                               MVP_ThreadLocalWorkspace &MVP_workspace
+                                                               const Model_fn_args_struct &Model_args_as_cpp_struct
+                                                              // MVP_ThreadLocalWorkspace &MVP_workspace
 
 
 
@@ -972,8 +1139,9 @@ void     fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_InPlace(    Eigen::Matrix<dou
                                                               theta_us_vec_ref,
                                                               y_ref,
                                                               grad_option,
-                                                              Model_args_as_cpp_struct,
-                                                              MVP_workspace);
+                                                              Model_args_as_cpp_struct
+                                                             // MVP_workspace
+                                                              );
 
 
 }
@@ -991,8 +1159,8 @@ void     fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_InPlace(    Eigen::Matrix<dou
                                                                const Eigen::Matrix<double, -1, 1> &theta_us_vec_ref,
                                                                const Eigen::Matrix<int, -1, -1> &y_ref,
                                                                const std::string &grad_option,
-                                                               const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                               MVP_ThreadLocalWorkspace &MVP_workspace
+                                                               const Model_fn_args_struct &Model_args_as_cpp_struct
+                                                           //    MVP_ThreadLocalWorkspace &MVP_workspace
 
 
 
@@ -1005,8 +1173,9 @@ void     fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_InPlace(    Eigen::Matrix<dou
                                                               theta_us_vec_ref,
                                                               y_ref,
                                                               grad_option,
-                                                              Model_args_as_cpp_struct,
-                                                              MVP_workspace);
+                                                              Model_args_as_cpp_struct
+                                                              //MVP_workspace
+                                                              );
 
 
 }
@@ -1022,8 +1191,8 @@ void     fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_InPlace(    Eigen::Ref<Eigen:
                                                                const Eigen::Ref<const Eigen::Block<MatrixType, -1, 1>>  &theta_us_vec_ref,
                                                                const Eigen::Matrix<int, -1, -1> &y_ref,
                                                                const std::string &grad_option,
-                                                               const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                               MVP_ThreadLocalWorkspace &MVP_workspace
+                                                               const Model_fn_args_struct &Model_args_as_cpp_struct
+                                                            //   MVP_ThreadLocalWorkspace &MVP_workspace
 
 
 
@@ -1036,8 +1205,9 @@ void     fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_InPlace(    Eigen::Ref<Eigen:
                                                               theta_us_vec_ref,
                                                               y_ref,
                                                               grad_option,
-                                                              Model_args_as_cpp_struct,
-                                                              MVP_workspace);
+                                                              Model_args_as_cpp_struct
+                                                             // MVP_workspace
+                                                              );
 
 
 }
@@ -1060,8 +1230,8 @@ Eigen::Matrix<double, -1, 1>    fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD(   con
                                                                              const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
                                                                              const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                                              const std::string &grad_option,
-                                                                             const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                             MVP_ThreadLocalWorkspace &MVP_workspace
+                                                                             const Model_fn_args_struct &Model_args_as_cpp_struct
+                                                                         //    MVP_ThreadLocalWorkspace &MVP_workspace
 
 
 
@@ -1080,8 +1250,9 @@ Eigen::Matrix<double, -1, 1>    fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD(   con
                                                           theta_us_vec_ref,
                                                           y_ref,
                                                           grad_option,
-                                                          Model_args_as_cpp_struct,
-                                                          MVP_workspace);
+                                                          Model_args_as_cpp_struct
+                                                        //  MVP_workspace
+                                                          );
 
   return out_mat;
 
