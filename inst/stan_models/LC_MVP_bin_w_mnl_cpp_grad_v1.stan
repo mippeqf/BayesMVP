@@ -142,7 +142,8 @@ functions {
                                 
 ////// this is the entire log_posterior fn for LC-MVP / MVP / latent_trait models w/ manual gradients and AVX-512 (or AVX-2 or if not available then using Stan's built-in fns)                                  
 real   Stan_wrapper_lp_fn_var(        int Model_type_int, 
-                                      int multi_attempts_int, 
+                                      int force_autodiff_int, 
+                                      int multi_attempts_int,
                                       vector theta_main_vec, 
                                       vector theta_us_vec, 
                                       matrix y, 
@@ -203,6 +204,7 @@ data {
       int priors_via_Stan;
       int Model_type_int;
       int multi_attempts_int;
+      int force_autodiff_int;
   
 }
 
@@ -386,6 +388,7 @@ transformed parameters {
               if (priors_via_Stan == 1) {
 
                    log_posterior =     Stan_wrapper_lp_fn_var(     Model_type_int, /// model_type (1 for MVP, 2 for LC_MVP, 3 for latent_trait)
+                                                                    force_autodiff_int,
                                                                                   multi_attempts_int, /// multi_attempts 
                                                                                   theta_main_vec,
                                                                                   theta_nuisance_vec,
@@ -414,6 +417,7 @@ transformed parameters {
               } else { ///// if managing priors directly via C++
                 
                    log_posterior     =  Stan_wrapper_lp_fn_var(      Model_type_int, /// model_type (1 for MVP, 2 for LC_MVP, 3 for latent_trait)
+                                                                                    force_autodiff_int,
                                                                                     multi_attempts_int, /// multi_attempts  
                                                                                     theta_main_vec,
                                                                                     theta_nuisance_vec,
