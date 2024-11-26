@@ -18,7 +18,7 @@ CXX_STD = CXX17
 
 
 BASE_FLAGS +=  -mfma -mavx -mavx2
-BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
+####BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
 
 BASE_FLAGS += -fno-math-errno
 BASE_FLAGS +=  -fno-signed-zeros
@@ -125,11 +125,18 @@ $(info PKG_LIBS is: $(PKG_LIBS))
 PATH := $(TBB_PATH):$(PATH) # add TBB path to the system PATH (Windows)
 
 
-BRIDGESTAN_PATH = $(HOME)/bridgestan
+## BRIDGESTAN_PATH = $(HOME)/.bridgestan
+## BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+
+# Find the Bridgestan directory dynamically using Rscript
+BRIDGESTAN_PATH = $(shell "${R_HOME}/bin/Rscript" -e "bs_dirs <- dir(file.path(Sys.getenv('USERPROFILE'), '.bridgestan'), full.names = TRUE, pattern = '^bridgestan-'); if (length(bs_dirs) > 0) bs_dirs <- sort(bs_dirs, decreasing = TRUE); if ('bridgestan-2.5.0' %in% basename(bs_dirs)) cat(file.path(Sys.getenv('USERPROFILE'), '.bridgestan', 'bridgestan-2.5.0')) else if (length(bs_dirs) > 0) cat(bs_dirs[1]) else cat('')")
+
+# Set the Bridgestan source directory
 BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+
 PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
 $(info BRIDGESTAN_PATH is: $(BRIDGESTAN_PATH))
-
+$(info BRIDGESTAN_SRC is: $(BRIDGESTAN_SRC))
 
 # print out paths again for checking and debugging
 $(info HOME is: $(HOME))
