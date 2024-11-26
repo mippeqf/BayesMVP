@@ -306,7 +306,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // fn_compute_param_constrain_from_trace_parallel
-std::vector<Rcpp::NumericMatrix> fn_compute_param_constrain_from_trace_parallel(const std::vector<Eigen::Matrix<double, -1, -1>>& unc_params_trace_input_main, const std::vector<Eigen::Matrix<double, -1, -1>>& unc_params_trace_input_nuisance, const Eigen::VectorXi& pars_indicies_to_track, const int& n_params_full, const int& n_nuisance, const int& n_params_main, const bool& include_nuisance, const std::string& model_so_file, const std::string& json_file_path);
+Rcpp::List fn_compute_param_constrain_from_trace_parallel(const std::vector<Eigen::Matrix<double, -1, -1>>& unc_params_trace_input_main, const std::vector<Eigen::Matrix<double, -1, -1>>& unc_params_trace_input_nuisance, const Eigen::VectorXi& pars_indicies_to_track, const int& n_params_full, const int& n_nuisance, const int& n_params_main, const bool& include_nuisance, const std::string& model_so_file, const std::string& json_file_path);
 RcppExport SEXP _BayesMVP_fn_compute_param_constrain_from_trace_parallel(SEXP unc_params_trace_input_mainSEXP, SEXP unc_params_trace_input_nuisanceSEXP, SEXP pars_indicies_to_trackSEXP, SEXP n_params_fullSEXP, SEXP n_nuisanceSEXP, SEXP n_params_mainSEXP, SEXP include_nuisanceSEXP, SEXP model_so_fileSEXP, SEXP json_file_pathSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -325,7 +325,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // fn_compute_param_constrain_from_trace
-std::vector<Eigen::Matrix<double, -1, -1>> fn_compute_param_constrain_from_trace(const std::vector<Eigen::Matrix<double, -1, -1>>& unc_params_trace_input_main, const std::vector<Eigen::Matrix<double, -1, -1>>& unc_params_trace_input_nuisance, const Eigen::VectorXi& pars_indicies_to_track, const int& n_params_full, const int& n_nuisance, const int& n_params_main, const bool& include_nuisance, const std::string& model_so_file, const std::string& json_file_path);
+Rcpp::List fn_compute_param_constrain_from_trace(const std::vector<Eigen::Matrix<double, -1, -1>>& unc_params_trace_input_main, const std::vector<Eigen::Matrix<double, -1, -1>>& unc_params_trace_input_nuisance, const Eigen::VectorXi& pars_indicies_to_track, const int& n_params_full, const int& n_nuisance, const int& n_params_main, const bool& include_nuisance, const std::string& model_so_file, const std::string& json_file_path);
 RcppExport SEXP _BayesMVP_fn_compute_param_constrain_from_trace(SEXP unc_params_trace_input_mainSEXP, SEXP unc_params_trace_input_nuisanceSEXP, SEXP pars_indicies_to_trackSEXP, SEXP n_params_fullSEXP, SEXP n_nuisanceSEXP, SEXP n_params_mainSEXP, SEXP include_nuisanceSEXP, SEXP model_so_fileSEXP, SEXP json_file_pathSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

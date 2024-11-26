@@ -3,13 +3,13 @@
 
  
 
-
+#include <Rcpp.h>
 
 
  
 
 
- __attribute__((always_inline)) inline std::vector<Rcpp::NumericMatrix> vec_of_mats_Rcpp(int n_rows, int n_cols, int n_matrices) {
+ALWAYS_INLINE  std::vector<Rcpp::NumericMatrix> vec_of_mats_Rcpp(int n_rows, int n_cols, int n_matrices) {
   
   std::vector<Rcpp::NumericMatrix> vec_of_mats(n_matrices);
   
@@ -29,13 +29,13 @@
 
 
 
-__attribute__((always_inline)) inline int flatten_index(int i, int j, int dim1) {
+ALWAYS_INLINE  int flatten_index(int i, int j, int dim1) {
   return i + j * dim1;  // convert (i, j) into the ROW index for the 2D matrix
 }
 
 
 
-__attribute__((always_inline)) inline Rcpp::NumericMatrix create_3D_array_as_2D_RcppNumericMat(const int dim1,
+ALWAYS_INLINE  Rcpp::NumericMatrix create_3D_array_as_2D_RcppNumericMat(const int dim1,
                                                                 const int dim2,
                                                                 const int dim3) {
   
@@ -56,8 +56,10 @@ __attribute__((always_inline)) inline Rcpp::NumericMatrix create_3D_array_as_2D_
 }
 
 
-// [[Rcpp::export]]
-__attribute__((always_inline)) inline std::vector<Rcpp::NumericMatrix> create_3D_array_as_vector_of_2D_matrices(const Rcpp::NumericMatrix& array_2D,
+
+
+
+ALWAYS_INLINE std::vector<Rcpp::NumericMatrix> create_3D_array_as_vector_of_2D_matrices(const Rcpp::NumericMatrix& array_2D,
                                                                           const int dim1,
                                                                           const int dim2,
                                                                           const int dim3) {

@@ -102,8 +102,20 @@ $(info CMDSTAN env var is: '$(CMDSTAN_ALT)')
 
 $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 
+
+
+
+## OBJECTS = main.o RcppExports.o
+
+
+TBB_PATH = -I"$(STAN_LIB)/tbb" ## $(STAN_MATH)/lib/tbb
+TBB_SO = $(TBB_PATH)/tbb12.dll  ## .dll for Windows
+PKG_LIBS += $(TBB_SO)
+PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
+
+
 PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
-    -I"$(R_LIB_PATH)/RcppEigen/include" \
+    -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
     -I"$(STAN_MATH_LIB)/boost_1.84.0" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1" \
@@ -117,10 +129,6 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_BASE)" \
     -I"$(STAN_LIB)" \
     -I"$(STAN_MATH_LIB)" \
-    -I"$(R_LIB_PATH)/bridgestan/include" \
-    -I"$(R_LIB_PATH)/Rcpp/include" \
-    -I"$(R_LIB_PATH)/StanHeaders/include" \
-    -I"$(R_LIB_PATH)/BH/include" \
     -I"$(STAN_BASE)/model" \
     -I"$(STAN_BASE)/services" \
     -I"$(STAN_BASE)/io" \
@@ -129,21 +137,13 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_BASE)/callbacks" \
     -I"$(STAN_BASE)/lang" \
     -I"$(STAN_BASE)/optimization" \
-    -I"$(STAN_BASE)/variational"
+    -I"$(STAN_BASE)/variational" \
+    -I"$(TBB_PATH)/include" \
+    -I"$(TBB_PATH)" \
+    -I"$(BRIDGESTAN_SRC)"
 
 
 ##     -I"$(R_LIB_PATH)/RcppEigen/include" \
-
-## OBJECTS = main.o RcppExports.o
-
-
-TBB_PATH = -I"$(STAN_LIB)/tbb" ## $(STAN_MATH)/lib/tbb
-TBB_SO = $(TBB_PATH)/tbb12.dll  ## .dll for Windows
-PKG_LIBS += $(TBB_SO)
-
-
-PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
-
 
 
 BRIDGESTAN_PATH = $(HOME)/bridgestan

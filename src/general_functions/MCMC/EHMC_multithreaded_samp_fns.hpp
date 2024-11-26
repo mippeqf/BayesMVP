@@ -1,5 +1,9 @@
 #pragma once
 
+// [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::depends(BH)]]
+// [[Rcpp::depends(RcppParallel)]] 
+// [[Rcpp::plugins(cpp17)]]
  
  
 using namespace Rcpp;
@@ -12,8 +16,7 @@ using namespace Eigen;
 
 #include <tbb/concurrent_vector.h>
 
-
-// #include <omp.h>
+ 
  
 #include <chrono> 
 
@@ -53,9 +56,6 @@ using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector
  
  
 
-
-
- 
  
  
 static std::mutex print_mutex; //// global mutex 

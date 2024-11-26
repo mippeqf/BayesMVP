@@ -2,11 +2,10 @@
 #pragma once
 
 
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppEigen)]]
-
+// [[Rcpp::depends(BH)]]
+// [[Rcpp::depends(RcppParallel)]] 
+// [[Rcpp::plugins(cpp17)]]
 
 
 
@@ -59,9 +58,7 @@
 #include <utility>
  
  
-
-// [[Rcpp::plugins(cpp17)]]
-
+ 
 
 using namespace Eigen;
 using namespace Rcpp;
@@ -224,10 +221,10 @@ inline std::pair<double, double> Stan_compute_diagnostic(const std::string &diag
               double rhat = compute_Stan_split_Rhat(mcmc_array);
               return std::make_pair(rhat, 0.0);
             }
-            if (diagnostic == "split_rhat") {
-              std::pair<double, double>  rhat = compute_Stan_split_Rhat_rank(mcmc_array);
-              return  rhat;
-            } 
+            // if (diagnostic == "split_rhat_rank") {
+            //   std::pair<double, double>  rhat = compute_Stan_split_Rhat_rank(mcmc_array);
+            //   return  rhat;
+            // }
     
     return std::make_pair(0.0, 0.0);
     

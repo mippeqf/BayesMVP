@@ -3,14 +3,10 @@
 
 
  
-
-
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
-
- 
+ // [[Rcpp::depends(RcppEigen)]]
+ // [[Rcpp::depends(BH)]]
+ // [[Rcpp::depends(RcppParallel)]] 
+ // [[Rcpp::plugins(cpp17)]]
  
  
 
@@ -66,8 +62,6 @@
 
  
  
-// [[Rcpp::plugins(cpp17)]]
-
 
  
 using namespace Eigen;

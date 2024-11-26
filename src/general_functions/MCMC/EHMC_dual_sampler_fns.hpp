@@ -1,30 +1,17 @@
 
 #pragma once
 
- 
-
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppEigen)]]
-
+// [[Rcpp::depends(BH)]]
+// [[Rcpp::depends(RcppParallel)]] 
+// [[Rcpp::plugins(cpp17)]]
  
 
 
 #include <random>
-
-  
-
 #include <Eigen/Dense>
- 
- 
- 
-
 #include <unsupported/Eigen/SpecialFunctions>
  
- 
- 
- // [[Rcpp::plugins(cpp17)]]
  
  
  
@@ -188,10 +175,10 @@ ALWAYS_INLINE   void                                        fn_standard_HMC_dual
           int    L_ii = std::ceil( EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
           if (L_ii < 1) { L_ii = 1 ; }
           
-          //// set the nuisance HMC params to equal the main ones
-          EHMC_args_as_cpp_struct.tau_us = EHMC_args_as_cpp_struct.tau_main;
-          EHMC_args_as_cpp_struct.tau_us_ii = EHMC_args_as_cpp_struct.tau_main_ii;
-          EHMC_args_as_cpp_struct.eps_us = EHMC_args_as_cpp_struct.eps_main;
+          // //// set the nuisance HMC params to equal the main ones
+          // EHMC_args_as_cpp_struct.tau_us = EHMC_args_as_cpp_struct.tau_main;
+          // EHMC_args_as_cpp_struct.tau_us_ii = EHMC_args_as_cpp_struct.tau_main_ii;
+          // EHMC_args_as_cpp_struct.eps_us = EHMC_args_as_cpp_struct.eps_main;
           
           //// initial lp  
           fn_lp_grad_InPlace(     result_input.lp_and_grad_outs, 

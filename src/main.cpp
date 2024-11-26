@@ -1,20 +1,69 @@
 
 
-// [[Rcpp::depends(StanHeaders)]]  
-// [[Rcpp::depends(BH)]] 
-// [[Rcpp::depends(RcppParallel)]] 
-// [[Rcpp::depends(RcppEigen)]]
-   
- 
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
-
-
-#include "eigen_config.hpp"
- 
- 
-#include "pch.hpp" 
   
+ 
+// [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::depends(BH)]]
+// [[Rcpp::depends(RcppParallel)]] 
+// [[Rcpp::plugins(cpp17)]]
+
+
+ 
+//// Stan includes
+#include <stan/math/prim.hpp>
+#include <stan/math/rev.hpp>
+#include <stan/math.hpp>
+
+ 
+
+//// Eigen includes
+#include "eigen_config.hpp"
+
+#define EIGEN_NO_DEBUG
+#define EIGEN_DONT_PARALLELIZE 
+
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
+/// #include <RcppEigen.h>
+#include <unsupported/Eigen/SpecialFunctions>
+#include <unsupported/Eigen/CXX11/Tensor>
+ 
+
+ 
+#include <stan/math/prim/fun/Eigen.hpp>
+#include <stan/math/prim/fun/typedefs.hpp>
+#include <stan/math/prim/fun/value_of_rec.hpp>
+#include <stan/math/prim/err/check_pos_definite.hpp>
+#include <stan/math/prim/err/check_square.hpp>
+#include <stan/math/prim/err/check_symmetric.hpp>
+
+
+#include <stan/math/prim/fun/cholesky_decompose.hpp>
+#include <stan/math/prim/fun/sqrt.hpp>
+#include <stan/math/prim/fun/log.hpp>
+#include <stan/math/prim/fun/transpose.hpp>
+#include <stan/math/prim/fun/dot_product.hpp>
+#include <stan/math/prim/fun/norm2.hpp>
+#include <stan/math/prim/fun/diagonal.hpp>
+#include <stan/math/prim/fun/cholesky_decompose.hpp>
+#include <stan/math/prim/fun/eigenvalues_sym.hpp>
+#include <stan/math/prim/fun/diag_post_multiply.hpp>
+
+
+
+#include <stan/math/prim/prob/multi_normal_cholesky_lpdf.hpp>
+#include <stan/math/prim/prob/lkj_corr_cholesky_lpdf.hpp>
+#include <stan/math/prim/prob/weibull_lpdf.hpp>
+#include <stan/math/prim/prob/gamma_lpdf.hpp>
+#include <stan/math/prim/prob/beta_lpdf.hpp>
+
+
+ 
+#include <immintrin.h>
+ 
+  
+   
 
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -26,11 +75,6 @@
 #endif
  
 
- 
-// #include "bridgestan.h"
-// #include "version.hpp"
-// #include "model_rng.hpp" 
- 
  
    
 #include <sstream>
@@ -46,6 +90,7 @@
 #include <algorithm>
 #include <cmath>
    
+ 
      
 #include <stan/model/model_base.hpp>  
   
@@ -53,18 +98,13 @@
 #include <stan/io/var_context.hpp> 
 #include <stan/io/dump.hpp>  
   
-   
 #include <stan/io/json/json_data.hpp>
 #include <stan/io/json/json_data_handler.hpp>
 #include <stan/io/json/json_error.hpp>
 #include <stan/io/json/rapidjson_parser.hpp>   
    
-
-
-   
-#include <Eigen/Core>
-#include <unsupported/Eigen/CXX11/Tensor>
-   
+ 
+ 
    
 // #if __has_include("omp.h")
 //     #include "omp.h"  
@@ -72,34 +112,19 @@
     
     
     
-    
-// //// determine vect_type to use
-// #if defined(__AVX__) && ( !(defined(__AVX2__)  && defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
-//     static const std::string VECT = "AVX";
-// #elif defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
-//     static const std::string VECT = "AVX2";
-// #elif defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__) // use AVX-512
-//     static const std::string VECT = "AVX512"; 
-// #else
-//     static const std::string VECT = "Stan";
-// #endif
  
-
- 
-    
-  
-///// General functions (e.g. fast exp() and log() approximations). Most of these are not model-specific. 
+///// General functions (e.g. fast exp() and log() approximations). Most of these are not model-specific.
 #include "general_functions/var_fns.hpp"
-#include "general_functions/double_fns.hpp" 
+#include "general_functions/double_fns.hpp"
 
 
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Stan.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Loop.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX2_fns.hpp" // will only compile if  AVX2 is available
-#include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_fns.hpp" // will only compile if  AVX-512 is available 
-#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available 
-#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available 
-#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_overall.hpp" 
+#include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_fns.hpp" // will only compile if  AVX-512 is available
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_overall.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_dbl.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_SIMD.hpp"
 
@@ -108,14 +133,16 @@
 #include "general_functions/array_creators_other_fns.hpp"
 #include "general_functions/structures.hpp"
 
+#include <Rcpp.h>
+
 #include "general_functions/misc_helper_fns_1.hpp"
-#include "general_functions/misc_helper_fns_2.hpp"
+#include "general_functions/misc_helper_fns_2.hpp" /// needs Rcpp.h
 #include "general_functions/compute_diagnostics.hpp"
 
 //////// #include "BayesMVP_Stan_fast_approx_fns.hpp"
 
-////// Now load in (mostly) MVP-specific (and MVP-LC) model functions
-#include "MVP_functions/MVP_manual_grad_calc_fns.hpp" 
+////// Now load in MVP-specific (and MVP-LC) model functions
+#include "MVP_functions/MVP_manual_grad_calc_fns.hpp"
 #include "MVP_functions/MVP_log_scale_grad_calc_fns.hpp"
 #include "MVP_functions/MVP_manual_trans_and_J_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_AD_fns.hpp"
@@ -129,7 +156,7 @@
 #define COMPILE_MCMC_MAIN 1
 
 #if COMPILE_LATENT_TRAIT
-    ////// Latent trait stuff
+    ////// Latent trait model functions
     #include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
     #include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
     #include "LC_LT_functions/LC_LT_lp_grad_AD_fns.hpp"
@@ -139,8 +166,10 @@
 #endif
 
     
-    
 
+    
+    
+    
 ////// general lp_grad fn / manual/Stan model selector
 #if __has_include("bridgestan.h")
     #define HAS_BRIDGESTAN_H 1
@@ -155,7 +184,7 @@
 // #undef HAS_BRIDGESTAN_H //// override
 // #define HAS_BRIDGESTAN_H 0 //// override
 
- 
+
 
 
 #if HAS_BRIDGESTAN_H
@@ -163,8 +192,8 @@
 #endif
 
 
-    
-    
+
+
 #include "general_functions/lp_grad_model_selector.hpp"
 
 
@@ -183,16 +212,17 @@
 #endif
 
 
- 
- 
- 
- 
 
 
-#include <dlfcn.h> // For dynamic loading
 
- 
- 
+
+
+#include <RcppParallel.h>
+#include <RcppEigen.h>
+
+
+
+
 using namespace Rcpp;
 using namespace Eigen;
 
@@ -211,13 +241,13 @@ using two_layer_std_vec_of_EigenMats_int = std::vector<std::vector<Eigen::Matrix
 
 using three_layer_std_vec_of_EigenVecs_dbl =  std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>>;
 using three_layer_std_vec_of_EigenVecs_int =  std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>>;
-using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>; 
+using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>;
 using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
- 
 
- 
- 
- 
+
+
+
+
 // ANSI codes for different colors
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
@@ -241,30 +271,30 @@ Model_fn_args_struct   convert_R_List_to_Model_fn_args_struct(Rcpp::List R_List)
      const int N = R_List["N"];
      const int n_nuisance = R_List["n_nuisance"];
      const int n_params_main = R_List["n_params_main"];
-    
+
      const std::string model_so_file = R_List["model_so_file"];
      const std::string json_file_path = R_List["json_file_path"];
-    
+
      const Eigen::Matrix<bool, -1, 1> Model_args_bools = Rcpp::as<Eigen::Matrix<bool, -1, 1>>(R_List.containsElementNamed("Model_args_bools") ? R_List["Model_args_bools"] : Rcpp::LogicalMatrix(0));
      const Eigen::Matrix<int, -1, 1> Model_args_ints = Rcpp::as<Eigen::Matrix<int, -1, 1>>(R_List.containsElementNamed("Model_args_ints") ? R_List["Model_args_ints"] : Rcpp::IntegerMatrix(0));
      const Eigen::Matrix<double, -1, 1> Model_args_doubles = Rcpp::as<Eigen::Matrix<double, -1, 1>>(R_List.containsElementNamed("Model_args_doubles") ? R_List["Model_args_doubles"] : Rcpp::NumericMatrix(0));
      const Eigen::Matrix<std::string, -1, 1> Model_args_strings = Rcpp::as<Eigen::Matrix<std::string, -1, 1>>(R_List.containsElementNamed("Model_args_strings") ? R_List["Model_args_strings"] : Rcpp::StringMatrix(0));
-    
+
      const std_vec_of_EigenVecs_dbl Model_args_col_vecs_double = Rcpp::as<std_vec_of_EigenVecs_dbl>(R_List.containsElementNamed("Model_args_col_vecs_double") ? R_List["Model_args_col_vecs_double"] : Rcpp::List(0));
      const std_vec_of_EigenVecs_int Model_args_col_vecs_int = Rcpp::as<std_vec_of_EigenVecs_int>(R_List.containsElementNamed("Model_args_col_vecs_int") ? R_List["Model_args_col_vecs_int"] : Rcpp::List(0));
      const std_vec_of_EigenMats_dbl Model_args_mats_double = Rcpp::as<std_vec_of_EigenMats_dbl>(R_List.containsElementNamed("Model_args_mats_double") ? R_List["Model_args_mats_double"] : Rcpp::List(0));
      const std_vec_of_EigenMats_int Model_args_mats_int = Rcpp::as<std_vec_of_EigenMats_int>(R_List.containsElementNamed("Model_args_mats_int") ? R_List["Model_args_mats_int"] : Rcpp::List(0));
-    
+
      const two_layer_std_vec_of_EigenVecs_dbl Model_args_vecs_of_col_vecs_double = Rcpp::as<two_layer_std_vec_of_EigenVecs_dbl>(R_List.containsElementNamed("Model_args_vecs_of_col_vecs_double") ? R_List["Model_args_vecs_of_col_vecs_double"] : Rcpp::List(0));
      const two_layer_std_vec_of_EigenVecs_int Model_args_vecs_of_col_vecs_int = Rcpp::as<two_layer_std_vec_of_EigenVecs_int>(R_List.containsElementNamed("Model_args_vecs_of_col_vecs_int") ? R_List["Model_args_vecs_of_col_vecs_int"] : Rcpp::List(0));
      const two_layer_std_vec_of_EigenMats_dbl Model_args_vecs_of_mats_double = Rcpp::as<two_layer_std_vec_of_EigenMats_dbl>(R_List.containsElementNamed("Model_args_vecs_of_mats_double") ? R_List["Model_args_vecs_of_mats_double"] : Rcpp::List(0));
      const two_layer_std_vec_of_EigenMats_int Model_args_vecs_of_mats_int = Rcpp::as<two_layer_std_vec_of_EigenMats_int>(R_List.containsElementNamed("Model_args_vecs_of_mats_int") ? R_List["Model_args_vecs_of_mats_int"] : Rcpp::List(0));
-    
+
      const three_layer_std_vec_of_EigenVecs_dbl Model_args_2_later_vecs_of_col_vecs_double = Rcpp::as<three_layer_std_vec_of_EigenVecs_dbl>(R_List.containsElementNamed("Model_args_2_later_vecs_of_col_vecs_double") ? R_List["Model_args_2_later_vecs_of_col_vecs_double"] : Rcpp::List(0));
      const three_layer_std_vec_of_EigenVecs_int Model_args_2_later_vecs_of_col_vecs_int = Rcpp::as<three_layer_std_vec_of_EigenVecs_int>(R_List.containsElementNamed("Model_args_2_later_vecs_of_col_vecs_int") ? R_List["Model_args_2_later_vecs_of_col_vecs_int"] : Rcpp::List(0));
      const three_layer_std_vec_of_EigenMats_dbl Model_args_2_later_vecs_of_mats_double = Rcpp::as<three_layer_std_vec_of_EigenMats_dbl>(R_List.containsElementNamed("Model_args_2_later_vecs_of_mats_double") ? R_List["Model_args_2_later_vecs_of_mats_double"] : Rcpp::List(0));
      const three_layer_std_vec_of_EigenMats_int Model_args_2_later_vecs_of_mats_int = Rcpp::as<three_layer_std_vec_of_EigenMats_int>(R_List.containsElementNamed("Model_args_2_later_vecs_of_mats_int") ? R_List["Model_args_2_later_vecs_of_mats_int"] : Rcpp::List(0));
-    
+
      return Model_fn_args_struct(
        N,
        n_nuisance,
@@ -288,7 +318,7 @@ Model_fn_args_struct   convert_R_List_to_Model_fn_args_struct(Rcpp::List R_List)
        Model_args_2_later_vecs_of_mats_double,
        Model_args_2_later_vecs_of_mats_int
      );
-     
+
 }
 
 
@@ -304,29 +334,29 @@ EHMC_Metric_struct convert_R_List_EHMC_Metric_struct(const Rcpp::List &R_List) {
   const Eigen::Matrix<double, -1, -1> M_dense_main = Rcpp::as<Eigen::Matrix<double, -1, -1>>(R_List["M_dense_main"]);
   const Eigen::Matrix<double, -1, -1> M_inv_dense_main = Rcpp::as<Eigen::Matrix<double, -1, -1>>(R_List["M_inv_dense_main"]);
   const Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol = Rcpp::as<Eigen::Matrix<double, -1, -1>>(R_List["M_inv_dense_main_chol"]);
-  
+
   const Eigen::Matrix<double, -1, 1>  M_inv_main_vec = Rcpp::as<Eigen::Matrix<double, -1, 1>>(R_List["M_inv_main_vec"]);
   const Eigen::Matrix<double, -1, 1>  M_inv_us_vec = Rcpp::as<Eigen::Matrix<double, -1, 1>>(R_List["M_inv_us_vec"]);
   const Eigen::Matrix<double, -1, 1>  M_us_vec = Rcpp::as<Eigen::Matrix<double, -1, 1>>(R_List["M_us_vec"]);
-  
+
   const std::string metric_shape_main = R_List["metric_shape_main"]  ;
-  
-  return EHMC_Metric_struct(M_dense_main, 
+
+  return EHMC_Metric_struct(M_dense_main,
                             M_inv_dense_main,
-                            M_inv_dense_main_chol, 
+                            M_inv_dense_main_chol,
                             M_inv_main_vec,
-                            M_inv_us_vec, 
+                            M_inv_us_vec,
                             M_us_vec,
                             metric_shape_main);
 }
- 
 
 
 
 
- 
- 
- 
+
+
+
+
 // /////  Function to convert from R List -> C++ struct (so can call fn's from R without having to use Rcpp::List as not thread-safe, and slower etc)
 EHMC_fn_args_struct convert_R_List_EHMC_fn_args_struct(Rcpp::List R_List) {
 
@@ -340,7 +370,7 @@ EHMC_fn_args_struct convert_R_List_EHMC_fn_args_struct(Rcpp::List R_List) {
         double tau_us = (R_List["tau_us"]);
         double tau_us_ii = (R_List["tau_us_ii"]);
         double eps_us = (R_List["eps_us"]);
-        
+
         // general
         bool diffusion_HMC = (R_List["diffusion_HMC"]);
 
@@ -400,7 +430,7 @@ EHMC_burnin_struct convert_R_List_EHMC_burnin_struct(Rcpp::List R_List) {
                                  LR_main,
                                  eps_m_adam_main,
                                  eps_v_adam_main,
-                                 tau_m_adam_main, 
+                                 tau_m_adam_main,
                                  tau_v_adam_main,
                                  eigen_max_main,
                                  index_main,
@@ -428,8 +458,6 @@ EHMC_burnin_struct convert_R_List_EHMC_burnin_struct(Rcpp::List R_List) {
 
 
 
-#include <RcppParallel.h>
-#include <vector>
 
 struct WarmUp : public RcppParallel::Worker {
   void operator()(std::size_t begin, std::size_t end) override {
@@ -453,19 +481,19 @@ void warmUpThreads(std::size_t nThreads) {
 Rcpp::List Rcpp_compute_chain_stats(const std::vector<Rcpp::NumericMatrix> mcmc_3D_array,
                                     const std::string stat_type,
                                     const int n_threads) {
-  
+
   const int n_params = mcmc_3D_array.size();
   Rcpp::NumericMatrix output(n_params, 3);
-  
+
   ComputeStatsParallel parallel_worker(n_params,
                                        stat_type,
                                        mcmc_3D_array,
                                        output);
-  
+
   RcppParallel::parallelFor(0, n_params, parallel_worker);
-  
+
   return Rcpp::List::create(Rcpp::Named("statistics") = output);
-  
+
 }
 
 
@@ -476,23 +504,23 @@ Rcpp::List  Rcpp_compute_MCMC_diagnostics(     const std::vector<Rcpp::NumericMa
                                                const std::string diagnostic,
                                                const int n_threads
 ) {
-  
-      const int n_params = mcmc_3D_array.size(); 
+
+      const int n_params = mcmc_3D_array.size();
       Rcpp::NumericMatrix  output(n_params, 2);
-      
-      //// Create the parallel worker   
+
+      //// Create the parallel worker
       ComputeDiagnosticParallel parallel_worker(n_params,
                                                 diagnostic,
-                                                mcmc_3D_array, 
+                                                mcmc_3D_array,
                                                 output);
-      
+
       //// Run parallelFor
-      RcppParallel::parallelFor(0, n_params, parallel_worker); // RCppParallel will distribute the load across the n_threads 
-      
+      RcppParallel::parallelFor(0, n_params, parallel_worker); // RCppParallel will distribute the load across the n_threads
+
       //// output
       return Rcpp::List::create(Rcpp::Named("diagnostics") = output);
-  
-}  
+
+}
 
 
 
@@ -502,7 +530,7 @@ Rcpp::List  Rcpp_compute_MCMC_diagnostics(     const std::vector<Rcpp::NumericMa
 
 // [[Rcpp::export]]
 Rcpp::String  detect_vectorization_support() {
-  
+
 #if defined(__AVX__) && !(defined(__AVX2__) && defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__))
   return "AVX";
 #elif defined(__AVX2__) && !(defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__))
@@ -512,7 +540,7 @@ Rcpp::String  detect_vectorization_support() {
 #else
   return "Stan";
 #endif
-  
+
 }
 
 
@@ -521,7 +549,7 @@ Rcpp::String  detect_vectorization_support() {
 
 
 
-  
+
 
 
 
@@ -531,13 +559,13 @@ Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double(                 Eig
                                                                              const std::string vect_type,
                                                                              const bool skip_checks
 ) {
-  
+
 
   Eigen::Matrix<double, -1, -1> out_mat =    fn_EIGEN_double(x, fn, vect_type, skip_checks);
-  
+
   return out_mat;
-  
-  
+
+
 }
 
 
@@ -547,7 +575,7 @@ Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double(                 Eig
 
 
 
- 
+
 // [[Rcpp::export]]
 Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const std::string Model_type,
                                                                          const bool force_autodiff,
@@ -576,15 +604,15 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
    Eigen::Matrix<double, -1, 1> lp_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);
 
    Stan_model_struct Stan_model_as_cpp_struct;
-   
-   
+
+
    const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
    const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
    const int vec_size = 8;
    ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
    int chunk_size = chunk_size_info.chunk_size;
    const int n_tests = y.cols();
-   
+
  //  MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
 
       // stan::math::start_nested();
@@ -594,28 +622,28 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
                              theta_main_vec_Ref, theta_us_vec_Ref,
                              y_Ref,
                              grad_option,
-                             Model_args_as_cpp_struct,//MVP_workspace, 
+                             Model_args_as_cpp_struct,//MVP_workspace,
                              Stan_model_as_cpp_struct);
       // stan::math::recover_memory_nested();
 
    return lp_grad_outs;
 
 }
- 
 
 
- 
- 
- 
- 
- 
- 
- 
- 
- 
 
 
-// 
+
+
+
+
+
+
+
+
+
+
+//
 // // [[Rcpp::export]]
 // Eigen::Matrix<double, -1, 1>     fn_Rcpp_wrapper_fn_Hessian_diag_nuisance(   const std::string Model_type,
 //                                                                              const Eigen::Matrix<double, -1, 1> theta_main_vec,
@@ -623,21 +651,21 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
 //                                                                              const Eigen::Matrix<int, -1, -1>  y,
 //                                                                              const Rcpp::List Model_args_as_Rcpp_List
 // ) {
-// 
+//
 //   const int N = y.rows();
 //   const int n_us = theta_us_vec.rows()  ;
 //   const int n_params_main =  theta_main_vec.rows()  ;
 //   const int n_params = n_params_main + n_us;
-// 
+//
 //   /// convert to Eigen
 //   const Eigen::Matrix<double, -1, 1> theta_main_vec_Eigen =  theta_main_vec;
 //   const Eigen::Matrix<double, -1, 1> theta_us_vec_Eigen =  theta_us_vec;
 //   const Eigen::Matrix<int, -1, -1>   y_Eigen =  y;
-// 
+//
 //   const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-// 
+//
 //   return fn_diag_hessian_us_only_manual(   theta_main_vec_Eigen, theta_us_vec_Eigen, y_Eigen, Model_args_as_cpp_struct);
-// 
+//
 // }
 
 
@@ -682,8 +710,8 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
 
  Stan_model_struct Stan_model_as_cpp_struct;
 
- 
-#if HAS_BRIDGESTAN_H 
+
+#if HAS_BRIDGESTAN_H
  if (Model_args_as_cpp_struct.model_so_file != "none") {
 
    Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file,
@@ -697,7 +725,7 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
  Eigen::Matrix<double, -1, -1> M_dense_main_copy = M_dense_main;
  Eigen::Matrix<double, -1, -1> M_inv_dense_main_copy = M_inv_dense_main;
  Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol_copy = M_inv_dense_main_chol;
- 
+
  const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
  const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
  const int vec_size = 8;
@@ -764,28 +792,28 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
 //                                                                                      const double   n_burnin,
 //                                                                                      const std::string metric_type
 // ) {
-// 
+//
 //   const int N = y.rows();
 //   const int n_us = theta_us_vec.rows()  ;
 //   const int n_params_main =  theta_main_vec.rows()  ;
 //   const int n_params = n_params_main + n_us;
-// 
+//
 //   const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-// 
+//
 //   Eigen::Matrix<double, -1, -1> Hessian(n_params_main, n_params_main);
-// 
+//
 //   Stan_model_struct Stan_model_as_cpp_struct;
-// 
-// #if HAS_BRIDGESTAN_H 
+//
+// #if HAS_BRIDGESTAN_H
 //   if (Model_args_as_cpp_struct.model_so_file != "none") {
-// 
+//
 //     Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file,
 //                                                            Model_args_as_cpp_struct.json_file_path,
 //                                                            123);
-// 
+//
 //   }
 // #endif
-// 
+//
 //   Hessian = num_diff_Hessian_main_given_nuisance(   num_diff_e,
 //                                                     shrinkage_factor,
 //                                                     Model_type,
@@ -797,13 +825,13 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
 //                                                     y,
 //                                                     Model_args_as_cpp_struct,
 //                                                     Stan_model_as_cpp_struct);
-// 
+//
 //   return Hessian;
-// 
+//
 // }
-// 
-// 
-// 
+//
+//
+//
 
 
 
@@ -833,14 +861,14 @@ Rcpp::List                         fn_find_initial_eps_main_and_us(      Eigen::
                                                                               Rcpp::List  EHMC_args_as_Rcpp_List, /// pass by ref. to modify (???)
                                                                               const Rcpp::List   EHMC_Metric_as_Rcpp_List
 ) {
-  
-  
+
+
       const bool burnin = false;
       const int n_params_main = theta_main_vec_initial_ref.rows();
       const int n_us = theta_us_vec_initial_ref.rows();
       const int n_params = n_params_main + n_us;
       const int N = y_ref.rows();
-      
+
       HMCResult result_input(n_params_main, n_params, N);
       result_input.main_theta_vec = theta_main_vec_initial_ref;
       result_input.main_theta_vec_0 = theta_main_vec_initial_ref;
@@ -848,42 +876,42 @@ Rcpp::List                         fn_find_initial_eps_main_and_us(      Eigen::
       result_input.main_velocity_0_vec = theta_main_vec_initial_ref;
       result_input.main_velocity_vec_proposed = theta_main_vec_initial_ref;
       result_input.main_velocity_vec = theta_main_vec_initial_ref;
-      
+
       // convert Rcpp::List to cpp structs and pass by reference
       const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
       EHMC_fn_args_struct  EHMC_args_as_cpp_struct =  convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
       const EHMC_Metric_struct   EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
-      
+
       const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
       const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
       const int vec_size = 8;
       ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
       int chunk_size = chunk_size_info.chunk_size;
       const int n_tests = y_ref.cols();
-      
+
      // MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
-      
+
       std::vector<double> eps_pair =  fn_find_initial_eps_main_and_us(   result_input,
-                                                                         seed, burnin,  Model_type,  
-                                                                         force_autodiff, force_PartialLog, multi_attempts, 
+                                                                         seed, burnin,  Model_type,
+                                                                         force_autodiff, force_PartialLog, multi_attempts,
                                                                          y_ref,
-                                                                         Model_args_as_cpp_struct, // MVP_workspace, 
+                                                                         Model_args_as_cpp_struct, // MVP_workspace,
                                                                          EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct);
-      
+
       Rcpp::List outs(2);
       outs(0) = eps_pair[0];
       outs(1) = eps_pair[1];
-      
+
       return outs;
-      
+
 }
 
 
 
 
- 
- 
- 
+
+
+
 
 
 
@@ -1008,7 +1036,7 @@ Eigen::Matrix<double, -1, 1> fn_update_eigen_max_and_eigen_vec(       double eig
 
 
 
- 
+
 
 
 
@@ -1044,7 +1072,7 @@ Eigen::Matrix<double, -1, 1> fn_update_snaper_w_dense_M(    Eigen::Matrix<double
 
 
 
- 
+
 
 
 // [[Rcpp::export]]
@@ -1077,7 +1105,7 @@ Eigen::Matrix<double, -1, 1>  fn_update_snaper_w_diag_M(       Eigen::Matrix<dou
 
 
 
- 
+
 
  // [[Rcpp::export]]
  Eigen::Matrix<double, -1, 1> fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM(    const Eigen::Matrix<double, -1, 1> eigen_vector,
@@ -1123,7 +1151,7 @@ Eigen::Matrix<double, -1, 1>  fn_update_snaper_w_diag_M(       Eigen::Matrix<dou
 
 
 
- 
+
 
  // [[Rcpp::export]]
  Eigen::Matrix<double, -1, 1> fn_Rcpp_wrapper_update_tau_w_dense_M_ADAM(   const Eigen::Matrix<double, -1, 1> eigen_vector,
@@ -1170,7 +1198,7 @@ Eigen::Matrix<double, -1, 1>  fn_update_snaper_w_diag_M(       Eigen::Matrix<dou
 
 
 
-  
+
 
 
 
@@ -1220,49 +1248,49 @@ Eigen::Matrix<double, -1, -1>  Rcpp_Chol(const Eigen::Matrix<double, -1, -1>  &m
 
 
 
-// 
+//
 // // [[Rcpp::export]]
 // Eigen::Matrix<double, -1, -1> sqrtm(const Eigen::Matrix<double, -1, -1> &M) {
-// 
+//
 //   // make sure the input matrix is symmetric
 //   Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, -1, -1>> solver(M);
-// 
+//
 //   if (solver.info() != Eigen::Success) {
 //     throw std::runtime_error("Eigenvalue decomposition failed!");
 //   }
-// 
+//
 //   // extract eigenvalues and eigenvectors
 //   Eigen::Matrix<double, -1, -1>  D = solver.eigenvalues().array().sqrt().matrix().asDiagonal(); // sqrt of eigenvalues
 //   Eigen::Matrix<double, -1, -1>  V = solver.eigenvectors(); // eigenvectors
-// 
+//
 //   // Reconstruct the square root of the matrix
 //   Eigen::Matrix<double, -1, -1> M_sqrt = V * D *  V.transpose();
-// 
+//
 //   return M_sqrt;
-// 
+//
 // }
-// 
-// 
+//
+//
 
 
 
-// 
-// 
+//
+//
 // inline Eigen::Matrix<double, -1, -1>  fn_update_empirical_covariance(Eigen::Ref<Eigen::Matrix<double, -1, -1>>  empicical_cov_main,
 //                                                               Eigen::Ref<Eigen::Matrix<double, -1, 1>>  snaper_m_vec,
 //                                                               Eigen::Ref<Eigen::Matrix<double, -1, 1>>  theta_vec,
 //                                                               double ii) {
 //   double ii_p1 = ii + 1.0;
-// 
+//
 //   Eigen::Matrix<double, -1, 1> delta = theta_vec - snaper_m_vec;
 //   Eigen::Matrix<double, -1, -1> delta_x_self_transpose = delta * delta.transpose();
 //   empicical_cov_main.array() =  (  (ii_p1 - 1.0) * empicical_cov_main.array()  + delta_x_self_transpose.array() *  ((ii_p1  -  1.0) / ii_p1) ) / ii_p1 ;
-// 
+//
 //   empicical_cov_main = near_PD(empicical_cov_main);
-// 
+//
 //   return empicical_cov_main;
-// 
-// 
+//
+//
 // }
 
 
@@ -1323,17 +1351,17 @@ inline void clean_vector(Eigen::Matrix<double, -1, 1> &vec) {
 
 
 
-// 
+//
 // // [[Rcpp::export]]
 // std::vector<Eigen::Matrix<double, -1, -1>> fn_2D_to_3D_array_Eigen(  const Eigen::Matrix<double, -1, -1> theta_trace_as_2D_array,
 //                                                                      const int n_params_main,
 //                                                                      const int n_chains,
 //                                                                      const int n_iter) {
-// 
-// 
+//
+//
 //   std::vector<Eigen::Matrix<double, -1, -1>> theta_trace_3D_array = vec_of_mats(n_params_main, n_chains, n_iter);
 //   std::vector<Eigen::Matrix<double, -1, -1>> theta_trace_3D_array_out = vec_of_mats(n_iter, n_chains, n_params_main);
-// 
+//
 //   for (int ii = 0; ii < n_iter; ++ii) {
 //     for (int kk = 0; kk < n_chains; ++kk) {
 //       for (int j = 0; j < n_params_main; ++j) {
@@ -1347,12 +1375,12 @@ inline void clean_vector(Eigen::Matrix<double, -1, 1> &vec) {
 //       }
 //     }
 //   }
-// 
-// 
+//
+//
 //   return theta_trace_3D_array_out;
-// 
+//
 // }
-// 
+//
 
 
 
@@ -1585,15 +1613,15 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
 
 
 // [[Rcpp::export]]
-std::vector<Rcpp::NumericMatrix>     fn_compute_param_constrain_from_trace_parallel(  const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_main,
-                                                                                      const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_nuisance,
-                                                                                      const Eigen::VectorXi &pars_indicies_to_track,
-                                                                                      const int &n_params_full,
-                                                                                      const int &n_nuisance,
-                                                                                      const int &n_params_main,
-                                                                                      const bool &include_nuisance,
-                                                                                      const std::string &model_so_file,
-                                                                                      const std::string &json_file_path) {
+Rcpp::List    fn_compute_param_constrain_from_trace_parallel(   const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_main,
+                                                                const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_nuisance,
+                                                                const Eigen::VectorXi &pars_indicies_to_track,
+                                                                const int &n_params_full,
+                                                                const int &n_nuisance,
+                                                                const int &n_params_main,
+                                                                const bool &include_nuisance,
+                                                                const std::string &model_so_file,
+                                                                const std::string &json_file_path) {
 
 
   const int n_chains = unc_params_trace_input_main.size();
@@ -1625,7 +1653,15 @@ std::vector<Rcpp::NumericMatrix>     fn_compute_param_constrain_from_trace_paral
 #endif
 
 
-  return all_param_outs_trace_std_vec;
+
+ Rcpp::List out(n_chains);
+ for (int i = 0; i < n_chains; ++i) {
+    out(i) = all_param_outs_trace_std_vec[i];
+ }
+
+
+
+  return out;
 
 }
 
@@ -1639,20 +1675,20 @@ std::vector<Rcpp::NumericMatrix>     fn_compute_param_constrain_from_trace_paral
 
 
 // [[Rcpp::export]]
-std::vector<Eigen::Matrix<double, -1, -1>>  fn_compute_param_constrain_from_trace(    const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_main,
-                                                                                      const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_nuisance,
-                                                                                      const Eigen::VectorXi &pars_indicies_to_track,
-                                                                                      const int &n_params_full,
-                                                                                      const int &n_nuisance,
-                                                                                      const int &n_params_main,
-                                                                                      const bool  &include_nuisance,
-                                                                                      const std::string &model_so_file,
-                                                                                      const std::string &json_file_path) {
+Rcpp::List     fn_compute_param_constrain_from_trace(     const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_main,
+                                                          const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_nuisance,
+                                                          const Eigen::VectorXi &pars_indicies_to_track,
+                                                          const int &n_params_full,
+                                                          const int &n_nuisance,
+                                                          const int &n_params_main,
+                                                          const bool  &include_nuisance,
+                                                          const std::string &model_so_file,
+                                                          const std::string &json_file_path) {
 
 
-  
+
 #if HAS_BRIDGESTAN_H
-  
+
   char* error_msg = nullptr;
   unsigned int seed = 123;
 
@@ -1665,9 +1701,9 @@ std::vector<Eigen::Matrix<double, -1, -1>>  fn_compute_param_constrain_from_trac
   Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(model_so_file,
                                                          json_file_path,
                                                          seed);
-  
+
 #endif
- 
+
 
 
   /// trace to store output
@@ -1677,7 +1713,7 @@ std::vector<Eigen::Matrix<double, -1, -1>>  fn_compute_param_constrain_from_trac
   const int n_params = n_nuisance + n_params_main;
 
   std::vector<Eigen::Matrix<double, -1, -1>> all_param_outs_trace = vec_of_mats(n_params_to_track, n_iter, n_chains);
-  
+
 #if HAS_BRIDGESTAN_H
 
   /// make storage containers
@@ -1704,7 +1740,7 @@ std::vector<Eigen::Matrix<double, -1, -1>>  fn_compute_param_constrain_from_trac
                                                                       theta_constrain_full_output.data(), //  all_param_outs_trace[kk].col(ii).data(),
                                                                       bs_rng_object,
                                                                       &error_msg);
- 
+
 
        all_param_outs_trace[kk].col(ii) = theta_constrain_full_output(pars_indicies_to_track);
 
@@ -1724,7 +1760,13 @@ std::vector<Eigen::Matrix<double, -1, -1>>  fn_compute_param_constrain_from_trac
 #endif
 
 
-  return all_param_outs_trace;
+  Rcpp::List out(n_chains);
+  for (int i = 0; i < n_chains; ++i) {
+    out(i) = fn_convert_EigenMat_to_RcppMat_dbl(all_param_outs_trace[i]);
+  }
+
+
+  return out;
 
 }
 
@@ -1777,30 +1819,30 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
   std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  n_threads_R); // read-only
   std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R); // need to edit these !!
   std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, n_threads_R); // read-only
-  
+
   ///// Traces
   const int N = Model_args_as_cpp_struct.N;
   std::vector<Rcpp::NumericMatrix> trace_output =  vec_of_mats_Rcpp(n_params_main, n_iter_R, n_threads_R);
   std::vector<Rcpp::NumericMatrix> trace_output_divs =  vec_of_mats_Rcpp(1, n_iter_R, n_threads_R);
   std::vector<Rcpp::NumericMatrix> trace_output_nuisance =  vec_of_mats_Rcpp(n_nuisance_to_track, n_iter_R, n_threads_R);
 //  std::vector<Rcpp::NumericMatrix> trace_output_log_lik = vec_of_mats_Rcpp(N, n_iter_R, n_threads_R);  //// possibly dummy
-  
+
   ///// data copies
   std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), n_threads_R);
   for (int kk = 0; kk < n_threads_R; ++kk) {
      y_copies_R[kk] = y_Eigen_R;
   }
-  
+
   //std::vector<HMC_output_single_chain> HMC_outputs_R(n_threads_R, HMC_output_single_chain(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N));
 ///  std::vector<HMC_output_single_chain>  HMC_outputs_R(n_threads_R);
   // for (int i = 0; i < n_threads_R; ++i) {
   //    HMC_output_single_chain HMC_output_single_chain_i(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N);
   //    HMC_outputs_R[i] =  (HMC_output_single_chain_i);
   // }
-  
+
    // tbb::task_scheduler_init init(n_threads_R);
    warmUpThreads(n_threads_R);
-   
+
    //// create worker
    RcppParallel_EHMC_sampling      parallel_hmc_sampling(  n_threads_R,
                                                            seed_R,
@@ -1833,16 +1875,16 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
    RcppParallel::parallelFor(0, n_threads_R, parallel_hmc_sampling);
 
    ////  copy / store trace
-   parallel_hmc_sampling.copy_results_to_output(); 
+   parallel_hmc_sampling.copy_results_to_output();
 
    // //// parallel_hmc_sampling.reset();
    // parallel_hmc_sampling.reset_Eigen();
-   // 
+   //
    // //// clear TBB concurrent vectors
    // parallel_hmc_sampling.reset_tbb();
 
    //  init.terminate();
- 
+
    //// Reset everything
    parallel_hmc_sampling.reset();
 
@@ -1870,7 +1912,7 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
 
 
 
-// 
+//
 //  // [[Rcpp::export]]
 //  Rcpp::List                                   Rcpp_fn_openMP_EHMC_sampling(                const int n_threads_R,
 //                                                                                            const int seed_R,
@@ -1890,35 +1932,35 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
 //                                                                                            const Rcpp::List &EHMC_args_as_Rcpp_List,
 //                                                                                            const Rcpp::List &EHMC_Metric_as_Rcpp_List
 //  ) {
-// 
-// 
-// 
+//
+//
+//
 //    // key dimensions
 //    const int n_params_main = theta_main_vectors_all_chains_input_from_R.rows();
 //    const int n_us = theta_us_vectors_all_chains_input_from_R.rows();
-// 
+//
 //    // create EMPTY OUTPUT / containers* to be filled (each col filled from different thread w/ each col corresponding to a different chain)
 //    Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_output_to_R =   (theta_main_vectors_all_chains_input_from_R);   // write to this
 //    Eigen::Matrix<double, -1, -1>  other_main_out_vector_all_chains_output_to_R(10, n_threads_R);  // write to this
-// 
+//
 //    /// nuisance
 //    Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_output_to_R  =  (theta_us_vectors_all_chains_input_from_R) ; //// .cast<double>();
 //    Eigen::Matrix<double, -1, -1>  other_us_out_vector_all_chains_output_to_R(10, n_threads_R);  // write to this
-// 
+//
 //    //// convert lists to C++ structs
 //    const Model_fn_args_struct     Model_args_as_cpp_struct =   convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List); ///// ALWAYS read-only
 //    const EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
 //    const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
 //    // ////// replicate these structs for thread-safety as we will be modifying them for burnin
 //    std::vector<EHMC_fn_args_struct> EHMC_args_as_cpp_struct_copies_R =  replicate_EHMC_fn_args_struct(EHMC_args_as_cpp_struct, n_threads_R);
-// 
+//
 //    std::vector<Eigen::Matrix<double, -1, -1>> trace_output = vec_of_mats<double>(n_params_main, n_iter_R, n_threads_R);
 //    std::vector<Eigen::Matrix<double, -1, -1>> trace_output_divs = vec_of_mats<double>(1, n_iter_R, n_threads_R);
 //    std::vector<Eigen::Matrix<double, -1, -1>> trace_output_nuisance = vec_of_mats<double>(n_nuisance_to_track, n_iter_R, n_threads_R);
-//    
+//
 //    const int N = Model_args_as_cpp_struct.N;
 //    std::vector<Eigen::Matrix<float, -1, -1>> trace_output_log_lik = vec_of_mats<float>(N, n_iter_R, n_threads_R);
-//    
+//
 //          // call openmp function
 //           EHMC_sampling_openmp(    n_threads_R,
 //                                    seed_R,
@@ -1947,7 +1989,7 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
 //                                    n_nuisance_to_track,
 //                                    trace_output_nuisance,
 //                                    trace_output_log_lik);
-// 
+//
 //          // Return results
 //          return Rcpp::List::create(trace_output,
 //                                    trace_output_divs,
@@ -1955,10 +1997,10 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
 //                                    theta_main_vectors_all_chains_output_to_R,
 //                                    theta_us_vectors_all_chains_output_to_R,
 //                                    trace_output_log_lik);
-// 
-// 
+//
+//
 //  }
-// 
+//
 
 
 
@@ -2017,14 +2059,14 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
   const int n_us = theta_us_vectors_all_chains_input_from_R.rows();
 
   // create EMPTY OUTPUT / containers* to be filled (each col filled from different thread w/ each col corresponding to a different chain)
-  NumericMatrix  theta_main_vectors_all_chains_output_to_R =  fn_convert_EigenMat_to_RcppMat_dbl(theta_main_vectors_all_chains_input_from_R);   // write to this
-  NumericMatrix  other_main_out_vector_all_chains_output_to_R(10, n_threads_R);  // write to this
+  Rcpp::NumericMatrix  theta_main_vectors_all_chains_output_to_R =  fn_convert_EigenMat_to_RcppMat_dbl(theta_main_vectors_all_chains_input_from_R);   // write to this
+  Rcpp::NumericMatrix  other_main_out_vector_all_chains_output_to_R(10, n_threads_R);  // write to this
   double p_jump_main_R = 0.0;
   int div_main_R = 0;
 
   /// nuisance
-  NumericMatrix  theta_us_vectors_all_chains_output_to_R  = fn_convert_EigenMat_to_RcppMat_dbl(theta_us_vectors_all_chains_input_from_R);
-  NumericMatrix  other_us_out_vector_all_chains_output_to_R(10, n_threads_R);  // write to this
+  Rcpp::NumericMatrix  theta_us_vectors_all_chains_output_to_R  = fn_convert_EigenMat_to_RcppMat_dbl(theta_us_vectors_all_chains_input_from_R);
+  Rcpp::NumericMatrix  other_us_out_vector_all_chains_output_to_R(10, n_threads_R);  // write to this
   double p_jump_us_R = 0.0;
   int div_us_R = 0;
 
@@ -2039,20 +2081,20 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
  // std::vector<EHMC_burnin_struct>  EHMC_burnin_as_cpp_struct_copies_R = replicate_EHMC_burnin_struct(EHMC_burnin_as_cpp_struct, n_threads_R);
 
   /////// containers for burnin outputs ONLY (not needed for sampling) - stores: theta_0, theta_prop, velocity_0, velocity_prop
-  NumericMatrix  theta_main_0_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
-  NumericMatrix  theta_main_prop_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
-  NumericMatrix  velocity_main_0_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
-  NumericMatrix  velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
-  NumericMatrix  theta_us_0_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
-  NumericMatrix  theta_us_prop_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
-  NumericMatrix  velocity_us_0_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
-  NumericMatrix  velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
+  Rcpp::NumericMatrix  theta_main_0_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
+  Rcpp::NumericMatrix  theta_main_prop_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
+  Rcpp::NumericMatrix  velocity_main_0_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
+  Rcpp::NumericMatrix  velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
+  Rcpp::NumericMatrix  theta_us_0_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
+  Rcpp::NumericMatrix  theta_us_prop_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
+  Rcpp::NumericMatrix  velocity_us_0_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
+  Rcpp::NumericMatrix  velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
 
   int n_iter_for_fn_call = n_iter_R;
   if (burnin_indicator == true) n_iter_for_fn_call = 1;
 
   ////// make trace containers (as 2D matrix using 3D mapping functions)
-  std::vector<NumericMatrix> trace_output = vec_of_mats_Rcpp(n_params_main, n_iter_R, n_threads_R);
+  std::vector<Rcpp::NumericMatrix> trace_output = vec_of_mats_Rcpp(n_params_main, n_iter_R, n_threads_R);
 
   int one =  1;
 
@@ -2848,1014 +2890,12 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
   }
 
 
+ 
 
 
  
 
 
 
-
  
-
-
-
-
-
-// // Benchmark functions -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// 
-// //[[Rcpp::export]]
-// void eepy_basic_fns_double( int reps = 1000,
-//                             int dim  = 1000,
-//                             double lower = 0,
-//                             double upper = 1,
-//                             bool AVX2 = true,
-//                             bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Array<double, -1, 1>  vec_vals_1(dim);
-//   Eigen::Array<double, -1, 1>  vec_vals_2(dim);
-//   Eigen::Array<double, -1, 1>  vec_vals_3(dim);
-//   Eigen::Array<double, -1, 1>  vec_vals_res(dim);
-// 
-//   for (int i = 0; i < vec_vals_1.rows(); i++) {
-//     vec_vals_1(i) =  R::runif(lower, upper);
-//   }
-//   vec_vals_2 =  vec_vals_1.log();
-//   vec_vals_3 =  vec_vals_1.exp();
-// 
-// 
-//   while (reps -- > 0) {
-// 
-// 
-//     ///////////////////////////////////////////////////  exp  - using doubles
-//     //////  standard library fns  (always with checks)
-//     clock.tick("mult_2_arrays");
-//     vec_vals_res.array() = vec_vals_1.array() * vec_vals_2.array() ;
-//     clock.tock("mult_2_arrays");
-// 
-//     clock.tick("mult_3_arrays");
-//     vec_vals_res.array() = vec_vals_1.array() * vec_vals_2.array()  * vec_vals_3.array() ;
-//     clock.tock("mult_3_arrays");
-// 
-//     clock.tick("mult_5_arrays");
-//     vec_vals_res.array() = vec_vals_1.array() * vec_vals_2.array()  * vec_vals_3.array() * vec_vals_2.array() * vec_vals_1.array() ;
-//     clock.tock("mult_5_arrays");
-// 
-//     clock.tick("div_2_arrays");
-//     vec_vals_res.array() = vec_vals_1.array() / vec_vals_2.array() ;
-//     clock.tock("div_2_arrays");
-// 
-//     clock.tick("recip_array");
-//     vec_vals_res.array() = 1.0 / vec_vals_2.array() ;
-//     clock.tock("recip_array");
-// 
-// 
-// 
-//   }
-// 
-//   clock.stop("eepy_basic_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_exp_fns_double( int reps,
-//                           int dim,
-//                           double lower,
-//                           double upper,
-//                           bool AVX2 = true,
-//                           bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  vals = Eigen::Matrix<double, -1, 1>::Zero(dim);
-//   Eigen::Matrix<double, -1, 1>  log_vals = Eigen::Matrix<double, -1, 1>::Zero(dim);
-// 
-//   for (int i = 0; i < vals.rows(); i++) {
-//     vals(i) =  R::runif(lower, upper);
-//   }
-//   log_vals =  vals.log();
-// 
-// 
-//   while (reps -- > 0) {
-// 
-// 
-//     for (int i = 0; i < vals.rows(); i++) {
-//       vals(i) =  R::runif(lower, upper);
-//     }
-//     log_vals =  vals.log();
-// 
-//     Eigen::Matrix<double, -1, 1>  vec_vals = Eigen::Matrix<double, -1, 1>::Zero(dim);
-// 
-//     ///////////////////////////////////////////////////  exp  - using doubles
-//     //////  standard library fns  (always with checks)
-//     clock.tick("exp_Stan");
-//     vec_vals = fn_colvec_double(log_vals, "exp", "Stan");
-//     clock.tock("exp_Stan");
-//     if (reps == 1)     Rcout<<"\n max_error for exp_Stan = "  << 100 *  ( (vec_vals.array() - log_vals.array().exp()).array().abs()  /  vec_vals.array() ).maxCoeff();
-//     if (reps == 1)     Rcout<<"\n max_abs_error for exp_Stan = "  <<    ( (vec_vals.array() - log_vals.array().exp()).abs().array()  ).maxCoeff();
-// 
-// 
-//     clock.tick("exp_Eigen");
-//     // Rcpp::Rcout << "Before Exp (final / output call): " << vec_vals.head(1) << std::endl;
-//     vec_vals = fn_colvec_double(log_vals, "exp", "Eigen");
-//     //   Rcpp::Rcout << "After Exp (final / output call): " << vec_vals.head(1) << std::endl;
-//     clock.tock("exp_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for exp_Eigen = "  <<  100 * ( (vec_vals.array() - log_vals.array().exp()).array().abs()  /  vec_vals.array() ).maxCoeff();
-//     if (reps == 1)     Rcout<<"\n max_abs_error for exp_Eigen = "  <<    ( (vec_vals.array() - log_vals.array().exp()).abs().array()  ).maxCoeff();
-// 
-// 
-//     ///////////////////////////////////////////////////  exp
-//     //////  fast "exact" fns - with checks
-//     clock.tick("fast_exp_1_Loop_Eigen");
-//     vec_vals = fn_colvec_double(log_vals, "exp", "Loop", false);
-//     clock.tock("fast_exp_1_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n  max_error for fast_exp_1_Loop_Eigen = "  << 100 * ( (vec_vals.array() - log_vals.array().exp()).array().abs()  /  vec_vals.array() ).maxCoeff();
-//     if (reps == 1)     Rcout<<"\n max_abs_error for fast_exp_1_Loop_Eigen = "  <<    ( (vec_vals.array() - log_vals.array().exp()).abs().array()  ).maxCoeff();
-// 
-// 
-//     //////  fast "exact" fns - without checks
-//     clock.tick("fast_exp_1_wo_checks_Loop_Eigen");
-//     vec_vals = fn_colvec_double(log_vals, "exp", "Loop", true);
-//     clock.tock("fast_exp_1_wo_checks_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n  max_error for fast_exp_1_wo_checks_Loop_Eigen = "  << 100 * ( (vec_vals.array() - log_vals.array().exp()).array().abs()  /  vec_vals.array() ).maxCoeff();
-//     if (reps == 1)     Rcout<<"\n max_abs_error for fast_exp_1_wo_checks_Loop_Eigen = "  <<    ( (vec_vals.array() - log_vals.array().exp()).abs().array()  ).maxCoeff();
-// 
-// 
-//     if (AVX2 == true) {
-//       ///////////////////////////////////////////////////  exp  - using AVX512
-//       //////  fast "exact" fns - with checks
-//       clock.tick("fast_exp_1_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(log_vals, "exp", "AVX2", false);
-//       clock.tock("fast_exp_1_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n  max_error for fast_exp_1_AVX2_Eigen = "  << 100 * ( (vec_vals.array() - log_vals.array().exp()).array().abs()  /  vec_vals.array() ).maxCoeff();
-//       if (reps == 1)     Rcout<<"\n max_abs_error for fast_exp_1_AVX2_Eigen = "  <<    ( (vec_vals.array() - log_vals.array().exp()).abs().array()  ).maxCoeff();
-// 
-// 
-//       //////  fast "exact" fns - without checks
-//       clock.tick("fast_exp_1_wo_checks_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(log_vals, "exp", "AVX2", true);
-//       clock.tock("fast_exp_1_wo_checks_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n  max_error for fast_exp_1_wo_checks_AVX2_Eigen = "  << 100 * ( (vec_vals.array() - log_vals.array().exp()).array().abs()  /  vec_vals.array() ).maxCoeff();
-//       if (reps == 1)     Rcout<<"\n max_abs_error for fast_exp_1_wo_checks_AVX2_Eigen = "  <<    ( (vec_vals.array() - log_vals.array().exp()).abs().array()  ).maxCoeff();
-// 
-//     }
-// 
-//     if (AVX512 == true) {
-//       ///////////////////////////////////////////////////  exp  - using AVX512
-//       //////  fast "exact" fns - with checks
-//       clock.tick("fast_exp_1_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(log_vals, "exp", "AVX512", false);
-//       clock.tock("fast_exp_1_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n  max_error for fast_exp_1_AVX512_Eigen = "  << 100 * ( (vec_vals.array() - log_vals.array().exp()).array().abs()  /  vec_vals.array() ).maxCoeff();
-//       if (reps == 1)     Rcout<<"\n max_abs_error for fast_exp_1_AVX512_Eigen = "  <<    ( (vec_vals.array() - log_vals.array().exp()).abs().array()  ).maxCoeff();
-// 
-// 
-//       //////  fast "exact" fns - without checks
-//       clock.tick("fast_exp_1_wo_checks_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(log_vals, "exp", "AVX512", true);
-//       clock.tock("fast_exp_1_wo_checks_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n  max_error for fast_exp_1_wo_checks_AVX512_Eigen = "  << 100 * ( (vec_vals.array() - log_vals.array().exp()).array().abs()  /  vec_vals.array() ).maxCoeff();
-//       if (reps == 1)     Rcout<<"\n max_abs_error for fast_exp_1_wo_checks_AVX512_Eigen = "  <<    ( (vec_vals.array() - log_vals.array().exp()).abs().array()  ).maxCoeff();
-// 
-// 
-//     }
-// 
-//   }
-// 
-//   clock.stop("eepy_exp_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_log_fns_double( int reps,
-//                           int dim,
-//                           double  lower,
-//                           double upper,
-//                           bool AVX2 = true,
-//                           bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  vals(dim);
-//   Eigen::Matrix<double, -1, 1>  vec_vals(dim);
-//   Eigen::Matrix<double, -1, 1>  log_vals(dim);
-// 
-//   for (int i = 0; i < dim; i++) {
-//     vals(i) =  R::runif(lower, upper);
-//   }
-//   log_vals =  vals.log();
-// 
-//   const int  N = dim;
-// 
-//   ///////////// log
-//   while (reps-- > 0) {
-// 
-//     for (int i = 0; i < vals.rows(); i++) {
-//       vals(i) =  R::runif(lower, upper);
-//     }
-//     log_vals =  vals.log();
-// 
-//     Eigen::Matrix<double, -1, 1>  vec_vals = Eigen::Matrix<double, -1, 1>::Zero(dim);
-// 
-// 
-//     ///////////////////////////////////////////////////  log  - using doubles
-//     clock.tick("log_Stan");
-//     vec_vals = fn_colvec_double(vals, "log", "Stan");
-//     clock.tock("log_Stan");
-//     if (reps == 1)     Rcout<<"\n max_error for log_Stan = "  <<  100 * ( (vec_vals.array() - log_vals.array()).array().abs()  /  vec_vals.array() ).array().maxCoeff();
-//     if (reps == 1)     Rcout<<"\n max_abs_error for log_Stan = "  <<    ( (vec_vals.array() - log_vals.array()).array().abs()  ).array().maxCoeff();
-// 
-//     clock.tick("log_Eigen");
-//     vec_vals = fn_colvec_double(vals, "log", "Eigen");
-//     clock.tock("log_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for log_Eigen = "  <<   100 * ( (vec_vals.array() - log_vals.array()).array().abs()  /  vec_vals.array() ).array().maxCoeff();
-//     if (reps == 1)     Rcout<<"\n max_abs_error for log_Eigen = "  <<     ( (vec_vals.array() - log_vals.array()).array().abs()  ).array().maxCoeff();
-// 
-//     ///////////////////////////////////////////////////  log  - using AVX512
-//     //////  fast "exact" fns - with checks
-//     clock.tick("fast_log_1_Loop_Eigen");
-//     vec_vals = fn_colvec_double(vals, "log", "Loop", false);
-//     clock.tock("fast_log_1_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_log_1_Loop_Eigen = "  <<  100 * ( (vec_vals.array() - log_vals.array()).array().abs()  /  vec_vals.array() ).array().maxCoeff();
-//     if (reps == 1)     Rcout<<"\n max_abs_error for fast_log_1_Loop_Eigen = "  <<     ( (vec_vals.array() - log_vals.array()).array().abs()  ).array().maxCoeff();
-// 
-//     //////  fast "exact" fns - with checks
-//     clock.tick("fast_log_1_wo_checks_Loop_Eigen");
-//     vec_vals = fn_colvec_double(vals, "log", "Loop", true);
-//     clock.tock("fast_log_1_wo_checks_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_log_1_wo_checks_Loop_Eigen = "  <<  100 * ( (vec_vals.array() - log_vals.array()).array().abs()  /  vec_vals.array() ).array().maxCoeff();
-//     if (reps == 1)     Rcout<<"\n max_abs_error for fast_log_1_wo_checks_Loop_Eigen = "  <<    ( (vec_vals.array() - log_vals.array()).array().abs()  ).array().maxCoeff();
-// 
-// 
-//     if (AVX2 == true) {
-//       ///////////////////////////////////////////////////  log  - using AVX512
-//       //////  fast "exact" fns - with checks
-//       clock.tick("fast_log_1_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(vals, "log", "AVX2", false);
-//       clock.tock("fast_log_1_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log_1_AVX2_Eigen = "  <<  100 * ( (vec_vals.array() - log_vals.array()).array().abs()  /  vec_vals.array() ).array().maxCoeff();
-//       if (reps == 1)     Rcout<<"\n max_abs_error for fast_log_1_AVX2_Eigen = "  <<    ( (vec_vals.array() - log_vals.array()).array().abs()  ).array().maxCoeff();
-// 
-//       //////  fast "exact" fns - with checks
-//       clock.tick("fast_log_1_wo_checks_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(vals, "log", "AVX2", true);
-//       clock.tock("fast_log_1_wo_checks_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log_1_wo_checks_AVX2_Eigen = "  <<  100 * ( (vec_vals.array() - log_vals.array()).array().abs()  /  vec_vals.array() ).array().maxCoeff();
-//       if (reps == 1)     Rcout<<"\n max_abs_error for fast_log_1_wo_checks_AVX2_Eigen = "  <<    ( (vec_vals.array() - log_vals.array()).array().abs()  ).array().maxCoeff();
-// 
-//     }
-// 
-//     if (AVX512 == true) {
-//       ///////////////////////////////////////////////////  log  - using AVX512
-//       //////  fast "exact" fns - with checks
-//       clock.tick("fast_log_1_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(vals, "log", "AVX512", false);
-//       clock.tock("fast_log_1_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log_1_AVX512_Eigen = "  <<  100 * ( (vec_vals.array() - log_vals.array()).array().abs()  /  vec_vals.array() ).array().maxCoeff();
-//       if (reps == 1)     Rcout<<"\n max_abs_error for fast_log_1_AVX512_Eigen = "  <<    ( (vec_vals.array() - log_vals.array()).array().abs()  ).array().maxCoeff();
-// 
-//       //////  fast "exact" fns - with checks
-//       clock.tick("fast_log_1_wo_checks_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(vals, "log", "AVX512", true);
-//       clock.tock("fast_log_1_wo_checks_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log_1_wo_checks_AVX512_Eigen = "  <<  100 * ( (vec_vals.array() - log_vals.array()).array().abs()  /  vec_vals.array() ).array().maxCoeff();
-//       if (reps == 1)     Rcout<<"\n max_abs_error for fast_log_1_wo_checks_AVX512_Eigen = "  <<    ( (vec_vals.array() - log_vals.array()).array().abs()  ).array().maxCoeff();
-// 
-//     }
-// 
-//   }
-// 
-//   clock.stop("eepy_log_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_Phi_fns_double( int reps = 1000,
-//                           int dim  = 1000,
-//                           bool AVX2 = true,
-//                           bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  probs(dim);
-//   Eigen::Matrix<double, -1, 1>  log_probs(dim);
-//   Eigen::Matrix<double, -1, 1>  vec_vals(dim);
-//   Eigen::Matrix<double, -1, 1>  inv_Phi_vals(dim);
-// 
-//   for (int i = 0; i < dim; i++) {
-//     probs(i) =  R::runif(0, 1);
-//   }
-// 
-//   log_probs =  probs.log();
-//   inv_Phi_vals = stan::math::inv_Phi(probs.matrix()).array();  // vals generated using inverse-CDF method
-// 
-//   const int  N = dim;
-// 
-// 
-// 
-// 
-//   ///////////// log
-//   while (reps-- > 0) {
-// 
-//     for (int i = 0; i < dim; i++) {
-//       probs(i) =  R::runif(0, 1);
-//     }
-//     log_probs =  probs.log();
-//     inv_Phi_vals = stan::math::inv_Phi(probs.matrix()).array();
-// 
-//     Eigen::Matrix<double, -1, 1>  vec_vals = Eigen::Matrix<double, -1, 1>::Zero(dim);
-// 
-// 
-//     clock.tick("Phi_Stan");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "Phi", "Stan");
-//     clock.tock("Phi_Stan");
-//     if (reps == 1)     Rcout<<"\n max_error for Phi_Stan = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//     clock.tick("Phi_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "Phi", "Eigen", true);
-//     clock.tock("Phi_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for Phi_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//     if (AVX2 == true) {
-//       clock.tick("fast_Phi_wo_checks_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi", "AVX2", true);
-//       clock.tock("fast_Phi_wo_checks_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_wo_checks_AVX2_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-//     }
-// 
-//     if (AVX512 == true) {
-//       clock.tick("fast_Phi_wo_checks_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi", "AVX512", true);
-//       clock.tock("fast_Phi_wo_checks_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_wo_checks_AVX512_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-//     }
-// 
-// 
-// 
-// 
-//   }
-// 
-//   clock.stop("eepy_Phi_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_Phi_approx_fns_double( int reps = 1000,
-//                                  int dim  = 1000,
-//                                  bool AVX2 = true,
-//                                  bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  probs(dim);
-//   Eigen::Matrix<double, -1, 1>  log_probs(dim);
-//   Eigen::Matrix<double, -1, 1>  vec_vals(dim);
-//   Eigen::Matrix<double, -1, 1>  inv_Phi_vals(dim);
-// 
-//   for (int i = 0; i < dim; i++) {
-//     probs(i) =  R::runif(0, 1);
-//   }
-// 
-//   log_probs =  probs.log();
-//   inv_Phi_vals = stan::math::inv_Phi(probs.matrix()).array();  // vals generated using inverse-CDF method
-// 
-//   const int  N = dim;
-// 
-// 
-// 
-// 
-//   ///////////// log
-//   while (reps-- > 0) {
-// 
-//     for (int i = 0; i < dim; i++) {
-//       probs(i) =  R::runif(0, 1);
-//     }
-//     log_probs =  probs.log();
-//     inv_Phi_vals = stan::math::inv_Phi(probs.matrix()).array();
-// 
-//     Eigen::Matrix<double, -1, 1>  vec_vals = Eigen::Matrix<double, -1, 1>::Zero(dim);
-// 
-// 
-//     clock.tick("Phi_approx_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx", "Eigen");
-//     clock.tock("Phi_approx_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for Phi_approx_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//     clock.tick("Phi_approx_Stan");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx", "Stan");
-//     clock.tock("Phi_approx_Stan");
-//     if (reps == 1)     Rcout<<"\n max_error for Phi_approx_Stan = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-// 
-//     clock.tick("fast_Phi_approx_Loop_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx", "Loop", false);
-//     clock.tock("fast_Phi_approx_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_Loop_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//     clock.tick("fast_Phi_approx_wo_checks_Loop_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx", "Loop", true);
-//     clock.tock("fast_Phi_approx_wo_checks_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_wo_checks_Loop_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//     clock.tick("fast_Phi_approx_2_Loop_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx_2", "Loop", false);
-//     clock.tock("fast_Phi_approx_2_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_2_Loop_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//     clock.tick("fast_Phi_approx_wo_checks_2_Loop_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx_2", "Loop", true);
-//     clock.tock("fast_Phi_approx_wo_checks_2_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_wo_checks_2_Loop_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-// 
-//     if (AVX2 == true) {
-// 
-//       clock.tick("fast_Phi_approx_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx", "AVX2", false);
-//       clock.tock("fast_Phi_approx_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_AVX2_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//       clock.tick("fast_Phi_approx_wo_checks_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx", "AVX2", true);
-//       clock.tock("fast_Phi_approx_wo_checks_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_wo_checks_AVX2_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//       clock.tick("fast_Phi_approx_2_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx_2", "AVX2", false);
-//       clock.tock("fast_Phi_approx_2_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_2_AVX2_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//       clock.tick("fast_Phi_approx_wo_checks_2_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx_2", "AVX2", true);
-//       clock.tock("fast_Phi_approx_wo_checks_2_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_wo_checks_2_AVX2_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//     }
-// 
-//     if (AVX512 == true) {
-// 
-//       clock.tick("fast_Phi_approx_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx", "AVX512", false);
-//       clock.tock("fast_Phi_approx_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_AVX512_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//       clock.tick("fast_Phi_approx_wo_checks_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx", "AVX512", true);
-//       clock.tock("fast_Phi_approx_wo_checks_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_wo_checks_AVX512_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//       clock.tick("fast_Phi_approx_2_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx_2", "AVX512", false);
-//       clock.tock("fast_Phi_approx_2_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_2_AVX512_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//       clock.tick("fast_Phi_approx_wo_checks_2_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "Phi_approx_2", "AVX512", true);
-//       clock.tock("fast_Phi_approx_wo_checks_2_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_Phi_approx_wo_checks_2_AVX512_Eigen = "  << (vec_vals - (probs)).array().abs().maxCoeff();
-// 
-//     }
-// 
-// 
-// 
-// 
-//   }
-// 
-//   clock.stop("eepy_Phi_approx_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_inv_Phi_fns_double( int reps = 1000,
-//                               int dim  = 1000,
-//                               bool AVX2 = true,
-//                               bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  vec_vals(dim);
-//   Eigen::Matrix<double, -1, 1>  norm_samples(dim);
-//   Eigen::Matrix<double, -1, 1>  probs_from_Phi_approx_exact(dim);
-//   Eigen::Matrix<double, -1, 1>  probs_from_Phi_exact(dim);
-// 
-//   for (int i = 0; i < dim; i++) {
-//     norm_samples(i) =  R::rnorm(0, 1);
-//     probs_from_Phi_approx_exact(i) = stan::math::Phi_approx(norm_samples(i)) ;
-//     probs_from_Phi_exact(i) = stan::math::Phi(norm_samples(i)) ;
-//   }
-// 
-// 
-//   ///////////// log
-//   while (reps-- > 0) {
-// 
-//     // for (int i = 0; i < dim; i++) {
-//     //   probs(i) =  R::runif(0, 1);
-//     // }
-//     // log_probs =  probs.log();
-//     // inv_Phi_vals = stan::math::inv_Phi(probs.matrix()).array();
-//     //
-//     // Eigen::Matrix<double, -1, 1>  vec_vals = Eigen::Matrix<double, -1, 1>::Zero(dim);
-// 
-//     for (int i = 0; i < dim; i++) {
-//       norm_samples(i) =  R::rnorm(0, 1);
-//       probs_from_Phi_approx_exact(i) = stan::math::Phi_approx(norm_samples(i)) ;
-//       probs_from_Phi_exact(i) = stan::math::Phi(norm_samples(i)) ;
-//     }
-// 
-// 
-//     clock.tick("inv_Phi_Stan");
-//     vec_vals = fn_colvec_double(probs_from_Phi_exact, "inv_Phi", "Stan");
-//     clock.tock("inv_Phi_Stan");
-//     if (reps == 1)     Rcout<<"\n max_error for inv_Phi_Stan = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-// 
-//     clock.tick("inv_Phi_Eigen");
-//     vec_vals = fn_colvec_double(probs_from_Phi_exact, "inv_Phi", "Eigen");
-//     clock.tock("inv_Phi_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for inv_Phi_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-//     if (AVX2 == true) {
-// 
-//       clock.tick("fast_inv_Phi_wo_checks_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(probs_from_Phi_exact, "inv_Phi", "AVX2", true);
-//       clock.tock("fast_inv_Phi_wo_checks_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_inv_Phi_wo_checks_AVX2_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-//     }
-// 
-// 
-//     if (AVX512 == true) {
-// 
-//       clock.tick("fast_inv_Phi_wo_checks_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(probs_from_Phi_exact, "inv_Phi", "AVX512", true);
-//       clock.tock("fast_inv_Phi_wo_checks_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_inv_Phi_wo_checks_AVX512_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-//     }
-// 
-// 
-// 
-//   }
-// 
-//   clock.stop("eepy_inv_Phi_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_inv_Phi_approx_fns_double( int reps = 1000,
-//                                      int dim  = 1000,
-//                                      bool AVX2 = true,
-//                                      bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  vec_vals(dim);
-//   Eigen::Matrix<double, -1, 1>  norm_samples(dim);
-//   Eigen::Matrix<double, -1, 1>  probs_from_Phi_approx_exact(dim);
-//   Eigen::Matrix<double, -1, 1>  probs_from_Phi_exact(dim);
-// 
-//   for (int i = 0; i < dim; i++) {
-//     norm_samples(i) =  R::rnorm(0, 1);
-//     probs_from_Phi_approx_exact(i) = stan::math::Phi_approx(norm_samples(i)) ;
-//     probs_from_Phi_exact(i) = stan::math::Phi(norm_samples(i)) ;
-//   }
-// 
-// 
-//   ///////////// log
-//   while (reps-- > 0) {
-// 
-//     // for (int i = 0; i < dim; i++) {
-//     //   probs(i) =  R::runif(0, 1);
-//     // }
-//     // log_probs =  probs.log();
-//     // inv_Phi_vals = stan::math::inv_Phi(probs.matrix()).array();
-//     //
-//     // Eigen::Matrix<double, -1, 1>  vec_vals = Eigen::Matrix<double, -1, 1>::Zero(dim);
-// 
-//     // for (int i = 0; i < dim; i++) {
-//     //   norm_samples(i) =  R::rnorm(0, 1);
-//     //   probs_from_Phi_approx_exact(i) = stan::math::Phi_approx(norm_samples(i)) ;
-//     //   probs_from_Phi_exact(i) = stan::math::Phi(norm_samples(i)) ;
-//     // }
-// 
-//     clock.tick("inv_Phi_approx_Stan");
-//     vec_vals = fn_colvec_double(probs_from_Phi_exact, "inv_Phi_approx", "Stan");
-//     clock.tock("inv_Phi_approx_Stan");
-//     if (reps == 1)     Rcout<<"\n max_error for inv_Phi_approx_Stan = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-// 
-//     clock.tick("inv_Phi_approx_Eigen");
-//     vec_vals = fn_colvec_double(probs_from_Phi_exact, "inv_Phi_approx", "Eigen");
-//     clock.tock("inv_Phi_approx_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for inv_Phi_approx_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-// 
-// 
-//     // clock.tick("fast_inv_Phi_approx_Loop_Eigen");
-//     // vec_vals = fn_colvec_double(probs_from_Phi_approx_exact, "inv_Phi_approx", "Loop", false);
-//     // clock.tock("fast_inv_Phi_approx_Loop_Eigen");
-//     // if (reps == 1)     Rcout<<"\n max_error for fast_inv_Phi_approx_Loop_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-// 
-// 
-// 
-//     if (AVX2 == true) {
-// 
-//       clock.tick("fast_inv_Phi_approx_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(probs_from_Phi_approx_exact, "inv_Phi_approx", "AVX2", false);
-//       clock.tock("fast_inv_Phi_approx_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_inv_Phi_approx_AVX2_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-//       clock.tick("fast_inv_Phi_approx_wo_checks_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(probs_from_Phi_approx_exact, "inv_Phi_approx", "AVX2", true);
-//       clock.tock("fast_inv_Phi_approx_wo_checks_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_inv_Phi_approx_wo_checks_AVX2_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-//     }
-// 
-// 
-//     if (AVX512 == true) {
-// 
-//       clock.tick("fast_inv_Phi_approx_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(probs_from_Phi_approx_exact, "inv_Phi_approx", "AVX512", false);
-//       clock.tock("fast_inv_Phi_approx_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_inv_Phi_approx_AVX512_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-//       clock.tick("fast_inv_Phi_approx_wo_checks_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(probs_from_Phi_approx_exact, "inv_Phi_approx", "AVX512", true);
-//       clock.tock("fast_inv_Phi_approx_wo_checks_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_inv_Phi_approx_wo_checks_AVX512_Eigen = "  << (vec_vals - (norm_samples)).array().abs().maxCoeff();
-// 
-//     }
-// 
-// 
-// 
-//   }
-// 
-//   clock.stop("eepy_inv_Phi_approx_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_log_Phi_approx_fns_double( int reps = 1000,
-//                                      int dim  = 1000,
-//                                      bool AVX2  = true,
-//                                      bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  p(dim);
-//   Eigen::Matrix<double, -1, 1>  log_p(dim);
-//   Eigen::Matrix<double, -1, 1>  vec_vals(dim);
-//   Eigen::Matrix<double, -1, 1>  inv_Phi_vals(dim);
-// 
-//   for (int i = 0; i < dim; i++) {
-//     p(i) =  R::runif(0, 1);
-//   }
-// 
-//   log_p =  p.log();
-//   inv_Phi_vals = stan::math::inv_Phi(p.matrix()).array();  // vals generated using inverse-CDF method
-// 
-//   const int  N = dim;
-// 
-// 
-// 
-// 
-//   /////////////
-//   while (reps-- > 0) {
-// 
-// 
-//     for (int i = 0; i < dim; i++) {
-//       p(i) =  R::runif(0, 1);
-//     }
-// 
-//     log_p =  p.log();
-//     inv_Phi_vals = stan::math::inv_Phi(p.matrix()).array();  // vals generated using inverse-CDF method
-// 
-// 
-// 
-//     clock.tick("log_Phi_approx_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "log_Phi_approx", "Eigen");
-//     clock.tock("log_Phi_approx_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for log_Phi_approx_Eigen = "  << (vec_vals -  log_p).array().abs().maxCoeff();
-// 
-//     clock.tick("log_Phi_approx_Stan");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "log_Phi_approx", "Stan");
-//     clock.tock("log_Phi_approx_Stan");
-//     if (reps == 1)     Rcout<<"\n max_error for log_Phi_approx_Stan = "  << (vec_vals -  log_p).array().abs().maxCoeff();
-// 
-// 
-//     clock.tick("fast_log_Phi_approx_Loop_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "log_Phi_approx", "Loop", false);
-//     clock.tock("fast_log_Phi_approx_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_log_Phi_approx_Loop_Eigen = "  << (vec_vals -  log_p).array().abs().maxCoeff();
-// 
-// 
-//     clock.tick("fast_log_Phi_approx_wo_checks_Loop_Eigen");
-//     vec_vals = fn_colvec_double(inv_Phi_vals, "log_Phi_approx", "Loop", true);
-//     clock.tock("fast_log_Phi_approx_wo_checks_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_log_Phi_approx_wo_checks_Loop_Eigen = "  <<  (vec_vals -  log_p).array().abs().maxCoeff();
-// 
-//     if (AVX2 == true) {
-// 
-//       clock.tick("fast_log_Phi_approx_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "log_Phi_approx", "AVX2", false);
-//       clock.tock("fast_log_Phi_approx_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log_Phi_approx_AVX2_Eigen = "  << (vec_vals -  log_p).array().abs().maxCoeff();
-// 
-// 
-//       clock.tick("fast_log_Phi_approx_wo_checks_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "log_Phi_approx", "AVX2", true);
-//       clock.tock("fast_log_Phi_approx_wo_checks_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log_Phi_approx_wo_checks_AVX2_Eigen = "  <<  (vec_vals -  log_p).array().abs().maxCoeff();
-// 
-//     }
-// 
-// 
-//     if (AVX512 == true) {
-// 
-//       clock.tick("fast_log_Phi_approx_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "log_Phi_approx", "AVX512", false);
-//       clock.tock("fast_log_Phi_approx_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log_Phi_approx_AVX512_Eigen = "  << (vec_vals -  log_p).array().abs().maxCoeff();
-// 
-// 
-//       clock.tick("fast_log_Phi_approx_wo_checks_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(inv_Phi_vals, "log_Phi_approx", "AVX512", true);
-//       clock.tock("fast_log_Phi_approx_wo_checks_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log_Phi_approx_wo_checks_AVX512_Eigen = "  <<  (vec_vals -  log_p).array().abs().maxCoeff();
-// 
-//     }
-// 
-//   }
-// 
-//   clock.stop("eepy_log_Phi_approx_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_log_sum_exp_fns_double( int reps = 1000,
-//                                   int dim  = 1000,
-//                                   bool AVX2 =  true,
-//                                   bool AVX512 = true) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  probs_1(dim);
-//   Eigen::Matrix<double, -1, 1>  probs_2(dim);
-//   Eigen::Matrix<double, -1, 1>  log_probs_1(dim);
-//   Eigen::Matrix<double, -1, 1>  log_probs_2(dim);
-//   Eigen::Matrix<double, -1, 1>  vec_vals(dim);
-//   Eigen::Matrix<double, -1, 2>  log_probs_2d_array(dim, 2);
-// 
-//   for (int i = 0; i < dim; i++) {
-//     probs_1(i) =  R::runif(0.001, 0.999);
-//     probs_2(i) =  R::runif(0.001, 0.999);
-//   }
-// 
-//   log_probs_1 =  probs_1.log();
-//   log_probs_2 =  probs_2.log();
-// 
-//   log_probs_2d_array.col(0) = log_probs_1;
-//   log_probs_2d_array.col(1) = log_probs_2;
-// 
-//   ///////////// log
-//   while (reps-- > 0) {
-// 
-//     // for (int i = 0; i < dim; i++) {
-//     //   probs_1(i) =  R::runif(0.001, 0.999);
-//     //   probs_2(i) =  R::runif(0.001, 0.999);
-//     // }
-//     //
-//     // log_probs_1 =  probs_1.log();
-//     // log_probs_2 =  probs_2.log();
-//     //
-//     // log_probs_2d_array.col(0) = log_probs_1;
-//     // log_probs_2d_array.col(1) = log_probs_2;
-// 
-// 
-//     clock.tick("log_sum_exp_2d_Eigen");
-//     vec_vals = log_sum_exp_2d_Eigen_double(log_probs_2d_array);
-//     clock.tock("log_sum_exp_2d_Eigen");
-// 
-// 
-//     clock.tick("log_sum_exp_2d_Stan_double");
-//     vec_vals = log_sum_exp_2d_Stan_double(log_probs_2d_array);
-//     clock.tock("log_sum_exp_2d_Stan_double");
-// 
-// 
-//     // clock.tick("fast_log_sum_exp_2d_double");
-//     // vec_vals = fast_log_sum_exp_2d_double(log_probs_2d_array);
-//     // clock.tock("fast_log_sum_exp_2d_double");
-// 
-//     //
-//     //
-//     // if (AVX2 == true) {
-//     //
-//     //   clock.tick("fast_log_sum_exp_2d_AVX2");
-//     //   vec_vals = fast_log_sum_exp_2d_AVX2_double(log_probs_2d_array);
-//     //   clock.tock("fast_log_sum_exp_2d_AVX2");
-//     //
-//     //   // clock.tick("fast_log_sum_exp_2d_wo_checks_AVX2");
-//     //   // vec_vals = fast_log_sum_exp_2d_wo_checks_AVX2_double(log_probs_2d_array);
-//     //   // clock.tock("fast_log_sum_exp_2d_wo_checks_AVX2");
-//     //
-//     //
-//     // }
-//     //
-//     //
-//     // if (AVX512 == true) {
-//     //
-//     //   clock.tick("fast_log_sum_exp_2d_AVX512");
-//     //   vec_vals = fast_log_sum_exp_2d_AVX512_double(log_probs_2d_array);
-//     //   clock.tock("fast_log_sum_exp_2d_AVX512");
-//     //
-//     //   //         clock.tick("fast_log_sum_exp_2d_wo_checks_AVX512");
-//     //   //         vec_vals = fast_log_sum_exp_2d_wo_checks_AVX512_double(log_probs_2d_array);
-//     //   //         clock.tock("fast_log_sum_exp_2d_wo_checks_AVX512");
-//     //
-//     //
-//     // }
-// 
-// 
-// 
-// 
-// 
-//   }
-// 
-//   clock.stop("eepy_log_sum_exp_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// //[[Rcpp::export]]
-// void eepy_log1m_fns_double( int reps = 1000,
-//                             int dim  = 1000,
-//                             bool AVX2 =  true,
-//                             bool AVX512 =  true ) {
-// 
-//   Rcpp::Clock clock;
-// 
-//   Eigen::Matrix<double, -1, 1>  probs(dim);
-//   Eigen::Matrix<double, -1, 1>  log1m_probs(dim);
-//   Eigen::Matrix<double, -1, 1>  vec_vals(dim);
-// 
-//   for (int i = 0; i < dim; i++) {
-//     probs(i) = R::runif(0.001, 0.999);
-//     vec_vals(i) = 0.0;
-//   }
-// 
-//   log1m_probs.array() =  (-probs.array()).array().log1p().array();
-// 
-//   const int  N = dim;
-// 
-//   ///////////// log
-//   while (reps-- > 0) {
-// 
-//     for (int i = 0; i < dim; i++) {
-//       probs(i) = R::runif(0.001, 0.999);
-//       vec_vals(i) = 0.0;
-//     }
-// 
-//     log1m_probs.array() =  (-probs.array()).array().log1p().array();
-// 
-// 
-// 
-//     ////////////////////////////////////////////////////////////////////////   log  - using doubles
-//     clock.tick("log1m_Stan");
-//     vec_vals = fn_colvec_double(probs, "log1m", "Stan");
-//     clock.tock("log1m_Stan");
-//     if (reps == 1)     Rcout<<"\n max_error for log1m_Stan = "  << (vec_vals - log1m_probs).array().abs().maxCoeff();
-// 
-//     clock.tick("log1m_Eigen");
-//     vec_vals = fn_colvec_double(probs, "log1m", "Eigen");
-//     clock.tock("log1m_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for log1m_Eigen = "  << (vec_vals - log1m_probs).array().abs().maxCoeff();
-// 
-// 
-//     ///////////////////////////////////////////////////  log1m  - using AVX512
-//     //////  fast "exact" fns - with checks
-//     clock.tick("fast_log1m_1_Loop_Eigen");
-//     vec_vals = fn_colvec_double(probs, "log1m", "Loop", false);
-//     clock.tock("fast_log1m_1_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_log1m_1_Loop_Eigen = "  << (vec_vals - log1m_probs).array().abs().maxCoeff();
-// 
-//     //////  fast "exact" fns - w/o checks
-//     clock.tick("fast_log1m_1_wo_checks_Loop_Eigen");
-//     vec_vals = fn_colvec_double(probs, "log1m", "Loop", true);
-//     clock.tock("fast_log1m_1_wo_checks_Loop_Eigen");
-//     if (reps == 1)     Rcout<<"\n max_error for fast_log1m_1_wo_checks_Loop_Eigen = "  << (vec_vals - log1m_probs).array().abs().maxCoeff();
-// 
-// 
-//     if (AVX2 == true) {
-//       ///////////////////////////////////////////////////  log1m  - using AVX512
-//       //////  fast "exact" fns - with checks
-//       clock.tick("fast_log1m_1_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(probs, "log1m", "AVX2", false);
-//       clock.tock("fast_log1m_1_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log1m_1_AVX2_Eigen = "  << (vec_vals - log1m_probs).array().abs().maxCoeff();
-// 
-//       //////  fast "exact" fns - w/o checks
-//       clock.tick("fast_log1m_1_wo_checks_AVX2_Eigen");
-//       vec_vals = fn_colvec_double(probs, "log1m", "AVX2", true);
-//       clock.tock("fast_log1m_1_wo_checks_AVX2_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log1m_1_wo_checks_AVX2_Eigen = "  << (vec_vals - log1m_probs).array().abs().maxCoeff();
-//     }
-// 
-//     if (AVX512 == true) {
-//       ///////////////////////////////////////////////////  log1m  - using AVX512
-//       //////  fast "exact" fns - with checks
-//       clock.tick("fast_log1m_1_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(probs, "log1m", "AVX512", false);
-//       clock.tock("fast_log1m_1_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log1m_1_AVX512_Eigen = "  << (vec_vals - log1m_probs).array().abs().maxCoeff();
-// 
-//       //////  fast "exact" fns - w/o checks
-//       clock.tick("fast_log1m_1_wo_checks_AVX512_Eigen");
-//       vec_vals = fn_colvec_double(probs, "log1m", "AVX512", true);
-//       clock.tock("fast_log1m_1_wo_checks_AVX512_Eigen");
-//       if (reps == 1)     Rcout<<"\n max_error for fast_log1m_1_wo_checks_AVX512_Eigen = "  << (vec_vals - log1m_probs).array().abs().maxCoeff();
-//     }
-// 
-// 
-//   }
-// 
-//   clock.stop("eepy_log1m_fns_clock_double");
-// 
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// //
+ 

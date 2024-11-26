@@ -5,23 +5,25 @@
 
 
 
-
-
-
-#####    Compiler settings     ###  ccache
+#####    Compiler settings     ###  ccache ## znver3 ## znver4 ## znver5 ## native
 ### set compiler types
-#CXX_COMPILER_TYPE =       g++
-#CPP_COMPILER_TYPE =       gcc
-#BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
-BASE_FLAGS +=  -finline-limit=20000000 ## for g++
+# CXX_COMPILER_TYPE =     ccache g++
+# CPP_COMPILER_TYPE =     ccache gcc
+# BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
+# BASE_FLAGS +=  -finline-limit=20000000 ## for g++
 
-CXX_COMPILER_TYPE =       /opt/AMD/aocc-compiler-5.0.0/bin/clang++
-CPP_COMPILER_TYPE =       /opt/AMD/aocc-compiler-5.0.0/bin/clang
+# PKG_LIBS = -L/usr/lib/gcc/x86_64-linux-gnu/11 -lgomp  ### for g++
+# PKG_CXXFLAGS += -fopenmp ### for g++
+# BASE_FLAGS +=  -fopenmp ### for g++
+
+
+CXX_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang++
+CPP_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang
 BASE_FLAGS =  -O3  -march=znver4  -mtune=znver4   -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
+BASE_FLAGS += -fopenmp -fopenmp-simd ## for AMD AOCC clang++
+BASE_FLAGS +=  -liomp5
 
 ## BASE_FLAGS +=  -mllvm --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
-
-
 
 
 # Use C++17
@@ -34,7 +36,10 @@ BASE_FLAGS +=  -DNDEBUG  -ffp-contract=fast
 BASE_FLAGS +=  -mfma -mavx -mavx2
 BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
 
+### BASE_FLAGS += -mno-avx512f -mno-avx512vl -mno-avx512dq ### -mno-avx512bw -mno-avx512cd   ### flags to DISABLE AVX-512 (for e.g. testing AVX-2 on an AVX-512 machine)
 
+
+#### BASE_FLAGS +=   -fno-math-errno    -fno-signed-zeros  -fno-trapping-math  ### oordered from safest ( -fno-math-errno ) tto least-safe ( -fno-trapping-math)
 BASE_FLAGS += -fno-math-errno
 BASE_FLAGS +=  -fno-signed-zeros
 BASE_FLAGS +=  -fno-trapping-math
@@ -43,108 +48,111 @@ BASE_FLAGS +=       -DEIGEN_VECTORIZE
 
 
 
-## BASE_FLAGS +=  -finline-limit=20000000 ## for g++
-
-PKG_LIBS = -L/usr/lib/gcc/x86_64-linux-gnu/11 -lgomp  ### for g++
-PKG_CXXFLAGS += -fopenmp ### for g++
-BASE_FLAGS +=  -fopenmp ### for g++
 
 
-
-# PKG_CXXFLAGS += -fopenmp -fopenmp-simd ## for AMD AOCC clang++ (and g++?)
-# BASE_FLAGS += -fopenmp -fopenmp-simd ## for AMD AOCC clang++ (and g++?)
 
 
 
 #######    BayesmMVP and BridgeStan paths
-
 ifeq ($(OS),Windows_NT)
     PKG_PATH = $(shell cd)
+    PKG_ROOT = $(shell cd)/..
 else
     PKG_PATH = $(shell pwd)
+    PKG_ROOT = $(shell pwd)/..
 endif
-
-
-PKG_LIBS = $(PKG_PATH)/inst/dummy_stan_model_model.so
-
-
-
-
-##  STAN_PATH = $(HOME)/.cmdstan/cmdstan-2.35.0/stan
-##  STAN_PATH = $(shell find $(HOME) -maxdepth 3 -type d -path "*/cmdstan*/stan" | head -n 1)
-
-#### Find Stan / cmdstan path (for Linux / MAC OS X)
-# First try to find .cmdstan directory and get latest version
-CMDSTAN_DOT_PATH = $(shell \
-  if [ -d "$(HOME)/.cmdstan" ]; then \
-    find "$(HOME)/.cmdstan" -maxdepth 1 -type d -name "cmdstan-*" | \
-    sed 's/.*cmdstan-//' | \
-    sort -t. -n -r -k1,1 -k2,2 -k3,3 | \
-    head -n 1 | \
-    xargs -I {} find "$(HOME)/.cmdstan" -maxdepth 1 -type d -name "cmdstan-{}" | \
-    head -n 1; \
-  fi)
-
-# If .cmdstan not found or empty, look for regular cmdstan
-CMDSTAN_REGULAR_PATH = $(shell \
-  if [ -z "$(CMDSTAN_DOT_PATH)" ] && [ -d "$(HOME)/cmdstan" ]; then \
-    echo "$(HOME)/cmdstan"; \
-  fi)
-
-# Combine the results and append /stan
-STAN_PATH = $(shell \
-  if [ ! -z "$(CMDSTAN_DOT_PATH)" ]; then \
-    echo "$(CMDSTAN_DOT_PATH)/stan"; \
-  elif [ ! -z "$(CMDSTAN_REGULAR_PATH)" ]; then \
-    echo "$(CMDSTAN_REGULAR_PATH)/stan"; \
-  fi)
-
-
-
-STAN_SRC =  $(STAN_PATH)/src
-STAN_MATH =  $(STAN_PATH)/lib/stan_math
-
-
-TBB_PATH = $(STAN_MATH)/lib/tbb
-TBB_SO = $(TBB_PATH)/libtbb.so.2
-
-PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
-PKG_LIBS += $(TBB_SO)
-
-
-# Include paths
-PKG_CPPFLAGS=$(BASE_FLAGS)
-PKG_CPPFLAGS+=-I$(BRIDGESTAN_SRC)
-PKG_CPPFLAGS+=-I$(TBB_PATH)/include
-
-PKG_CPPFLAGS+=-I"$(STAN_PATH)"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/src"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/boost_1.84.0"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/eigen_3.4.0"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include"
-
-PKG_CPPFLAGS+=-I$(STAN_PATH)
-PKG_CPPFLAGS+=-I$(STAN_SRC)
-PKG_CPPFLAGS+=-I$(STAN_MATH)
-PKG_CPPFLAGS+=-I$(STAN_SRC)/stan/model
-PKG_CPPFLAGS+=-I$(STAN_SRC)/stan/services
-PKG_CPPFLAGS+=-I$(STAN_SRC)/stan/io
-PKG_CPPFLAGS+=-I$(STAN_SRC)/stan/mcmc
-PKG_CPPFLAGS+=-I$(STAN_MATH)/lib/eigen_3.4.0 -I$(STAN_MATH)/lib/boost_1.84.0
-PKG_CPPFLAGS+=-I$(STAN_MATH)/lib/sundials_6.1.1/include -I$(STAN_MATH)/lib/sundials_6.1.1/src/sundials
 
 
 
 
 BRIDGESTAN_PATH = $(HOME)/bridgestan
 BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
-PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
+
+
+
+
+
+#### Find Stan / cmdstan path (for Linux / MAC OS X)
+# First try to find .cmdstan directory and get latest version
+CMDSTAN_PATH = $(shell \
+  if [ -d "$(HOME)/.cmdstan" ]; then \
+    ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1 | sed 's/\/stan$$//' ; \
+  elif [ -d "$(HOME)/cmdstan" ]; then \
+    echo "$(HOME)/cmdstan"; \
+  fi)
+
+$(info Using CmdStan: $(CMDSTAN_PATH))
+
+
+
+# Define base directories
+STAN_ROOT =   $(CMDSTAN_PATH)/stan
+STAN_SRC =    $(CMDSTAN_PATH)/stan/src
+STAN_BASE =   $(CMDSTAN_PATH)/stan/src/stan
+STAN_LIB =    $(CMDSTAN_PATH)/stan/lib
+STAN_MATH =   $(CMDSTAN_PATH)/stan/lib/stan_math
+STAN_MATH_LIB = $(CMDSTAN_PATH)/stan/lib/stan_math/lib
+TBB_PATH = $(STAN_MATH)/lib/tbb
+TBB_SO = $(TBB_PATH)/libtbb.so.2
+
+PKG_LIBS = -Wl,-rpath,$(TBB_PATH)
+
+# reference the dummy model .so file
+PKG_LIBS += $(PKG_ROOT)/inst/dummy_stan_model_model.so -Wl,-rpath,$(TBB_PATH)
+
+# TBB
+PKG_LIBS += $(TBB_SO)
+PKG_LIBS += $(TBB_PATH)/libtbb.so.2
+
+
+
+
+
+
+PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
+    -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
+    -I"$(STAN_MATH_LIB)/boost_1.84.0" \
+    -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
+    -I"$(STAN_MATH_LIB)/sundials_6.1.1" \
+    -I"$(STAN_MATH_LIB)/tbb/include" \
+    -I"$(STAN_LIB)/rapidjson_1.1.0" \
+    -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
+    -I"$(CMDSTAN_PATH)" \
+    -I"$(STAN_ROOT)" \
+    -I"$(STAN_SRC)" \
+    -I"$(STAN_MATH)" \
+    -I"$(STAN_BASE)" \
+    -I"$(STAN_LIB)" \
+    -I"$(STAN_MATH_LIB)" \
+    -I"$(STAN_BASE)/model" \
+    -I"$(STAN_BASE)/services" \
+    -I"$(STAN_BASE)/io" \
+    -I"$(STAN_BASE)/mcmc" \
+    -I"$(STAN_BASE)/analyze" \
+    -I"$(STAN_BASE)/callbacks" \
+    -I"$(STAN_BASE)/lang" \
+    -I"$(STAN_BASE)/optimization" \
+    -I"$(STAN_BASE)/variational" \
+    -I"$(TBB_PATH)/include" \
+    -I"$(TBB_PATH)" \
+    -I"$(BRIDGESTAN_SRC)"
+
+
+
+###     -I"$(R_LIB_PATH)/RcppEigen/include" \
+###     -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
+
+
+
+
 
 PKG_CXXFLAGS = $(PKG_CPPFLAGS)  -std=c++17   -DBOOST_DISABLE_ASSERTS
-
 CPPFLAGS += $(PKG_CPPFLAGS)
 CXXFLAGS += $(PKG_CXXFLAGS)
+
+
+
+
 
 
 CC =  $(CPP_COMPILER_TYPE)

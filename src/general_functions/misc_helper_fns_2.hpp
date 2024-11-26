@@ -1,13 +1,11 @@
 
 #pragma once
 
-
-// [[Rcpp::depends(StanHeaders)]]
+ 
 // [[Rcpp::depends(BH)]]
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppEigen)]]
-
- 
+// [[Rcpp::plugins(cpp17)]]
  
 
 #include <tbb/concurrent_vector.h>
@@ -25,9 +23,6 @@
  
  
 
-// [[Rcpp::plugins(cpp17)]]
-
- 
  
  
 using namespace Eigen;
@@ -67,10 +62,16 @@ inline Eigen::Matrix<double, -1, 1> fn_convert_RMatrixColumn_to_EigenColVec(cons
 
 inline Eigen::Matrix<double, -1, 1> fn_convert_RCppNumMat_Column_to_EigenColVec(const Rcpp::NumericMatrix::Column &rcpp_col) {
   
-  Rcpp::NumericVector col_vec = rcpp_col;
+  // Rcpp::NumericVector col_vec = rcpp_col;
+  
+  Eigen::Matrix<double, -1, 1> eigen_col_vec(rcpp_col.size());
+  
+  for (int i = 0; i < rcpp_col.size(); ++i) {
+    eigen_col_vec(i) = rcpp_col[i];
+  }  
   
   // Eigen::Matrix<double, -1, 1> eigen_col_vec = ;
-  return Rcpp::as<Eigen::Matrix<double, -1, 1>>(col_vec);
+  return eigen_col_vec;
   
 } 
 
