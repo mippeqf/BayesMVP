@@ -27,15 +27,16 @@ BASE_FLAGS +=  -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE
 BASE_FLAGS +=  -DNDEBUG
 
 BASE_FLAGS +=     -ffp-contract=fast
-
+BASE_FLAGS +=  -fpermissive
 BASE_FLAGS +=  -finline-limit=20000000 ## for g++
-
-
-PKG_CXXFLAGS += -fopenmp ### for g++
-BASE_FLAGS +=  -fopenmp ### for g++
-
-
 BASE_FLAGS +=    -Wno-ignored-attributes  -Wno-sign-compare
+
+
+# PKG_CXXFLAGS += -fopenmp ### for g++
+# BASE_FLAGS +=  -fopenmp ### for g++
+
+
+
 
 
 

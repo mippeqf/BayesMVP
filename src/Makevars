@@ -17,11 +17,17 @@
 # BASE_FLAGS +=  -fopenmp ### for g++
 
 
+
 CXX_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang++
 CPP_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang
 BASE_FLAGS =  -O3  -march=znver4  -mtune=znver4   -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
-BASE_FLAGS += -fopenmp -fopenmp-simd ## for AMD AOCC clang++
-BASE_FLAGS +=  -liomp5
+## BASE_FLAGS +=  -liomp5
+PKG_LIBS += -L/opt/AMD/aocc-compiler-5.0.0/lib -lomp ## for AMD AOCC clang++
+PKG_LIBS += -L/opt/AMD/aocc-compiler-5.0.0/lib -lgomp ## for AMD AOCC clang++
+PKG_LIBS += -L/opt/AMD/aocc-compiler-5.0.0/lib -liomp5 ## for AMD AOCC clang++
+BASE_FLAGS +=  -fopenmp -fopenmp-simd ## for AMD AOCC clang++
+# BASE_FLAGS +=  -mllvm   ### --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
+
 
 ## BASE_FLAGS +=  -mllvm --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
 
@@ -30,13 +36,12 @@ BASE_FLAGS +=  -liomp5
 CXX_STD = CXX17
 
 
-
+BASE_FLAGS +=  -fpermissive
 BASE_FLAGS +=  -DNDEBUG  -ffp-contract=fast
 
 BASE_FLAGS +=  -mfma -mavx -mavx2
-BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
+BASE_FLAGS +=    -mfma      -mavx512vl -mavx512dq  -mavx512f
 
-### BASE_FLAGS += -mno-avx512f -mno-avx512vl -mno-avx512dq ### -mno-avx512bw -mno-avx512cd   ### flags to DISABLE AVX-512 (for e.g. testing AVX-2 on an AVX-512 machine)
 
 
 #### BASE_FLAGS +=   -fno-math-errno    -fno-signed-zeros  -fno-trapping-math  ### oordered from safest ( -fno-math-errno ) tto least-safe ( -fno-trapping-math)
@@ -45,11 +50,6 @@ BASE_FLAGS +=  -fno-signed-zeros
 BASE_FLAGS +=  -fno-trapping-math
 
 BASE_FLAGS +=       -DEIGEN_VECTORIZE
-
-
-
-
-
 
 
 
