@@ -134,28 +134,32 @@ $(info PKG_LIBS is: $(PKG_LIBS))
 #BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 
-# Get Windows home directory
 HOME = $(subst \,/,$(USERPROFILE))
 
-# BridgeStan path detection with 2.5.0 priority
-BRIDGESTAN_PATH = $(shell cmd //c "\
-  if exist $(HOME)\.bridgestan\bridgestan-2.5.0 (\
-    echo $(HOME)\.bridgestan\bridgestan-2.5.0\
-  ) else if exist $(HOME)\.bridgestan (\
-    for /f \"tokens=*\" %%a in ('dir /b /ad $(HOME)\.bridgestan\bridgestan-* 2^>nul ^| sort /r') do @echo $(HOME)\.bridgestan\%%a & exit /b\
-  ) else if exist C:\bridgestan-2.5.0 (\
-    echo C:\bridgestan-2.5.0\
-  ) else (\
-    for /f \"tokens=*\" %%a in ('dir /s /b /ad C:\bridgestan-* 2^>nul ^| sort /r') do @echo %%a & exit /b\
-  )")
+BRIDGESTAN_PATH = $(shell \
+  if exist "$(HOME)\.bridgestan\bridgestan-2.5.0" \
+    (echo $(HOME)\.bridgestan\bridgestan-2.5.0) \
+  else ( \
+    dir /b "$(HOME)\.bridgestan\bridgestan-*" 2>NUL | findstr /r "bridgestan-[0-9]" | sort /r | findstr /n "^" | findstr "^1:" | sed "s/^1://" \
+  ))
 
 ifeq ($(strip $(BRIDGESTAN_PATH)),)
-$(error BridgeStan not found. Please install BridgeStan.)
+  BRIDGESTAN_PATH = $(shell \
+    if exist "C:\bridgestan-2.5.0" \
+      (echo C:\bridgestan-2.5.0) \
+    else ( \
+      dir /s /b "C:\bridgestan-*" 2>NUL | findstr /r "bridgestan-[0-9]" | sort /r | findstr /n "^" | findstr "^1:" | sed "s/^1://" \
+    ))
+endif
+
+ifeq ($(strip $(BRIDGESTAN_PATH)),)
+  $(warning BridgeStan not found in standard locations. Installation will proceed assuming BridgeStan is in system path.)
 endif
 
 BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 $(info Using BridgeStan: $(BRIDGESTAN_PATH))
+
 
 
 PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
