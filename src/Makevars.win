@@ -103,7 +103,7 @@ $(info CMDSTAN env var is: '$(CMDSTAN_ALT)')
 $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 
 PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
-    -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
+    -I"$(R_LIB_PATH)/RcppEigen/include" \
     -I"$(STAN_MATH_LIB)/boost_1.84.0" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1" \
