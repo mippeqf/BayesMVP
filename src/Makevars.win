@@ -22,7 +22,7 @@ BASE_FLAGS +=  -mfma -mavx -mavx2
 ## BASE_FLAGS +=  -fno-signed-zeros
 ## BASE_FLAGS +=  -fno-trapping-math
 
-BASE_FLAGS +=       -DEIGEN_VECTORIZE
+BASE_FLAGS +=  -DEIGEN_VECTORIZE
 BASE_FLAGS +=  -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE
 BASE_FLAGS +=  -DNDEBUG
 
@@ -120,7 +120,6 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
     -I"$(R_LIB_PATH)/bridgestan/include" \
     -I"$(R_LIB_PATH)/Rcpp/include" \
-    -I"$(R_LIB_PATH)/RcppEigen/include" \
     -I"$(R_LIB_PATH)/StanHeaders/include" \
     -I"$(R_LIB_PATH)/BH/include" \ \
     -I"$(STAN_BASE)/model" \
@@ -134,7 +133,9 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_BASE)/variational"
 
 
-OBJECTS = main.o RcppExports.o
+##     -I"$(R_LIB_PATH)/RcppEigen/include" \
+
+## OBJECTS = main.o RcppExports.o
 
 
 TBB_PATH = -I"$(STAN_LIB)/tbb" ## $(STAN_MATH)/lib/tbb
