@@ -55,31 +55,12 @@ BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 
 ##### Find cmdstan / Stan path (for Windows)
-# First try to find .cmdstan directory and get latest version (Windows version)
-CMDSTAN_DOT_PATH = $(shell \
-  if exist "$(HOME)\.cmdstan" ( \
-    dir /b "$(HOME)\.cmdstan\cmdstan-*" 2>nul | \
-    findstr /r "cmdstan-[0-9]" | \
-    sort /r | \
-    findstr /n "^" | \
-    findstr "^1:" | \
-    sed "s/^1://" | \
-    for /f "delims=" %%i in ('more') do @echo $(HOME)\.cmdstan\%%i \
-  )
-
-# If .cmdstan not found or empty, look for regular cmdstan
-CMDSTAN_REGULAR_PATH = $(shell \
-  if exist "$(HOME)\cmdstan" ( \
-    echo $(HOME)\cmdstan \
-  )
-
-# Combine the results and append \stan
 STAN_PATH = $(shell \
-  if not "$(CMDSTAN_DOT_PATH)" == "" ( \
-    echo $(CMDSTAN_DOT_PATH)\stan \
-  ) else if not "$(CMDSTAN_REGULAR_PATH)" == "" ( \
-    echo $(CMDSTAN_REGULAR_PATH)\stan \
-  )
+  if exist "$(HOME)\.cmdstan\cmdstan-*" ( \
+    dir /b "$(HOME)\.cmdstan\cmdstan-*" 2>nul | sort /r | findstr /b "cmdstan-" | findstr /n "^" | findstr "^1:" | sed "s/^1://" | for /f "delims=" %i in ('more') do @echo $(HOME)\.cmdstan\%i\stan \
+  ) else if exist "$(HOME)\cmdstan" ( \
+    echo $(HOME)\cmdstan\stan \
+  ))
 
 
 STAN_SRC =  $(STAN_PATH)/src
