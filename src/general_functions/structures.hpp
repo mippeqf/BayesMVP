@@ -3,12 +3,12 @@
 
  
  
- // [[Rcpp::depends(StanHeaders)]]
- // [[Rcpp::depends(BH)]]
- // [[Rcpp::depends(RcppParallel)]]
- // [[Rcpp::depends(RcppEigen)]]
- 
- 
+// [[Rcpp::depends(StanHeaders)]]
+// [[Rcpp::depends(BH)]]
+// [[Rcpp::depends(RcppParallel)]]
+// [[Rcpp::depends(RcppEigen)]]
+
+
  
  
  
@@ -485,7 +485,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
  
  
  
- struct alignas(EIGEN_MAX_ALIGN_BYTES)   HMCResult {
+struct alignas(EIGEN_MAX_ALIGN_BYTES)   HMCResult {
    
          Eigen::Matrix<double, -1, 1> lp_and_grad_outs;
          
@@ -530,7 +530,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
              us_div(0)
          {}
    
- };
+};
  
  
  
@@ -563,8 +563,13 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES) HMC_output_single_chain {
              Eigen::Matrix<double, -1, 1> p_jump_main;
            } diagnostics;
 
+           
        // Constructor
-       HMC_output_single_chain(int n_iter, int n_nuisance_to_track, int n_params_main, int n_us, int N)
+       HMC_output_single_chain(int n_iter,
+                               int n_nuisance_to_track, 
+                               int n_params_main, 
+                               int n_us, 
+                               int N)
          : result_input(n_params_main, n_us, N) {
 
              // Initialize traces buffers
