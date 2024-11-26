@@ -48,18 +48,17 @@ endif
 PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 
 
-BRIDGESTAN_PATH = $(HOME)/bridgestan
-BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+
 
 ## STAN_PATH = $(shell dir /s /b "$(HOME)\*cmdstan*\stan" | head -n 1)  ## for Windows
 
 
 ##### Find cmdstan / Stan path (for Windows)
 STAN_PATH = $(shell \
-  if [ -d "$(HOME)/.cmdstan" ] && ls "$(HOME)/.cmdstan/cmdstan-"* >/dev/null 2>&1; then \
-    ls -d "$(HOME)/.cmdstan/cmdstan-"* | sort -rV | head -n1 | xargs -I {} echo {}/stan; \
+  if [ -d "$(HOME)/.cmdstan" ]; then \
+    ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1; \
   elif [ -d "$(HOME)/cmdstan" ]; then \
-    echo "$(HOME)/cmdstan/stan"; \
+    echo "$(HOME)/cmdstan"; \
   fi)
 
 STAN_SRC =  $(STAN_PATH)/src
@@ -76,8 +75,14 @@ PKG_LIBS += $(TBB_SO)
 
 # Include paths
 PKG_CPPFLAGS=$(BASE_FLAGS)
-PKG_CPPFLAGS+=-I$(BRIDGESTAN_SRC)
 PKG_CPPFLAGS+=-I$(TBB_PATH)/include
+
+PKG_CPPFLAGS+=-I"$(STAN_PATH)"
+PKG_CPPFLAGS+=-I"$(STAN_PATH)/src"
+PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/"
+PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/boost_1.84.0"
+PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/eigen_3.4.0"
+PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include"
 
 PKG_CPPFLAGS+=-I$(STAN_PATH)
 PKG_CPPFLAGS+=-I$(STAN_SRC)
@@ -89,10 +94,10 @@ PKG_CPPFLAGS+=-I$(STAN_SRC)/stan/mcmc
 
 
 
-PKG_CPPFLAGS+=-I$(BRIDGESTAN_SRC)
-PKG_CPPFLAGS+=-I$(STAN_MATH)/lib/eigen_3.4.0 -I$(STAN_MATH)/lib/boost_1.84.0
-PKG_CPPFLAGS+=-I$(STAN_MATH)/lib/sundials_6.1.1/include -I$(STAN_MATH)/lib/sundials_6.1.1/src/sundials
 
+BRIDGESTAN_PATH = $(HOME)/bridgestan
+BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
 
 PKG_CXXFLAGS = $(PKG_CPPFLAGS)  -std=c++17   -DBOOST_DISABLE_ASSERTS
 
