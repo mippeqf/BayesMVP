@@ -18,9 +18,9 @@ BASE_FLAGS +=  -DNDEBUG  -ffp-contract=fast
 BASE_FLAGS +=  -mfma -mavx -mavx2
 ###  BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
 
-BASE_FLAGS += -fno-math-errno
-BASE_FLAGS +=  -fno-signed-zeros
-BASE_FLAGS +=  -fno-trapping-math
+## BASE_FLAGS += -fno-math-errno
+## BASE_FLAGS +=  -fno-signed-zeros
+## BASE_FLAGS +=  -fno-trapping-math
 
 BASE_FLAGS +=       -DEIGEN_VECTORIZE
 
@@ -29,6 +29,11 @@ BASE_FLAGS +=  -finline-limit=20000000 ## for g++
 
 PKG_CXXFLAGS += -fopenmp ### for g++
 BASE_FLAGS +=  -fopenmp ### for g++
+
+
+BASE_FLAGS +=    -Wno-ignored-attributes  -Wno-sign-compare
+
+
 
 
 PKG_CPPFLAGS=$(BASE_FLAGS)
@@ -122,9 +127,7 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_BASE)/callbacks" \
     -I"$(STAN_BASE)/lang" \
     -I"$(STAN_BASE)/optimization" \
-    -I"$(STAN_BASE)/variational" \
-    -Wno-ignored-attributes
-
+    -I"$(STAN_BASE)/variational"
 
 
 OBJECTS = main.o RcppExports.o
