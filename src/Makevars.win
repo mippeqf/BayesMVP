@@ -54,7 +54,7 @@ endif
 
 
 ####### ---- load dummy model for bridgestan to compile (for Linux / Mac OS X)
-PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
+PKG_LIBS=$(PKG_PATH)/dummy_stan_model_model.dll
 
 # Get Windows user profile directory directly
 HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROFILE'))")
@@ -109,8 +109,8 @@ $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 ## OBJECTS = main.o RcppExports.o
 
 
-TBB_PATH = -I"$(STAN_LIB)/tbb" ## $(STAN_MATH)/lib/tbb
-TBB_SO = $(TBB_PATH)/tbb12.dll  ## .dll for Windows
+TBB_PATH =  $(STAN_LIB)/tbb ## $(STAN_MATH)/lib/tbb
+TBB_SO = $(TBB_PATH)/tbb.dll  ## .dll for Windows
 PKG_LIBS += $(TBB_SO)
 PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
 
@@ -129,7 +129,6 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_MATH)" \
     -I"$(STAN_BASE)" \
     -I"$(STAN_LIB)" \
-    -I"$(STAN_MATH_LIB)" \
     -I"$(STAN_BASE)/model" \
     -I"$(STAN_BASE)/services" \
     -I"$(STAN_BASE)/io" \
@@ -145,15 +144,15 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
 
 
 ##     -I"$(R_LIB_PATH)/RcppEigen/include" \
-
+##     -I"$(STAN_MATH_LIB)" \
 
 BRIDGESTAN_PATH = $(HOME)/bridgestan
 BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
 
 PKG_CXXFLAGS = $(PKG_CPPFLAGS)  -std=c++17   -DBOOST_DISABLE_ASSERTS
-CPPFLAGS += $(PKG_CPPFLAGS)
-CXXFLAGS += $(PKG_CXXFLAGS)
+CPPFLAGS = $(PKG_CPPFLAGS)
+CXXFLAGS = $(PKG_CXXFLAGS)
 
 
 CC =  $(CPP_COMPILER_TYPE)
