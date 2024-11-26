@@ -136,7 +136,7 @@ $(info PKG_LIBS is: $(PKG_LIBS))
 
 
 
-# Find Bridgestan directory dynamically
+# Find Bridgestan path dynamically using PowerShell
 BRIDGESTAN_DIR = $(shell powershell -Command "& { \
   $home = [Environment]::GetFolderPath('UserProfile'); \
   $bridgestanPath = Join-Path $home '.bridgestan'; \
@@ -151,15 +151,12 @@ BRIDGESTAN_DIR = $(shell powershell -Command "& { \
   } \
 }")
 
-# Fallback if Bridgestan directory is not found
+# Check if Bridgestan directory was found
 ifeq ($(BRIDGESTAN_DIR),)
   $(error Bridgestan directory not found in ~/.bridgestan. Please ensure it exists.)
 endif
 
-# Set Bridgestan source directory
 BRIDGESTAN_SRC = $(BRIDGESTAN_DIR)/src
-
-
 
 
 PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
