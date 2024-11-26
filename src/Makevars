@@ -10,20 +10,14 @@
 
 #####    Compiler settings     ###  ccache
 ### set compiler types
-CXX_COMPILER_TYPE =     ccache  g++
-CPP_COMPILER_TYPE =      ccache gcc
-BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
+#CXX_COMPILER_TYPE =       g++
+#CPP_COMPILER_TYPE =       gcc
+#BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
+BASE_FLAGS +=  -finline-limit=20000000 ## for g++
 
-#CXX_FLAGS += -fno-tree-vectorize  # for g++  -  Disable auto vectorization
-#CXX_FLAGS += -fno-optimize-sibling-calls  # for g++  -   Disable tail call optimization
-#CXX_FLAGS += -fno-schedule-insns2  # for g++  -   Disable instruction scheduling
-
-## LD_LIBRARY_PATH += -L/usr/lib/
-
-
-#CXX_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang++
-#CPP_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang
-#BASE_FLAGS =  -O3  -march=znver4  -mtune=znver4   -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
+CXX_COMPILER_TYPE =       /opt/AMD/aocc-compiler-5.0.0/bin/clang++
+CPP_COMPILER_TYPE =       /opt/AMD/aocc-compiler-5.0.0/bin/clang
+BASE_FLAGS =  -O3  -march=znver4  -mtune=znver4   -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
 
 ## BASE_FLAGS +=  -mllvm --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
 
@@ -40,7 +34,7 @@ BASE_FLAGS +=  -DNDEBUG  -ffp-contract=fast
 BASE_FLAGS +=  -mfma -mavx -mavx2
 BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
 
-#### BASE_FLAGS +=   -fno-math-errno    -fno-signed-zeros  -fno-trapping-math  ### oordered from safest ( -fno-math-errno ) tto least-safe ( -fno-trapping-math)
+
 BASE_FLAGS += -fno-math-errno
 BASE_FLAGS +=  -fno-signed-zeros
 BASE_FLAGS +=  -fno-trapping-math
@@ -78,7 +72,35 @@ BRIDGESTAN_PATH = $(HOME)/bridgestan
 BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 ##  STAN_PATH = $(HOME)/.cmdstan/cmdstan-2.35.0/stan
-STAN_PATH = $(shell find $(HOME) -maxdepth 3 -type d -path "*/cmdstan*/stan" | head -n 1)
+##  STAN_PATH = $(shell find $(HOME) -maxdepth 3 -type d -path "*/cmdstan*/stan" | head -n 1)
+
+#### Find Stan / cmdstan path (for Linux / MAC OS X)
+# First try to find .cmdstan directory and get latest version
+CMDSTAN_DOT_PATH = $(shell \
+  if [ -d "$(HOME)/.cmdstan" ]; then \
+    find "$(HOME)/.cmdstan" -maxdepth 1 -type d -name "cmdstan-*" | \
+    sed 's/.*cmdstan-//' | \
+    sort -t. -n -r -k1,1 -k2,2 -k3,3 | \
+    head -n 1 | \
+    xargs -I {} find "$(HOME)/.cmdstan" -maxdepth 1 -type d -name "cmdstan-{}" | \
+    head -n 1; \
+  fi)
+
+# If .cmdstan not found or empty, look for regular cmdstan
+CMDSTAN_REGULAR_PATH = $(shell \
+  if [ -z "$(CMDSTAN_DOT_PATH)" ] && [ -d "$(HOME)/cmdstan" ]; then \
+    echo "$(HOME)/cmdstan"; \
+  fi)
+
+# Combine the results and append /stan
+STAN_PATH = $(shell \
+  if [ ! -z "$(CMDSTAN_DOT_PATH)" ]; then \
+    echo "$(CMDSTAN_DOT_PATH)/stan"; \
+  elif [ ! -z "$(CMDSTAN_REGULAR_PATH)" ]; then \
+    echo "$(CMDSTAN_REGULAR_PATH)/stan"; \
+  fi)
+
+
 
 STAN_SRC =  $(STAN_PATH)/src
 STAN_MATH =  $(STAN_PATH)/lib/stan_math

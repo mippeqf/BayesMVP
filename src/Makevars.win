@@ -1,12 +1,12 @@
 
 
-#####    Compiler settings     
+#####    Compiler settings     ###  ccache
 ### set compiler types
-CXX = C:/rtools44/x86_64-w64-mingw32.static.posix/bin/g++.exe
-CXX_COMPILER_TYPE =        g++
-CPP_COMPILER_TYPE =        gcc
-BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
 
+CXX_COMPILER_TYPE =      C:/rtools44/x86_64-w64-mingw32.static.posix/bin/g++.exe    #    g++
+CPP_COMPILER_TYPE =      C:/rtools44/x86_64-w64-mingw32.static.posix/bin/gcc.exe   gcc
+BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
+BASE_FLAGS +=  -finline-limit=20000000 ## for g++
 
 
 # Use C++17
@@ -51,7 +51,36 @@ PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 BRIDGESTAN_PATH = $(HOME)/bridgestan
 BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
-STAN_PATH = $(shell dir /s /b "$(HOME)\*cmdstan*\stan" | head -n 1)  ## for Windows
+## STAN_PATH = $(shell dir /s /b "$(HOME)\*cmdstan*\stan" | head -n 1)  ## for Windows
+
+
+##### Find cmdstan / Stan path (for Windows)
+# First try to find .cmdstan directory and get latest version (Windows version)
+CMDSTAN_DOT_PATH = $(shell \
+  if exist "$(HOME)\.cmdstan" ( \
+    dir /b "$(HOME)\.cmdstan\cmdstan-*" 2>nul | \
+    findstr /r "cmdstan-[0-9]" | \
+    sort /r | \
+    findstr /n "^" | \
+    findstr "^1:" | \
+    sed "s/^1://" | \
+    for /f "delims=" %%i in ('more') do @echo $(HOME)\.cmdstan\%%i \
+  )
+
+# If .cmdstan not found or empty, look for regular cmdstan
+CMDSTAN_REGULAR_PATH = $(shell \
+  if exist "$(HOME)\cmdstan" ( \
+    echo $(HOME)\cmdstan \
+  )
+
+# Combine the results and append \stan
+STAN_PATH = $(shell \
+  if not "$(CMDSTAN_DOT_PATH)" == "" ( \
+    echo $(CMDSTAN_DOT_PATH)\stan \
+  ) else if not "$(CMDSTAN_REGULAR_PATH)" == "" ( \
+    echo $(CMDSTAN_REGULAR_PATH)\stan \
+  )
+
 
 STAN_SRC =  $(STAN_PATH)/src
 STAN_MATH =  $(STAN_PATH)/lib/stan_math

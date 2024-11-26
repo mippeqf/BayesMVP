@@ -93,7 +93,8 @@
 
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Stan.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Loop.hpp"
-#include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_AVX2_fns.hpp" // will only compile if AVX2 or AVX-512 is available 
+#include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX2_fns.hpp" // will only compile if  AVX2 is available
+#include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_fns.hpp" // will only compile if  AVX-512 is available 
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available 
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available 
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_overall.hpp" 
@@ -706,8 +707,6 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
  ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
  int chunk_size = chunk_size_info.chunk_size;
  const int n_tests = y.cols();
- 
-// MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
 
  update_M_dense_main_Hessian_InPlace(    M_dense_main_copy,
                                          M_inv_dense_main_copy,
@@ -724,7 +723,6 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
                                          theta_us_vec,
                                          y,
                                          Model_args_as_cpp_struct,
-                                        // MVP_workspace,
                                          ii,
                                          n_burnin,
                                          metric_type);
@@ -1779,22 +1777,29 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
   const EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
   const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
   //// replicate these structs for thread-safety as we will be modifying them for burnin
-  std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  1); // read-only
-  std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R); // need to edit these
-  std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, 1); // read-only
+  std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  n_threads_R); // read-only
+  std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R); // need to edit these !!
+  std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, n_threads_R); // read-only
   
   ///// Traces
   const int N = Model_args_as_cpp_struct.N;
   std::vector<Rcpp::NumericMatrix> trace_output =  vec_of_mats_Rcpp(n_params_main, n_iter_R, n_threads_R);
   std::vector<Rcpp::NumericMatrix> trace_output_divs =  vec_of_mats_Rcpp(1, n_iter_R, n_threads_R);
   std::vector<Rcpp::NumericMatrix> trace_output_nuisance =  vec_of_mats_Rcpp(n_nuisance_to_track, n_iter_R, n_threads_R);
-  std::vector<Rcpp::NumericMatrix> trace_output_log_lik = vec_of_mats_Rcpp(N, n_iter_R, n_threads_R);  //// possibly dummy
+//  std::vector<Rcpp::NumericMatrix> trace_output_log_lik = vec_of_mats_Rcpp(N, n_iter_R, n_threads_R);  //// possibly dummy
   
   ///// data copies
-  std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), 1);
-  for (int kk = 0; kk < 1; ++kk) {
+  std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), n_threads_R);
+  for (int kk = 0; kk < n_threads_R; ++kk) {
      y_copies_R[kk] = y_Eigen_R;
   }
+  
+  //std::vector<HMC_output_single_chain> HMC_outputs_R(n_threads_R, HMC_output_single_chain(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N));
+///  std::vector<HMC_output_single_chain>  HMC_outputs_R(n_threads_R);
+  // for (int i = 0; i < n_threads_R; ++i) {
+  //    HMC_output_single_chain HMC_output_single_chain_i(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N);
+  //    HMC_outputs_R[i] =  (HMC_output_single_chain_i);
+  // }
   
    // tbb::task_scheduler_init init(n_threads_R);
    warmUpThreads(n_threads_R);
@@ -1816,7 +1821,6 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
                                                            trace_output,
                                                            ///// data
                                                            y_copies_R,
-                                                           ///  y_Eigen_R,
                                                            ///// structs
                                                            Model_args_as_cpp_struct_copies_R, ///// ALWAYS read-only
                                                            EHMC_args_as_cpp_struct_copies_R,
@@ -1824,7 +1828,9 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
                                                            ///// traces
                                                            trace_output_divs,
                                                            n_nuisance_to_track,
-                                                           trace_output_nuisance);
+                                                           trace_output_nuisance
+                                                         //  HMC_outputs_R
+                                                         );
 
    //// Call parallelFor
    RcppParallel::parallelFor(0, n_threads_R, parallel_hmc_sampling);
@@ -1848,8 +1854,9 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
                              trace_output_divs,
                              trace_output_nuisance,
                              theta_main_vectors_all_chains_output_to_R,
-                             theta_us_vectors_all_chains_output_to_R,
-                             trace_output_log_lik);
+                             theta_us_vectors_all_chains_output_to_R
+                             // trace_output_log_lik
+                             );
 
 
 
