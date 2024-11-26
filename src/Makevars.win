@@ -16,11 +16,11 @@ CXX_STD = CXX17
 
 
 BASE_FLAGS +=  -mfma -mavx -mavx2
-###  BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
+BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
 
-## BASE_FLAGS += -fno-math-errno
-## BASE_FLAGS +=  -fno-signed-zeros
-## BASE_FLAGS +=  -fno-trapping-math
+BASE_FLAGS += -fno-math-errno
+BASE_FLAGS +=  -fno-signed-zeros
+BASE_FLAGS +=  -fno-trapping-math
 
 BASE_FLAGS +=  -DEIGEN_VECTORIZE
 BASE_FLAGS +=  -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE
@@ -57,7 +57,9 @@ endif
 PKG_LIBS=$(PKG_PATH)/dummy_stan_model_model.dll
 
 # Get Windows user profile directory directly
-HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROFILE'))")
+## HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROFILE'))")
+HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('\\\\\\\\', '/', Sys.getenv('USERPROFILE')))")/
+
 
 # Get R library path (this will work for any R version)
 R_LIB_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[grep('00LOCK|00new', .libPaths(), invert=TRUE)][1])")
