@@ -53,22 +53,30 @@ PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 # Find R user library path for packages
 RPKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
 
-
-PKG_CPPFLAGS += -I"$(RPKG_PATH)/bridgestan/include" \
-                -I"$(RPKG_PATH)/StanHeaders/include" \
-                -I"$(RPKG_PATH)/RcppEigen/include" \
-                -I"$(RPKG_PATH)/BH/include" \
-                -I"$(RPKG_PATH)/RcppParallel/include"
-
-
-##### Find cmdstan / Stan path (for Windows)
-STAN_PATH = $(shell \
+# Find latest cmdstan version or regular cmdstan
+CMDSTAN_PATH = $(shell \
   if [ -d "$(HOME)/.cmdstan" ]; then \
     ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1; \
   elif [ -d "$(HOME)/cmdstan" ]; then \
     echo "$(HOME)/cmdstan"; \
   fi)
 
+
+PKG_CPPFLAGS += \
+    -I"$(CMDSTAN_PATH)" \
+    -I"$(CMDSTAN_PATH)/src" \
+    -I"$(CMDSTAN_PATH)/lib/stan_math" \
+    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0" \
+    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0" \
+    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include" \
+    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/tbb/include" \
+    -I"$(RPKG_PATH)/StanHeaders/include" \
+    -I"$(RPKG_PATH)/RcppEigen/include" \
+    -I"$(RPKG_PATH)/BH/include" \
+    -I"$(RPKG_PATH)/RcppParallel/include"
+
+
+STAN_PATH = CMDSTAN_PATH
 STAN_SRC =  $(STAN_PATH)/src
 STAN_MATH =  $(STAN_PATH)/lib/stan_math
 TBB_PATH = $(STAN_MATH)/lib/tbb
@@ -146,6 +154,7 @@ CXX20PICFLAGS = -fpic
 CXX23 = $(CXX_COMPILER_TYPE)
 CXX23FLAGS =   $(BASE_FLAGS)
 CXX23PICFLAGS = -fpic
+
 
 
 
