@@ -51,7 +51,7 @@ HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROF
 $(info Using HOME directory: $(HOME))
 
 # Get R library path (this will work for any R version)
-R_LIB_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
+R_LIB_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[grep('00LOCK|00new', .libPaths(), invert=TRUE)][1])")
 $(info Using R library path: $(R_LIB_PATH))
 
 # Debug current environment
