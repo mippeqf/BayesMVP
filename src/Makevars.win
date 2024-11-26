@@ -93,7 +93,8 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/tbb/include" \
-    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/rapidjson_1.1.0" \
+    -I"$(CMDSTAN_PATH)/stan/lib/rapidjson_1.1.0" \
+    -I"$(CMDSTAN_PATH)/stan/lib/rapidjson_1.1.0/rapidjson" \
     -I"$(R_LIB_PATH)/bridgestan/include" \
     -I"$(R_LIB_PATH)/Rcpp/include" \
     -I"$(R_LIB_PATH)/RcppEigen/include" \
