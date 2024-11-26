@@ -135,20 +135,28 @@ $(info PKG_LIBS is: $(PKG_LIBS))
 #BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 
-# Find Bridgestan path with debug output
-BRIDGESTAN_DIR = $(shell \
-  if [ -d "$(HOME)/.bridgestan" ]; then \
-    ls -d "$(HOME)/.bridgestan/bridgestan-"* 2>/dev/null | sort -rV | head -n1; \
-  fi)
 
-# Check if a specific version exists (e.g., bridgestan-2.5.0)
-BRIDGESTAN_DIR := $(shell if [ -d "$(HOME)/.bridgestan/bridgestan-2.5.0" ]; then echo "$(HOME)/.bridgestan/bridgestan-2.5.0"; else echo $(BRIDGESTAN_DIR); fi)
+# Find Bridgestan directory dynamically
+BRIDGESTAN_DIR = $(shell powershell -Command "& { \
+  $home = [Environment]::GetFolderPath('UserProfile'); \
+  $bridgestanPath = Join-Path $home '.bridgestan'; \
+  if (Test-Path $bridgestanPath) { \
+    $dirs = Get-ChildItem -Directory $bridgestanPath -Name | Where-Object { $_ -match '^bridgestan-' }; \
+    if ($dirs -contains 'bridgestan-2.5.0') { \
+      Write-Output (Join-Path $bridgestanPath 'bridgestan-2.5.0'); \
+    } elseif ($dirs.Count -gt 0) { \
+      $sortedDirs = $dirs | Sort-Object -Descending; \
+      Write-Output (Join-Path $bridgestanPath $sortedDirs[0]); \
+    } \
+  } \
+}")
 
-# Fallback if no .bridgestan directory or version is found
+# Fallback if Bridgestan directory is not found
 ifeq ($(BRIDGESTAN_DIR),)
   $(error Bridgestan directory not found in ~/.bridgestan. Please ensure it exists.)
 endif
 
+# Set Bridgestan source directory
 BRIDGESTAN_SRC = $(BRIDGESTAN_DIR)/src
 
 
