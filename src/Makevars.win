@@ -56,12 +56,11 @@ BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 ##### Find cmdstan / Stan path (for Windows)
 STAN_PATH = $(shell \
-  if exist "$(HOME)\.cmdstan\cmdstan-*" ( \
-    dir /b "$(HOME)\.cmdstan\cmdstan-*" 2>nul | sort /r | findstr /b "cmdstan-" | findstr /n "^" | findstr "^1:" | sed "s/^1://" | for /f "delims=" %i in ('more') do @echo $(HOME)\.cmdstan\%i\stan \
-  ) else if exist "$(HOME)\cmdstan" ( \
-    echo $(HOME)\cmdstan\stan \
-  ))
-
+  if [ -d "$(HOME)/.cmdstan" ] && ls "$(HOME)/.cmdstan/cmdstan-"* >/dev/null 2>&1; then \
+    ls -d "$(HOME)/.cmdstan/cmdstan-"* | sort -rV | head -n1 | xargs -I {} echo {}/stan; \
+  elif [ -d "$(HOME)/cmdstan" ]; then \
+    echo "$(HOME)/cmdstan/stan"; \
+  fi)
 
 STAN_SRC =  $(STAN_PATH)/src
 STAN_MATH =  $(STAN_PATH)/lib/stan_math
