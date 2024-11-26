@@ -53,15 +53,35 @@ PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 # Find R user library path for packages
 RPKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
 
-# Find cmdstan path
+
+# Debug current environment
+$(info HOME directory is: $(HOME))
+$(info Current directory is: $(shell pwd))
+$(info Checking for .cmdstan in: $(HOME)/.cmdstan)
+$(info Checking for cmdstan in: $(HOME)/cmdstan)
+
+# Find cmdstan path with debug output
 CMDSTAN_PATH = $(shell \
+  echo "Starting cmdstan path search..." && \
   if [ -d "$(HOME)/.cmdstan" ]; then \
-    cmdstan_dir=$$(ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1) && \
-    echo "$$cmdstan_dir"; \
+    echo "Found .cmdstan directory at $(HOME)/.cmdstan" && \
+    ls -la "$(HOME)/.cmdstan" && \
+    cmdstan_path=$$(ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1) && \
+    echo "Selected path: $$cmdstan_path" && \
+    echo "$$cmdstan_path"; \
   elif [ -d "$(HOME)/cmdstan" ]; then \
+    echo "Found regular cmdstan at $(HOME)/cmdstan" && \
     echo "$(HOME)/cmdstan"; \
+  else \
+    echo "No cmdstan installation found" && \
+    echo ""; \
   fi)
 
+$(info CMDSTAN_PATH resolved to: '$(CMDSTAN_PATH)')
+
+# Try alternative path finding
+CMDSTAN_ALT = $(shell echo "$$CMDSTAN")
+$(info CMDSTAN env var is: '$(CMDSTAN_ALT)')
 
 $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 
