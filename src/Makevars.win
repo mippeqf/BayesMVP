@@ -3,8 +3,8 @@
 #####    Compiler settings     ###  ccache
 ### set compiler types
 
-CXX_COMPILER_TYPE =      C:/rtools44/x86_64-w64-mingw32.static.posix/bin/g++.exe    #    g++
-CPP_COMPILER_TYPE =      C:/rtools44/x86_64-w64-mingw32.static.posix/bin/gcc.exe   gcc
+CXX_COMPILER_TYPE =     g++ ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/g++.exe    #    g++
+CPP_COMPILER_TYPE =     gcc ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/gcc.exe   gcc
 BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
 BASE_FLAGS +=  -finline-limit=20000000 ## for g++
 
@@ -47,18 +47,24 @@ PKG_CPPFLAGS=$(BASE_FLAGS)
 
 #######   -----  BayesmMVP  path
 ifeq ($(OS),Windows_NT)
-    PKG_PATH = $(shell cd)
+   ##  PKG_PATH = $(shell cd)
+     PKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(getwd())")
 else
     PKG_PATH = $(shell pwd)
 endif
 
+$(info PKG_PATH is: $(PKG_PATH))
+
 
 ####### ---- load dummy model for bridgestan to compile (for Linux / Mac OS X)
-PKG_LIBS=$(PKG_PATH)/dummy_stan_model_model.dll
+## PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
+$(info PKG_PATH is: $(PKG_PATH))
+
 
 # Get Windows user profile directory directly
 ## HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROFILE'))")
 HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('\\\\\\\\', '/', Sys.getenv('USERPROFILE')))")/
+$(info HOME is: $(HOME))
 
 
 # Get R library path (this will work for any R version)
@@ -113,9 +119,31 @@ $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 
 TBB_PATH =  $(STAN_MATH_LIB)/tbb ## $(STAN_MATH)/lib/tbb
 TBB_DLL = $(TBB_PATH)/tbb.dll  ## .dll for Windows ## e.g.: "C:\Users\enzoc\.cmdstan\cmdstan-2.35.0\stan\lib\stan_math\lib\tbb\tbb.dll"
-PKG_LIBS += $(TBB_DLL)
-PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
+$(info TBB_PATH is: $(TBB_PATH))
 
+
+#### PKG_LIBS += -Wl,-rpath,$(TBB_PATH) # probably not good for Windows
+## PKG_LIBS += $(TBB_DLL)
+
+
+PKG_LIBS = -L$(PKG_PATH) -L$(TBB_PATH) $(PKG_PATH)/dummy_stan_model_model.dll -ltbb
+$(info PKG_LIBS is: $(PKG_LIBS))
+
+PATH := $(TBB_PATH):$(PATH) # add TBB path to the system PATH (Windows)
+
+BRIDGESTAN_PATH = $(HOME)/bridgestan
+BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
+$(info BRIDGESTAN_PATH is: $(BRIDGESTAN_PATH))
+
+
+# print out paths again for checking and debugging
+$(info HOME is: $(HOME))
+$(info PKG_PATH is: $(PKG_PATH))
+$(info TBB_PATH is: $(TBB_PATH))
+$(info PKG_LIBS is: $(PKG_LIBS))
+$(info BRIDGESTAN_PATH is: $(BRIDGESTAN_PATH))
+$(info CMDSTAN_PATH is: $(CMDSTAN_PATH))
 
 PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
@@ -145,12 +173,16 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(BRIDGESTAN_SRC)"
 
 
+$(info PKG_CPPFLAGS is: $(PKG_CPPFLAGS))
+
+
+
 ##     -I"$(R_LIB_PATH)/RcppEigen/include" \
 ##     -I"$(STAN_MATH_LIB)" \
 
-BRIDGESTAN_PATH = $(HOME)/bridgestan
-BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
-PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
+
+
+
 
 PKG_CXXFLAGS = $(PKG_CPPFLAGS)  -std=c++17   -DBOOST_DISABLE_ASSERTS
 CPPFLAGS = $(PKG_CPPFLAGS)
