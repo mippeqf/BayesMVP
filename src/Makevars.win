@@ -371,22 +371,14 @@ $(info TBB_PATH is: $(TBB_PATH))
 
 
 
-##PKG_LIBS =  -L$(PKG_PATH)
-##PKG_LIBS += -L$(TBB_PATH)   -ltbb
-### PKG_LIBS +=  $(PKG_PATH)/dummy_stan_model_model.dll  ## if .dll file is in /src dir (i.e. the working dir)
+PKG_LIBS =  -L$(PKG_PATH)
+PKG_LIBS += -L$(TBB_PATH)   -ltbb
+PKG_LIBS +=  $(PKG_PATH)/dummy_stan_model_model.dll  ## if .dll file is in /src dir (i.e. the working dir)
 ##PKG_LIBS += ../inst/dummy_stan_model_model.dll ### ../ goes back one folder (so from /src to /) and then we go in /inst to get the .dll
 
 
-all: copy-dummy
 
-copy-dummy:
-    cp ../inst/dummy_stan_model_model.dll dummy_stan_model_model.dll
-
-install:
-    cp dummy_stan_model_model.dll $(PKG_PATH)/libs/
-
-
-PKG_LIBS =-L$(PKG_PATH)  -L$(TBB_PATH) -ltbb -L$(R_LIB_PATH)/libs/ -ldummy_stan_model_model
+## PKG_LIBS =-L$(PKG_PATH)  -L$(TBB_PATH) -ltbb -L$(R_LIB_PATH)/libs/ -ldummy_stan_model_model
 
 
 
