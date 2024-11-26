@@ -50,7 +50,7 @@ PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 # Find R user library path for packages
 RPKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
 
-HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('/Documents', '', Sys.getenv('HOME')))")
+HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROFILE'))")
 
 $(info Using HOME directory: $(HOME))
 
