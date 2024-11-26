@@ -13,7 +13,7 @@ BASE_FLAGS +=  -finline-limit=20000000 ## for g++
 CXX_STD = CXX17
 
 
-BASE_FLAGS +=  -DNDEBUG  -ffp-contract=fast
+
 
 BASE_FLAGS +=  -mfma -mavx -mavx2
 ###  BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
@@ -23,6 +23,10 @@ BASE_FLAGS +=  -mfma -mavx -mavx2
 ## BASE_FLAGS +=  -fno-trapping-math
 
 BASE_FLAGS +=       -DEIGEN_VECTORIZE
+BASE_FLAGS +=  -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE
+BASE_FLAGS +=  -DNDEBUG
+
+BASE_FLAGS +=     -ffp-contract=fast
 
 BASE_FLAGS +=  -finline-limit=20000000 ## for g++
 
