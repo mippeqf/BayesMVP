@@ -78,6 +78,14 @@ $(info - CmdStan: $(CMDSTAN_PATH))
 
 
 
+# Define base directories
+STAN_ROOT =  $(CMDSTAN_PATH)/stan
+STAN_BASE =  $(STAN_ROOT)/src/stan
+STAN_LIB =   $(STAN_ROOT)/lib
+STAN_MATH =  $(STAN_ROOT)/lib/stan_math
+STAN_MATH_LIB =  $(STAN_MATH)/lib
+
+
 # Try alternative path finding
 CMDSTAN_ALT = $(shell echo "$$CMDSTAN")
 $(info CMDSTAN env var is: '$(CMDSTAN_ALT)')
@@ -86,52 +94,45 @@ $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 
 PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(CMDSTAN_PATH)" \
-    -I"$(CMDSTAN_PATH)/stan/src" \
-    -I"$(CMDSTAN_PATH)/stan" \
-    -I"$(CMDSTAN_PATH)/lib/stan_math" \
-    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0" \
-    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0" \
-    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include" \
-    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/tbb/include" \
-    -I"$(CMDSTAN_PATH)/stan/lib/rapidjson_1.1.0" \
-    -I"$(CMDSTAN_PATH)/stan/lib/rapidjson_1.1.0/rapidjson" \
+    -I"$(STAN_ROOT)" \
+    -I"$(STAN_MATH)" \
+    -I"$(STAN_BASE)" \
+    -I"$(STAN_LIB)" \
+    -I"$(STAN_MATH_LIB)" \
+    -I"$(STAN_MATH_LIB)/lib/stan_math" \
+    -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
+    -I"$(STAN_MATH_LIB)/boost_1.84.0" \
+    -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
+    -I"$(STAN_MATH_LIB)/sundials_6.1.1" \
+    -I"$(STAN_MATH_LIB)/tbb/include" \
+    -I"$(STAN_LIB)/rapidjson_1.1.0" \
+    -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
     -I"$(R_LIB_PATH)/bridgestan/include" \
     -I"$(R_LIB_PATH)/Rcpp/include" \
     -I"$(R_LIB_PATH)/RcppEigen/include" \
     -I"$(R_LIB_PATH)/StanHeaders/include" \
-    -I"$(R_LIB_PATH)/BH/include" \
-    -I"$(R_LIB_PATH)/RcppParallel/include"
+    -I"$(R_LIB_PATH)/BH/include" \ \
+    -I"$(STAN_BASE)/model" \
+    -I"$(STAN_BASE)/services" \
+    -I"$(STAN_BASE)/io" \
+    -I"$(STAN_BASE)/mcmc" \
+    -I"$(STAN_BASE)/analyze" \
+    -I"$(STAN_BASE)/callbacks" \
+    -I"$(STAN_BASE)/lang" \
+    -I"$(STAN_BASE)/optimization" \
+    -I"$(STAN_BASE)/variational"
+
 
 
 OBJECTS = main.o RcppExports.o
 
 
-STAN_SRC =  $(CMDSTAN_PATH)/src
-STAN_MATH =  $(CMDSTAN_PATH)/lib/stan_math
-
-TBB_PATH = $(STAN_MATH)/lib/tbb
+TBB_PATH = -I"$(STAN_LIB)/tbb" ## $(STAN_MATH)/lib/tbb
 TBB_SO = $(TBB_PATH)/tbb12.dll  ## .dll for Windows
-
-PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
 PKG_LIBS += $(TBB_SO)
 
-# other include paths
-#PKG_CPPFLAGS+=-I"$(TBB_PATH)/include"
-#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)"
-#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/src"
-#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/"
-#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0"
-#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0"
-#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include"
 
-#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)"
-#PKG_CPPFLAGS+=-I"$(STAN_SRC)"
-#PKG_CPPFLAGS+=-I"$(STAN_MATH)"
-#PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/model"
-#PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/services"
-#PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/io"
-#PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/mcmc"
-
+PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
 
 
 
@@ -143,7 +144,6 @@ PKG_CXXFLAGS = $(PKG_CPPFLAGS)  -std=c++17   -DBOOST_DISABLE_ASSERTS
 
 CPPFLAGS += $(PKG_CPPFLAGS)
 CXXFLAGS += $(PKG_CXXFLAGS)
-
 
 
 
