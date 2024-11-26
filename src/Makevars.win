@@ -36,9 +36,6 @@ PKG_CPPFLAGS=$(BASE_FLAGS)
 
 
 #######   -----  BayesmMVP  path
-## PKG_PATH=$(HOME)/Documents/Work/PhD_work/R_packages/BayesMVP
-## PKG_PATH=$(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(system.file(package='BayesMVP'))") ## for Windows
-
 ifeq ($(OS),Windows_NT)
     PKG_PATH = $(shell cd)
 else
@@ -53,6 +50,9 @@ PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 # Find R user library path for packages
 RPKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
 
+HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('/Documents', '', Sys.getenv('HOME')))")
+
+$(info Using HOME directory: $(HOME))
 
 # Debug current environment
 $(info HOME directory is: $(HOME))
@@ -180,6 +180,7 @@ CXX20PICFLAGS = -fpic
 CXX23 = $(CXX_COMPILER_TYPE)
 CXX23FLAGS =   $(BASE_FLAGS)
 CXX23PICFLAGS = -fpic
+
 
 
 
