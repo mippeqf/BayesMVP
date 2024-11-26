@@ -41,7 +41,7 @@ using namespace Eigen;
  
  
  
- inline   void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+ALWAYS_INLINE   void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                                                Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                                      Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                                      Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
@@ -117,7 +117,7 @@ using namespace Eigen;
 
 
 
- inline   void                                        fn_standard_HMC_dual_single_iter_InPlace_process(    HMCResult &result_input,
+ALWAYS_INLINE   void                                        fn_standard_HMC_dual_single_iter_InPlace_process(    HMCResult &result_input,
                                                                                                  const bool  burnin, 
                                                                                                  std::mt19937  &rng,
                                                                                                  const int seed,
@@ -147,7 +147,7 @@ using namespace Eigen;
     double U_x_initial =  0.0 ; 
     double U_x_prop =  0.0 ; 
     double log_posterior_prop =  0.0 ; 
-    double log_posterior_0  =   0.0 ;  
+    double log_posterior_0  =   0.0 ;   
     double log_ratio = 0.0;
     double energy_old = 0.0;
     double energy_new = 0.0;
@@ -157,7 +157,7 @@ using namespace Eigen;
 
   {
 
-      { /// draw velocity for main 
+      { /// draw velocity for main   
           Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
           generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
@@ -180,11 +180,18 @@ using namespace Eigen;
         
         result_input.main_velocity_vec_proposed  =   result_input.main_velocity_0_vec; // set initial velocity
         result_input.main_theta_vec_proposed =       result_input.main_theta_vec_0;   // set initial theta   
+        result_input.us_velocity_vec_proposed  =   result_input.us_velocity_0_vec; // set initial velocity
+        result_input.us_theta_vec_proposed =       result_input.us_theta_vec_0;   // set initial theta 
 
         // ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
           generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
           int    L_ii = std::ceil( EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
           if (L_ii < 1) { L_ii = 1 ; }
+          
+          //// set the nuisance HMC params to equal the main ones
+          EHMC_args_as_cpp_struct.tau_us = EHMC_args_as_cpp_struct.tau_main;
+          EHMC_args_as_cpp_struct.tau_us_ii = EHMC_args_as_cpp_struct.tau_main_ii;
+          EHMC_args_as_cpp_struct.eps_us = EHMC_args_as_cpp_struct.eps_main;
           
           //// initial lp  
           fn_lp_grad_InPlace(     result_input.lp_and_grad_outs, 
