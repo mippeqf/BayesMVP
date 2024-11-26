@@ -46,13 +46,12 @@ endif
 ####### ---- load dummy model for bridgestan to compile (for Linux / Mac OS X)
 PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 
-# Get users home directory
+# Get Windows user profile directory directly
 HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROFILE'))")
-$(info Using HOME directory: $(HOME))
 
 # Get R library path (this will work for any R version)
 R_LIB_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[grep('00LOCK|00new', .libPaths(), invert=TRUE)][1])")
-$(info Using R library path: $(R_LIB_PATH))
+
 
 # Debug current environment
 $(info HOME directory is: $(HOME))
@@ -61,23 +60,23 @@ $(info Checking for .cmdstan in: $(HOME)/.cmdstan)
 $(info Checking for cmdstan in: $(HOME)/cmdstan)
 
 # Find cmdstan path with debug output
-CMDSTAN_PATH = $(shell \
-  echo "Starting cmdstan path search..." && \
+CMDSTAN_DIR = $(shell \
   if [ -d "$(HOME)/.cmdstan" ]; then \
-    echo "Found .cmdstan directory at $(HOME)/.cmdstan" && \
-    ls -la "$(HOME)/.cmdstan" && \
-    cmdstan_path=$$(ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1) && \
-    echo "Selected path: $$cmdstan_path" && \
-    echo "$$cmdstan_path"; \
+    ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1; \
   elif [ -d "$(HOME)/cmdstan" ]; then \
-    echo "Found regular cmdstan at $(HOME)/cmdstan" && \
     echo "$(HOME)/cmdstan"; \
-  else \
-    echo "No cmdstan installation found" && \
-    echo ""; \
   fi)
 
-$(info CMDSTAN_PATH resolved to: '$(CMDSTAN_PATH)')
+
+# Use the clean path variable
+CMDSTAN_PATH = $(CMDSTAN_DIR)
+
+$(info Using paths:)
+$(info - HOME: $(HOME))
+$(info - R library: $(R_LIB_PATH))
+$(info - CmdStan: $(CMDSTAN_PATH))
+
+
 
 # Try alternative path finding
 CMDSTAN_ALT = $(shell echo "$$CMDSTAN")
@@ -86,17 +85,14 @@ $(info CMDSTAN env var is: '$(CMDSTAN_ALT)')
 $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 
 PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
-    -I"$(CMDSTAN_PATH)/src" \
+    -I"$(CMDSTAN_PATH)" \
+    -I"$(CMDSTAN_PATH)/stan/src" \
+    -I"$(CMDSTAN_PATH)/stan" \
     -I"$(CMDSTAN_PATH)/lib/stan_math" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/tbb/include" \
-    -I"$(CMDSTAN_PATH)/src/stan" \
-    -I"$(CMDSTAN_PATH)/src/stan/model" \
-    -I"$(CMDSTAN_PATH)/src/stan/services" \
-    -I"$(CMDSTAN_PATH)/src/stan/io" \
-    -I"$(CMDSTAN_PATH)/src/stan/mcmc" \
     -I"$(R_LIB_PATH)/bridgestan/include" \
     -I"$(R_LIB_PATH)/Rcpp/include" \
     -I"$(R_LIB_PATH)/RcppEigen/include" \
