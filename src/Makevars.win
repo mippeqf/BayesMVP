@@ -123,19 +123,35 @@ PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll  ## if .dll file is in /src dir
 $(info PKG_LIBS is: $(PKG_LIBS))
 
 
-## BRIDGESTAN_PATH = $(HOME)/.bridgestan
-## BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+
+## Find the Bridgestan directory dynamically using Rscript
+#BRIDGESTAN_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "bs_dirs <- dir(file.path(Sys.getenv('USERPROFILE'), '.bridgestan'), full.names = TRUE, pattern = '^bridgestan-'); if (length(bs_dirs) > 0) bs_dirs <- bs_dirs[order(numeric_version(gsub('bridgestan-', '', basename(bs_dirs))))]; if ('bridgestan-2.5.0' %in% basename(bs_dirs)) cat(file.path(Sys.getenv('USERPROFILE'), '.bridgestan', 'bridgestan-2.5.0')) else if (length(bs_dirs) > 0) cat(bs_dirs[length(bs_dirs)]) else cat('')")
+
+## Add a fallback check
+#ifeq ($(BRIDGESTAN_PATH),)
+#  $(error Bridgestan directory not found in ~/.bridgestan. Please ensure it exists.)
+#endif
+
+#BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 
-# Find the Bridgestan directory dynamically using Rscript
-BRIDGESTAN_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "bs_dirs <- dir(file.path(Sys.getenv('USERPROFILE'), '.bridgestan'), full.names = TRUE, pattern = '^bridgestan-'); if (length(bs_dirs) > 0) bs_dirs <- bs_dirs[order(numeric_version(gsub('bridgestan-', '', basename(bs_dirs))))]; if ('bridgestan-2.5.0' %in% basename(bs_dirs)) cat(file.path(Sys.getenv('USERPROFILE'), '.bridgestan', 'bridgestan-2.5.0')) else if (length(bs_dirs) > 0) cat(bs_dirs[length(bs_dirs)]) else cat('')")
+# Find Bridgestan path with debug output
+BRIDGESTAN_DIR = $(shell \
+  if [ -d "$(HOME)/.bridgestan" ]; then \
+    ls -d "$(HOME)/.bridgestan/bridgestan-"* 2>/dev/null | sort -rV | head -n1; \
+  fi)
 
-# Add a fallback check
-ifeq ($(BRIDGESTAN_PATH),)
+# Check if a specific version exists (e.g., bridgestan-2.5.0)
+BRIDGESTAN_DIR := $(shell if [ -d "$(HOME)/.bridgestan/bridgestan-2.5.0" ]; then echo "$(HOME)/.bridgestan/bridgestan-2.5.0"; else echo $(BRIDGESTAN_DIR); fi)
+
+# Fallback if no .bridgestan directory or version is found
+ifeq ($(BRIDGESTAN_DIR),)
   $(error Bridgestan directory not found in ~/.bridgestan. Please ensure it exists.)
 endif
 
-BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+BRIDGESTAN_SRC = $(BRIDGESTAN_DIR)/src
+
+
 
 
 PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
