@@ -79,12 +79,12 @@ $(info - CmdStan: $(CMDSTAN_PATH))
 
 
 # Define base directories
-STAN_ROOT =  -I"$(CMDSTAN_PATH)/stan"
-STAN_SRC =   -I"$(CMDSTAN_PATH)/stan/src"
-STAN_BASE =  -I"$(STAN_SRC)/stan"
-STAN_LIB =   -I"$(STAN_ROOT)/lib"
-STAN_MATH =  -I"$(STAN_ROOT)/lib/stan_math"
-STAN_MATH_LIB =  -I"$(STAN_MATH)/lib"
+STAN_ROOT =   $(CMDSTAN_PATH)/stan
+STAN_SRC =    $(CMDSTAN_PATH)/stan/src
+STAN_BASE =   $(CMDSTAN_PATH)/stan/src/stan
+STAN_LIB =    $(CMDSTAN_PATH)/stan/lib
+STAN_MATH =   $(CMDSTAN_PATH)/stan/lib/stan_math
+STAN_MATH_LIB = $(CMDSTAN_PATH)/stan/lib/stan_math/lib
 
 
 # Try alternative path finding
