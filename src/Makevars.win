@@ -46,13 +46,13 @@ endif
 ####### ---- load dummy model for bridgestan to compile (for Linux / Mac OS X)
 PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 
-
-# Find R user library path for packages
-RPKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
-
+# Get users home directory
 HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROFILE'))")
-
 $(info Using HOME directory: $(HOME))
+
+# Get R library path (this will work for any R version)
+R_LIB_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
+$(info Using R library path: $(R_LIB_PATH))
 
 # Debug current environment
 $(info HOME directory is: $(HOME))
@@ -96,7 +96,13 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(CMDSTAN_PATH)/src/stan/model" \
     -I"$(CMDSTAN_PATH)/src/stan/services" \
     -I"$(CMDSTAN_PATH)/src/stan/io" \
-    -I"$(CMDSTAN_PATH)/src/stan/mcmc"
+    -I"$(CMDSTAN_PATH)/src/stan/mcmc" \
+    -I"$(R_LIB_PATH)/bridgestan/include" \
+    -I"$(R_LIB_PATH)/Rcpp/include" \
+    -I"$(R_LIB_PATH)/RcppEigen/include" \
+    -I"$(R_LIB_PATH)/StanHeaders/include" \
+    -I"$(R_LIB_PATH)/BH/include" \
+    -I"$(R_LIB_PATH)/RcppParallel/include"
 
 
 OBJECTS = main.o RcppExports.o
@@ -112,21 +118,21 @@ PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
 PKG_LIBS += $(TBB_SO)
 
 # other include paths
-PKG_CPPFLAGS+=-I"$(TBB_PATH)/include"
-PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)"
-PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/src"
-PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/"
-PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0"
-PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0"
-PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include"
+#PKG_CPPFLAGS+=-I"$(TBB_PATH)/include"
+#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)"
+#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/src"
+#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/"
+#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0"
+#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0"
+#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include"
 
-PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)"
-PKG_CPPFLAGS+=-I"$(STAN_SRC)"
-PKG_CPPFLAGS+=-I"$(STAN_MATH)"
-PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/model"
-PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/services"
-PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/io"
-PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/mcmc"
+#PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)"
+#PKG_CPPFLAGS+=-I"$(STAN_SRC)"
+#PKG_CPPFLAGS+=-I"$(STAN_MATH)"
+#PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/model"
+#PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/services"
+#PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/io"
+#PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/mcmc"
 
 
 
@@ -180,9 +186,6 @@ CXX20PICFLAGS = -fpic
 CXX23 = $(CXX_COMPILER_TYPE)
 CXX23FLAGS =   $(BASE_FLAGS)
 CXX23PICFLAGS = -fpic
-
-
-
 
 
 
