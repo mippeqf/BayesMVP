@@ -1,0 +1,219 @@
+
+
+#####    Compiler settings     ###  ccache
+### set compiler types
+
+CXX_COMPILER_TYPE =     g++ ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/g++.exe    #    g++
+CPP_COMPILER_TYPE =     gcc ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/gcc.exe   gcc
+BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
+BASE_FLAGS +=  -finline-limit=20000000 ## for g++
+
+
+# Use C++17
+CXX_STD = CXX17
+
+
+
+
+BASE_FLAGS +=  -mfma -mavx -mavx2
+BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
+
+BASE_FLAGS += -fno-math-errno
+BASE_FLAGS +=  -fno-signed-zeros
+BASE_FLAGS +=  -fno-trapping-math
+
+BASE_FLAGS +=  -DEIGEN_VECTORIZE
+BASE_FLAGS +=  -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE
+BASE_FLAGS +=  -DNDEBUG
+
+BASE_FLAGS +=     -ffp-contract=fast
+BASE_FLAGS +=  -fpermissive
+BASE_FLAGS +=  -finline-limit=20000000 ## for g++
+BASE_FLAGS +=    -Wno-ignored-attributes  -Wno-sign-compare
+
+
+# PKG_CXXFLAGS += -fopenmp ### for g++
+# BASE_FLAGS +=  -fopenmp ### for g++
+
+
+
+
+
+
+
+PKG_CPPFLAGS=$(BASE_FLAGS)
+
+
+
+#######   -----  BayesmMVP  path
+ifeq ($(OS),Windows_NT)
+   ##  PKG_PATH = $(shell cd)
+     PKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(getwd())")
+else
+    PKG_PATH = $(shell pwd)
+endif
+
+
+
+####### ---- load dummy model for bridgestan to compile (for Linux / Mac OS X)
+PKG_LIBS=$(PKG_PATH)/dummy_stan_model_model.dll
+
+# Get Windows user profile directory directly
+## HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.getenv('USERPROFILE'))")
+HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('\\\\\\\\', '/', Sys.getenv('USERPROFILE')))")/
+
+
+# Get R library path (this will work for any R version)
+R_LIB_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[grep('00LOCK|00new', .libPaths(), invert=TRUE)][1])")
+
+
+# Debug current environment
+$(info HOME directory is: $(HOME))
+$(info Current directory is: $(shell pwd))
+$(info Checking for .cmdstan in: $(HOME)/.cmdstan)
+$(info Checking for cmdstan in: $(HOME)/cmdstan)
+
+# Find cmdstan path with debug output
+CMDSTAN_DIR = $(shell \
+  if [ -d "$(HOME)/.cmdstan" ]; then \
+    ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1; \
+  elif [ -d "$(HOME)/cmdstan" ]; then \
+    echo "$(HOME)/cmdstan"; \
+  fi)
+
+
+# Use the clean path variable
+CMDSTAN_PATH = $(CMDSTAN_DIR)
+
+$(info Using paths:)
+$(info - HOME: $(HOME))
+$(info - R library: $(R_LIB_PATH))
+$(info - CmdStan: $(CMDSTAN_PATH))
+
+
+
+# Define base directories
+STAN_ROOT =   $(CMDSTAN_PATH)/stan
+STAN_SRC =    $(CMDSTAN_PATH)/stan/src
+STAN_BASE =   $(CMDSTAN_PATH)/stan/src/stan
+STAN_LIB =    $(CMDSTAN_PATH)/stan/lib
+STAN_MATH =   $(CMDSTAN_PATH)/stan/lib/stan_math
+STAN_MATH_LIB = $(CMDSTAN_PATH)/stan/lib/stan_math/lib
+
+
+# Try alternative path finding
+CMDSTAN_ALT = $(shell echo "$$CMDSTAN")
+$(info CMDSTAN env var is: '$(CMDSTAN_ALT)')
+
+$(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
+
+
+
+
+## OBJECTS = main.o RcppExports.o
+
+
+TBB_PATH =  $(STAN_MATH_LIB)/tbb ## $(STAN_MATH)/lib/tbb
+TBB_DLL = $(TBB_PATH)/tbb.dll  ## .dll for Windows ## e.g.: "C:\Users\enzoc\.cmdstan\cmdstan-2.35.0\stan\lib\stan_math\lib\tbb\tbb.dll"
+PKG_LIBS += $(TBB_DLL)
+PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
+
+
+BRIDGESTAN_PATH = $(HOME)/bridgestan
+BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
+
+# print out paths for checking and debugging
+$(info PKG_PATH is: $(PKG_PATH))
+$(info TBB_PATH is: $(TBB_PATH))
+$(info PKG_LIBS is: $(PKG_LIBS))
+$(info BRIDGESTAN_PATH is: $(BRIDGESTAN_PATH))
+$(info CMDSTAN_PATH is: $(CMDSTAN_PATH))
+
+PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
+    -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
+    -I"$(STAN_MATH_LIB)/boost_1.84.0" \
+    -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
+    -I"$(STAN_MATH_LIB)/sundials_6.1.1" \
+    -I"$(STAN_MATH_LIB)/tbb/include" \
+    -I"$(STAN_LIB)/rapidjson_1.1.0" \
+    -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
+    -I"$(CMDSTAN_PATH)" \
+    -I"$(STAN_ROOT)" \
+    -I"$(STAN_SRC)" \
+    -I"$(STAN_MATH)" \
+    -I"$(STAN_BASE)" \
+    -I"$(STAN_LIB)" \
+    -I"$(STAN_BASE)/model" \
+    -I"$(STAN_BASE)/services" \
+    -I"$(STAN_BASE)/io" \
+    -I"$(STAN_BASE)/mcmc" \
+    -I"$(STAN_BASE)/analyze" \
+    -I"$(STAN_BASE)/callbacks" \
+    -I"$(STAN_BASE)/lang" \
+    -I"$(STAN_BASE)/optimization" \
+    -I"$(STAN_BASE)/variational" \
+    -I"$(TBB_PATH)/include" \
+    -I"$(TBB_PATH)" \
+    -I"$(BRIDGESTAN_SRC)"
+
+
+##     -I"$(R_LIB_PATH)/RcppEigen/include" \
+##     -I"$(STAN_MATH_LIB)" \
+
+
+
+
+
+PKG_CXXFLAGS = $(PKG_CPPFLAGS)  -std=c++17   -DBOOST_DISABLE_ASSERTS
+CPPFLAGS = $(PKG_CPPFLAGS)
+CXXFLAGS = $(PKG_CXXFLAGS)
+
+
+CC =  $(CPP_COMPILER_TYPE)
+CFLAGS =  $(BASE_FLAGS)
+CC14 = $(CPP_COMPILER_TYPE)
+C14FLAGS = $(BASE_FLAGS)
+CC17 = $(CPP_COMPILER_TYPE)
+C17FLAGS = $(BASE_FLAGS)
+CC23 =  $(CPP_COMPILER_TYPE)
+C23FLAGS =  $(BASE_FLAGS)
+CC90 =  $(CPP_COMPILER_TYPE)
+C90FLAGS = $(BASE_FLAGS)
+CC99 =  $(CPP_COMPILER_TYPE)
+99FLAGS = $(BASE_FLAGS)
+
+
+CXX = $(CXX_COMPILER_TYPE)
+CXXFLAGS = $(BASE_FLAGS)
+CXXPICFLAGS = -fpic
+
+CXX11 = $(CXX_COMPILER_TYPE)
+CXX11FLAGS = $(BASE_FLAGS)
+CXX11PICFLAGS = -fpic
+
+CXX14 = $(CXX_COMPILER_TYPE)
+CXX14FLAGS = $(BASE_FLAGS)
+CXX14PICFLAGS = -fpic
+
+CXX17 = $(CXX_COMPILER_TYPE)
+CXX17FLAGS =  $(BASE_FLAGS)
+CXX17PICFLAGS = -fpic
+
+CXX20 = $(CXX_COMPILER_TYPE)
+CXX20FLAGS =   $(BASE_FLAGS)
+CXX20PICFLAGS = -fpic
+
+CXX23 = $(CXX_COMPILER_TYPE)
+CXX23FLAGS =   $(BASE_FLAGS)
+CXX23PICFLAGS = -fpic
+
+
+
+
+
+
+
+
+
+
