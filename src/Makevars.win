@@ -131,34 +131,31 @@ $(info PKG_LIBS is: $(PKG_LIBS))
 #ifeq ($(BRIDGESTAN_PATH),)
 #  $(error Bridgestan directory not found in ~/.bridgestan. Please ensure it exists.)
 #endif
-
 #BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
 
-# Find Bridgestan path dynamically using PowerShell
-BRIDGESTAN_DIR = $(shell powershell -Command "& { \
-  $home = [Environment]::GetFolderPath('UserProfile'); \
-  $bridgestanPath = Join-Path $home '.bridgestan'; \
-  if (Test-Path $bridgestanPath) { \
-    $dirs = Get-ChildItem -Directory $bridgestanPath -Name | Where-Object { $_ -match '^bridgestan-' }; \
-    if ($dirs -contains 'bridgestan-2.5.0') { \
-      Write-Output (Join-Path $bridgestanPath 'bridgestan-2.5.0'); \
-    } elseif ($dirs.Count -gt 0) { \
-      $sortedDirs = $dirs | Sort-Object -Descending; \
-      Write-Output (Join-Path $bridgestanPath $sortedDirs[0]); \
-    } \
-  } else { \
-    Write-Output ''; \
-  } \
-}")
+# Get Windows home directory
+HOME = $(subst \,/,$(USERPROFILE))
 
-# Error handling if Bridgestan is not found
-ifeq ($(strip $(BRIDGESTAN_DIR)),)
-  $(error Bridgestan directory not found in ~/.bridgestan. Please ensure it exists.)
+# BridgeStan path detection with 2.5.0 priority
+BRIDGESTAN_PATH = $(shell cmd //c "\
+  if exist $(HOME)\.bridgestan\bridgestan-2.5.0 (\
+    echo $(HOME)\.bridgestan\bridgestan-2.5.0\
+  ) else if exist $(HOME)\.bridgestan (\
+    for /f \"tokens=*\" %%a in ('dir /b /ad $(HOME)\.bridgestan\bridgestan-* 2^>nul ^| sort /r') do @echo $(HOME)\.bridgestan\%%a & exit /b\
+  ) else if exist C:\bridgestan-2.5.0 (\
+    echo C:\bridgestan-2.5.0\
+  ) else (\
+    for /f \"tokens=*\" %%a in ('dir /s /b /ad C:\bridgestan-* 2^>nul ^| sort /r') do @echo %%a & exit /b\
+  )")
+
+ifeq ($(strip $(BRIDGESTAN_PATH)),)
+$(error BridgeStan not found. Please install BridgeStan.)
 endif
 
-BRIDGESTAN_SRC = $(BRIDGESTAN_DIR)/src
+BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 
+$(info Using BridgeStan: $(BRIDGESTAN_PATH))
 
 
 PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
