@@ -109,9 +109,9 @@ $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 ## OBJECTS = main.o RcppExports.o
 
 
-TBB_PATH =  $(STAN_LIB)/tbb ## $(STAN_MATH)/lib/tbb
-TBB_SO = $(TBB_PATH)/tbb.dll  ## .dll for Windows
-PKG_LIBS += $(TBB_SO)
+TBB_PATH =  $(STAN_MATH_LIB)/tbb ## $(STAN_MATH)/lib/tbb
+TBB_DLL = $(TBB_PATH)/tbb.dll  ## .dll for Windows ## e.g.: "C:\Users\enzoc\.cmdstan\cmdstan-2.35.0\stan\lib\stan_math\lib\tbb\tbb.dll"
+PKG_LIBS += $(TBB_DLL)
 PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
 
 
