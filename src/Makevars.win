@@ -31,6 +31,8 @@ PKG_CXXFLAGS += -fopenmp ### for g++
 BASE_FLAGS +=  -fopenmp ### for g++
 
 
+PKG_CPPFLAGS=$(BASE_FLAGS)
+
 
 
 #######   -----  BayesmMVP  path
@@ -48,9 +50,15 @@ endif
 PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 
 
+# Find R user library path for packages
+RPKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
 
 
-## STAN_PATH = $(shell dir /s /b "$(HOME)\*cmdstan*\stan" | head -n 1)  ## for Windows
+PKG_CPPFLAGS += -I"$(RPKG_PATH)/bridgestan/include" \
+                -I"$(RPKG_PATH)/StanHeaders/include" \
+                -I"$(RPKG_PATH)/RcppEigen/include" \
+                -I"$(RPKG_PATH)/BH/include" \
+                -I"$(RPKG_PATH)/RcppParallel/include"
 
 
 ##### Find cmdstan / Stan path (for Windows)
@@ -63,20 +71,14 @@ STAN_PATH = $(shell \
 
 STAN_SRC =  $(STAN_PATH)/src
 STAN_MATH =  $(STAN_PATH)/lib/stan_math
-
-
-
-
 TBB_PATH = $(STAN_MATH)/lib/tbb
 TBB_SO = $(TBB_PATH)/tbb12.dll  ## .dll for Windows
 PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
 PKG_LIBS += $(TBB_SO)
 
+# other include paths
 
-# Include paths
-PKG_CPPFLAGS=$(BASE_FLAGS)
 PKG_CPPFLAGS+=-I$(TBB_PATH)/include
-
 PKG_CPPFLAGS+=-I"$(STAN_PATH)"
 PKG_CPPFLAGS+=-I"$(STAN_PATH)/src"
 PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/"
