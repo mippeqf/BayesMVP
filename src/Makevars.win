@@ -79,11 +79,12 @@ $(info - CmdStan: $(CMDSTAN_PATH))
 
 
 # Define base directories
-STAN_ROOT =  $(CMDSTAN_PATH)/stan
-STAN_BASE =  $(STAN_ROOT)/src/stan
-STAN_LIB =   $(STAN_ROOT)/lib
-STAN_MATH =  $(STAN_ROOT)/lib/stan_math
-STAN_MATH_LIB =  $(STAN_MATH)/lib
+STAN_ROOT =  -I"$(CMDSTAN_PATH)/stan"
+STAN_SRC =   -I"$(CMDSTAN_PATH)/stan/src"
+STAN_BASE =  -I"$(STAN_SRC)/stan"
+STAN_LIB =   -I"$(STAN_ROOT)/lib"
+STAN_MATH =  -I"$(STAN_ROOT)/lib/stan_math"
+STAN_MATH_LIB =  -I"$(STAN_MATH)/lib"
 
 
 # Try alternative path finding
@@ -95,6 +96,7 @@ $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(CMDSTAN_PATH)" \
     -I"$(STAN_ROOT)" \
+    -I"$(STAN_SRC)" \
     -I"$(STAN_MATH)" \
     -I"$(STAN_BASE)" \
     -I"$(STAN_LIB)" \
@@ -120,7 +122,8 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_BASE)/callbacks" \
     -I"$(STAN_BASE)/lang" \
     -I"$(STAN_BASE)/optimization" \
-    -I"$(STAN_BASE)/variational"
+    -I"$(STAN_BASE)/variational" \
+    -Wno-ignored-attributes
 
 
 
