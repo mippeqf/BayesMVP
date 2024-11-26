@@ -146,6 +146,20 @@ generate_summary_tibble <- function(n_threads = NULL,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+#### ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 #' create_summary_and_traces
 #' @keywords internal
 create_summary_and_traces <- function(    model_results,
@@ -167,7 +181,8 @@ create_summary_and_traces <- function(    model_results,
   main_trace <- model_results$result[[1]]
   div_trace <- model_results$result[[2]]
   nuisance_trace <- model_results$result[[3]]
-  log_lik_trace_mnl_models <-  model_results$result[[6]]
+  
+  ##log_lik_trace_mnl_models <-  model_results$result[[6]]
   
   time_burnin <- model_results$time_burnin
   time_sampling <- model_results$time_sampling
@@ -196,8 +211,8 @@ create_summary_and_traces <- function(    model_results,
   force_PartialLog <- model_results$force_PartialLog
   multi_attempts <- model_results$multi_attempts
 
- 
   
+
   
   
   
@@ -218,6 +233,7 @@ create_summary_and_traces <- function(    model_results,
   
   n_chains <- length(main_trace)
   
+
   
   if (is.null(compute_nested_rhat)) {
     if (n_chains > 15) {
@@ -379,7 +395,9 @@ create_summary_and_traces <- function(    model_results,
   
    if (compute_main_params == TRUE) {
       for (kk in 1:n_chains) {
-        trace_params_main[1:n_params_main, 1:n_iter, kk] <- all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
+        try({ 
+           trace_params_main[1:n_params_main, 1:n_iter, kk] <- all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter] 
+        })
       }
    }
      
@@ -412,9 +430,29 @@ create_summary_and_traces <- function(    model_results,
                 log_lik_trace[1:N,  1:n_iter, kk] <- all_param_outs_trace[[kk]][index_log_lik - offset, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
             }
        } else {  ## if built-in / manual model
-         for (kk in 1:n_chains) {
-           log_lik_trace[1:N,  1:n_iter, kk] <- log_lik_trace_mnl_models[[kk]][1:N, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
-         }
+         # log_lik_trace <- array(dim = c(N, n_iter, n_chains)) # [1:N,  1:n_iter, kk]
+         # for (kk in 1:n_chains) {
+         # #  log_lik_trace[1:N,  1:n_iter, kk] <- log_lik_trace_mnl_models[[kk]][1:N, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
+         #   
+         #       for (i in 1:n_iter) {
+         #         
+         #         log_lik_outs <- BayesMVP::Rcpp_wrapper_fn_lp_grad(  Model_type = Model_type, 
+         #                                                             force_autodiff = FALSE,
+         #                                                             force_PartialLog = FALSE,
+         #                                                             multi_attempts = TRUE,
+         #                                                             theta_main_vec = trace_params_main[, i, kk], 
+         #                                                             theta_us_vec = theta[index_nuisance, i, kk], 
+         #                                                             y = y,
+         #                                                             grad_option = "none", 
+         #                                                             Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)
+         #       
+         #         log_lik_trace[, i, kk] <- tail(log_lik_outs, N)
+         #         
+         #         
+         #       }
+         #   
+         #   
+         # }
        }
        
      }
@@ -597,10 +635,17 @@ create_summary_and_traces <- function(    model_results,
       Min_ess_per_grad_us_samp <-  Min_ESS_main / n_grad_evals_sampling_us
     })
     try({ 
-      weight_nuisance_grad <- 0.3333333
-      weight_main_grad <- 0.6666667 ## main grad takes ~ 2x as long to compute as nuisance grad 
-      Min_ess_per_grad_samp_weighted <- (weight_nuisance_grad * Min_ess_per_grad_us_samp + weight_main_grad * Min_ess_per_grad_main_samp) / (weight_nuisance_grad + weight_main_grad)
-      ### comment(print(signif( 1000 * Min_ess_per_grad_samp_weighted, 3)))
+      
+      if (partitioned_HMC == TRUE) {
+          weight_nuisance_grad <- 0.3333333
+          weight_main_grad <- 0.6666667 ## main grad takes ~ 2x as long to compute as nuisance grad 
+          Min_ess_per_grad_samp_weighted <- (weight_nuisance_grad * Min_ess_per_grad_us_samp + weight_main_grad * Min_ess_per_grad_main_samp) / (weight_nuisance_grad + weight_main_grad)
+      } else {  # if not partitioned, grad isnt seperate and "main" grad = "all" grad so use weight_main_grad only !!
+          weight_nuisance_grad <- 0.00
+          weight_main_grad <- 1.00
+          Min_ess_per_grad_samp_weighted <- (weight_nuisance_grad * Min_ess_per_grad_us_samp + weight_main_grad * Min_ess_per_grad_main_samp) / (weight_nuisance_grad + weight_main_grad)
+      }
+      
       comment(print((paste("Min ESS / grad [samp., weighted] (parameters block, main only) = ", signif(1000 *  Min_ess_per_grad_samp_weighted, 3)))))
     })
     try({ 

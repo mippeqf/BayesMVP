@@ -222,7 +222,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   })
   
   
-  EHMC_args_as_Rcpp_List$eps_main <- 0.01
+ #  EHMC_args_as_Rcpp_List$eps_main <- 0.01
   EHMC_args_as_Rcpp_List$eps_us <- 0.01
   
   print(  EHMC_args_as_Rcpp_List$eps_main) 
@@ -317,7 +317,13 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
         
                    # EHMC_args_as_Rcpp_List$tau_main  <-     5.0
                   EHMC_args_as_Rcpp_List$tau_main  <-     tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
-                  EHMC_args_as_Rcpp_List$tau_us  <-       3.0; ## tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us ) # initial tau set to a constant
+                  EHMC_args_as_Rcpp_List$tau_us  <-       tau_mult *    sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us ) # initial tau set to a constant
+                  
+                  ### If not using partitioned_HMC (and therefore also NOT using diffusion_HMC), then set the path length to be the median of tau_main and tau_us 
+                  
+                  if (partitioned_HMC == FALSE) { # if sampling all parameters at once
+                       EHMC_args_as_Rcpp_List$tau_main  <- median(EHMC_args_as_Rcpp_List$tau_main, EHMC_args_as_Rcpp_List$tau_us)
+                  }
         
                 }
               })
@@ -394,6 +400,13 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                          snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_main,
                                                                                          ii = ii,
                                                                                          M_dense_sqrt = EHMC_burnin_as_Rcpp_List$M_dense_sqrt);
+          # outs_update_eigen_max_and_eigen_vec <-  fn_update_snaper_w_diag_M(  snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_main,
+          #                                                                      eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_main,
+          #                                                                      eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_main,
+          #                                                                      theta_vec = theta_vec_current_main,
+          #                                                                      snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_main,
+          #                                                                      ii = ii,
+          #                                                                      sqrt_M_vec = diag(EHMC_burnin_as_Rcpp_List$M_dense_sqrt));
           EHMC_burnin_as_Rcpp_List$snaper_w_vec_main <- outs_update_eigen_max_and_eigen_vec
           })
           ##### update eigen_max and eigen_vec
@@ -416,13 +429,13 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
               })
               # update snaper_w
               try({
-                outs_update_eigen_max_and_eigen_vec <-   fn_update_snaper_w_diag_M( snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_us,
-                                                                                                           eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_us,
-                                                                                                           eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_us,
-                                                                                                           theta_vec = theta_vec_current_us,
-                                                                                                           snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
-                                                                                                           ii = ii,
-                                                                                                           sqrt_M_vec =  EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec);
+                outs_update_eigen_max_and_eigen_vec <-   fn_update_snaper_w_diag_M(  snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_us,
+                                                                                     eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_us,
+                                                                                     eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_us,
+                                                                                     theta_vec = theta_vec_current_us,
+                                                                                     snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
+                                                                                     ii = ii,
+                                                                                     sqrt_M_vec =  EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec);
                 EHMC_burnin_as_Rcpp_List$snaper_w_vec_us <- outs_update_eigen_max_and_eigen_vec
               })
               # update eigen_max and eigen_vec
@@ -617,21 +630,21 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
                            
                                     ## --------- 
-                                    #    median_nuisance_var <- 1#max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical)
-                                    #    M_as_inv_snaper_s_vec_us_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
-                                    #    M_as_inv_snaper_s_vec_us_empirical_scaled <- median_nuisance_var * M_as_inv_snaper_s_vec_us_empirical
-                                    #    M_inv_as_snaper_s_vec_us_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_us_empirical_scaled
-                                    # 
-                                    #  # M_inv_as_snaper_s_vec_us_empirical_scaled <-  EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
-                                    # 
-                                    # ## now update M_inv_nuisance
-                                    # EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  ratio_M_us * M_inv_as_snaper_s_vec_us_empirical_scaled    +    (1 - ratio_M_us) *      EHMC_Metric_as_Rcpp_List$M_inv_us_vec
-                                    # EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <-     sqrt(1 /  EHMC_Metric_as_Rcpp_List$M_inv_us_vec)
-                                    # EHMC_Metric_as_Rcpp_List$M_us_vec <-   1.0 / EHMC_Metric_as_Rcpp_List$M_inv_us_vec  
+                                       median_nuisance_var <- 1#max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical)
+                                       M_as_inv_snaper_s_vec_us_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
+                                       M_as_inv_snaper_s_vec_us_empirical_scaled <- median_nuisance_var * M_as_inv_snaper_s_vec_us_empirical
+                                       M_inv_as_snaper_s_vec_us_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_us_empirical_scaled
+
+                                     # M_inv_as_snaper_s_vec_us_empirical_scaled <-  EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
+
+                                    ## now update M_inv_nuisance
+                                    EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  ratio_M_us * M_inv_as_snaper_s_vec_us_empirical_scaled    +    (1 - ratio_M_us) *      EHMC_Metric_as_Rcpp_List$M_inv_us_vec
+                                    EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <-     sqrt(1 /  EHMC_Metric_as_Rcpp_List$M_inv_us_vec)
+                                    EHMC_Metric_as_Rcpp_List$M_us_vec <-   1.0 / EHMC_Metric_as_Rcpp_List$M_inv_us_vec
                                     
-                                    EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  rep(1, n_nuisance)
-                                    EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- rep(1, n_nuisance)
-                                    EHMC_Metric_as_Rcpp_List$M_us_vec <-   rep(1, n_nuisance)
+                                    # EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  rep(1, n_nuisance)
+                                    # EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- rep(1, n_nuisance)
+                                    # EHMC_Metric_as_Rcpp_List$M_us_vec <-   rep(1, n_nuisance)
 
                          })
 
@@ -643,7 +656,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
           ## //////////////////   --------------------------------  Perform iteration(s)  ------------------------------------------------------------------------------
           try({
             
-            EHMC_args_as_Rcpp_List$tau_main  <- 5.0 *  EHMC_args_as_Rcpp_List$eps_main 
+           ###  EHMC_args_as_Rcpp_List$tau_main  <- 5.0 *  EHMC_args_as_Rcpp_List$eps_main 
  
  
 # #
@@ -874,12 +887,22 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                       # comment(print(round(100 * pnorm(theta_means[(n_params_main - n_tests):(n_params_main - 1)]), 1)))
                                       # comment(print(round(100 - 100 * pnorm(theta_means[(n_params_main - 2*n_tests):(n_params_main - n_tests - 1)]), 1)))
 
+                            if (partitioned_HMC == TRUE) { # if NOT sampling all parameters at once
                                       cat(colourise(    (paste("p_jump_main = ", round(p_jump_main, 3)))          , "green"), "\n")
                                       cat(colourise(    (paste("eps_main = ", round(EHMC_args_as_Rcpp_List$eps_main, 3)))          , "blue"), "\n")
                                       comment(print(paste("tau_main = ",  round(EHMC_args_as_Rcpp_List$tau_main, 3))))
                                       comment(print(paste("L_main = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_main/EHMC_args_as_Rcpp_List$eps_main), 0))))
                                       cat(colourise(    (paste("div_main = ", sum(div_main)))          , "red"), "\n")
+                            } else { 
+                                      cat(colourise(    (paste("p_jump = ", round(p_jump_main, 3)))          , "green"), "\n")
+                                      cat(colourise(    (paste("eps = ", round(EHMC_args_as_Rcpp_List$eps_main, 3)))          , "blue"), "\n")
+                                      comment(print(paste("tau = ",  round(EHMC_args_as_Rcpp_List$tau_main, 3))))
+                                      comment(print(paste("L = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_main/EHMC_args_as_Rcpp_List$eps_main), 0))))
+                                      cat(colourise(    (paste("div = ", sum(div_main)))          , "red"), "\n")
+                            }
+                                      
 
+                                  if (partitioned_HMC == TRUE) { # if NOT sampling all parameters at once
                                       if     (sample_nuisance == TRUE)   {
                                           cat(colourise(    (paste("p_jump_us = ", round(p_jump_us, 3)))          , "green"), "\n")
                                           cat(colourise(    (paste("eps_us = ", round(EHMC_args_as_Rcpp_List$eps_us, 3)))          , "blue"), "\n")
@@ -887,6 +910,8 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                           comment(print(paste("L_us = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_us / EHMC_args_as_Rcpp_List$eps_us), 0))))
                                           cat(colourise(    (paste("div_us = ", sum(div_us)))          , "red"), "\n")
                                       }
+                                  }
+                                      
                                 }
 
 
