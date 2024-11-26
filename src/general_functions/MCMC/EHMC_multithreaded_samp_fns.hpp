@@ -58,7 +58,7 @@ using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector
  
  
  
-static tbb::mutex print_mutex; //// global mutex 
+static std::mutex print_mutex; //// global mutex 
 
  
    
@@ -102,7 +102,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
            
                      if (burnin_indicator == false) {
                          if (ii %  static_cast<int>(std::round(static_cast<double>(n_iter)/4.0)) == 0) {
-                             tbb::mutex::scoped_lock lock(print_mutex);
+                             std::lock_guard<std::mutex> lock(print_mutex);
                              double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter));
                              std::cout << "Chain #" << chain_id << " - Sampling is around " << pct_complete << " % complete" << "\n";
                          }
