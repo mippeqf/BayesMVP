@@ -53,34 +53,37 @@ PKG_LIBS+=$(PKG_PATH)/dummy_stan_model_model.dll
 # Find R user library path for packages
 RPKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[1])")
 
-# Find latest cmdstan version or regular cmdstan
+# Find cmdstan path
 CMDSTAN_PATH = $(shell \
   if [ -d "$(HOME)/.cmdstan" ]; then \
-    ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1; \
+    cmdstan_dir=$$(ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1) && \
+    echo "$$cmdstan_dir"; \
   elif [ -d "$(HOME)/cmdstan" ]; then \
     echo "$(HOME)/cmdstan"; \
   fi)
 
 
-PKG_CPPFLAGS += \
-    -I"$(RPKG_PATH)/StanHeaders/include" \
-    -I"$(RPKG_PATH)/RcppEigen/include" \
-    -I"$(RPKG_PATH)/BH/include" \
-    -I"$(RPKG_PATH)/RcppParallel/include" \
+$(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
+
+PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(CMDSTAN_PATH)/src" \
     -I"$(CMDSTAN_PATH)/lib/stan_math" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include" \
-    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/tbb/include"
+    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/tbb/include" \
+    -I"$(CMDSTAN_PATH)/src/stan" \
+    -I"$(CMDSTAN_PATH)/src/stan/model" \
+    -I"$(CMDSTAN_PATH)/src/stan/services" \
+    -I"$(CMDSTAN_PATH)/src/stan/io" \
+    -I"$(CMDSTAN_PATH)/src/stan/mcmc"
 
 
 OBJECTS = main.o RcppExports.o
 
 
-STAN_PATH = $(CMDSTAN_PATH)
-STAN_SRC =  $(STAN_PATH)/src
-STAN_MATH =  $(STAN_PATH)/lib/stan_math
+STAN_SRC =  $(CMDSTAN_PATH)/src
+STAN_MATH =  $(CMDSTAN_PATH)/lib/stan_math
 
 TBB_PATH = $(STAN_MATH)/lib/tbb
 TBB_SO = $(TBB_PATH)/tbb12.dll  ## .dll for Windows
@@ -90,14 +93,14 @@ PKG_LIBS += $(TBB_SO)
 
 # other include paths
 PKG_CPPFLAGS+=-I"$(TBB_PATH)/include"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/src"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/boost_1.84.0"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/eigen_3.4.0"
-PKG_CPPFLAGS+=-I"$(STAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include"
+PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)"
+PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/src"
+PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/"
+PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0"
+PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0"
+PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include"
 
-PKG_CPPFLAGS+=-I"$(STAN_PATH)"
+PKG_CPPFLAGS+=-I"$(CMDSTAN_PATH)"
 PKG_CPPFLAGS+=-I"$(STAN_SRC)"
 PKG_CPPFLAGS+=-I"$(STAN_MATH)"
 PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/model"
@@ -105,8 +108,9 @@ PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/services"
 PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/io"
 PKG_CPPFLAGS+=-I"$(STAN_SRC)/stan/mcmc"
 
- 
- 
+
+
+
 BRIDGESTAN_PATH = $(HOME)/bridgestan
 BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
@@ -156,6 +160,8 @@ CXX20PICFLAGS = -fpic
 CXX23 = $(CXX_COMPILER_TYPE)
 CXX23FLAGS =   $(BASE_FLAGS)
 CXX23PICFLAGS = -fpic
+
+
 
 
 
