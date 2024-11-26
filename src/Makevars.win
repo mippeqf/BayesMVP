@@ -63,17 +63,19 @@ CMDSTAN_PATH = $(shell \
 
 
 PKG_CPPFLAGS += \
-    -I"$(CMDSTAN_PATH)" \
+    -I"$(RPKG_PATH)/StanHeaders/include" \
+    -I"$(RPKG_PATH)/RcppEigen/include" \
+    -I"$(RPKG_PATH)/BH/include" \
+    -I"$(RPKG_PATH)/RcppParallel/include" \
     -I"$(CMDSTAN_PATH)/src" \
     -I"$(CMDSTAN_PATH)/lib/stan_math" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/eigen_3.4.0" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/boost_1.84.0" \
     -I"$(CMDSTAN_PATH)/lib/stan_math/lib/sundials_6.1.1/include" \
-    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/tbb/include" \
-    -I"$(RPKG_PATH)/StanHeaders/include" \
-    -I"$(RPKG_PATH)/RcppEigen/include" \
-    -I"$(RPKG_PATH)/BH/include" \
-    -I"$(RPKG_PATH)/RcppParallel/include"
+    -I"$(CMDSTAN_PATH)/lib/stan_math/lib/tbb/include"
+
+
+OBJECTS = main.o RcppExports.o
 
 
 STAN_PATH = CMDSTAN_PATH
@@ -154,7 +156,6 @@ CXX20PICFLAGS = -fpic
 CXX23 = $(CXX_COMPILER_TYPE)
 CXX23FLAGS =   $(BASE_FLAGS)
 CXX23PICFLAGS = -fpic
-
 
 
 
