@@ -103,14 +103,6 @@ $(info CMDSTAN env var is: '$(CMDSTAN_ALT)')
 $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 
 PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
-    -I"$(CMDSTAN_PATH)" \
-    -I"$(STAN_ROOT)" \
-    -I"$(STAN_SRC)" \
-    -I"$(STAN_MATH)" \
-    -I"$(STAN_BASE)" \
-    -I"$(STAN_LIB)" \
-    -I"$(STAN_MATH_LIB)" \
-    -I"$(STAN_MATH_LIB)/lib/stan_math" \
     -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
     -I"$(STAN_MATH_LIB)/boost_1.84.0" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
@@ -118,6 +110,13 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(STAN_MATH_LIB)/tbb/include" \
     -I"$(STAN_LIB)/rapidjson_1.1.0" \
     -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
+    -I"$(CMDSTAN_PATH)" \
+    -I"$(STAN_ROOT)" \
+    -I"$(STAN_SRC)" \
+    -I"$(STAN_MATH)" \
+    -I"$(STAN_BASE)" \
+    -I"$(STAN_LIB)" \
+    -I"$(STAN_MATH_LIB)" \
     -I"$(R_LIB_PATH)/bridgestan/include" \
     -I"$(R_LIB_PATH)/Rcpp/include" \
     -I"$(R_LIB_PATH)/StanHeaders/include" \

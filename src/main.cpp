@@ -6,6 +6,8 @@
 // [[Rcpp::depends(RcppEigen)]]
    
  
+#define EIGEN_NO_DEBUG
+#define EIGEN_DONT_PARALLELIZE
 
 
 #include "eigen_config.hpp"
@@ -194,11 +196,6 @@
 using namespace Rcpp;
 using namespace Eigen;
 
-
-
-
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
 
 
 using std_vec_of_EigenVecs_dbl = std::vector<Eigen::Matrix<double, -1, 1>>;
@@ -529,7 +526,7 @@ Rcpp::String  detect_vectorization_support() {
 
 
 // [[Rcpp::export]]
-Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double(              Eigen::Matrix<double, -1, -1> x,
+Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double(                 Eigen::Matrix<double, -1, -1> x,
                                                                              const std::string fn,
                                                                              const std::string vect_type,
                                                                              const bool skip_checks
