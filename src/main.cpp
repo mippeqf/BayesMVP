@@ -5,6 +5,7 @@
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(BH)]]
 // [[Rcpp::depends(RcppParallel)]] 
+// [[Rcpp::depends(bridgestan)]]
 // [[Rcpp::plugins(cpp17)]]
 
 
@@ -23,9 +24,10 @@
 #define EIGEN_DONT_PARALLELIZE 
 
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
-/// #include <RcppEigen.h>
+//#include <Eigen/Core>
+//#include <Eigen/Dense>
+#undef OUT
+#include <RcppEigen.h>
 #include <unsupported/Eigen/SpecialFunctions>
 #include <unsupported/Eigen/CXX11/Tensor>
  
@@ -213,12 +215,14 @@
 
 
 
-
+#undef OUT
 
 
 
 #include <RcppParallel.h>
-#include <RcppEigen.h>
+/// #include <RcppEigen.h>
+
+
 
 
 
