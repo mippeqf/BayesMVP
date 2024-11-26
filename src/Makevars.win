@@ -121,7 +121,7 @@ PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
     -I"$(R_LIB_PATH)/bridgestan/include" \
     -I"$(R_LIB_PATH)/Rcpp/include" \
     -I"$(R_LIB_PATH)/StanHeaders/include" \
-    -I"$(R_LIB_PATH)/BH/include" \ \
+    -I"$(R_LIB_PATH)/BH/include" \
     -I"$(STAN_BASE)/model" \
     -I"$(STAN_BASE)/services" \
     -I"$(STAN_BASE)/io" \
@@ -152,10 +152,8 @@ BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
 PKG_CPPFLAGS+=-I"$(BRIDGESTAN_SRC)"
 
 PKG_CXXFLAGS = $(PKG_CPPFLAGS)  -std=c++17   -DBOOST_DISABLE_ASSERTS
-
 CPPFLAGS += $(PKG_CPPFLAGS)
 CXXFLAGS += $(PKG_CXXFLAGS)
-
 
 
 CC =  $(CPP_COMPILER_TYPE)
