@@ -124,10 +124,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
 ) { 
   
   
-  out_mat.setZero(); //// set log_prob and grad vec to zero at the start (only do this on outer fns, not inner/likelihood fns)
-
-  ///   stan::math::ChainableStack ad_tape;
-  ///stan::math::nested_rev_autodiff nested;
+   out_mat.setZero(); //// set log_prob and grad vec to zero at the start (only do this on outer fns, not inner/likelihood fns)
  
   //// important params
   const int N = y_ref.rows();
@@ -254,47 +251,47 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   // int n_full_chunks = chunk_size_info.n_full_chunks;
   
   
-  //// ---- determine chunk size -------------------------- 
+  //// ---- determine chunk size --------------------------
   const int desired_n_chunks = n_chunks;
-  
+
   int vec_size;
-  if (vect_type == "AVX512") { 
+  if (vect_type == "AVX512") {
     vec_size = 8;
-  } else  if (vect_type == "AVX2") {  
+  } else  if (vect_type == "AVX2") {
     vec_size = 4;
-  } else  if (vect_type == "AVX") {  
+  } else  if (vect_type == "AVX") {
     vec_size = 2;
-  } else {  
+  } else {
     vec_size = 1;
-  } 
-  
+  }
+
   const double N_double = static_cast<double>(N);
   const double vec_size_double =   static_cast<double>(vec_size);
   const double desired_n_chunks_double = static_cast<double>(desired_n_chunks);
-  
+
   int normal_chunk_size = vec_size_double * std::floor(N_double / (vec_size_double * desired_n_chunks_double));    // Make sure main chunks are divisible by 8
   int n_full_chunks = std::floor(N_double / static_cast<double>(normal_chunk_size));    ///  How many complete chunks we can have
   int last_chunk_size = N_double - (static_cast<double>(n_full_chunks) * static_cast<double>(normal_chunk_size));  //// remainder
-  
+
   int n_total_chunks;
-  if (last_chunk_size == 0) { 
+  if (last_chunk_size == 0) {
     n_total_chunks = n_full_chunks;
-  } else {  
+  } else {
     n_total_chunks = n_full_chunks + 1;
-  }   
-  
+  }
+
   int chunk_size = normal_chunk_size; // set initial chunk_size (this may be modified later so non-const)
   int chunk_size_orig = normal_chunk_size;     // store original chunk size for indexing
-  
-  if (desired_n_chunks == 1) { 
+
+  if (desired_n_chunks == 1) {
     chunk_size = N;
     chunk_size_orig = N;
     normal_chunk_size = N;
     last_chunk_size = N;
     n_total_chunks = 1;
     n_full_chunks = 1;
-  } 
-  
+  }
+  // 
   
   
   //////////////  ---------------------------------------------------------------------------------------------------------------------------------
