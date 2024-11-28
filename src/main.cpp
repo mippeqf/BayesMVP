@@ -1,13 +1,10 @@
 
 
   
- 
-// [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]] 
-// [[Rcpp::depends(bridgestan)]]
-// [[Rcpp::plugins(cpp17)]]
 
+// [[Rcpp::depends(RcppParallel)]]
+// [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::plugins(cpp17)]]
 
  
 //// Stan includes
@@ -82,7 +79,6 @@
 #include <sstream>
 #include <stdexcept>    
 #include <complex>
-#include <dlfcn.h> // For dynamic loading  
 #include <map>
 #include <vector>   
 #include <string>  
@@ -481,6 +477,96 @@ void warmUpThreads(std::size_t nThreads) {
 
 
 
+
+
+
+
+// [[Rcpp::export]]
+Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double(                 Eigen::Matrix<double, -1, -1> x,
+                                                                             const std::string fn,
+                                                                             const std::string vect_type,
+                                                                             const bool skip_checks
+) {
+  
+  
+  Eigen::Matrix<double, -1, -1> out_mat =    fn_EIGEN_double(x, fn, vect_type, skip_checks);
+   
+  return out_mat;
+  
+   
+}
+
+
+
+
+
+
+
+// [[Rcpp::export]]
+Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const std::string Model_type,
+                                                                         const bool force_autodiff,
+                                                                         const bool force_PartialLog,
+                                                                         const bool multi_attempts,
+                                                                         const Eigen::Matrix<double, -1, 1> theta_main_vec,
+                                                                         const Eigen::Matrix<double, -1, 1> theta_us_vec,
+                                                                         const Eigen::Matrix<int, -1, -1>  y,
+                                                                         const std::string grad_option,
+                                                                         const Rcpp::List Model_args_as_Rcpp_List
+) {
+  
+  const int N = y.rows();
+  const int n_us = theta_us_vec.rows()  ;
+  const int n_params_main =  theta_main_vec.rows()  ;
+  const int n_params = n_params_main + n_us;
+   
+  /// convert to Eigen
+  const Eigen::Matrix<double, -1, 1> theta_main_vec_Ref =  theta_main_vec;
+  const Eigen::Matrix<double, -1, 1> theta_us_vec_Ref =  theta_us_vec;
+  const Eigen::Matrix<int, -1, -1>   y_Ref =  y;
+   
+  const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
+  
+  
+  Eigen::Matrix<double, -1, 1> lp_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);
+  
+  Stan_model_struct Stan_model_as_cpp_struct;
+  
+  
+  const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
+  const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
+  const int vec_size = 8;
+  ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks); 
+  int chunk_size = chunk_size_info.chunk_size;
+  const int n_tests = y.cols();
+  
+  //  MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
+  
+  // stan::math::start_nested();
+  fn_lp_grad_InPlace(   lp_grad_outs,
+                        Model_type,
+                        force_autodiff, force_PartialLog, multi_attempts,
+                        theta_main_vec_Ref, theta_us_vec_Ref,
+                        y_Ref,
+                        grad_option,
+                        Model_args_as_cpp_struct,//MVP_workspace,
+                        Stan_model_as_cpp_struct);
+  // stan::math::recover_memory_nested();
+  
+  return lp_grad_outs;
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
 // [[Rcpp::export]]
 Rcpp::List Rcpp_compute_chain_stats(const std::vector<Rcpp::NumericMatrix> mcmc_3D_array,
                                     const std::string stat_type,
@@ -535,17 +621,33 @@ Rcpp::List  Rcpp_compute_MCMC_diagnostics(     const std::vector<Rcpp::NumericMa
 // [[Rcpp::export]]
 Rcpp::String  detect_vectorization_support() {
 
-#if defined(__AVX__) && !(defined(__AVX2__) && defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__))
-  return "AVX";
-#elif defined(__AVX2__) && !(defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__))
-  return "AVX2";
-#elif defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__)
-  return "AVX512";
-#else
-  return "Stan";
-#endif
-
+  
+    #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__) // use AVX-512 if available 
+      return "AVX512";
+    #elif defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
+      return "AVX2";
+    #elif defined(__AVX__) && !(defined(__AVX2__)) &&  ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2 // use AVX
+      return "AVX";
+    #endif
+      
+      return "Stan";
+  
 }
+  
+  
+  
+// #if defined(__AVX__) && !(defined(__AVX2__) && defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__))
+//   return "AVX";
+// #elif defined(__AVX2__) && !(defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__))
+//   return "AVX2";
+// #elif defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__)
+//   return "AVX512";
+// #else
+//   return "Stan";
+// #endif
+// 
+// }
+// 
 
 
 
@@ -554,85 +656,6 @@ Rcpp::String  detect_vectorization_support() {
 
 
 
-
-
-
-// [[Rcpp::export]]
-Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double(                 Eigen::Matrix<double, -1, -1> x,
-                                                                             const std::string fn,
-                                                                             const std::string vect_type,
-                                                                             const bool skip_checks
-) {
-
-
-  Eigen::Matrix<double, -1, -1> out_mat =    fn_EIGEN_double(x, fn, vect_type, skip_checks);
-
-  return out_mat;
-
-
-}
-
-
-
-
-
-
-
-
-
-// [[Rcpp::export]]
-Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const std::string Model_type,
-                                                                         const bool force_autodiff,
-                                                                         const bool force_PartialLog,
-                                                                         const bool multi_attempts,
-                                                                         const Eigen::Matrix<double, -1, 1> theta_main_vec,
-                                                                         const Eigen::Matrix<double, -1, 1> theta_us_vec,
-                                                                         const Eigen::Matrix<int, -1, -1>  y,
-                                                                         const std::string grad_option,
-                                                                         const Rcpp::List Model_args_as_Rcpp_List
-) {
-
-  const int N = y.rows();
-  const int n_us = theta_us_vec.rows()  ;
-  const int n_params_main =  theta_main_vec.rows()  ;
-  const int n_params = n_params_main + n_us;
-
-  /// convert to Eigen
-  const Eigen::Matrix<double, -1, 1> theta_main_vec_Ref =  theta_main_vec;
-  const Eigen::Matrix<double, -1, 1> theta_us_vec_Ref =  theta_us_vec;
-  const Eigen::Matrix<int, -1, -1>   y_Ref =  y;
-
-  const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-
-
-   Eigen::Matrix<double, -1, 1> lp_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);
-
-   Stan_model_struct Stan_model_as_cpp_struct;
-
-
-   const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
-   const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
-   const int vec_size = 8;
-   ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
-   int chunk_size = chunk_size_info.chunk_size;
-   const int n_tests = y.cols();
-
- //  MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
-
-      // stan::math::start_nested();
-       fn_lp_grad_InPlace(   lp_grad_outs,
-                             Model_type,
-                             force_autodiff, force_PartialLog, multi_attempts,
-                             theta_main_vec_Ref, theta_us_vec_Ref,
-                             y_Ref,
-                             grad_option,
-                             Model_args_as_cpp_struct,//MVP_workspace,
-                             Stan_model_as_cpp_struct);
-      // stan::math::recover_memory_nested();
-
-   return lp_grad_outs;
-
-}
 
 
 
@@ -1676,104 +1699,104 @@ Rcpp::List    fn_compute_param_constrain_from_trace_parallel(   const std::vecto
 
 
 
-
-
-// [[Rcpp::export]]
-Rcpp::List     fn_compute_param_constrain_from_trace(     const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_main,
-                                                          const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_nuisance,
-                                                          const Eigen::VectorXi &pars_indicies_to_track,
-                                                          const int &n_params_full,
-                                                          const int &n_nuisance,
-                                                          const int &n_params_main,
-                                                          const bool  &include_nuisance,
-                                                          const std::string &model_so_file,
-                                                          const std::string &json_file_path) {
-
-
-
-#if HAS_BRIDGESTAN_H
-
-  char* error_msg = nullptr;
-  unsigned int seed = 123;
-
-  bs_rng* bs_rng_object = bs_rng_construct(seed, &error_msg); /// bs rng object
-
-  // //// For Stan models:  Initialize bs_model* pointer and void* handle
-  Stan_model_struct Stan_model_as_cpp_struct;
-
-  // Initialize model
-  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(model_so_file,
-                                                         json_file_path,
-                                                         seed);
-
-#endif
-
-
-
-  /// trace to store output
-  const int n_chains = unc_params_trace_input_main.size();
-  const int n_iter = unc_params_trace_input_main[0].cols();
-  const int n_params_to_track = pars_indicies_to_track.size();
-  const int n_params = n_nuisance + n_params_main;
-
-  std::vector<Eigen::Matrix<double, -1, -1>> all_param_outs_trace = vec_of_mats(n_params_to_track, n_iter, n_chains);
-
-#if HAS_BRIDGESTAN_H
-
-  /// make storage containers
-  Eigen::Matrix<double, -1, 1> theta_unc_full_input(n_params);
-  Eigen::Matrix<double, -1, 1> theta_constrain_full_output(n_params_full);
-
-
-  for (int kk = 0; kk <  n_chains; kk += 1) {
-    for (int ii = 0; ii <  n_iter; ii += 1) {
-
-      theta_unc_full_input.tail(n_params_main) =   unc_params_trace_input_main[kk].col(ii);
-
-       if (include_nuisance == true) {
-          theta_unc_full_input.head(n_nuisance) =      unc_params_trace_input_nuisance[kk].col(ii);
-       } else {
-         theta_unc_full_input.head(n_nuisance).array() = 0.0; // set to zero if ignoring nuisance
-       }
-
-
-          int result = Stan_model_as_cpp_struct.bs_param_constrain(   Stan_model_as_cpp_struct.bs_model_ptr,
-                                                                      true,
-                                                                      true,
-                                                                      theta_unc_full_input.data(),
-                                                                      theta_constrain_full_output.data(), //  all_param_outs_trace[kk].col(ii).data(),
-                                                                      bs_rng_object,
-                                                                      &error_msg);
-
-
-       all_param_outs_trace[kk].col(ii) = theta_constrain_full_output(pars_indicies_to_track);
-
-          if (result != 0) {
-            throw std::runtime_error("computation failed: " +
-                                     std::string(error_msg ? error_msg : "Unknown error"));
-          }
-
-    }
-  }
-
-  // destroy Stan model object
-  if (model_so_file != "none" && Stan_model_as_cpp_struct.bs_model_ptr != nullptr) {
-    fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
-  }
-
-#endif
-
-
-  Rcpp::List out(n_chains);
-  for (int i = 0; i < n_chains; ++i) {
-    out(i) = fn_convert_EigenMat_to_RcppMat_dbl(all_param_outs_trace[i]);
-  }
-
-
-  return out;
-
-}
-
+// 
+// 
+//  
+// Rcpp::List     fn_compute_param_constrain_from_trace(     const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_main,
+//                                                           const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_nuisance,
+//                                                           const Eigen::VectorXi &pars_indicies_to_track,
+//                                                           const int &n_params_full,
+//                                                           const int &n_nuisance,
+//                                                           const int &n_params_main,
+//                                                           const bool  &include_nuisance,
+//                                                           const std::string &model_so_file,
+//                                                           const std::string &json_file_path) {
+// 
+// 
+// 
+// #if HAS_BRIDGESTAN_H
+// 
+//   char* error_msg = nullptr;
+//   unsigned int seed = 123;
+// 
+//   bs_rng* bs_rng_object = bs_rng_construct(seed, &error_msg); /// bs rng object
+// 
+//   // //// For Stan models:  Initialize bs_model* pointer and void* handle
+//   Stan_model_struct Stan_model_as_cpp_struct;
+// 
+//   // Initialize model
+//   Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(model_so_file,
+//                                                          json_file_path,
+//                                                          seed);
+// 
+// #endif
+// 
+// 
+// 
+//   /// trace to store output
+//   const int n_chains = unc_params_trace_input_main.size();
+//   const int n_iter = unc_params_trace_input_main[0].cols();
+//   const int n_params_to_track = pars_indicies_to_track.size();
+//   const int n_params = n_nuisance + n_params_main;
+// 
+//   std::vector<Eigen::Matrix<double, -1, -1>> all_param_outs_trace = vec_of_mats(n_params_to_track, n_iter, n_chains);
+// 
+// #if HAS_BRIDGESTAN_H
+// 
+//   /// make storage containers
+//   Eigen::Matrix<double, -1, 1> theta_unc_full_input(n_params);
+//   Eigen::Matrix<double, -1, 1> theta_constrain_full_output(n_params_full);
+// 
+// 
+//   for (int kk = 0; kk <  n_chains; kk += 1) {
+//     for (int ii = 0; ii <  n_iter; ii += 1) {
+// 
+//       theta_unc_full_input.tail(n_params_main) =   unc_params_trace_input_main[kk].col(ii);
+// 
+//        if (include_nuisance == true) {
+//           theta_unc_full_input.head(n_nuisance) =      unc_params_trace_input_nuisance[kk].col(ii);
+//        } else {
+//          theta_unc_full_input.head(n_nuisance).array() = 0.0; // set to zero if ignoring nuisance
+//        }
+// 
+// 
+//           int result = Stan_model_as_cpp_struct.bs_param_constrain(   Stan_model_as_cpp_struct.bs_model_ptr,
+//                                                                       true,
+//                                                                       true,
+//                                                                       theta_unc_full_input.data(),
+//                                                                       theta_constrain_full_output.data(), //  all_param_outs_trace[kk].col(ii).data(),
+//                                                                       bs_rng_object,
+//                                                                       &error_msg);
+// 
+// 
+//        all_param_outs_trace[kk].col(ii) = theta_constrain_full_output(pars_indicies_to_track);
+// 
+//           if (result != 0) {
+//             throw std::runtime_error("computation failed: " +
+//                                      std::string(error_msg ? error_msg : "Unknown error"));
+//           }
+// 
+//     }
+//   }
+// 
+//   // destroy Stan model object
+//   if (model_so_file != "none" && Stan_model_as_cpp_struct.bs_model_ptr != nullptr) {
+//     fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
+//   }
+// 
+// #endif
+// 
+// 
+//   Rcpp::List out(n_chains);
+//   for (int i = 0; i < n_chains; ++i) {
+//     out(i) = fn_convert_EigenMat_to_RcppMat_dbl(all_param_outs_trace[i]);
+//   }
+// 
+// 
+//   return out;
+// 
+// }
+// 
 
 
 
