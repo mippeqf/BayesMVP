@@ -150,6 +150,7 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                     #'   diagnostics) to reach a minimum ESS of 10,000.
                                     #' }
                                     get_efficiency_metrics = function() {
+                                      
                                       list(
                                         ## times
                                         time_burnin = self$summary_object$summaries$efficiency_info$time_burnin,
@@ -176,6 +177,7 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                         est_time_to_10000_ESS_inc_summaries = self$summary_object$summaries$efficiency_info$total_time_to_10000_ESS_with_summaries
                                         
                                       )
+                                      
                                     },
                                     
                                     ## Convenience methods for HMC algorithm metrics
@@ -212,6 +214,7 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                     #'   then partial-log-scale, and finally autodiff + partial-log-scale) - only relevant for built-in models.
                                     #' }
                                     get_HMC_info = function () { 
+                                      
                                       list( 
                                         tau_main = self$summary_object$summaries$HMC_info$tau_main,
                                         eps_main = self$summary_object$summaries$HMC_info$eps_main,
@@ -244,6 +247,7 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                         force_PartialLog = self$summary_object$summaries$HMC_info$force_PartialLog,
                                         multi_attempts = self$summary_object$summaries$HMC_info$multi_attempts
                                       )
+                                      
                                     },
                                     
                                     

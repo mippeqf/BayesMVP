@@ -1,5 +1,9 @@
 
 
+
+#' init_bs_model
+#' @keywords internal
+#' @export
 init_bs_model <- function(Stan_data_list, 
                           Stan_model_name,
                           ...) {

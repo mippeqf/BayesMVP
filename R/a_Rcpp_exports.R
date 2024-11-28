@@ -86,6 +86,7 @@ detect_vectorization_support <- function() {
   .Call(`_BayesMVP_detect_vectorization_support`)
 }
 
+
 #' @useDynLib BayesMVP, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 #' @export
