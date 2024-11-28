@@ -1,24 +1,5 @@
 
   
-
-
-{
-  
-  # Set working direcory ---------------
-  try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")   }, silent = TRUE)
-  try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")    }, silent = TRUE)
-  #  options(repos = c(CRAN = "http://cran.rstudio.com"))
-  
-  # options -------------------------------------------------------------------------
-  #  totalCores = 8
-  rstan::rstan_options(auto_write = TRUE)
-  options(scipen = 99999)
-  options(max.print = 1000000000)
-  #  rstan_options(auto_write = TRUE)
-  options(mc.cores = parallel::detectCores() / 2)
-  
-}
-
  
 
 # - |  |  | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ 

@@ -1,25 +1,5 @@
 
 
-
-{
-  
-  pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP"
-  
-  
-    # Set working direcory ---------------
-  try({  setwd(file.path(pkg_dir, "/examples"))   }, silent = TRUE)
-    #  options(repos = c(CRAN = "http://cran.rstudio.com"))
-    
-    # options -------------------------------------------------------------------------
-    #  totalCores = 8
-    rstan::rstan_options(auto_write = TRUE)
-    options(scipen = 999)
-    options(max.print = 1000000000)
-  #  rstan_options(auto_write = TRUE)
-    options(mc.cores = parallel::detectCores() / 2)
-  
-}
-
  
 
 {
@@ -31,22 +11,23 @@
   require(RcppParallel)
   require(RcppZiggurat)
   require(RcppClock)
-  require(rstan)
   require(BH) 
   require(devtools)
   require(githubinstall)
-  require(sitmo)  # maybe need this
-  require(dqrng) # maybe need this
+  # require(sitmo)  # maybe need this
+  # require(dqrng) # maybe need this
   require(beepr)
   require(plyr)
   require(dplyr)
   require(ggplot2)
-  require(patchwork)
+  # require(patchwork)
   require(tictoc) 
-  require(remotes)  # maybe need this
+  require(remotes)  
   require(cmdstanr) 
   require(jsonlite)
   require(expm)
+  
+  require(pracma)
 
   require(R6)
   require(roxygen2)

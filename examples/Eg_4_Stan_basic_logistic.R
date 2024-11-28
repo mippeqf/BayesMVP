@@ -84,7 +84,7 @@ source("load_R_packages.R")
       ### Stan model file (put path to your Stan model)
       file <- (file.path(pkg_dir, "inst/stan_models/basic_logistic.stan"))
       mod <- cmdstan_model(file)
-      
+      y67th54
       
       # # OR using the version w/ fast math C++ functions:
       # file <- (file.path(pkg_dir, "inst/stan_models/basic_logistic_w_fast_fns.stan"))

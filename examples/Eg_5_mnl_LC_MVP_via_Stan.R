@@ -42,7 +42,7 @@ source(file.path(pkg_dir, "examples/BayesMVP_LC_MVP_prep.R"))
 
 
 ## select N to use 
-N <- 500
+N <- 2500
 
 
 {
@@ -58,7 +58,7 @@ N <- 500
   
   n_tests <- ncol(y)
   
-  n_chunks_target <-  find_num_chunks_MVP(N, n_tests)
+  n_chunks_target <-  BayesMVP:::find_num_chunks_MVP(N, n_tests)
   
   ## Set important variables
   n_tests <- ncol(y)
@@ -172,6 +172,7 @@ N <- 500
                        known_values_indicator = known_values_indicator,
                        priors_via_Stan = 0,
                        multi_attempts_int = 0,
+                       force_autodiff_int = 0,
                        Model_type_int = 2 # 1 for MVP, 2 for LC_MVP, and 3 for latent_trait 
                     )
     
@@ -240,11 +241,11 @@ N <- 500
     
     
     mod <- cmdstan_model(file, 
-                         #  force_recompile = TRUE,
+                         force_recompile = TRUE,
                          user_header = path_to_cpp_user_header,
                          cpp_options = list(
-                           "CXXFLAGS =    -O3  -march=native  -mtune=native -fPIC -D_REENTRANT  -mfma  -mavx512f -mavx512vl -mavx512dq" ,
-                           "CPPFLAGS =    -O3  -march=native  -mtune=native -fPIC -D_REENTRANT  -mfma  -mavx512f -mavx512vl -mavx512dq"
+                           "CXXFLAGS =     -O3  -march=native  -mtune=native -fPIC -D_REENTRANT  -mfma  -mavx512f -mavx512vl -mavx512dq" ,
+                           "CPPFLAGS =     -O3  -march=native  -mtune=native -fPIC -D_REENTRANT  -mfma  -mavx512f -mavx512vl -mavx512dq"
                          ))
     
   }
@@ -254,6 +255,8 @@ N <- 500
   ## | ------  Run model - using Stan  -------------------------------------------------------------------------
   {
     
+    n_iter <- 500
+    
         tictoc::tic()
           
         Stan_mod_sample <- mod$sample( data = stan_data,
@@ -262,7 +265,7 @@ N <- 500
                                        parallel_chains = n_chains, 
                                        refresh = 50,
                                        iter_sampling = 500,
-                                       iter_warmup = 500,
+                                       iter_warmup = n_iter,
                                        max_treedepth = 10, 
                                        metric = "diag_e")
         
