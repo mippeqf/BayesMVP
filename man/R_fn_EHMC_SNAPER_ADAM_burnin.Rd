@@ -23,6 +23,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin(
   gap,
   metric_type_main,
   metric_shape_main,
+  ape_main,
   metric_type_nuisance,
   metric_shape_nuisance,
   max_eps_main,

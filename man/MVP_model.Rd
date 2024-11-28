@@ -268,19 +268,20 @@ model type (\code{Model_type}) to use.
 Sample from the model
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{MVP_model$sample(
-  init_lists_per_chain = NULL,
-  model_args_list = NULL,
-  Stan_data_list = NULL,
+  init_lists_per_chain = self$init_lists_per_chain,
+  model_args_list = self$model_args_list,
+  Stan_data_list = self$Stan_data_list,
   parallel_method = "RcppParallel",
   y = self$y,
-  N = NULL,
+  N = self$N,
   sample_nuisance = self$sample_nuisance,
+  partitioned_HMC = TRUE,
   diffusion_HMC = TRUE,
   vect_type = NULL,
   Phi_type = "Phi",
-  n_params_main = NULL,
-  n_nuisance = NULL,
-  n_chains_burnin = NULL,
+  n_params_main = self$n_params_main,
+  n_nuisance = self$n_nuisance,
+  n_chains_burnin = self$n_chains_burnin,
   n_chains_sampling = NULL,
   n_superchains = NULL,
   seed = NULL,
@@ -298,6 +299,8 @@ Sample from the model
   tau_mult = 1.6,
   metric_type_main = "Hessian",
   metric_shape_main = "dense",
+  ratio_M_main = 0.25,
+  ratio_M_us = 0.25,
   n_nuisance_to_track = 5,
   force_recompile = FALSE,
   ...
@@ -320,6 +323,9 @@ Sample from the model
 \item{\code{N}}{The sample size. See class documentation for details.}
 
 \item{\code{sample_nuisance}}{Whether to sample nuisance parameters. See class documentation for details.}
+
+\item{\code{partitioned_HMC}}{Whether to sample all parameters at once (note: wont use diffusion HMC) or whether to alternate between sampling the nuisance
+parameters and the main model parameters.}
 
 \item{\code{diffusion_HMC}}{Whether to use diffusion-pathspace HMC (Beskos et al) to sample nuisance parameters. Default is TRUE.}
 
@@ -379,6 +385,10 @@ is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwi
 
 \item{\code{metric_shape_main}}{The shape of the metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"diag"} or
 \code{"dense"}. The default is \code{"dense"} if \code{n_params_main < 250} and \code{"diag"} otherwise.}
+
+\item{\code{ratio_M_main}}{Ratio to use for the metric. Main parameters.}
+
+\item{\code{ratio_M_us}}{Ratio to use for the metric. Nuisance parameters.}
 
 \item{\code{n_nuisance_to_track}}{The number of nuisance parameters to track (i.e. to generate a trace for). By default the first 5 nuisance parameters are tracked.}
 

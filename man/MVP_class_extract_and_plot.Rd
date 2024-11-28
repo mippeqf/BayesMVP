@@ -66,6 +66,7 @@ and returned by the MVP_model$summary() method. It provides methods for:
 \item \href{#method-MVP_class_extract_and_plot-get_nuisance_trace}{\code{MVP_class_extract_and_plot$get_nuisance_trace()}}
 \item \href{#method-MVP_class_extract_and_plot-get_posterior_draws_as_tibbles}{\code{MVP_class_extract_and_plot$get_posterior_draws_as_tibbles()}}
 \item \href{#method-MVP_class_extract_and_plot-get_efficiency_metrics}{\code{MVP_class_extract_and_plot$get_efficiency_metrics()}}
+\item \href{#method-MVP_class_extract_and_plot-get_HMC_info}{\code{MVP_class_extract_and_plot$get_HMC_info()}}
 \item \href{#method-MVP_class_extract_and_plot-time_to_target_ESS}{\code{MVP_class_extract_and_plot$time_to_target_ESS()}}
 \item \href{#method-MVP_class_extract_and_plot-iter_to_target_ESS}{\code{MVP_class_extract_and_plot$iter_to_target_ESS()}}
 \item \href{#method-MVP_class_extract_and_plot-plot_traces}{\code{MVP_class_extract_and_plot$plot_traces()}}
@@ -245,6 +246,49 @@ diagnostics) to reach a minimum ESS of 100.
 diagnostics) to reach a minimum ESS of 1000.
 \item est_time_to_10000_ESS_inc_summaries: The estimated total time (including time spent computing model summaries and
 diagnostics) to reach a minimum ESS of 10,000.
+}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-MVP_class_extract_and_plot-get_HMC_info"></a>}}
+\if{latex}{\out{\hypertarget{method-MVP_class_extract_and_plot-get_HMC_info}{}}}
+\subsection{Method \code{get_HMC_info()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{MVP_class_extract_and_plot$get_HMC_info()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Returns a list containing HMC algorithm metrics including:
+\itemize{
+\item tau_main: The HMC path length (\eqn{\tau}) for sampling the main parameters.
+\item eps_main: The HMC step-size (\eqn{\epsilon}) for sampling the main parameters.
+\item tau_us: The HMC path length (\eqn{\tau}) for sampling the nuisance parameters.
+\item eps_us: The HMC step-size (\eqn{\epsilon}) for sampling the nuisance parameters.
+\item n_chains_sampling: The number of parallel chains used during the sampling phase.
+\item n_chains_burnin: The number of parallel chains used during the burnin phase.
+\item n_iter: The number of iterations used during the sampling phase.
+\item n_burnin:  The number of iterations used during the burnin phase.
+\item LR_main: The ADAM learning rate (main parameters).
+\item LR_us:  The ADAM learning rate (nuisance parameters).
+\item adapt_delta: The target Metropolis-Hastings acceptance probability.
+\item metric_type_main: The type of HMC metric used for main parameters (Hessian or Empirical).
+\item metric_shape_main: The shape of HMC metric used for main parameters (dense or diag).
+\item metric_type_nuisance: The type of HMC metric used for the nuisance parameters (Hessian or Empirical).
+\item metric_shape_nuisance: The shape of HMC metric used for the nuisance parameters (dense or diag).
+\item diffusion_HMC: Whether diffusion HMC was used to sample the nuisance parameters or not.
+\item partitioned_HMC: Whether partitioned HMC was used or not (if \code{FALSE}, then parameters were sampled all
+at once, and if \code{TRUE}, then the nuisance are sampled conditional on the main parameters).
+\item n_superchains: The number of superchains.
+\item interval_width_main: The interval width for the main parameters. The metric is computed at the end of
+each interval.
+\item interval_width_nuisance: The interval width for the nuisance parameters. The metric is computed at the end of
+each interval.
+\item force_autodiff: Whether autodiff was used (forced) - only relevant for built-in models, as Stan models always
+use autodiff.
+\item force_PartialLog: Whether a partial-log-scale version of the model was used (forced) - only relevant
+for built-in models.
+\item multi_attempts: Whether multiple attempts were made when evaluating the lp_grad function (i.e. first try normal param.,
+then partial-log-scale, and finally autodiff + partial-log-scale) - only relevant for built-in models.
 }
 }
 }
