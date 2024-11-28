@@ -5,9 +5,9 @@
 
 
 
+ 
 
-
-__attribute__((always_inline)) inline std::vector< Eigen::Matrix<double, -1, -1>> vec_of_mats_double(int n_rows,
+ALWAYS_INLINE  std::vector< Eigen::Matrix<double, -1, -1>> vec_of_mats_double(int n_rows,
                                                                       int n_cols, 
                                                                       int n_matrices) {
   
@@ -31,7 +31,7 @@ __attribute__((always_inline)) inline std::vector< Eigen::Matrix<double, -1, -1>
 
 
 template<typename T = double>
-__attribute__((always_inline)) inline std::vector<Eigen::Matrix<T, -1, -1>> vec_of_mats(int n_rows,
+ALWAYS_INLINE std::vector<Eigen::Matrix<T, -1, -1>> vec_of_mats(int n_rows,
                                                          int n_cols, 
                                                          int n_mats) {
   
@@ -61,7 +61,7 @@ __attribute__((always_inline)) inline std::vector<Eigen::Matrix<T, -1, -1>> vec_
  
  
 template<typename T = double>
-__attribute__((always_inline)) inline std::vector<std::vector<Eigen::Matrix<T, -1, -1>>> vec_of_vec_of_mats(int n_rows,
+ALWAYS_INLINE std::vector<std::vector<Eigen::Matrix<T, -1, -1>>> vec_of_vec_of_mats(int n_rows,
                                                                              int n_cols, 
                                                                              int n_mats_inner,
                                                                              int n_mats_outer) {

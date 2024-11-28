@@ -2,19 +2,11 @@
 
 #pragma once
 
-
  
-// [[Rcpp::depends(RcppEigen)]]
-
-
  
 #include <Eigen/Dense>
  
-
-
-
-// [[Rcpp::plugins(cpp17)]]
-
+ 
 
 
 

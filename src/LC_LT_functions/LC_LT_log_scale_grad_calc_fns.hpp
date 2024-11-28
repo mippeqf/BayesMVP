@@ -2,18 +2,11 @@
 
 
  
-// [[Rcpp::depends(RcppEigen)]]
 
- 
- 
 #include <Eigen/Dense>
  
 
-
  
-// [[Rcpp::plugins(cpp17)]]
-
-
  
 using namespace Eigen;
 

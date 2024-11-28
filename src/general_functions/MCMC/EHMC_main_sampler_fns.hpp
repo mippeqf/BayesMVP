@@ -2,12 +2,6 @@
 #pragma once
 
  
-
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
-
  
 
 
@@ -22,9 +16,6 @@
 
 #include <unsupported/Eigen/SpecialFunctions>
  
- 
- 
- // [[Rcpp::plugins(cpp17)]]
  
  
  
@@ -295,7 +286,7 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
     const int n_params_main = Model_args_as_cpp_struct.n_params_main;
     const int n_params = n_params_main + n_nuisance;
   
-    const std::string grad_option = "main_only";
+    const std::string grad_option = "all";
      
     const std::string metric_shape_main = EHMC_Metric_struct_as_cpp_struct.metric_shape_main;
     
@@ -433,7 +424,7 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
 
       } catch (...) {
         
-              std::cout << "  Could not evaluate lp_grad function when sampling main parameters " << ")\n";
+              //std::cout << "  Could not evaluate lp_grad function when sampling main parameters " << ")\n";
         
               result_input.main_div = 1;
               result_input.main_p_jump = 0.0;

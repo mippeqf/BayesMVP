@@ -1,12 +1,6 @@
 
 #pragma once
-
-// [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]] 
-// [[Rcpp::plugins(cpp17)]]
  
-
 
 #include <random>
 #include <Eigen/Dense>

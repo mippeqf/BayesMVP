@@ -1,6 +1,11 @@
+#pragma once
+
 #ifndef STAN_MATH_PRIM_META_MVP_DOUBLE_FNS_HPP
 #define STAN_MATH_PRIM_META_MVP_DOUBLE_FNS_HPP
 
+
+
+ 
 
 #include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/math/prim/fun/typedefs.hpp>

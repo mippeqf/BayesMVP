@@ -1,20 +1,14 @@
 
 #pragma once
 
-// [[Rcpp::depends(StanHeaders)]] 
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]] 
-// [[Rcpp::depends(RcppEigen)]]
-
-// [[Rcpp::depends(rstan)]]
-// [[Rcpp::depends(bridgestan)]]
-
+ 
+ 
  
 
 #include <sstream>
 #include <stdexcept>  
 #include <complex>
-#include <dlfcn.h> // For dynamic loading 
+
 #include <map>
 #include <vector>  
 #include <string> 
@@ -43,15 +37,22 @@
  
  
 
-
-#if defined(__AVX2__) || defined(__AVX512F__) 
-#include <immintrin.h>
+ 
+ 
+ 
+ 
+#ifdef _WIN32
+#include <dlfcn.h>
+#include <windows.h>
+#define dlopen(x,y) LoadLibrary(x)
+#define dlclose(x)  FreeLibrary((HMODULE)x)
+#define dlsym(x,y)  GetProcAddress((HMODULE)x,y)
+#define dlerror() "Windows error"
+#else
+#include <dlfcn.h> // For dynamic loading 
 #endif
  
  
-
-// [[Rcpp::plugins(cpp17)]]
-
 
 
  
@@ -75,8 +76,8 @@ using namespace Eigen;
 
 // fn to handle JSON via file input and compute the log-prob and gradient
 bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
-                                            const std::string &json_file, 
-                                            unsigned int seed) {
+                                             const std::string &json_file, 
+                                             unsigned int seed) {
  
      // Load the Stan model from the .so file using BridgeStan
      char* error_msg = nullptr;

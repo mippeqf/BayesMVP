@@ -3,12 +3,7 @@
 
 
  
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
 
- 
  
 
 #include <stan/math/rev.hpp>
@@ -59,9 +54,7 @@
 #endif
  
  
-
-// [[Rcpp::plugins(cpp17)]]
-
+ 
 
 
  

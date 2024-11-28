@@ -1,14 +1,10 @@
 
 #pragma once
 
+
+ 
+ 
 #include <random>
-
-
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
-
 
  
 
@@ -19,8 +15,6 @@
 #include <unsupported/Eigen/SpecialFunctions>
  
  
-
-// [[Rcpp::plugins(cpp17)]]
  
  
  
@@ -194,7 +188,7 @@ ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  
       const int n_params_main = Model_args_as_cpp_struct.n_params_main;
       const int n_params = n_params_main +  n_nuisance;
   
-      const std::string grad_option = "us_only";
+      const std::string grad_option = "all";
       
       // const double h = EHMC_args_as_cpp_struct.eps_us; /// HMC-equiv step-size ??
       const double eps_1 = EHMC_args_as_cpp_struct.eps_us; ; // std::sqrt(h);
@@ -345,7 +339,7 @@ ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  
       } catch (...) { // if iteration fails (recorded as us_div)
         
         
-                std::cout << "  Could not evaluate lp_grad function when sampling nuisance parameters " << ")\n";
+              //  std::cout << "  Could not evaluate lp_grad function when sampling nuisance parameters " << ")\n";
 
                 result_input.us_div = 1;
                 result_input.us_p_jump = 0.0;

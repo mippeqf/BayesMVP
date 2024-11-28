@@ -5,7 +5,6 @@
 #define FN_WRAPPERS_LOG_SUM_EXP_DBL
 
  
-
   
 #include <stan/math/prim/fun/sqrt.hpp>
 #include <stan/math/prim/fun/log.hpp>

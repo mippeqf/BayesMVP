@@ -2,12 +2,6 @@
 #pragma once
  
  
-
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
-
  
  
  
@@ -51,15 +45,6 @@
 
 
  
-
-
-#if defined(__AVX2__) || defined(__AVX512F__)
-#include <immintrin.h>
-#endif
-
-
-// [[Rcpp::plugins(cpp17)]]
-
  
 
  
@@ -149,8 +134,8 @@ void                             fn_lp_and_grad_MVP_Pinkney_AD_log_scale_InPlace
 
 
  
-  stan::math::ChainableStack ad_tape;
-  stan::math::nested_rev_autodiff nested;
+//  stan::math::ChainableStack ad_tape;
+ // stan::math::nested_rev_autodiff nested;
   
    
   //// important params

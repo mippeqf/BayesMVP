@@ -5,7 +5,7 @@
 #define FN_WRAPPERS_OVERALL
 
  
-
+ 
   
 #include <stan/math/prim/fun/sqrt.hpp>
 #include <stan/math/prim/fun/log.hpp>
@@ -32,28 +32,7 @@ using namespace Eigen;
  
  
  
-  
-
-
-// 
-// void log_sum_exp_pair(const Eigen::Matrix<double, -1, 1>  &log_a,
-//                       const Eigen::Matrix<double, -1, 1>  &log_b,
-//                       const std::string &vect_type_exp,
-//                       const std::string &vect_type_log,
-//                       Eigen::Matrix<double, -1, 1> &log_sum_abs_result) {       // output parameter
-//   
-//   // for each element i, find max(log_a[i], log_b[i])
-//   Eigen::Matrix<double, -1, 1> max_logs = log_a.array().max(log_b.array());
-//   // for each element i, compute sign_a[i]*exp_a[i] + sign_b[i]*exp_b[i]
-//   Eigen::Matrix<double, -1, 1> combined = (fn_EIGEN_double(log_a - max_logs, "exp", vect_type_exp).array()  + 
-//     fn_EIGEN_double(log_b - max_logs, "exp", vect_type_exp).array()).matrix(); 
-//   // fill both output vectors
-//   log_sum_abs_result = max_logs + fn_EIGEN_double(combined.array().abs().matrix(), "log", vect_type_log);
-//   
-// }
-//  
-
-
+ 
 
 
 inline void log_sum_exp_general(     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_vals,  

@@ -3,11 +3,6 @@
 
 
  
- // [[Rcpp::depends(RcppEigen)]]
- // [[Rcpp::depends(BH)]]
- // [[Rcpp::depends(RcppParallel)]] 
- // [[Rcpp::plugins(cpp17)]]
- 
  
 
 #include <stan/math/rev.hpp>
@@ -327,167 +322,167 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   {
 
  
-  {     ////////////////////////// local AD block
-
-          stan::math::start_nested();  ////////////////////////
-          
-          //// these need to be outside the AD block
-          Eigen::Matrix<stan::math::var, -1, 1  >  Omega_raw_vec_var =  stan::math::to_var(Omega_raw_vec_double) ;
-          std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_unconstrained_var = fn_convert_std_vec_of_corrs_to_3d_array_var(Eigen_vec_to_std_vec_var(Omega_raw_vec_var),  n_tests, n_class);
-          std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  L_Omega_var = vec_of_mats_var(n_tests, n_tests, n_class);
-          stan::math::var target_AD = 0.0;
-          std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_var   = vec_of_mats_var(n_tests, n_tests, n_class);
-      
-          {
-      
-                stan::math::var log_det_J_L_Omega = 0.0;
-      
-                for (int c = 0; c < n_class; ++c) {
-      
-                      Eigen::Matrix<stan::math::var, -1, -1>  ub = stan::math::to_var(ub_corr[c]);
-                      Eigen::Matrix<stan::math::var, -1, -1>  lb = stan::math::to_var(lb_corr[c]);
-                      Eigen::Matrix<stan::math::var, -1, -1>  Chol_Schur_outs =  Pinkney_LDL_bounds_opt(n_tests, lb, ub, Omega_unconstrained_var[c], known_values_indicator[c], known_values[c]) ;
-                      L_Omega_var[c]   =  Chol_Schur_outs.block(1, 0, n_tests, n_tests);
-                      Omega_var[c] =   L_Omega_var[c] * L_Omega_var[c].transpose() ;
-      
-                      log_det_J_L_Omega +=   Chol_Schur_outs(0, 0); // now can set prior directly on Omega (as this is Jacobian adjustment)
-      
-                }
-      
-                log_det_J_L_Omega_double += log_det_J_L_Omega.val();
-                target_AD += log_det_J_L_Omega;
-      
-           }
-      
-          {
-      
-                stan::math::var prior_densities_L_Omega = 0.0;
-      
-                    for (int c = 0; c < n_class; ++c) {
-      
-                          if ( (corr_prior_beta == false)   &&  (corr_prior_norm == false) ) {
-                            prior_densities_L_Omega +=  stan::math::lkj_corr_cholesky_lpdf(L_Omega_var[c], lkj_cholesky_eta(c)) ;
-                          } else if ( (corr_prior_beta == true)   &&  (corr_prior_norm == false) ) {
-                            for (int i = 1; i < n_tests; i++) {
-                              for (int j = 0; j < i; j++) {
-                                prior_densities_L_Omega +=  stan::math::beta_lpdf(  (Omega_var[c](i, j) + 1)/2, prior_for_corr_a[c](i, j), prior_for_corr_b[c](i, j));
-                              }
-                            }
-                            //  Jacobian for  Omega -> L_Omega transformation for prior log-densities (since both LKJ and truncated normal prior densities are in terms of Omega, not L_Omega)
-                            Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
-                            for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i + 1) ) * stan::math::log(L_Omega_var[c](i, i));
-                            prior_densities_L_Omega  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
-                          } else if  ( (corr_prior_beta == false)   &&  (corr_prior_norm == true) ) {
-                            for (int i = 1; i < n_tests; i++) {
-                              for (int j = 0; j < i; j++) {
-                                prior_densities_L_Omega +=  stan::math::normal_lpdf(  Omega_var[c](i, j), prior_for_corr_a[c](i, j), prior_for_corr_b[c](i, j));
-                              }
-                            }
-                            Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
-                            for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i + 1) ) * stan::math::log(L_Omega_var[c](i, i));
-                            prior_densities_L_Omega  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
-                          }
-      
-                    }
-      
-                    target_AD += prior_densities_L_Omega;
-                    prior_densities_L_Omega_double += prior_densities_L_Omega.val();
-      
-            }
-      
-      
-            {
-                ///////////////////////
-                target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-                grad_Omega_raw_priors_and_log_det_J =  Omega_raw_vec_var.adj();    // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-                out_mat.segment(1 + n_us, n_corrs) =  grad_Omega_raw_priors_and_log_det_J ;   //// add grad constribution to output vec
-                stan::math::set_zero_all_adjoints();
-                ////////////////////////////////////////////////////////////
-            }
-      
-      
-          /////////////  prev stuff  ---- vars
-        {
-            if (n_class > 1) {  //// if latent class
-      
-              std::vector<stan::math::var> 	 u_prev_var_vec_var(n_class, 0.0);
-              std::vector<stan::math::var> 	 prev_var_vec_var(n_class, 0.0);
-              std::vector<stan::math::var> 	 tanh_u_prev_var(n_class, 0.0);
-              Eigen::Matrix<stan::math::var, -1, -1>	 prev_var = Eigen::Matrix<stan::math::var, -1, -1>::Zero(1, 2);
-              stan::math::var tanh_pu_deriv_var = 0.0;
-              stan::math::var deriv_p_wrt_pu_var = 0.0;
-              stan::math::var tanh_pu_second_deriv_var = 0.0;
-              stan::math::var log_jac_p_deriv_wrt_pu_var = 0.0;
-              stan::math::var log_det_J_prev_var = 0.0;
-              stan::math::var target_AD_prev = 0.0;
-      
-              u_prev_var_vec_var[1] =  stan::math::to_var(u_prev_diseased);
-              tanh_u_prev_var[1] =  stan::math::tanh(u_prev_var_vec_var[1]); /// ( stan::math::exp(2.0*u_prev_var_vec_var[1] ) - 1.0) / ( stan::math::exp(2*u_prev_var_vec_var[1] ) + 1.0) ;
-              u_prev_var_vec_var[0] =   0.5 *  stan::math::log( (1.0 + ( (1.0 - 0.5 * ( tanh_u_prev_var[1] + 1.0))*2.0 - 1.0) ) / (1.0 - ( (1.0 - 0.5 * ( tanh_u_prev_var[1] + 1.0))*2.0 - 1.0) ) )  ;
-              tanh_u_prev_var[0] =  stan::math::tanh(u_prev_var_vec_var[0]); ///  (stan::math::exp(2.0*u_prev_var_vec_var[0] ) - 1.0) / ( stan::math::exp(2*u_prev_var_vec_var[0] ) + 1.0) ;
-      
-              prev_var_vec_var[1] =  0.5 * ( tanh_u_prev_var[1] + 1.0);
-              prev_var_vec_var[0] =  0.5 * ( tanh_u_prev_var[0] + 1.0);
-              prev_var(0,1) =  prev_var_vec_var[1];
-              prev_var(0,0) =  prev_var_vec_var[0];
-      
-              tanh_pu_deriv_var = ( 1.0 - (tanh_u_prev_var[1] * tanh_u_prev_var[1])  );
-              deriv_p_wrt_pu_var = 0.5 *  tanh_pu_deriv_var;
-              tanh_pu_second_deriv_var  = -2.0 * tanh_u_prev_var[1]  * tanh_pu_deriv_var;
-              log_jac_p_deriv_wrt_pu_var  = ( 1.0 / deriv_p_wrt_pu_var) * 0.5 * tanh_pu_second_deriv_var; // for gradient of u's
-      
-              log_det_J_prev_var =    stan::math::log( deriv_p_wrt_pu_var );
-              log_det_J_prev_double =  log_det_J_prev_var.val() ;
-      
-              stan::math::var prior_densities_prev = beta_lpdf(prev_var(0, 1), prev_prior_a, prev_prior_b)  ;  // weakly informative prior - helps avoid boundaries with slight negative skew (for lower N)
-              prior_densities_prev_double = prior_densities_prev.val();
-      
-              //  target_AD_prev += log_det_J_prev_var ; /// done manually later
-              target_AD  +=  prior_densities_prev;
-      
-              ///////////////////////
-              prior_densities_prev.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-              grad_prev_raw_priors_and_log_det_J  =  u_prev_var_vec_var[1].adj() - u_prev_var_vec_var[0].adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-              out_mat(1 + n_us + n_corrs + n_covariates_total) = grad_prev_raw_priors_and_log_det_J; //// add grad constribution to output vec
-              stan::math::set_zero_all_adjoints();
-      
-            }
-        }
-      
-          ////////////////////////////////////////////////////////////
-          for (int c = 0; c < n_class; ++c) {
-            int cnt_1 = 0;
-            for (int k = 0; k < n_tests; k++) {
-              for (int l = 0; l < k + 1; l++) {
-                (  L_Omega_var[c](k, l)).grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-                int cnt_2 = 0;
-                for (int i = 1; i < n_tests; i++) {
-                  for (int j = 0; j < i; j++) {
-                    deriv_L_wrt_unc_full[c](cnt_1, cnt_2)  =   Omega_unconstrained_var[c](i, j).adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-                    cnt_2 += 1;
-                  }
-                }
-                stan::math::set_zero_all_adjoints();
-                cnt_1 += 1;
-              }
-            }
-          }
-      
-      
-          ///////////////// get cholesky factor's (lower-triangular) of corr matrices
-          // convert to 3d var array
-          for (int c = 0; c < n_class; ++c) {
-            for (int t2 = 0; t2 < n_tests; ++t2) { //// col-major storage
-              for (int t1 = 0; t1 < n_tests; ++t1) {
-                L_Omega_double[c](t1, t2) =   L_Omega_var[c](t1, t2).val()  ;
-                L_Omega_recip_double[c](t1, t2) =   1.0 / L_Omega_double[c](t1, t2) ;
-              }
-            }
-          }
-      
-          stan::math::recover_memory_nested();  //////////////////////////////////////////
-
-  }   //////////////////////////  end of local AD block
+  // {     ////////////////////////// local AD block
+  // 
+  //         stan::math::start_nested();  ////////////////////////
+  //         
+  //         //// these need to be outside the AD block
+  //         Eigen::Matrix<stan::math::var, -1, 1  >  Omega_raw_vec_var =  stan::math::to_var(Omega_raw_vec_double) ;
+  //         std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_unconstrained_var = fn_convert_std_vec_of_corrs_to_3d_array_var(Eigen_vec_to_std_vec_var(Omega_raw_vec_var),  n_tests, n_class);
+  //         std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  L_Omega_var = vec_of_mats_var(n_tests, n_tests, n_class);
+  //         stan::math::var target_AD = 0.0;
+  //         std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_var   = vec_of_mats_var(n_tests, n_tests, n_class);
+  //     
+  //         {
+  //     
+  //               stan::math::var log_det_J_L_Omega = 0.0;
+  //     
+  //               for (int c = 0; c < n_class; ++c) {
+  //     
+  //                     Eigen::Matrix<stan::math::var, -1, -1>  ub = stan::math::to_var(ub_corr[c]);
+  //                     Eigen::Matrix<stan::math::var, -1, -1>  lb = stan::math::to_var(lb_corr[c]);
+  //                     Eigen::Matrix<stan::math::var, -1, -1>  Chol_Schur_outs =  Pinkney_LDL_bounds_opt(n_tests, lb, ub, Omega_unconstrained_var[c], known_values_indicator[c], known_values[c]) ;
+  //                     L_Omega_var[c]   =  Chol_Schur_outs.block(1, 0, n_tests, n_tests);
+  //                     Omega_var[c] =   L_Omega_var[c] * L_Omega_var[c].transpose() ;
+  //     
+  //                     log_det_J_L_Omega +=   Chol_Schur_outs(0, 0); // now can set prior directly on Omega (as this is Jacobian adjustment)
+  //     
+  //               }
+  //     
+  //               log_det_J_L_Omega_double += log_det_J_L_Omega.val();
+  //               target_AD += log_det_J_L_Omega;
+  //     
+  //          }
+  //     
+  //         {
+  //     
+  //               stan::math::var prior_densities_L_Omega = 0.0;
+  //     
+  //                   for (int c = 0; c < n_class; ++c) {
+  //     
+  //                         if ( (corr_prior_beta == false)   &&  (corr_prior_norm == false) ) {
+  //                           prior_densities_L_Omega +=  stan::math::lkj_corr_cholesky_lpdf(L_Omega_var[c], lkj_cholesky_eta(c)) ;
+  //                         } else if ( (corr_prior_beta == true)   &&  (corr_prior_norm == false) ) {
+  //                           for (int i = 1; i < n_tests; i++) {
+  //                             for (int j = 0; j < i; j++) {
+  //                               prior_densities_L_Omega +=  stan::math::beta_lpdf(  (Omega_var[c](i, j) + 1)/2, prior_for_corr_a[c](i, j), prior_for_corr_b[c](i, j));
+  //                             }
+  //                           }
+  //                           //  Jacobian for  Omega -> L_Omega transformation for prior log-densities (since both LKJ and truncated normal prior densities are in terms of Omega, not L_Omega)
+  //                           Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
+  //                           for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i + 1) ) * stan::math::log(L_Omega_var[c](i, i));
+  //                           prior_densities_L_Omega  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
+  //                         } else if  ( (corr_prior_beta == false)   &&  (corr_prior_norm == true) ) {
+  //                           for (int i = 1; i < n_tests; i++) {
+  //                             for (int j = 0; j < i; j++) {
+  //                               prior_densities_L_Omega +=  stan::math::normal_lpdf(  Omega_var[c](i, j), prior_for_corr_a[c](i, j), prior_for_corr_b[c](i, j));
+  //                             }
+  //                           }
+  //                           Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
+  //                           for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i + 1) ) * stan::math::log(L_Omega_var[c](i, i));
+  //                           prior_densities_L_Omega  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
+  //                         }
+  //     
+  //                   }
+  //     
+  //                   target_AD += prior_densities_L_Omega;
+  //                   prior_densities_L_Omega_double += prior_densities_L_Omega.val();
+  //     
+  //           }
+  //     
+  //     
+  //           {
+  //               ///////////////////////
+  //               target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+  //               grad_Omega_raw_priors_and_log_det_J =  Omega_raw_vec_var.adj();    // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+  //               out_mat.segment(1 + n_us, n_corrs) =  grad_Omega_raw_priors_and_log_det_J ;   //// add grad constribution to output vec
+  //               stan::math::set_zero_all_adjoints();
+  //               ////////////////////////////////////////////////////////////
+  //           }
+  //     
+  //     
+  //         /////////////  prev stuff  ---- vars
+  //       {
+  //           if (n_class > 1) {  //// if latent class
+  //     
+  //             std::vector<stan::math::var> 	 u_prev_var_vec_var(n_class, 0.0);
+  //             std::vector<stan::math::var> 	 prev_var_vec_var(n_class, 0.0);
+  //             std::vector<stan::math::var> 	 tanh_u_prev_var(n_class, 0.0);
+  //             Eigen::Matrix<stan::math::var, -1, -1>	 prev_var = Eigen::Matrix<stan::math::var, -1, -1>::Zero(1, 2);
+  //             stan::math::var tanh_pu_deriv_var = 0.0;
+  //             stan::math::var deriv_p_wrt_pu_var = 0.0;
+  //             stan::math::var tanh_pu_second_deriv_var = 0.0;
+  //             stan::math::var log_jac_p_deriv_wrt_pu_var = 0.0;
+  //             stan::math::var log_det_J_prev_var = 0.0;
+  //             stan::math::var target_AD_prev = 0.0;
+  //     
+  //             u_prev_var_vec_var[1] =  stan::math::to_var(u_prev_diseased);
+  //             tanh_u_prev_var[1] =  stan::math::tanh(u_prev_var_vec_var[1]); /// ( stan::math::exp(2.0*u_prev_var_vec_var[1] ) - 1.0) / ( stan::math::exp(2*u_prev_var_vec_var[1] ) + 1.0) ;
+  //             u_prev_var_vec_var[0] =   0.5 *  stan::math::log( (1.0 + ( (1.0 - 0.5 * ( tanh_u_prev_var[1] + 1.0))*2.0 - 1.0) ) / (1.0 - ( (1.0 - 0.5 * ( tanh_u_prev_var[1] + 1.0))*2.0 - 1.0) ) )  ;
+  //             tanh_u_prev_var[0] =  stan::math::tanh(u_prev_var_vec_var[0]); ///  (stan::math::exp(2.0*u_prev_var_vec_var[0] ) - 1.0) / ( stan::math::exp(2*u_prev_var_vec_var[0] ) + 1.0) ;
+  //     
+  //             prev_var_vec_var[1] =  0.5 * ( tanh_u_prev_var[1] + 1.0);
+  //             prev_var_vec_var[0] =  0.5 * ( tanh_u_prev_var[0] + 1.0);
+  //             prev_var(0,1) =  prev_var_vec_var[1];
+  //             prev_var(0,0) =  prev_var_vec_var[0];
+  //     
+  //             tanh_pu_deriv_var = ( 1.0 - (tanh_u_prev_var[1] * tanh_u_prev_var[1])  );
+  //             deriv_p_wrt_pu_var = 0.5 *  tanh_pu_deriv_var;
+  //             tanh_pu_second_deriv_var  = -2.0 * tanh_u_prev_var[1]  * tanh_pu_deriv_var;
+  //             log_jac_p_deriv_wrt_pu_var  = ( 1.0 / deriv_p_wrt_pu_var) * 0.5 * tanh_pu_second_deriv_var; // for gradient of u's
+  //     
+  //             log_det_J_prev_var =    stan::math::log( deriv_p_wrt_pu_var );
+  //             log_det_J_prev_double =  log_det_J_prev_var.val() ;
+  //     
+  //             stan::math::var prior_densities_prev = beta_lpdf(prev_var(0, 1), prev_prior_a, prev_prior_b)  ;  // weakly informative prior - helps avoid boundaries with slight negative skew (for lower N)
+  //             prior_densities_prev_double = prior_densities_prev.val();
+  //     
+  //             //  target_AD_prev += log_det_J_prev_var ; /// done manually later
+  //             target_AD  +=  prior_densities_prev;
+  //     
+  //             ///////////////////////
+  //             prior_densities_prev.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+  //             grad_prev_raw_priors_and_log_det_J  =  u_prev_var_vec_var[1].adj() - u_prev_var_vec_var[0].adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+  //             out_mat(1 + n_us + n_corrs + n_covariates_total) = grad_prev_raw_priors_and_log_det_J; //// add grad constribution to output vec
+  //             stan::math::set_zero_all_adjoints();
+  //     
+  //           }
+  //       }
+  //     
+  //         ////////////////////////////////////////////////////////////
+  //         for (int c = 0; c < n_class; ++c) {
+  //           int cnt_1 = 0;
+  //           for (int k = 0; k < n_tests; k++) {
+  //             for (int l = 0; l < k + 1; l++) {
+  //               (  L_Omega_var[c](k, l)).grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+  //               int cnt_2 = 0;
+  //               for (int i = 1; i < n_tests; i++) {
+  //                 for (int j = 0; j < i; j++) {
+  //                   deriv_L_wrt_unc_full[c](cnt_1, cnt_2)  =   Omega_unconstrained_var[c](i, j).adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+  //                   cnt_2 += 1;
+  //                 }
+  //               }
+  //               stan::math::set_zero_all_adjoints();
+  //               cnt_1 += 1;
+  //             }
+  //           }
+  //         }
+  //     
+  //     
+  //         ///////////////// get cholesky factor's (lower-triangular) of corr matrices
+  //         // convert to 3d var array
+  //         for (int c = 0; c < n_class; ++c) {
+  //           for (int t2 = 0; t2 < n_tests; ++t2) { //// col-major storage
+  //             for (int t1 = 0; t1 < n_tests; ++t1) {
+  //               L_Omega_double[c](t1, t2) =   L_Omega_var[c](t1, t2).val()  ;
+  //               L_Omega_recip_double[c](t1, t2) =   1.0 / L_Omega_double[c](t1, t2) ;
+  //             }
+  //           }
+  //         }
+  //     
+  //         stan::math::recover_memory_nested();  //////////////////////////////////////////
+  // 
+  // }   //////////////////////////  end of local AD block
   
 
   /////////////  prev stuff
@@ -571,48 +566,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   ////////////////////////////////////////////////
    
   {
-    // //// Use MVP_workspace matrices instead of creating new ones
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // std::vector<Eigen::Matrix<double, -1, -1>> &Z_std_norm = MVP_workspace.Z_std_norm;
-    // std::vector<Eigen::Matrix<double, -1, -1>> &Bound_Z = MVP_workspace.Bound_Z;
-    // std::vector<Eigen::Matrix<double, -1, -1>> &Bound_U_Phi_Bound_Z = MVP_workspace.Bound_U_Phi_Bound_Z;
-    // std::vector<Eigen::Matrix<double, -1, -1>> &prob = MVP_workspace.prob;
-    // std::vector<Eigen::Matrix<double, -1, -1>> &Phi_Z = MVP_workspace.Phi_Z;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, -1> &y1_log_prob = MVP_workspace.y1_log_prob;
-    // Eigen::Matrix<double, -1, -1> &phi_Z_recip = MVP_workspace.phi_Z_recip;
-    // Eigen::Matrix<double, -1, -1> &phi_Bound_Z = MVP_workspace.phi_Bound_Z;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, -1> &u_grad_array_CM_chunk = MVP_workspace.u_grad_array_CM_chunk;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, -1> &common_grad_term_1 = MVP_workspace.common_grad_term_1;
-    // Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip = MVP_workspace.y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip;
-    // Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = MVP_workspace.y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip;
-    // Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = MVP_workspace.prob_rowwise_prod_temp;
-    // Eigen::Matrix<double, -1, -1> &prob_recip_rowwise_prod_temp = MVP_workspace.prob_recip_rowwise_prod_temp;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, 1> &prod_container_or_inc_array = MVP_workspace.prod_container_or_inc_array;
-    // Eigen::Matrix<double, -1, 1> &derivs_chain_container_vec =  MVP_workspace.derivs_chain_container_vec;
-    // Eigen::Matrix<double, -1, 1> &prob_rowwise_prod_temp_all =  MVP_workspace.prob_rowwise_prod_temp_all;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, -1> &grad_prob =   MVP_workspace.grad_prob;
-    // Eigen::Matrix<double, -1, -1> &z_grad_term = MVP_workspace.z_grad_term;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, -1> &y_chunk = MVP_workspace.y_chunk;
-    // Eigen::Matrix<double, -1, -1> &u_array = MVP_workspace.u_array;
-    // Eigen::Matrix<double, -1, -1> &y_sign =  MVP_workspace.y_sign;
-    // Eigen::Matrix<double, -1, -1> &y_m_y_sign_x_u = MVP_workspace.y_m_y_sign_x_u;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, -1> &u_grad_array_CM_chunk_block = MVP_workspace.u_grad_array_CM_chunk_block;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, 1> &u_unc_vec_chunk =   MVP_workspace.u_unc_vec_chunk;
-    // Eigen::Matrix<double, -1, 1> &u_vec_chunk =       MVP_workspace.u_vec_chunk;
-    // Eigen::Matrix<double, -1, 1> &du_wrt_duu_chunk =  MVP_workspace.du_wrt_duu_chunk;
-    // Eigen::Matrix<double, -1, 1> &d_J_wrt_duu_chunk = MVP_workspace.d_J_wrt_duu_chunk;
-    // ///////////////////////////////////////////////
-    // Eigen::Matrix<double, -1, -1> &lp_array = MVP_workspace.lp_array;
-    // ///////////////////////////////////////////////
-    //// Use MVP_workspace matrices instead of creating new ones
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     std::vector<Eigen::Matrix<double, -1, -1>> Z_std_norm = vec_of_mats<double>(chunk_size, n_tests, n_class);
     std::vector<Eigen::Matrix<double, -1, -1>> Bound_Z = Z_std_norm;
@@ -679,50 +632,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                         vect_type_inv_Phi = "Stan";
                         vect_type_inv_Phi_approx_from_logit_prob = "Stan";
               
-                        // //// resize workspace when chunk_size changes (calls rezise method from "MVP_ThreadLocalWorkspace" struct)
-                        // MVP_workspace.resize_for_last_chunk(last_chunk_size, n_tests, n_class); 
-                        
-                        // //// re-assign 
-                        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                        // Z_std_norm = MVP_workspace.Z_std_norm;
-                        // Bound_Z = MVP_workspace.Bound_Z;
-                        // Bound_U_Phi_Bound_Z = MVP_workspace.Bound_U_Phi_Bound_Z;
-                        // prob = MVP_workspace.prob;
-                        // Phi_Z = MVP_workspace.Phi_Z;
-                        // ///////////////////////////////////////////////
-                        // y1_log_prob = MVP_workspace.y1_log_prob;
-                        // phi_Z_recip = MVP_workspace.phi_Z_recip;
-                        // phi_Bound_Z = MVP_workspace.phi_Bound_Z;
-                        // ///////////////////////////////////////////////
-                        // u_grad_array_CM_chunk = MVP_workspace.u_grad_array_CM_chunk;
-                        // ///////////////////////////////////////////////
-                        // common_grad_term_1 = MVP_workspace.common_grad_term_1;
-                        // y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip = MVP_workspace.y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip;
-                        // y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = MVP_workspace.y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip;
-                        // prob_rowwise_prod_temp = MVP_workspace.prob_rowwise_prod_temp;
-                        // prob_recip_rowwise_prod_temp = MVP_workspace.prob_recip_rowwise_prod_temp;
-                        // ///////////////////////////////////////////////
-                        // prod_container_or_inc_array = MVP_workspace.prod_container_or_inc_array;
-                        // derivs_chain_container_vec = MVP_workspace.derivs_chain_container_vec;
-                        // prob_rowwise_prod_temp_all = MVP_workspace.prob_rowwise_prod_temp_all;
-                        // ///////////////////////////////////////////////
-                        // grad_prob = MVP_workspace.grad_prob;
-                        // z_grad_term = MVP_workspace.z_grad_term;
-                        // ///////////////////////////////////////////////
-                        // y_chunk = MVP_workspace.y_chunk;
-                        // u_array = MVP_workspace.u_array;
-                        // y_sign = MVP_workspace.y_sign;
-                        // y_m_y_sign_x_u = MVP_workspace.y_m_y_sign_x_u;
-                        // ///////////////////////////////////////////////
-                        // u_grad_array_CM_chunk_block = MVP_workspace.u_grad_array_CM_chunk_block;
-                        // ///////////////////////////////////////////////
-                        // u_unc_vec_chunk = MVP_workspace.u_unc_vec_chunk;
-                        // u_vec_chunk = MVP_workspace.u_vec_chunk;
-                        // du_wrt_duu_chunk = MVP_workspace.du_wrt_duu_chunk;
-                        // d_J_wrt_duu_chunk = MVP_workspace.d_J_wrt_duu_chunk;
-                        // ///////////////////////////////////////////////
-                        // lp_array = MVP_workspace.lp_array;
-                        // ///////////////////////////////////////////////
                         
                         ///////////////////////////////////////////////
                         for (int c = 0; c < n_class; c++) {
@@ -796,9 +705,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
               if (n_covariates_max > 1) {
                   Eigen::Matrix<double, -1, 1>    Xbeta_given_class_c_col_t = X[c][t].block(chunk_size_orig * chunk_counter, 0, chunk_size, n_covariates_per_outcome_vec(c, t)).cast<double>()  *
                   beta_double_array[c].col(t).head(n_covariates_per_outcome_vec(c, t));
-                Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  - ( Xbeta_given_class_c_col_t.array()    +      prod_container_or_inc_array.array()   )  ) ;
+                  Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  - ( Xbeta_given_class_c_col_t.array()    +      prod_container_or_inc_array.array()   )  ) ;
               } else {  // intercept-only
-                Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  - ( beta_double_array[c](0, t) +      prod_container_or_inc_array.array()   )  ) ;
+                  Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  - ( beta_double_array[c](0, t) +      prod_container_or_inc_array.array()   )  ) ;
               }
               
               //// compute/update important log-lik quantities for GHK-MVP
@@ -855,7 +764,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
           }
           
           
-          if (grad_option != "none") {
+          if (grad_option != "none") { // not the issue
             
             fn_MVP_grad_prep(       prob[c],
                                     y_sign,
@@ -915,7 +824,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
           
           
           /////////////////////////////////////////////////////////////////////////// Grad of intercepts / coefficients (beta's)
-          if ( (grad_option == "main_only") || (grad_option == "all") ) {
+          if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "coeff_only") ) {
             
             //// Eigen::Matrix<int, -1, 1> n_covariates_per_outcome_vec_temp =   n_covariates_per_outcome_vec.row(c).transpose();
             
@@ -929,7 +838,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                                      prob_recip,
                                                      prob_rowwise_prod_temp,
                                                      y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, 
                                                      z_grad_term,
                                                      grad_prob,
                                                      prod_container_or_inc_array,
@@ -940,7 +849,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
           }
           
           /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of L_Omega ('s)
-          if ( (grad_option == "main_only") || (grad_option == "all") ) {
+          if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "corr_only") ) {
             
             fn_MVP_compute_L_Omega_grad_v3(      U_Omega_grad_array[c],
                                                 // Omega_grad_array_for_each_n,
@@ -965,7 +874,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
           
           if (n_class > 1) { /// prevelance only estimated for latent class models
             
-            if ( (grad_option == "main_only") || (grad_option == "all") ) {
+            if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "prev_only" ) ) {
               
               prev_grad_vec(c)  +=  ( (   prob_n_recip.array() ) *  prob[c].rowwise().prod().array() ).matrix().sum()  ;
               

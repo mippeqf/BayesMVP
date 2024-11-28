@@ -1,9 +1,5 @@
 #pragma once
 
-// [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]] 
-// [[Rcpp::plugins(cpp17)]]
  
  
 using namespace Rcpp;
@@ -662,16 +658,16 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
     std::size_t i = begin;  // each thread processes only the chain at index `i`
     {
  
-      stan::math::ChainableStack ad_tape;
-      stan::math::nested_rev_autodiff nested;
+      thread_local stan::math::ChainableStack ad_tape;
+      // thread_local stan::math::nested_rev_autodiff nested;
       
       thread_local  std::mt19937 rng(static_cast<unsigned int>(seed + i));
       
-      const Eigen::Matrix<int, -1, -1>  &y_Eigen_i = y_Eigen; //  make a copy 
+      const Eigen::Matrix<int, -1, -1>  y_Eigen_i = y_Eigen; ////  make a copy 
       
       //// extract / convert struct from copies of each list
-      const Model_fn_args_struct &Model_args_as_cpp_struct_ref  =    Model_args_as_cpp_struct;   
-      const EHMC_Metric_struct   &EHMC_Metric_as_cpp_struct_ref   =  EHMC_Metric_as_cpp_struct;  
+      const Model_fn_args_struct Model_args_as_cpp_struct_ref  =    Model_args_as_cpp_struct;    ////  make a copy
+      const EHMC_Metric_struct   EHMC_Metric_as_cpp_struct_ref   =  EHMC_Metric_as_cpp_struct;   ////  make a copy
       
      //  const bool burnin = true;
      

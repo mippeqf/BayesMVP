@@ -2,6 +2,7 @@
  
 #ifndef FN_WRAPPERS_SIMD_AVX2_HPP
 #define FN_WRAPPERS_SIMD_AVX2_HPP
+
  
  
 #include <stan/math/prim/fun/sqrt.hpp>

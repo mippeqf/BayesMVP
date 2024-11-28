@@ -1,18 +1,13 @@
 #pragma once
 
  
-// [[Rcpp::depends(RcppEigen)]]
  
-
  
 #include <Eigen/Dense>
  
 
  
-
-// [[Rcpp::plugins(cpp17)]]
-
-
+ 
 
  
 using namespace Eigen;
@@ -148,9 +143,9 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
  
  
  
- // Helper functions for matrix products
- template<typename M1, typename M2>
- ALWAYS_INLINE void compute_rowwise_products( Eigen::Ref<M1> prod_temp,
+// Helper functions for matrix products
+template<typename M1, typename M2>
+ALWAYS_INLINE void compute_rowwise_products( Eigen::Ref<M1> prod_temp,
                                                                Eigen::Ref<M2> recip_temp, 
                                                                const Eigen::Ref<const Eigen::Matrix<double,-1,-1>> prob,
                                                                const Eigen::Ref<const Eigen::Matrix<double,-1,-1>> prob_recip,
@@ -166,9 +161,9 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
  }
  
  
- // Helper for latent class calculations
- template<typename M>
- ALWAYS_INLINE void compute_latent_class_terms( Eigen::Ref<M> common_grad,
+// Helper for latent class calculations
+template<typename M>
+ALWAYS_INLINE void compute_latent_class_terms( Eigen::Ref<M> common_grad,
                                                                  const Eigen::Ref<const Eigen::Matrix<double,-1,1>> prod_temp_all,
                                                                  const Eigen::Ref<const Eigen::Matrix<double,-1,-1>> recip_temp,
                                                                  const Eigen::Ref<const Eigen::Matrix<double,-1,1>> prob_n_recip,
@@ -184,9 +179,9 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
  
  
  
- // Helper for final transformations
- template<typename M1, typename M2>
- ALWAYS_INLINE void compute_final_terms(  Eigen::Ref<M1> y_sign_out,
+// Helper for final transformations
+template<typename M1, typename M2>
+ALWAYS_INLINE void compute_final_terms(  Eigen::Ref<M1> y_sign_out,
                                                            Eigen::Ref<M2> y_m_ysign_out,
                                                            const Eigen::Ref<const Eigen::Matrix<double,-1,-1>>& y_sign_chunk,
                                                            const Eigen::Ref<const Eigen::Matrix<double,-1,-1>>& y_m_y_sign_x_u,
@@ -208,22 +203,22 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
  
  
 //// fn that computes important quantities needed for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-ALWAYS_INLINE  void fn_MVP_grad_prep(           const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob,
-                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_sign_chunk,
-                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_m_y_sign_x_u, // 10
-                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_recip_double,
-                                                                 const double prev_double,
-                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>  prob_n_recip,
-                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> phi_Z_recip,
-                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> phi_Bound_Z, // 15
-                                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob_recip,
-                                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> prop_rowwise_prod_temp,
-                                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> prop_recip_rowwise_prod_temp,
-                                                                 Eigen::Ref<Eigen::Matrix<double, -1, 1>>  prop_rowwise_prod_temp_all, // 20
-                                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> common_grad_term_1,
-                                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, // 22
-                                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                                 const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE  void fn_MVP_grad_prep(            const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob,
+                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_sign_chunk,
+                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_m_y_sign_x_u, // 10
+                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_recip_double,
+                                                 const double prev_double,
+                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>  prob_n_recip,
+                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> phi_Z_recip,
+                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> phi_Bound_Z, // 15
+                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob_recip,
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> prop_rowwise_prod_temp,
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> prop_recip_rowwise_prod_temp,
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, 1>>  prop_rowwise_prod_temp_all, // 20
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> common_grad_term_1,
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, // 22
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                 const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {    
   
        const int  n_class = Model_args_as_cpp_struct.Model_args_ints(1);
@@ -318,20 +313,20 @@ ALWAYS_INLINE  void fn_MVP_grad_prep(           const Eigen::Ref<const Eigen::Ma
 
 
 // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
-ALWAYS_INLINE void fn_MVP_compute_nuisance_grad_v2(    Eigen::Ref<Eigen::Matrix<double, -1, -1>>   u_grad_array_CM_chunk,
-                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   phi_Z_recip,
-                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   common_grad_term_1,
-                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   L_Omega_double,
-                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   prob,
-                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   prob_recip,
-                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   prop_rowwise_prod_temp,
-                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                                                Eigen::Ref<Eigen::Matrix<double, -1, -1>>   z_grad_term,
-                                                                                Eigen::Ref<Eigen::Matrix<double, -1, -1>>   grad_prob,
-                                                                                Eigen::Ref<Eigen::Matrix<double, -1, 1>>    prod_container,
-                                                                                Eigen::Ref<Eigen::Matrix<double, -1, 1>>    derivs_chain_container_vec,
-                                                                                const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE void fn_MVP_compute_nuisance_grad_v2(     Eigen::Ref<Eigen::Matrix<double, -1, -1>>   u_grad_array_CM_chunk,
+                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   phi_Z_recip,
+                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   common_grad_term_1,
+                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   L_Omega_double,
+                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   prob,
+                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   prob_recip,
+                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   prop_rowwise_prod_temp,
+                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>   y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                        Eigen::Ref<Eigen::Matrix<double, -1, -1>>   z_grad_term,
+                                                        Eigen::Ref<Eigen::Matrix<double, -1, -1>>   grad_prob,
+                                                        Eigen::Ref<Eigen::Matrix<double, -1, 1>>    prod_container,
+                                                        Eigen::Ref<Eigen::Matrix<double, -1, 1>>    derivs_chain_container_vec,
+                                                        const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
 
         const int  n_class = Model_args_as_cpp_struct.Model_args_ints(1);
@@ -648,24 +643,24 @@ ALWAYS_INLINE void fn_MVP_compute_coefficients_grad_v2(    const int c, // laten
  
  
  // Gradient computation function template (no need to have any template parameters as not very modular e.g. only double's)
- ALWAYS_INLINE void fn_MVP_compute_coefficients_grad_v3(    const int c, // latent class (0 for standard MVP)
-                                                     Eigen::Matrix<double, -1, -1> &coefficients_array,
-                                                    // std::vector<Eigen::Matrix<double, -1, -1>> &beta_grad_array_for_each_n,
-                                                     const int &chunk_counter,
-                                                     const int &n_covariates_max,
-                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> common_grad_term_1,
-                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
-                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob,
-                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob_recip,
-                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prop_rowwise_prod_temp,
-                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>>  z_grad_term,
-                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>>  grad_prob,
-                                                     Eigen::Ref<Eigen::Matrix<double, -1, 1>>   prod_container,
-                                                     Eigen::Ref<Eigen::Matrix<double, -1, 1>>   derivs_chain_container_vec,
-                                                     const bool compute_final_scalar_grad,
-                                                     const Model_fn_args_struct &Model_args_as_cpp_struct
+ ALWAYS_INLINE void fn_MVP_compute_coefficients_grad_v3(     const int c, // latent class (0 for standard MVP)
+                                                             Eigen::Matrix<double, -1, -1> &coefficients_array,
+                                                            // std::vector<Eigen::Matrix<double, -1, -1>> &beta_grad_array_for_each_n,
+                                                             const int &chunk_counter,
+                                                             const int &n_covariates_max,
+                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> common_grad_term_1,
+                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
+                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob,
+                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob_recip,
+                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prop_rowwise_prod_temp,
+                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                             Eigen::Ref<Eigen::Matrix<double, -1, -1>>  z_grad_term,
+                                                             Eigen::Ref<Eigen::Matrix<double, -1, -1>>  grad_prob,
+                                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>>   prod_container,
+                                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>>   derivs_chain_container_vec,
+                                                             const bool compute_final_scalar_grad,
+                                                             const Model_fn_args_struct &Model_args_as_cpp_struct
  ) {
    
    
@@ -692,47 +687,47 @@ ALWAYS_INLINE void fn_MVP_compute_coefficients_grad_v2(    const int c, // laten
    
    if (n_covariates_max == 1) { /// only possible for latent class LC-MVP as standard-MVP always has covariates!!
      
-     {
-       int t = n_tests - 1;
-      // beta_grad_array_for_each_n[0].col(t) =    (  common_grad_term_1.col(t).array()  *   (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ) );
-       if (compute_final_scalar_grad)  coefficients_array(0, t)   +=        (  common_grad_term_1.col(t).array()  *   (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ) ).sum();
-     }
-     
-     {   ///// then second-to-last term (test T - 1)
-       int t = n_tests - 2;
-       
-       grad_prob.col(0) =           y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()    ;
-       z_grad_term.col(0)   =     -      y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()         ;
-       grad_prob.col(1)  =       (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t  + 1).array()    )   * (   L_Omega_double(t + 1, t) * z_grad_term.col(0).array() ) ;
-       //beta_grad_array_for_each_n[0].col(t) =   (  common_grad_term_1.col(t).array()   * ( grad_prob.col(1).array() *  prob.col(t).array() +         grad_prob.col(0).array() *   prob.col(t  + 1).array() ) );
-       if (compute_final_scalar_grad)  coefficients_array(0, t)   +=       (  common_grad_term_1.col(t).array()   * ( grad_prob.col(1).array() *  prob.col(t).array() +         grad_prob.col(0).array() *   prob.col(t  + 1).array() ) ).sum();
-     }
-     
-     for (int i = 1; i < n_tests - 1; i++) {     // then rest of terms
-       
-       int t = n_tests - (i + 2) ;
-       
-       grad_prob.col(0)  =     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()    ;
-       z_grad_term.col(0)  =        -     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()       ;
-       grad_prob.col(1) =        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + 1).array()    *    (   L_Omega_double(t + 1,t) *   z_grad_term.col(0).array() ) ;
-       
-       for (int ii = 1; ii < i+1; ii++) {    // rest of components
-         if (ii == 1)  prod_container  = (    z_grad_term.leftCols(ii)  *   L_Omega_double.row( t + (ii - 1) + 1).segment(t + 0, ii + 0).transpose()  );
-         z_grad_term.col(ii)  =        -     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t + ii).array()    *   prod_container.array();
-         prod_container  = (    z_grad_term.leftCols(ii + 1)  *   L_Omega_double.row( t + (ii) + 1).segment(t + 0, ii + 1).transpose()  );
-         grad_prob.col(ii + 1) =      (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + ii + 1).array()  ).array()  *  prod_container.array();
-       }
-       
-       {
-         derivs_chain_container_vec.setZero();// .array() = 0.0;
-         for (int ii = 0; ii < i + 2; ii++) {
-           derivs_chain_container_vec.array() +=  ( grad_prob.col(ii).array()  * (        prop_rowwise_prod_temp.col(t).array() *   prob_recip.col(t + ii).array()  ).array() ).array() ;
-         }
-       //  beta_grad_array_for_each_n[0].col(t) =    common_grad_term_1.col(t).array()   *  derivs_chain_container_vec.array() ;
-         if (compute_final_scalar_grad)  coefficients_array(0, t)   +=    (  common_grad_term_1.col(t).array()   *  derivs_chain_container_vec.array() ).sum();
-       }
-       
-     }
+             {
+               int t = n_tests - 1;
+              // beta_grad_array_for_each_n[0].col(t) =    (  common_grad_term_1.col(t).array()  *   (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ) );
+               if (compute_final_scalar_grad)  coefficients_array(0, t)   +=        (  common_grad_term_1.col(t).array()  *   (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   ) ).sum();
+             }
+             
+             {   ///// then second-to-last term (test T - 1)
+               int t = n_tests - 2;
+               
+               grad_prob.col(0) =           y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()    ;
+               z_grad_term.col(0)   =     -      y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()         ;
+               grad_prob.col(1)  =       (  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t  + 1).array()    )   * (   L_Omega_double(t + 1, t) * z_grad_term.col(0).array() ) ;
+               //beta_grad_array_for_each_n[0].col(t) =   (  common_grad_term_1.col(t).array()   * ( grad_prob.col(1).array() *  prob.col(t).array() +         grad_prob.col(0).array() *   prob.col(t  + 1).array() ) );
+               if (compute_final_scalar_grad)  coefficients_array(0, t)   +=       (  common_grad_term_1.col(t).array()   * ( grad_prob.col(1).array() *  prob.col(t).array() +         grad_prob.col(0).array() *   prob.col(t  + 1).array() ) ).sum();
+             }
+             
+             for (int i = 1; i < n_tests - 1; i++) {     // then rest of terms
+               
+               int t = n_tests - (i + 2) ;
+               
+               grad_prob.col(0)  =     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()    ;
+               z_grad_term.col(0)  =        -     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()       ;
+               grad_prob.col(1) =        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + 1).array()    *    (   L_Omega_double(t + 1,t) *   z_grad_term.col(0).array() ) ;
+               
+               for (int ii = 1; ii < i+1; ii++) {    // rest of components
+                 if (ii == 1)  prod_container  = (    z_grad_term.leftCols(ii)  *   L_Omega_double.row( t + (ii - 1) + 1).segment(t + 0, ii + 0).transpose()  );
+                 z_grad_term.col(ii)  =        -     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t + ii).array()    *   prod_container.array();
+                 prod_container  = (    z_grad_term.leftCols(ii + 1)  *   L_Omega_double.row( t + (ii) + 1).segment(t + 0, ii + 1).transpose()  );
+                 grad_prob.col(ii + 1) =      (   y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t + ii + 1).array()  ).array()  *  prod_container.array();
+               }
+               
+               {
+                 derivs_chain_container_vec.setZero();// .array() = 0.0;
+                 for (int ii = 0; ii < i + 2; ii++) {
+                   derivs_chain_container_vec.array() +=  ( grad_prob.col(ii).array()  * (        prop_rowwise_prod_temp.col(t).array() *   prob_recip.col(t + ii).array()  ).array() ).array() ;
+                 }
+               //  beta_grad_array_for_each_n[0].col(t) =    common_grad_term_1.col(t).array()   *  derivs_chain_container_vec.array() ;
+                 if (compute_final_scalar_grad)  coefficients_array(0, t)   +=    (  common_grad_term_1.col(t).array()   *  derivs_chain_container_vec.array() ).sum();
+               }
+               
+             }
      
      
    } else {

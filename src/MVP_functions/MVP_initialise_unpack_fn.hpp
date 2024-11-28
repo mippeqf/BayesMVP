@@ -3,13 +3,7 @@
 #pragma once
 
  
-
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
  
-
 
 #include <Eigen/Dense>
 #include <vector>
@@ -18,21 +12,11 @@
 #include <string>
 
 
-
-
-
-/// #include <RcppEigen.h>
-#include <Eigen/Dense>
+ 
 
 
  
  
- 
- 
- 
-// [[Rcpp::plugins(cpp17)]]
-
-
  
 using namespace Eigen;
 

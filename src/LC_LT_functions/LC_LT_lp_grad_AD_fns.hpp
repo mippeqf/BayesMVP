@@ -2,24 +2,11 @@
 #pragma once
  
  
-
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
-
- 
- 
-  
  
 #include <Eigen/Dense> 
  
  
  
- 
- // [[Rcpp::plugins(cpp17)]]
- 
-  
  
 #include <stan/math/rev.hpp>
 
@@ -56,11 +43,7 @@
  
 #include <Eigen/Dense>
  
-
-
  
-// [[Rcpp::plugins(cpp17)]]
-
  
  
 using namespace Eigen;

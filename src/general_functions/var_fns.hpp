@@ -1,12 +1,6 @@
 
 #pragma once
  
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::depends(RcppClock)]]
-
  
 
 #include <stan/math/rev.hpp>

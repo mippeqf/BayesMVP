@@ -2,14 +2,7 @@
 #pragma once
 
 
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppEigen)]]
-
- 
- 
- 
+  
 #include <Eigen/Dense>
  
 
@@ -32,7 +25,7 @@ using namespace Eigen;
 
 
 
-inline bool is_NaN_or_Inf_Eigen(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> mat) {
+ALWAYS_INLINE bool is_NaN_or_Inf_Eigen(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> mat) {
   
   if (!((mat.array() == mat.array()).all())) {
     return true;
