@@ -13,14 +13,16 @@ setup_env_onload <- function(libname,
   
             if (.Platform$OS.type == "windows") {
               
+              TBB_STAN_1 <- TBB_STAN_2 <- TBB_CMDSTAN_DLL <- DUMMY_MODEL_SO_1 <- DUMMY_MODEL_SO_2 <- DUMMY_MODEL_DLL_1 <- DUMMY_MODEL_DLL_2 <- NULL
+              
                           ### TBB_BS <- file.path(system.file(package = "BayesMVP"), "tbb_bs", "tbb.dll") # not needed?
-                          TBB_STAN_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "tbb_stan", "tbb.dll")
-                          TBB_STAN_2 <- file.path(libname, pkgname, "tbb_stan", "tbb.dll")
-                          TBB_CMDSTAN_DLL <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "tbb.dll")  # prioritise user's installed tbb dll/so
-                          DUMMY_MODEL_SO_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "dummy_stan_modeL_win_model.so")
-                          DUMMY_MODEL_SO_2 <- file.path(libname, pkgname, "dummy_stan_modeL_win_model.so")
-                          DUMMY_MODEL_DLL_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "dummy_stan_modeL_win_model.dll")
-                          DUMMY_MODEL_DLL_2 <- file.path(libname, pkgname, "dummy_stan_modeL_win_model.dll")
+              try({  TBB_STAN_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "inst", "tbb_stan", "tbb.dll")   })
+                         # TBB_STAN_2 <- file.path(libname, pkgname, "tbb_stan", "tbb.dll")
+              try({   TBB_CMDSTAN_DLL <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "tbb.dll")    }) # prioritise user's installed tbb dll/so
+              try({   DUMMY_MODEL_SO_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "inst", "dummy_stan_model_win_model.so")   })
+                         # DUMMY_MODEL_SO_2 <- file.path(libname, pkgname, "dummy_stan_modeL_win_model.so")
+              try({   DUMMY_MODEL_DLL_1 <- file.path(libname, pkgname, "inst", "BayesMVP","inst",  "dummy_stan_model_win_model.dll")   })
+                         # DUMMY_MODEL_DLL_2 <- file.path(libname, pkgname, "dummy_stan_modeL_win_model.dll")
                           
                           dll_paths <- c(TBB_STAN_1, TBB_STAN_2, TBB_CMDSTAN_DLL,
                                          DUMMY_MODEL_SO_1, DUMMY_MODEL_SO_2,
@@ -28,12 +30,14 @@ setup_env_onload <- function(libname,
                     
               
             } else {  ### if Linux or Mac
+              
+                TBB_STAN_1 <- TBB_STAN_2 <- TBB_CMDSTAN_SO <- DUMMY_MODEL_SO_1 <- DUMMY_MODEL_SO_2 <- NULL
                           
-                          TBB_STAN_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "tbb_stan", "libtbb.so.2")
-                          TBB_STAN_2 <- file.path(libname, pkgname, "tbb_stan", "libtbb.so.2")
-                          TBB_CMDSTAN_SO <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "libtbb.so.2")  # prioritise user's installed tbb dll/so
-                          DUMMY_MODEL_SO_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "dummy_stan_modeL_win_model.so")
-                          DUMMY_MODEL_SO_2 <- file.path(libname, pkgname, "dummy_stan_modeL_win_model.so")
+                try({  TBB_STAN_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "inst", "tbb_stan", "libtbb.so.2")   })
+                          #TBB_STAN_2 <- file.path(libname, pkgname, "tbb_stan", "libtbb.so.2")
+                try({  TBB_CMDSTAN_SO <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "libtbb.so.2")    }) # prioritise user's installed tbb dll/so
+                try({   DUMMY_MODEL_SO_1 <- file.path(libname, pkgname, "inst", "BayesMVP", "inst", "dummy_stan_model_model.so")   })
+                         # DUMMY_MODEL_SO_2 <- file.path(libname, pkgname, "dummy_stan_model_model.so")
                           
                           dll_paths <- c(TBB_STAN_1, TBB_STAN_2, TBB_CMDSTAN_SO,
                                          DUMMY_MODEL_SO_1, DUMMY_MODEL_SO_2)
@@ -44,7 +48,7 @@ setup_env_onload <- function(libname,
             
                       # Attempt to load each DLL / SO
                       for (dll in dll_paths) {
-                        
+                        try({  
                         tryCatch(
                           {
                             dyn.load(dll)
@@ -54,13 +58,11 @@ setup_env_onload <- function(libname,
                             cat("  Failed to load:", dll, "\n  Error:", e$message, "\n")
                           }
                         )
+                        })
                         
                       }
             
-            
-        ##    install_BayesMVP()
-  
-  
+ 
 }
 
 
@@ -78,7 +80,7 @@ setup_env_onload <- function(libname,
   #   setNamespaceInfo(pkg_env, "spec", list(name = "BayesMVP.installer"))
   # })
   
-  try({  setup_env_post_install()  })
+ # try({  setup_env_post_install()  })
   try({ (setup_env_onload(libname, pkgname)) })
   
 }
@@ -96,7 +98,7 @@ setup_env_onload <- function(libname,
   #   setNamespaceInfo(pkg_env, "spec", list(name = "BayesMVP.installer"))
   # })
   
-  try({  setup_env_post_install()  })
+ # try({  setup_env_post_install()  })
   try({ (setup_env_onload(libname, pkgname)) })
   
 }
@@ -113,7 +115,7 @@ setup_env_onload <- function(libname,
   #   setNamespaceInfo(pkg_env, "spec", list(name = "BayesMVP.installer"))
   # })
   
-  try({  setup_env_post_install()  })
+#  try({  setup_env_post_install()  })
   try({ (setup_env_onload(libname, pkgname)) })
   
 }
