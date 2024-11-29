@@ -21,10 +21,7 @@ PKG_R_PATH =  $(BASE_PKG_PATH)/R
 $(info PKG_R_PATH is: $(PKG_R_PATH))
 
 
-
-#all:
-#	@echo "Running setup to configure BayesMVP environment"
-#	@Rscript $(PKG_R_PATH)/install_BayesMVP.R.
+ 
 
 #####    Compiler settings     ###  ccache
 ### set compiler types
@@ -39,7 +36,6 @@ override CXX_STD = -std=gnu++17 # Use C++17
 
 override BASE_FLAGS =   -O3  -march=native  -mtune=native \
                         -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread \
-                        -fopenmp  \
                         -fpermissive \
                         -DNDEBUG  -ffp-contract=fast \
                         -mfma -mavx -mavx2 \
