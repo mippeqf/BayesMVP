@@ -33,53 +33,20 @@ $(info PKG_R_PATH is: $(PKG_R_PATH))
 #CPP_COMPILER_TYPE =     $(BINPREF)$(CCBASE) $(M_ARCH) #  gcc ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/gcc.exe   gcc
 
 ## Default flags:
-CXX_COMPILER_TYPE = $(shell where ccache 2>NUL && echo "ccache g++" || echo "g++")
-CPP_COMPILER_TYPE = $(shell where ccache 2>NUL && echo "ccache gcc" || echo "gcc")
+override CXX_COMPILER_TYPE = $(shell where ccache 2>NUL && echo "ccache g++" || echo "g++")
+override CPP_COMPILER_TYPE = $(shell where ccache 2>NUL && echo "ccache gcc" || echo "gcc")
+override CXX_STD = -std=gnu++17 # Use C++17
 
-
-BASE_FLAGS +=  -O3  -march=native  -mtune=native   # initial base flags
-BASE_FLAGS += -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread -std=c++17 
-BASE_FLAGS +=  -fopenmp 
-
-
+override BASE_FLAGS =   -O3  -march=native  -mtune=native \
+                        -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread \
+                        -fopenmp  \
+                        -fpermissive \
+                        -DNDEBUG  -ffp-contract=fast \
+                        -mfma -mavx -mavx2 \
+                        -mavx512vl -mavx512dq  -mavx512f \
+                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math \
+                        -flarge-source-files
  
-BASE_FLAGS +=  -finline-limit=20000000 ## for g++
-
-# Use C++17
-CXX_STD = CXX17 
-
- 
-BASE_FLAGS +=  -fopenmp
-
-BASE_FLAGS +=  -mfma
-BASE_FLAGS +=  -mavx  
-BASE_FLAGS +=  -mavx2
-#### BASE_FLAGS +=       -mfma  -mavx512vl -mavx512dq  -mavx512f
-
-BASE_FLAGS +=  -fno-math-errno
-BASE_FLAGS +=  -fno-signed-zeros
-BASE_FLAGS +=  -fno-trapping-math
- 
-
-## BASE_FLAGS +=  -DEIGEN_VECTORIZE
-## BASE_FLAGS +=  -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE
-BASE_FLAGS +=  -DNDEBUG
-
-BASE_FLAGS +=     -ffp-contract=fast
-BASE_FLAGS +=    -fpermissive
-BASE_FLAGS +=    -Wno-ignored-attributes  -Wno-sign-compare
-BASE_FLAGS +=    -Wno-unused-variable
-BASE_FLAGS +=     -w
-## BASE_FLAGS +=     -g ## for debugging
-
- 
- 
-BASE_FLAGS += -flarge-source-files
-
-## BASE_FLAGS += -static-libgcc -static-libstdc++
-
-PKG_CPPFLAGS+=$(BASE_FLAGS)
-
  
 
 
@@ -195,16 +162,6 @@ $(info TBB_DLL is: $(TBB_DLL))
 $(info TBB_DLL_BRIDGESTAN is: $(TBB_DLL_BRIDGESTAN))
  
  
- 
- ## RTOOLS_PATH =  C:/rtools44/mingw64/bin
-
-
-## add TBB path to the system PATH (Windows)
-## export PATH :=  $(BRIDGESTAN_TBB_PATH);$(TBB_PATH);$(BRIDGESTAN_TBB_PATH_2020);$(TBB_PATH_2020);$(RTOOLS_PATH);$(PATH)
- ### export PATH :=  $(## );$(PATH)
-## export PATH :=  $(BRIDGESTAN_TBB_PATH);$(PATH)
-
-
 # print out paths again for checking and debugging
 $(info HOME is: $(HOME))
 $(info PKG_PATH is: $(PKG_PATH))
@@ -218,6 +175,7 @@ override PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_MATH_LIB)/boost_1.84.0" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1" \
+    -I"$(STAN_MATH_LIB)/tbb/include" \
     -I"$(STAN_LIB)/rapidjson_1.1.0" \
     -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
     -I"$(CMDSTAN_PATH)" \
@@ -226,6 +184,7 @@ override PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_MATH)" \
     -I"$(STAN_BASE)" \
     -I"$(STAN_LIB)" \
+    -I"$(STAN_MATH_LIB)" \
     -I"$(STAN_BASE)/model" \
     -I"$(STAN_BASE)/services" \
     -I"$(STAN_BASE)/io" \
@@ -235,10 +194,9 @@ override PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_BASE)/lang" \
     -I"$(STAN_BASE)/optimization" \
     -I"$(STAN_BASE)/variational" \
+    -I"$(TBB_PATH)/include" \
     -I"$(TBB_PATH)" \
-    -I"$(TBB_PATH_2020)"  \
     -I"$(BRIDGESTAN_SRC)"
-
 
  
 override PKG_CXXFLAGS = $(PKG_CPPFLAGS)
@@ -247,40 +205,41 @@ override CXXFLAGS = $(PKG_CPPFLAGS)
 
 override CC  =  $(CPP_COMPILER_TYPE) 
 override CXX =  $(CXX_COMPILER_TYPE) 
- 
-CC =  $(CC)
-CFLAGS =  $(CPPFLAGS)
-CC14 = $(CC)
-C14FLAGS = $(CPPFLAGS)
-CC17 = $(CC)
-C17FLAGS = $(CPPFLAGS)
-CC23 =  $(CC)
-C23FLAGS =  $(CPPFLAGS)
-CC90 =  $(CC)
-C90FLAGS = $(CPPFLAGS)
-CC99 =  $(CC)
-99FLAGS = $(CPPFLAGS)
 
+override CFLAGS =  $(CPPFLAGS)
+override CC14 = $(CC)
+override C14FLAGS = $(CPPFLAGS)
+override CC17 = $(CC)
+override C17FLAGS = $(CPPFLAGS)
+override CC23 =  $(CC)
+override C23FLAGS =  $(CPPFLAGS)
+override CC90 =  $(CC)
+override C90FLAGS = $(CPPFLAGS)
+override CC99 =  $(CC)
+override 99FLAGS = $(CPPFLAGS)
 
-CXX =  $(CXX)
-CXXPICFLAGS = -fpic
-CXX11  =  $(CXX)
-CXX11FLAGS = $(CXXFLAGS)
-CXX11PICFLAGS = -fpic
-CXX14  =   $(CXX)
-CXX14FLAGS = $(CXXFLAGS)
-CXX14PICFLAGS = -fpic
-CXX17  =  $(CXX)
-CXX17FLAGS =  $(CXXFLAGS)
-CXX17PICFLAGS = -fpic
-CXX20  = $(CXX)
-CXX20FLAGS =   $(CXXFLAGS)
-CXX20PICFLAGS = -fpic
-CXX23  =  $(CXX)
-CXX23FLAGS =   $(CXXFLAGS)
-CXX23PICFLAGS = -fpic
 
  
+override CXXPICFLAGS = -fpic
+override CXX11  =  $(CXX)
+override CXX11FLAGS = $(CXXFLAGS)
+override CXX11PICFLAGS = -fpic
+override CXX14  =   $(CXX)
+override CXX14FLAGS = $(CXXFLAGS)
+override CXX14PICFLAGS = -fpic
+override CXX17  =  $(CXX)
+override CXX17FLAGS =  $(CXXFLAGS)
+override CXX17PICFLAGS = -fpic
+override CXX20  = $(CXX)
+override CXX20FLAGS =   $(CXXFLAGS)
+override CXX20PICFLAGS = -fpic
+override CXX23  =  $(CXX)
+override CXX23FLAGS =   $(CXXFLAGS)
+override CXX23PICFLAGS = -fpic
+
+
+
+
 
 # Use C++17
 CXX_STD = CXX17 

@@ -47,32 +47,25 @@ $(info PKG_R_PATH is: $(PKG_R_PATH))
 
 
 ## Default flags:
-CXX_COMPILER_TYPE = $(shell which ccache >/dev/null 2>&1 && echo "ccache g++" || echo "g++")
-CPP_COMPILER_TYPE = $(shell which ccache >/dev/null 2>&1 && echo "ccache gcc" || echo "gcc")
+override CXX_COMPILER_TYPE = $(shell which ccache >/dev/null 2>&1 && echo "ccache g++" || echo "g++")
+override CPP_COMPILER_TYPE = $(shell which ccache >/dev/null 2>&1 && echo "ccache gcc" || echo "gcc")
+override CXX_STD = -std=gnu++17 # Use C++17
 
-BASE_FLAGS =  -O3  -march=native  -mtune=native # initial base flags
-BASE_FLAGS += -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
-BASE_FLAGS +=  -fopenmp 
-
-
+override BASE_FLAGS =   -O3  -march=native  -mtune=native \
+                        -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread \
+                        -fopenmp  \
+                        -fpermissive \
+                        -DNDEBUG  -ffp-contract=fast \
+                        -mfma -mavx -mavx2 \
+                        -mavx512vl -mavx512dq  -mavx512f \
+                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math
  
-
-# Use C++17
-CXX_STD = CXX17
-
-
-BASE_FLAGS +=  -fpermissive
-BASE_FLAGS +=  -DNDEBUG  -ffp-contract=fast
-
-BASE_FLAGS +=  -mfma -mavx -mavx2
-BASE_FLAGS +=    -mfma      -mavx512vl -mavx512dq  -mavx512f
-
 
 
 #### BASE_FLAGS +=   -fno-math-errno    -fno-signed-zeros  -fno-trapping-math  ### oordered from safest ( -fno-math-errno ) tto least-safe ( -fno-trapping-math)
-BASE_FLAGS += -fno-math-errno
-BASE_FLAGS +=  -fno-signed-zeros
-BASE_FLAGS +=  -fno-trapping-math
+#BASE_FLAGS +=  -fno-math-errno
+#BASE_FLAGS +=  -fno-signed-zeros
+#BASE_FLAGS +=  -fno-trapping-math
 
 ## BASE_FLAGS +=       -DEIGEN_VECTORIZE
  
@@ -192,38 +185,37 @@ override CXXFLAGS = $(PKG_CPPFLAGS)
 
 override CC  =  $(CPP_COMPILER_TYPE) 
 override CXX =  $(CXX_COMPILER_TYPE) 
+
+override CFLAGS =  $(CPPFLAGS)
+override CC14 = $(CC)
+override C14FLAGS = $(CPPFLAGS)
+override CC17 = $(CC)
+override C17FLAGS = $(CPPFLAGS)
+override CC23 =  $(CC)
+override C23FLAGS =  $(CPPFLAGS)
+override CC90 =  $(CC)
+override C90FLAGS = $(CPPFLAGS)
+override CC99 =  $(CC)
+override 99FLAGS = $(CPPFLAGS)
+
+
  
-CC =  $(CC)
-CFLAGS =  $(CPPFLAGS)
-CC14 = $(CC)
-C14FLAGS = $(CPPFLAGS)
-CC17 = $(CC)
-C17FLAGS = $(CPPFLAGS)
-CC23 =  $(CC)
-C23FLAGS =  $(CPPFLAGS)
-CC90 =  $(CC)
-C90FLAGS = $(CPPFLAGS)
-CC99 =  $(CC)
-99FLAGS = $(CPPFLAGS)
-
-
-CXX =  $(CXX)
-CXXPICFLAGS = -fpic
-CXX11  =  $(CXX)
-CXX11FLAGS = $(CXXFLAGS)
-CXX11PICFLAGS = -fpic
-CXX14  =   $(CXX)
-CXX14FLAGS = $(CXXFLAGS)
-CXX14PICFLAGS = -fpic
-CXX17  =  $(CXX)
-CXX17FLAGS =  $(CXXFLAGS)
-CXX17PICFLAGS = -fpic
-CXX20  = $(CXX)
-CXX20FLAGS =   $(CXXFLAGS)
-CXX20PICFLAGS = -fpic
-CXX23  =  $(CXX)
-CXX23FLAGS =   $(CXXFLAGS)
-CXX23PICFLAGS = -fpic
+override CXXPICFLAGS = -fpic
+override CXX11  =  $(CXX)
+override CXX11FLAGS = $(CXXFLAGS)
+override CXX11PICFLAGS = -fpic
+override CXX14  =   $(CXX)
+override CXX14FLAGS = $(CXXFLAGS)
+override CXX14PICFLAGS = -fpic
+override CXX17  =  $(CXX)
+override CXX17FLAGS =  $(CXXFLAGS)
+override CXX17PICFLAGS = -fpic
+override CXX20  = $(CXX)
+override CXX20FLAGS =   $(CXXFLAGS)
+override CXX20PICFLAGS = -fpic
+override CXX23  =  $(CXX)
+override CXX23FLAGS =   $(CXXFLAGS)
+override CXX23PICFLAGS = -fpic
 
 
 
