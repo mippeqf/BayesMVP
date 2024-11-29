@@ -39,9 +39,10 @@ override BASE_FLAGS =   -O3  -march=native  -mtune=native \
                         -fpermissive \
                         -DNDEBUG  -ffp-contract=fast \
                         -mfma -mavx -mavx2 \
-                        -mavx512vl -mavx512dq  -mavx512f \
                         -fno-math-errno  -fno-signed-zeros  -fno-trapping-math \
                         -flarge-source-files
+
+##                         -mavx512vl -mavx512dq  -mavx512f \
  
  
 
