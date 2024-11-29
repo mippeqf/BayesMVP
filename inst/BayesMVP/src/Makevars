@@ -12,25 +12,54 @@
 # BASE_FLAGS =  -O3  -march=native  -mtune=native   -D_REENTRANT    -DSTAN_THREADS -pthread  -fPIC
 # BASE_FLAGS +=  -finline-limit=20000000 ## for g++
 
-# PKG_LIBS = -L/usr/lib/gcc/x86_64-linux-gnu/11 -lgomp  ### for g++
+ # PKG_LIBS = -L/usr/lib/gcc/x86_64-linux-gnu/11 -lgomp  ### for g++
 # PKG_CXXFLAGS += -fopenmp ### for g++
 # BASE_FLAGS +=  -fopenmp ### for g++
 
 
 
-CXX_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang++
-CPP_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang
-BASE_FLAGS =  -O3  -march=znver4  -mtune=znver4   -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
-## BASE_FLAGS +=  -liomp5
-PKG_LIBS += -L/opt/AMD/aocc-compiler-5.0.0/lib -lomp ## for AMD AOCC clang++
-PKG_LIBS += -L/opt/AMD/aocc-compiler-5.0.0/lib -lgomp ## for AMD AOCC clang++
-PKG_LIBS += -L/opt/AMD/aocc-compiler-5.0.0/lib -liomp5 ## for AMD AOCC clang++
-BASE_FLAGS +=  -fopenmp -fopenmp-simd ## for AMD AOCC clang++
+####### -----  BayesmMVP  path
+ifeq ($(OS),Windows_NT)
+   ##  PKG_PATH = $(shell cd)
+     PKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(getwd())")
+else
+     PKG_PATH = $(shell pwd)
+endif
+
+$(info PKG_PATH is: $(PKG_PATH))
+
+BASE_PKG_PATH = $(patsubst %/src, %, $(PKG_PATH))
+$(info BASE_PKG_PATH is: $(BASE_PKG_PATH))
+PKG_LIB_PATH =  $(BASE_PKG_PATH)/lib
+$(info PKG_LIB_PATH is: $(PKG_LIB_PATH))
+PKG_INST_PATH =  $(BASE_PKG_PATH)/inst
+$(info PKG_INST_PATH is: $(PKG_INST_PATH))
+PKG_R_PATH =  $(BASE_PKG_PATH)/R
+$(info PKG_R_PATH is: $(PKG_R_PATH))
+
+
+
+
+## clang AOCC -specific flags:
+#CXX_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang++
+#CPP_COMPILER_TYPE =    ccache    /opt/AMD/aocc-compiler-5.0.0/bin/clang
+#BASE_FLAGS =  -O3  -march=znver4  -mtune=znver4 
+#PKG_LIBS += -L"/opt/AMD/aocc-compiler-5.0.0/lib" -lomp ## for AMD AOCC clang++
+#PKG_LIBS += /opt/AMD/aocc-compiler-5.0.0/lib/libomp.so
+#BASE_FLAGS +=  -fopenmp -fopenmp-simd ## for AMD AOCC clang++
 # BASE_FLAGS +=  -mllvm   ### --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
 
 
-## BASE_FLAGS +=  -mllvm --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
+## Default flags:
+CXX_COMPILER_TYPE = $(shell which ccache >/dev/null 2>&1 && echo "ccache g++" || echo "g++")
+CPP_COMPILER_TYPE = $(shell which ccache >/dev/null 2>&1 && echo "ccache gcc" || echo "gcc")
 
+BASE_FLAGS =  -O3  -march=native  -mtune=native # initial base flags
+BASE_FLAGS += -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread
+BASE_FLAGS +=  -fopenmp 
+
+
+ 
 
 # Use C++17
 CXX_STD = CXX17
@@ -49,26 +78,46 @@ BASE_FLAGS += -fno-math-errno
 BASE_FLAGS +=  -fno-signed-zeros
 BASE_FLAGS +=  -fno-trapping-math
 
-BASE_FLAGS +=       -DEIGEN_VECTORIZE
+## BASE_FLAGS +=       -DEIGEN_VECTORIZE
 
 
 
-#######    BayesmMVP and BridgeStan paths
-ifeq ($(OS),Windows_NT)
-    PKG_PATH = $(shell cd)
-    PKG_ROOT = $(shell cd)/..
-else
-    PKG_PATH = $(shell pwd)
-    PKG_ROOT = $(shell pwd)/..
+########    BayesmMVP and BridgeStan paths
+#ifeq ($(OS),Windows_NT)
+#    PKG_PATH = $(shell cd)
+#else
+#    PKG_PATH = $(shell pwd)
+#endif
+
+
+
+##### BRIDGESTAN path(s) --------------------------------
+## HOME = $(HOME)
+BRIDGESTAN = $(shell \
+ if [ -d "$(HOME)/.bridgestan/bridgestan-2.5.0" ]; then \
+   echo "$(HOME)/.bridgestan/bridgestan-2.5.0"; \
+ else \
+   DOTPATH=$$(ls -d "$(HOME)/.bridgestan/bridgestan-"* 2>/dev/null | grep "bridgestan-[0-9]" | sort -r | head -n1); \
+   if [ -n "$$DOTPATH" ]; then \
+     echo "$$DOTPATH"; \
+   else \
+     ls -d "$(HOME)/bridgestan-"* 2>/dev/null | grep "bridgestan-[0-9]" | sort -r | head -n1; \
+   fi \
+ fi)
+
+ifeq ($(strip $(BRIDGESTAN)),)
+ $(warning BridgeStan not found in standard locations. Installation will proceed assuming BridgeStan is in system path.)
 endif
 
 
 
+BRIDGESTAN = $(HOME)/bridgestan
+BRIDGESTAN_SRC = $(BRIDGESTAN)/src
+BRIDGESTAN_STAN_MATH_LIB = $(BRIDGESTAN)/stan/lib/stan_math/lib
 
-BRIDGESTAN_PATH = $(HOME)/bridgestan
-BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
-
-
+$(info BRIDGESTAN is: $(BRIDGESTAN))
+$(info BRIDGESTAN_SRC is: $(BRIDGESTAN_SRC))
+$(info BRIDGESTAN_STAN_MATH_LIB is: $(BRIDGESTAN_STAN_MATH_LIB))
 
 
 
@@ -83,7 +132,9 @@ CMDSTAN_PATH = $(shell \
 
 $(info Using CmdStan: $(CMDSTAN_PATH))
 
+$(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
 
+ 
 
 # Define base directories
 STAN_ROOT =   $(CMDSTAN_PATH)/stan
@@ -92,21 +143,39 @@ STAN_BASE =   $(CMDSTAN_PATH)/stan/src/stan
 STAN_LIB =    $(CMDSTAN_PATH)/stan/lib
 STAN_MATH =   $(CMDSTAN_PATH)/stan/lib/stan_math
 STAN_MATH_LIB = $(CMDSTAN_PATH)/stan/lib/stan_math/lib
+
+$(info directories is: $(directories))
+$(info STAN_ROOT is: $(STAN_ROOT))
+$(info STAN_SRC is: $(STAN_SRC))
+$(info STAN_BASE is: $(STAN_BASE))
+$(info STAN_LIB is: $(STAN_LIB))
+$(info STAN_MATH is: $(STAN_MATH))
+$(info STAN_MATH_LIB is: $(STAN_MATH_LIB))
+
+
 TBB_PATH = $(STAN_MATH)/lib/tbb
 TBB_SO = $(TBB_PATH)/libtbb.so.2
 
-PKG_LIBS = -Wl,-rpath,$(TBB_PATH)
-
-# reference the dummy model .so file
-PKG_LIBS += $(PKG_ROOT)/inst/dummy_stan_model_model.so -Wl,-rpath,$(TBB_PATH)
+## PKG_LIBS = -Wl,-rpath,$(TBB_PATH)
 
 # TBB
 PKG_LIBS += $(TBB_SO)
-PKG_LIBS += $(TBB_PATH)/libtbb.so.2
 
+## PKG_LIBS += -Wl,-rpath,$(TBB_PATH)
 
+# link the dummy model .so file
+## PKG_LIBS  += $(BASE_PKG_PATH)/inst/dummy_stan_model_model.so
+SHLIB_LIBADD += $(BASE_PKG_PATH)/inst/dummy_stan_model_model.so ## link during compilation  
+## PKG_LIBS += $(R_PACKAGE_DIR)/inst/dummy_stan_model_model.so -Wl,-rpath,$(TBB_PATH)  ##  link during runtime  
 
+##PKG_LIBS += $(wildcard $(BASE_PKG_PATH)/inst/dummy_stan_model_model.so) -Wl,-rpath,'$$ORIGIN/../inst' -Wl,-rpath,$(TBB_PATH)
 
+# Create .BayesMVP dir and copy model file
+$(shell mkdir -p $(HOME)/.BayesMVP)
+$(shell cp -f $(BASE_PKG_PATH)/inst/dummy_stan_model_model.so $(HOME)/.BayesMVP/ 2>/dev/null || true)
+
+# Link to permanent location
+PKG_LIBS += $(HOME)/.BayesMVP/dummy_stan_model_model.so -Wl,-rpath,$(HOME)/.BayesMVP -Wl,-rpath,$(TBB_PATH)
 
 
 PKG_CPPFLAGS += -D_REENTRANT -DSTAN_THREADS -DBOOST_DISABLE_ASSERTS \
@@ -155,43 +224,43 @@ CXXFLAGS = $(PKG_CXXFLAGS)
 
 
 
-CC =  $(CPP_COMPILER_TYPE)
-CFLAGS =  $(BASE_FLAGS)
-CC14 = $(CPP_COMPILER_TYPE)
-C14FLAGS = $(BASE_FLAGS)
-CC17 = $(CPP_COMPILER_TYPE)
-C17FLAGS = $(BASE_FLAGS)
-CC23 =  $(CPP_COMPILER_TYPE)
-C23FLAGS =  $(BASE_FLAGS)
-CC90 =  $(CPP_COMPILER_TYPE)
-C90FLAGS = $(BASE_FLAGS)
-CC99 =  $(CPP_COMPILER_TYPE)
-99FLAGS = $(BASE_FLAGS)
+CC +=  $(CPP_COMPILER_TYPE)
+CFLAGS +=  $(BASE_FLAGS)
+CC14 += $(CPP_COMPILER_TYPE)
+C14FLAGS += $(BASE_FLAGS)
+CC17 += $(CPP_COMPILER_TYPE)
+C17FLAGS += $(BASE_FLAGS)
+CC23 +=  $(CPP_COMPILER_TYPE)
+C23FLAGS +=  $(BASE_FLAGS)
+CC90 +=  $(CPP_COMPILER_TYPE)
+C90FLAGS += $(BASE_FLAGS)
+CC99 +=  $(CPP_COMPILER_TYPE)
+99FLAGS += $(BASE_FLAGS)
 
 
-CXX = $(CXX_COMPILER_TYPE)
-CXXFLAGS = $(BASE_FLAGS)
-CXXPICFLAGS = -fpic
+CXX += $(CXX_COMPILER_TYPE)
+CXXFLAGS += $(BASE_FLAGS)
+CXXPICFLAGS += -fpic
 
-CXX11 = $(CXX_COMPILER_TYPE)
-CXX11FLAGS = $(BASE_FLAGS)
-CXX11PICFLAGS = -fpic
+CXX11 += $(CXX_COMPILER_TYPE)
+CXX11FLAGS += $(BASE_FLAGS)
+CXX11PICFLAGS += -fpic
 
-CXX14 = $(CXX_COMPILER_TYPE)
-CXX14FLAGS = $(BASE_FLAGS)
-CXX14PICFLAGS = -fpic
+CXX14 += $(CXX_COMPILER_TYPE)
+CXX14FLAGS += $(BASE_FLAGS)
+CXX14PICFLAGS += -fpic
 
-CXX17 = $(CXX_COMPILER_TYPE)
-CXX17FLAGS =  $(BASE_FLAGS)
-CXX17PICFLAGS = -fpic
+CXX17 += $(CXX_COMPILER_TYPE)
+CXX17FLAGS +=  $(BASE_FLAGS)
+CXX17PICFLAGS += -fpic
 
-CXX20 = $(CXX_COMPILER_TYPE)
-CXX20FLAGS =   $(BASE_FLAGS)
-CXX20PICFLAGS = -fpic
+CXX20 += $(CXX_COMPILER_TYPE)
+CXX20FLAGS +=   $(BASE_FLAGS)
+CXX20PICFLAGS += -fpic
 
-CXX23 = $(CXX_COMPILER_TYPE)
-CXX23FLAGS =   $(BASE_FLAGS)
-CXX23PICFLAGS = -fpic
+CXX23 += $(CXX_COMPILER_TYPE)
+CXX23FLAGS +=   $(BASE_FLAGS)
+CXX23PICFLAGS += -fpic
 
 
 

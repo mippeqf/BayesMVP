@@ -32,10 +32,24 @@ $(info PKG_R_PATH is: $(PKG_R_PATH))
 #CXX_COMPILER_TYPE =     $(BINPREF)$(CCBASE) $(M_ARCH) #  g++ ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/g++.exe    #    g++
 #CPP_COMPILER_TYPE =     $(BINPREF)$(CCBASE) $(M_ARCH) #  gcc ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/gcc.exe   gcc
 
+## Default flags:
+CXX_COMPILER_TYPE = $(shell where ccache 2>NUL && echo "ccache g++" || echo "g++")
+CPP_COMPILER_TYPE = $(shell where ccache 2>NUL && echo "ccache gcc" || echo "gcc")
 
-BASE_FLAGS =  -O3  -march=znver3  -mtune=znver3   -std=c++17  -D_REENTRANT  -pthread  -DSTAN_THREADS  -fPIC 
-BASE_FLAGS +=  -finline-limit=20000000 ## for g++
+
+BASE_FLAGS +=  -O3  -march=native  -mtune=native   # initial base flags
+BASE_FLAGS += -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread -std=c++17 
+BASE_FLAGS +=  -fopenmp 
+
+
  
+BASE_FLAGS +=  -finline-limit=20000000 ## for g++
+
+# Use C++17
+CXX_STD = CXX17 
+
+ 
+BASE_FLAGS +=  -fopenmp
 
 BASE_FLAGS +=  -mfma
 BASE_FLAGS +=  -mavx  
@@ -47,8 +61,8 @@ BASE_FLAGS +=  -fno-signed-zeros
 BASE_FLAGS +=  -fno-trapping-math
  
 
-##BASE_FLAGS +=  -DEIGEN_VECTORIZE
-BASE_FLAGS +=  -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE
+## BASE_FLAGS +=  -DEIGEN_VECTORIZE
+## BASE_FLAGS +=  -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE
 BASE_FLAGS +=  -DNDEBUG
 
 BASE_FLAGS +=     -ffp-contract=fast
@@ -58,23 +72,15 @@ BASE_FLAGS +=    -Wno-unused-variable
 BASE_FLAGS +=     -w
 ## BASE_FLAGS +=     -g ## for debugging
 
-BASE_FLAGS +=   -fno-fast-math
-
-BASE_FLAGS +=   -fno-fast-math \
-#BASE_FLAGS +=   -fno-unsafe-math-optimizations 
-#BASE_FLAGS +=   -fno-finite-math-only 
-#BASE_FLAGS +=   -frounding-math  
-#BASE_FLAGS +=   -fsignaling-nans
+ 
  
 BASE_FLAGS += -flarge-source-files
 
 ## BASE_FLAGS += -static-libgcc -static-libstdc++
 
-PKG_CPPFLAGS=$(BASE_FLAGS)
+PKG_CPPFLAGS+=$(BASE_FLAGS)
 
  
-##PKG_CPPFLAGS += $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" "$(PKG_INST_PATH)/setup_env_during_install.R")
-
 
 
 # Get Windows user profile directory directly
