@@ -33,8 +33,8 @@ $(info PKG_R_PATH is: $(PKG_R_PATH))
 #CPP_COMPILER_TYPE =     $(BINPREF)$(CCBASE) $(M_ARCH) #  gcc ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/gcc.exe   gcc
 
 ## Default flags:
-override CXX_COMPILER_TYPE = $(shell where ccache 2>NUL && echo "ccache g++" || echo "g++")
-override CPP_COMPILER_TYPE = $(shell where ccache 2>NUL && echo "ccache gcc" || echo "gcc")
+override CXX_COMPILER_TYPE = $(shell where /R "C:\rtools44\mingw64\bin" ccache 2>NUL && echo "ccache g++" || echo "g++")
+override CPP_COMPILER_TYPE = $(shell where /R "C:\rtools44\mingw64\bin" ccache 2>NUL && echo "ccache gcc" || echo "gcc")
 override CXX_STD = -std=gnu++17 # Use C++17
 
 override BASE_FLAGS =   -O3  -march=native  -mtune=native \
