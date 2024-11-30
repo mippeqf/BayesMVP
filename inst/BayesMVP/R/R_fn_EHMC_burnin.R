@@ -290,9 +290,9 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                   comment(print(ii))
             }
         
-            if (ii %% 50 == 0) {
-              gc(reset = TRUE)
-            }
+            # if (ii %% 50 == 0) {
+            #   gc(reset = TRUE)
+            # }
         
         
               if (ii < clip_iter) {
@@ -399,14 +399,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                          theta_vec = theta_vec_current_main,
                                                                                          snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_main,
                                                                                          ii = ii,
-                                                                                         M_dense_sqrt = EHMC_burnin_as_Rcpp_List$M_dense_sqrt);
-          # outs_update_eigen_max_and_eigen_vec <-  fn_update_snaper_w_diag_M(  snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_main,
-          #                                                                      eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_main,
-          #                                                                      eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_main,
-          #                                                                      theta_vec = theta_vec_current_main,
-          #                                                                      snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_main,
-          #                                                                      ii = ii,
-          #                                                                      sqrt_M_vec = diag(EHMC_burnin_as_Rcpp_List$M_dense_sqrt));
+                                                                                         M_dense_sqrt = EHMC_burnin_as_Rcpp_List$M_dense_sqrt);;
           EHMC_burnin_as_Rcpp_List$snaper_w_vec_main <- outs_update_eigen_max_and_eigen_vec
           })
           ##### update eigen_max and eigen_vec
@@ -549,12 +542,14 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                               EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix()
                             }
                             
-                            # #### ---- for unit metric ------------------------------------------
-                            # EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  rep(1, n_params_main)
-                            # EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(rep(1, n_params_main))
-                            # EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  diag(rep(1, n_params_main))
-                            # EHMC_Metric_as_Rcpp_List$M_dense_sqrt <-  diag(rep(1, n_params_main))
-
+                            #######################################################################
+                            #### ---- for unit metric ------------------------------------------
+                            EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  rep(1, n_params_main)
+                            EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(rep(1, n_params_main))
+                            EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  diag(rep(1, n_params_main))
+                            EHMC_Metric_as_Rcpp_List$M_dense_sqrt <-  diag(rep(1, n_params_main))
+                            #######################################################################
+                            
                        })
 
                       } else if (metric_type_main == "Empirical") {
@@ -581,7 +576,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                       inv_empicical_cov_main_scaled <- median_nuisance_var * inv_empicical_cov_main
                                     #  empicical_cov_main_scaled <- Rcpp_solve(inv_empicical_cov_main_scaled) #   1 / inv_empicical_cov_main_scaled
             
-                                      ## now update M_inv_nuisance
+                                  
                                       EHMC_Metric_as_Rcpp_List$M_dense_main <-  ratio_M_main * inv_empicical_cov_main_scaled    +    (1 - ratio_M_main) *  EHMC_Metric_as_Rcpp_List$M_dense_main
                                       EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_dense_main)
                                       EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
@@ -642,10 +637,11 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                     EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <-     sqrt(1 /  EHMC_Metric_as_Rcpp_List$M_inv_us_vec)
                                     EHMC_Metric_as_Rcpp_List$M_us_vec <-   1.0 / EHMC_Metric_as_Rcpp_List$M_inv_us_vec
                                     
-                                    # EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  rep(1, n_nuisance)
-                                    # EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- rep(1, n_nuisance)
-                                    # EHMC_Metric_as_Rcpp_List$M_us_vec <-   rep(1, n_nuisance)
-
+                                    ################################################################
+                                    EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  rep(1, n_nuisance)
+                                    EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- rep(1, n_nuisance)
+                                    EHMC_Metric_as_Rcpp_List$M_us_vec <-   rep(1, n_nuisance)
+                                    ################################################################
                          })
 
                }
@@ -687,9 +683,9 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                  ratio_Hess_main = ratio_M_main,
                                                                                  M_interval_width = interval_width_main,
                                                                                  Model_type_R =  Model_type,
-                                                                                 force_autodiff_R = force_autodiff ,
-                                                                                 force_PartialLog_R = force_PartialLog ,
-                                                                                 multi_attempts_R = multi_attempts,
+                                                                                 force_autodiff_R = TRUE ,
+                                                                                 force_PartialLog_R = TRUE ,
+                                                                                 multi_attempts_R = FALSE,
                                                                                  theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R,
                                                                                  theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,
                                                                                  y_Eigen_R =  y,

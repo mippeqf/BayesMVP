@@ -9,8 +9,16 @@ transform_stan_path <- function(stan_path) {
   dir_path <- dirname(path_no_tilde)
   filename <- basename(path_no_tilde)
   
-  # Remove .stan extension and add _model.so
-  model_name <- sub("\\.stan$", "_model.so", filename)
+  # Remove .stan extension and add _model.so or _model.dll
+  if (.Platform$OS.type == "windows") {
+    
+    model_name <- sub("\\.stan$", "_model.dll", filename)
+    
+  } else { 
+    
+    model_name <- sub("\\.stan$", "_model.so", filename)
+    
+  }
   
   final_path <- file.path("/", dir_path, model_name)
   

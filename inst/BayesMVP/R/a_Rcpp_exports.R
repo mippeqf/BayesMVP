@@ -312,6 +312,49 @@ Rcpp_Chol <- function(mat) {
 }
 
 
+
+#' @useDynLib BayesMVP, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @export
+Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread <- function(chain_id, 
+                                                                seed, 
+                                                                n_iter, 
+                                                                partitioned_HMC, 
+                                                                Model_type, 
+                                                                sample_nuisance, 
+                                                                force_autodiff, 
+                                                                force_PartialLog, 
+                                                                multi_attempts,
+                                                                n_nuisance_to_track,
+                                                                theta_main_vector_from_single_chain_input_from_R,
+                                                                theta_us_vector_from_single_chain_input_from_R,
+                                                                y_Eigen_i,
+                                                                Model_args_as_Rcpp_List,
+                                                                EHMC_args_as_Rcpp_List,
+                                                                EHMC_Metric_as_Rcpp_List) {
+  
+  .Call(`_BayesMVP_fn_compute_param_constrain_from_trace_parallel`,
+        chain_id, 
+        seed, 
+        n_iter, 
+        partitioned_HMC, 
+        Model_type, 
+        sample_nuisance, 
+        force_autodiff, 
+        force_PartialLog, 
+        multi_attempts, 
+        n_nuisance_to_track, 
+        theta_main_vector_from_single_chain_input_from_R, 
+        theta_us_vector_from_single_chain_input_from_R, 
+        y_Eigen_i, 
+        Model_args_as_Rcpp_List, 
+        EHMC_args_as_Rcpp_List,
+        EHMC_Metric_as_Rcpp_List)
+  
+}
+
+
+
 #' @useDynLib BayesMVP, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 #' @export

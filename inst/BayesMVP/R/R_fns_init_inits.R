@@ -479,11 +479,13 @@ init_inits    <- function(init_model_outs,
 
   
   
-  
-  Model_args_as_Rcpp_List <- init_model_outs$Model_args_as_Rcpp_List
-  
-  
-  
+    json_file_path <- normalizePath(json_file_path)
+    model_so_file <- normalizePath(model_so_file)
+    
+    Model_args_as_Rcpp_List <- init_model_outs$Model_args_as_Rcpp_List
+    
+    Model_args_as_Rcpp_List$model_so_file <- model_so_file
+    Model_args_as_Rcpp_List$json_file_path <- json_file_path
   
   return(list(  cmdstanr_model_fit_obj = mod,
                 bs_model = bs_model,

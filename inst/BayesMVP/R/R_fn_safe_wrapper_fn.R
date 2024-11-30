@@ -1,4 +1,7 @@
 
+
+#' safe_test_wrapper_1
+#' @export
 safe_test_wrapper_1 <- function(expr, ..., timeout = 5) {
   
   # Get the additional arguments
@@ -100,7 +103,8 @@ safe_test_wrapper_1 <- function(expr, ..., timeout = 5) {
 
 
 
-
+#' safe_test_wrapper_2
+#' @export
 safe_test_wrapper_2 <- function(expr, 
                                 ...,
                                 timeout = 5) {

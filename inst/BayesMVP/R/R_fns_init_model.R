@@ -15,7 +15,7 @@ init_model <- function(Model_type,
                        N,
                        n_params_main,
                        n_nuisance,
-                       X,
+                       X = NULL,
                        model_args_list,
                        Stan_model_file_path,
                        Stan_cpp_user_header,
@@ -83,16 +83,7 @@ init_model <- function(Model_type,
     
              json_file_path <- "none"
            
-           #   Stan_model <- file.path(Stan_model_file_path)  ## user-supplied
-           #   
-           #   # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-           #   r_data_JSON <- tempfile(fileext = ".json")
-           #   cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-           #   json_file_path <- r_data_JSON
-           #   Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-           #   
-           #   Sys.setenv(STAN_THREADS="true")
-           #   bs_model <- StanModel$new(Stan_model, data = r_data_JSON, 123) # creates .so file 
+             bs_model <- NULL
              
              
   } else if (Model_type == "Stan") { 
@@ -100,23 +91,32 @@ init_model <- function(Model_type,
     
             Model_args_as_Rcpp_List <- list()
     
-            Stan_model <- file.path(Stan_model_file_path)  ## user-supplied
+            # Stan_model <- file.path(Stan_model_file_path)  ## user-supplied
+            # 
+            # # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
+            # ## r_data_JSON <- tempfile(fileext = ".json")
+            # # make a models directory in the user's workspace
+            # r_data_JSON <- "~/.BayesMVP/compiled_models"
+            # if (!dir.exists(r_data_JSON)) dir.create(r_data_JSON, recursive = TRUE)
+            # 
+            # cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
+            # json_file_path <- r_data_JSON
+            # Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
+            # 
+            # Sys.setenv(STAN_THREADS="true")
+            # 
+            # bs_model <- bridgestan::StanModel$new(lib = Stan_model, 
+            #                                       data = r_data_JSON, 
+            #                                       seed = 123) # creates the .so file 
             
-            # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-            ## r_data_JSON <- tempfile(fileext = ".json")
-            # make a models directory in the user's workspace
-            r_data_JSON <- "~/.BayesMVP/compiled_models"
-            if (!dir.exists(r_data_JSON)) dir.create(r_data_JSON, recursive = TRUE)
+            Stan_model <- NULL
             
-            cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-            json_file_path <- r_data_JSON
-            Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
+            bs_model_outs <- init_bs_model_external(Stan_data_list = Stan_data_list, 
+                                                    Stan_model_file_path = Stan_model_file_path)
             
-            Sys.setenv(STAN_THREADS="true")
+            bs_model <- bs_model_outs$bs_model
+            json_file_path <- bs_model_outs$json_file_path
             
-            bs_model <- bridgestan::StanModel$new(lib = Stan_model, 
-                                                  data = r_data_JSON, 
-                                                  seed = 123) # creates the .so file 
             
             if (is.null(N)) { 
               warning("N not inputted - assuming N is the number of rows of the data (y)")
@@ -126,21 +126,21 @@ init_model <- function(Model_type,
             Model_args_as_Rcpp_List$N <- N
             Model_args_as_Rcpp_List$n_params_main <- n_params_main
             Model_args_as_Rcpp_List$n_nuisance <- n_nuisance
- 
-
+            Model_args_as_Rcpp_List$json_file_path <- json_file_path
+          
     
   }
   
           
-          return(list( 
-                      model_args_list = model_args_list,
-                      Model_args_as_Rcpp_List = Model_args_as_Rcpp_List, 
-                      Model_type = Model_type, 
-                      y = y, 
-                      X = X, 
-                      Stan_model = Stan_model,
-                      Stan_data_list = Stan_data_list, 
-                      json_file_path = json_file_path))
+          return(list(  bs_model = bs_model,
+                        model_args_list = model_args_list,
+                        Model_args_as_Rcpp_List = Model_args_as_Rcpp_List, 
+                        Model_type = Model_type, 
+                        y = y, 
+                        X = X, 
+                        Stan_model = Stan_model,
+                        Stan_data_list = Stan_data_list, 
+                        json_file_path = json_file_path))
 
 
 }
