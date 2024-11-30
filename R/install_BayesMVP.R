@@ -82,34 +82,7 @@ bridgestan_path <- function() {
           search_pattern_wo_dot <- file.path(home_dir, "bridgestan")
           available_dir_wo_dot <- Sys.glob(search_pattern_wo_dot) ; available_dir_wo_dot
           return(available_dir_wo_dot)
-
-          # # Additional fallback for Windows-specific path
-          # if (.Platform$OS.type == "windows") {
-          # 
-          #         windows_default_path <- "C:/.bridgestan/bridgestan-2.5.0"
-          # 
-          #         if (dir.exists(windows_default_path)) {
-          #             Sys.setenv(BRIDGESTAN=windows_default_path)
-          #           message(paste(cat("Bridgestan path found at:"), windows_default_path))
-          #             return(windows_default_path)
-          #         }
-          # 
-          # 
-          #         ## otherwise look for paths without a "." if user installed w/o R
-          #         windows_search_pattern <- file.path(home_dir, "C:/.bridgestan", "C:/bridgestan-*")
-          #         available_dirs <- Sys.glob(windows_search_pattern)
-          # 
-          #         if (length(available_dirs) > 0) {
-          #           recent_dir <- available_dirs[order(available_dirs, decreasing = TRUE)][1]
-          #           Sys.setenv(BRIDGESTAN=recent_dir)
-          #           message(paste(cat("Bridgestan path found at:"), recent_dir))
-          #           return(recent_dir)
-          #         }
-          # 
-          # }
-
-
-
+ 
 
           # If no valid path is found
           stop("BridgeStan directory not found.")
@@ -117,96 +90,10 @@ bridgestan_path <- function() {
 }
 
 
+ 
 
  
-# find_install_temp_dir <- function() {
-# 
-#   # Get the library path being used for installation
-#   library_path <- .libPaths()[1]  # Typically the first entry is the target library path
-# 
-#   # Construct the expected 00LOCK directory path
-#   lock_dir <- file.path(library_path, paste0("00LOCK-", "BayesMVP"))
-# 
-#   # Check if the directory exists
-#   if (dir.exists(lock_dir)) {
-#     return(normalizePath(lock_dir))
-#   } else {
-#     stop("Temporary installation directory not found: ", lock_dir)
-#   }
-# 
-# }
-# 
-
-
-
-
  
-# setup_env_during_install <- function() {
-# 
-# 
-#           # try({
-#           #   options(devtools.install.args = c("--no-test-load"))
-#           # })
-# 
-#           ## Set brigestan and cmdstanr environment variables / directories
-#           bs_dir <- bridgestan_path()
-#           cmdstan_dir <- cmdstanr_path()
-# 
-#           temp_dir <- file.path(find_install_temp_dir(), "00new", "BayesMVP")
-# 
-#           paste(cat("temp_dir = "), temp_dir)
-# 
-# 
-#           if (.Platform$OS.type == "windows") {
-# 
-#             cat("Setting up BayesMVP Environment for Windows:\n")
-# 
-#             cat("Preloading critical .DLLs / .SOs for BayesMVP package\n")
-#             TBB_STAN_DLL <- file.path(temp_dir,   "tbb_stan", "tbb.dll")
-#             TBB_CMDSTAN_DLL <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "tbb.dll")  # prioritise user's installed tbb dll/so
-#             DUMMY_MODEL_SO <- file.path(temp_dir,   "dummy_stan_modeL_win_model.so")
-#             DUMMY_MODEL_DLL <- file.path(temp_dir,   "dummy_stan_modeL_win_model.dll")
-# 
-#             dll_paths <- c(TBB_STAN_DLL,
-#                            TBB_CMDSTAN_DLL,
-#                            DUMMY_MODEL_SO,
-#                            DUMMY_MODEL_DLL)
-# 
-#           }  else {  ### if Linux or Mac
-# 
-#             cat("Setting up BayesMVP Environment for Linux / Mac OS:\n")
-# 
-#             cat("Preloading critical .DLLs / .SOs for BayesMVP package\n")
-#             TBB_STAN_SO <- file.path(temp_dir,  "tbb_stan", "libtbb.so.2")
-#             TBB_CMDSTAN_SO <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "libtbb.so.2")  # prioritise user's installed tbb dll/so
-#             DUMMY_MODEL_SO <- file.path(temp_dir,   "dummy_stan_modeL_win_model.so")
-# 
-#             dll_paths <- c(TBB_STAN_SO,
-#                            TBB_CMDSTAN_SO,
-#                            DUMMY_MODEL_SO)
-# 
-#           }
-# 
-# 
-#           # Attempt to load each DLL
-#           for (dll in dll_paths) {
-# 
-#             tryCatch(
-#               {
-#                 dyn.load(dll)
-#                 cat("  Loaded:", dll, "\n")
-#               },
-#               error = function(e) {
-#                 cat("  Failed to load:", dll, "\n  Error:", e$message, "\n")
-#               }
-#             )
-# 
-#           }
-# 
-# }
-# 
-
-
 
 
 
@@ -346,6 +233,48 @@ setup_env_post_install <- function() {
 #' install_BayesMVP
 #' @export
 install_BayesMVP <- function() {
+  
+          mvp_user_dir <- file.path(Sys.getenv("USERPROFILE"), ".BayesMVP")
+          dir.create(mvp_user_dir, showWarnings = FALSE, recursive = TRUE)
+          
+          pkg_dir <- system.file(package = "BayesMVP", "BayesMVP", "inst")
+          # pkg_dir <- file.path(libname, pkgname, "inst", "BayesMVP", "inst")    
+          
+          # Copy TBB
+          tbb_file <- if (.Platform$OS.type == "windows") "tbb.dll" else "libtbb.so"
+          file.copy(
+            from =  file.path(pkg_dir, "tbb_stan", tbb_file),
+            to = file.path(mvp_user_dir, tbb_file), 
+            overwrite = TRUE
+          )
+          
+          if (.Platform$OS.type == "windows") {
+            
+                  # Copy dummy model SO
+                  file.copy(
+                    from = file.path(pkg_dir, "dummy_stan_model_win_model.so"),
+                    to = file.path(mvp_user_dir, "dummy_stan_model_win_model.so"),
+                    overwrite = TRUE
+                  )
+                  
+                  # Copy dummy model DLL
+                  file.copy(
+                    from = file.path(pkg_dir, "dummy_stan_model_win_model.dll"),
+                    to = file.path(mvp_user_dir, "dummy_stan_model_win_model.dll"),
+                    overwrite = TRUE
+                  )
+            
+          } else { 
+            
+                  # Copy dummy model SO
+                  file.copy(
+                    from = file.path(pkg_dir, "dummy_stan_model_model.so"),
+                    to = file.path(mvp_user_dir, "dummy_stan_model_model.so"),
+                    overwrite = TRUE
+                  )
+                  
+          }
+  
   
         try({  setup_env_pre_install() })  # setup env (BEFORE removing wrapper pkg)
   
