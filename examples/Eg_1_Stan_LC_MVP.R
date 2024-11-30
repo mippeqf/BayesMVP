@@ -12,10 +12,27 @@
 }
 
 
+if (.Platform$OS.type == "windows") {
+  
+  # Sys.setenv(CCACHE_DIR = "C:\\rtools44\\x86_64-w64-mingw32.static.posix\\installed")
+  # Sys.setenv(CCACHE_MAXSIZE = "10G")  # Set cache size limit
+  
+  try({  setwd("C:/users/enzoc/Documents/BayesMVP/examples")    }, silent = TRUE)
+  pkg_dir <- "C:/users/enzoc/Documents/BayesMVP"
+  
+} else { 
+  
+  try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")   }, silent = TRUE)
+  try({  setwd("/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")    }, silent = TRUE)
+  pkg_dir <- "~/Documents/Work/PhD_work/R_packages/BayesMVP"
+  
+}
+
+
 
 # Run LC-MVP model (manual-gradients using SNAPER-diffusion-space HMC)   --------------------------------------------------------------------------------------------------------------------------------------------------
       
-pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP"
+ # pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP"
    
 ## first sprecify model type (for Stan models see other Stan example file)
 Model_type <- "Stan"
@@ -168,9 +185,8 @@ N <- 500
       
       
       # model files  
-        file <- (file.path(pkg_dir, "inst/stan_models/LC_MVP_bin_PartialLog_v5.stan"))
-        if (prior_only == 1 )  file <-  (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))   
-      
+      Stan_model_file_path <- (file.path("C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5.stan"))
+ 
       
      #  ### modify cmdstanr path if necessary to include custom C++ header files
      #  cmdstanr::cmdstan_path()
@@ -183,7 +199,7 @@ N <- 500
      # # cmdstanr::rebuild_cmdstan()
      #  
      #  
-      mod <- cmdstan_model(file) # ,  include_paths = c("/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/stan/math/rev/", 
+      mod <- cmdstan_model(Stan_model_file_path) # ,  include_paths = c("/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/stan/math/rev/", 
                                                        # "/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/"))
  
       # #  source("load_R_packages.R")
@@ -245,29 +261,24 @@ N <- 500
   
 
     
-  # make lists of lists for inits 
-  n_chains_burnin <- 8 
-  init_lists_per_chain <- rep(list(Stan_init_list), n_chains_burnin) 
- 
-  
-  ## set Stan model file path for your Stan model (replace with your path)
-   Stan_model_file_path <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/stan_models/LC_MVP_bin_PartialLog_v5.stan" ;    Stan_cpp_user_header <- NULL
-   #  Stan_model_file_path <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/stan_models/LC_MVP_bin_PartialLog_w_cpp.stan" ;    Stan_cpp_user_header <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/mvp_exp_approx.hpp"
-   
+    # make lists of lists for inits 
+    n_chains_burnin <- 8 
+    init_lists_per_chain <- rep(list(Stan_init_list), n_chains_burnin) 
 
-   
-   
-    ## initialise model 
-    init_model_and_vals_object <- initialise_model(  Model_type = "Stan",
-                                                     sample_nuisance = TRUE,
-                                                     init_lists_per_chain = init_lists_per_chain,
-                                                    ##  model_args_list = NULL, ## this arg is only for MANUAL models
-                                                     Stan_data_list = stan_data,
-                                                     Stan_model_file_path = Stan_model_file_path,
-                                                     n_chains_burnin = n_chains_burnin,
-                                                    ## Stan_cpp_user_header  = Stan_cpp_user_header, ## optional C++ user-header file (if want to include C++ fns in Stan model)
-                                                     n_params_main = n_params_main,
-                                                     n_nuisance = n_nuisance)
+    
+    ###  -----------  Compile + initialise the model using "MVP_model$new(...)" 
+    model_obj <- BayesMVP::MVP_model$new(   Model_type =  "Stan",
+                                            y = y,
+                                            N = N,
+                                            X = NULL,
+                                            #  model_args_list = model_args_list, # this arg is only needed for BUILT-IN (not Stan) models
+                                            Stan_data_list = stan_data,
+                                            Stan_model_file_path = Stan_model_file_path,
+                                            init_lists_per_chain = init_lists_per_chain,
+                                            sample_nuisance = TRUE,
+                                            n_chains_burnin = n_chains_burnin,
+                                            n_params_main = n_params_main,
+                                            n_nuisance = n_nuisance)
 
     
      # parallel::mcparallel
@@ -275,66 +286,207 @@ N <- 500
     
     ## ----------- Set basic sampler settings
     {
-      seed <- 123
-      n_chains_sampling <- 64 
-      n_superchains <- 4 # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
-      n_iter = 1000
+      ### seed <- 123
+      n_chains_sampling <- 1
+      n_superchains <- 1 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
+      n_iter <- 1000                                 
       n_burnin <- 500
       adapt_delta <- 0.80
-      LR_main <- 0.05
-      LR_us <- 0.05
+      learning_rate <- 0.05
+      diffusion_HMC <- TRUE
+      n_nuisance_to_track <- 10 # set to some small number (< 10) if don't care about making inference on nuisance params (which is most of the time!)
+    }
+    
+    
+    model_obj$init_object$model_so_file  <- "C:/Users/enzoc/AppData/Local/R/win-library/4.4/BayesMVP/stan_models/LC_MVP_bin_PartialLog_v5_model.dll"
+    model_obj$init_object$json_file_path <- "C:/Users/enzoc/AppData/Local/R/win-library/4.4/BayesMVP/stan_data/data_fc90d038d7fcb836248ee9d7420d1933.json"
+    
+    model_obj$init_object$Model_args_as_Rcpp_List$model_so_file <-  model_obj$init_object$model_so_file 
+    model_obj$init_object$Model_args_as_Rcpp_List$json_file_path <-  model_obj$init_object$json_file_path 
+    
+    ## sample / run model
+    model_samples <-   ( model_obj$sample(   seed = 1,
+                                             interval_width_main = 500,
+                                             n_iter = n_iter,
+                                             clip_iter = 500,
+                                             y = y,
+                                             N = N,
+                                             tau_mult = 2.0,
+                                             Stan_data_list = stan_data,
+                                             Stan_model_file_path = Stan_model_file_path,
+                                             #     force_recompile = force_recompile,
+                                             init_lists_per_chain = init_lists_per_chain,
+                                             n_params_main = n_params_main,
+                                             n_nuisance = n_nuisance,
+                                             #  model_args_list = model_args_list,
+                                             partitioned_HMC = TRUE,
+                                             vect_type = "Stan",
+                                             #  vect_type = "AVX512",
+                                             #  vect_type = "AVX2",
+                                             ratio_M_us = 0.25,
+                                             ratio_M_main = 0.25,
+                                             parallel_method = "RcppParallel",
+                                             n_burnin = n_burnin,
+                                             n_chains_burnin = n_chains_burnin,
+                                             sample_nuisance = TRUE,
+                                             n_chains_sampling = n_chains_sampling,
+                                             n_superchains = n_superchains,
+                                             diffusion_HMC = diffusion_HMC,
+                                             adapt_delta = adapt_delta,
+                                             learning_rate = learning_rate,
+                                             force_autodiff = FALSE,
+                                             force_PartialLog = FALSE,
+                                             multi_attempts = FALSE,
+                                             metric_shape_main = "dense",
+                                             metric_type_main = "Hessian",
+                                             n_nuisance_to_track = n_nuisance_to_track)  ) 
+    
+    
+ 
+  
+  
+  
+    
+    {
+      
+      set.seed(1)
+      
+      init_model_and_vals_object <- model_obj$init_object
+      
+      
+      {
+        # sample_obj <- model_samples$model_results
+        #model_results = sample_obj
+        init_object <- model_obj$init_object
+        compute_main_params = TRUE
+        compute_generated_quantities = TRUE
+        compute_transformed_parameters = TRUE
+        save_log_lik_trace = TRUE
+        save_nuisance_trace = FALSE
+      }
+      
+      options(scipen = 99999)
+      
+      
+      
+      
+      n_us <- N*n_tests
+      n_params <- n_us + n_params_main
+      index_us <- 1:n_us
+      index_main <- (1 + n_us):n_params
+      
+      if (Model_type == "latent_trait") {
+        n_corrs <- n_tests * 2
+      } else {
+        n_corrs <- 2 * choose(n_tests, 2)
+      }
+      
+      theta_vec <- rep(0.01, n_params)
+      
+      Model_args_as_Rcpp_List <- init_model_and_vals_object$Model_args_as_Rcpp_List
+ 
+      
     }
     
     
     
-    Rcpp::sourceCpp("~/Documents/Work/PhD_work/R_packages/BayesMVP/src/main_v9.cpp") # , verbose = TRUE)
+    
+    ## Rcpp::sourceCpp("~/Documents/Work/PhD_work/R_packages/BayesMVP/src/main.cpp")
+    
+    ##  dyn.load("C:\\Users\\enzoc\\Documents\\BayesMVP\\inst\\dummy_stan_model_win_model.dll")
+    
+    #   tic()
+    # for (i in 1:1000)
+    
+    init_model_and_vals_object$model_so_file
+    
+    Model_args_as_Rcpp_List$model_so_file <-   "C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5_model.so"
+    Model_args_as_Rcpp_List$json_file_path <- init_model_and_vals_object$json_file_path# "C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5_model.dll"
+      
+    BayesMVP::detect_vectorization_support()
     
     
-    ## sample / run model
-    sample_obj <-   ( sample_model(Model_type = "Stan",
-                                   sample_nuisance = TRUE,
-                               init_model_and_vals_object = init_model_and_vals_object,
-                               n_iter = n_iter,
-                               n_burnin = n_burnin,
-                               seed = seed,
-                               y = y,
-                               n_chains_burnin = n_chains_burnin,
-                               n_chains_sampling = n_chains_sampling,
-                               n_superchains = n_superchains,
-                               diffusion_HMC = TRUE,
-                            #   metric_shape_main = "diag",
-                               metric_shape_main = "dense",
-                              metric_type_main = "Hessian",
-                             #   metric_type_main = "Emprical",
-                             ##  n_nuisance_to_track = 5,
-                               n_params_main = n_params_main,
-                               n_nuisance = n_nuisance) )
+    require(BayesMVP)
+    lp_grad_outs <-   safe_test_wrapper_1 ( theta_vec = theta_vec,
+                                            index_main = index_main,
+                                            index_us = index_us,
+                                            y = y,
+                                            Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+                                            
+                                            expr = {
+                                              
+                                              require(BayesMVP)
+                                              # 
+                                              # Sys.setenv(BRIDGESTAN="C:/Users/enzoc/.bridgestan/bridgestan-2.5.0")
+                                              # 
+                                              # dummy_data_N <-  100
+                                              # dummy_data_vec <- rnorm(dummy_data_N)
+                                              # dummy_data <- list(N = dummy_data_N, y = dummy_data_vec )
+                                              # # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::tload_and_run_log_prob_grad_all_StanoJSON)
+                                              # r_data_list <- dummy_data
+                                              # r_data_JSON <- tempfile(fileext = ".json")
+                                              # cmdstanr::write_stan_json(r_data_list, r_data_JSON)
+                                              # 
+                                              # Sys.setenv(STAN_THREADS="true")
+                                              # model <- bridgestan::StanModel$new("C:/users/enzoc/Downloads/dummy_stan_model_win.stan",
+                                              #                                    data = r_data_JSON, 
+                                              #                                    seed = 1234
+                                              # )
+                                              # print(paste0("This model's name is ", model$name(), "."))
+                                              # print(paste0("This model has ", model$param_num(), " parameters."))
+                                              # 
+                                              # res <- model$log_density_gradient(1, jacobian = TRUE)
+                                              
+                                              
+                                              # cat("  PATH: ", Sys.getenv("PATH"), "\n")
+                                              # cat("  libPaths: ", paste(.libPaths(), collapse = "; "), "\n")
+                                              # cat("  Working Directory: ", getwd(), "\n")
+                                              
+                                              # cat("Preloading critical DLLs for BayesMVP package\n")
+                                              # 
+                                              # # List of DLLs to preload
+                                              # dll_paths <- c(
+                                              #   # "C:/Users/enzoc/Documents/BayesMVP/inst/tbb12.dll",
+                                              #   "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/tbb_stan/tbb.dll",
+                                              #   "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/libs/x64/dummy_stan_model_win_model.so",
+                                              #   "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/libs/x64/dummy_stan_model_win_model.dll",
+                                              #   "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/BayesMVP.dll"
+                                              # )
+                                              # 
+                                              # # Attempt to load each DLL
+                                              # for (dll in dll_paths) {
+                                              #   
+                                              #   tryCatch(
+                                              #     {
+                                              #       dyn.load(dll)
+                                              #       cat("  Loaded:", dll, "\n")
+                                              #     },
+                                              #     error = function(e) {
+                                              #       cat("  Failed to load:", dll, "\n  Error:", e$message, "\n")
+                                              #     }
+                                              #   )
+                                              #   
+                                              # }
+                                              
+                                              
+                                              BayesMVP::Rcpp_wrapper_fn_lp_grad( Model_type = "Stan",
+                                                                                 force_autodiff = TRUE,
+                                                                                 force_PartialLog = TRUE,
+                                                                                 multi_attempts = FALSE,
+                                                                                 theta_main_vec = theta_vec[index_main],
+                                                                                 theta_us_vec = theta_vec[index_us],
+                                                                                 y = y,
+                                                                                 grad_option = "all",
+                                                                                 Model_args_as_Rcpp_List = Model_args_as_Rcpp_List) 
+                                              
+                                            } )
     
-    ### parallel::mccollect(sample_obj)
     
     
-    ##### results summary 
-    model_summary_outs <-    create_stan_summary(   model_results = sample_obj, 
-                                                    init_model_and_vals_object = init_model_and_vals_object,
-                                                    n_nuisance = n_nuisance, 
-                                                    compute_main_params = TRUE, 
-                                                    compute_generated_quantities = TRUE, 
-                                                    compute_transformed_parameters = FALSE, 
-                                                    save_log_lik_trace = FALSE, 
-                                                    save_nuisance_trace = FALSE)
+    lp_grad_outs
+    # lp_grad_outs$job
     
     
- 
-  
-  
-  
-  
-  
-  
-  
-  
-  
- 
     
     
     

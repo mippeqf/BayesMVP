@@ -174,7 +174,7 @@ devtools::load_all(pkg_dir)
 
 dyn.load('C:/Users/enzoc/Documents/BayesMVP/lib/BayesMVP.dll')
 
-dyn.load("C:/Users/enzoc/AppData/Local/R/win-library/4.4/BayesMVP/libs/x64/BayesMVP.dll")
+dyn.load("C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\libs\\x64BayesMVP.dll")
 
 
 message('  PATH: ', Sys.getenv('PATH'));  

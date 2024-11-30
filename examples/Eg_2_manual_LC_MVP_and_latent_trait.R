@@ -18,58 +18,19 @@ if (.Platform$OS.type == "windows") {
     # Sys.setenv(CCACHE_MAXSIZE = "10G")  # Set cache size limit
   
     try({  setwd("C:/users/enzoc/Documents/BayesMVP/examples")    }, silent = TRUE)
+   pkg_dir <- "C:/users/enzoc/Documents/BayesMVP"
   
 } else { 
   
    try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")   }, silent = TRUE)
    try({  setwd("/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")    }, silent = TRUE)
+  pkg_dir <- "~/Documents/Work/PhD_work/R_packages/BayesMVP"
   
 }
 
 options(buildtools.check = function(action) TRUE ) 
 
-
-if (.Platform$OS.type == "windows") {
-  
-      pkg_dir <- "C:/users/enzoc/Documents/BayesMVP"
-      
-      ## Run the following code to ensure BridgeStan works + downloaded in correct home directory: 
-      {
-        Sys.getenv("BRIDGESTAN")
-        Sys.setenv(BRIDGESTAN="C:/Users/enzoc/.bridgestan/bridgestan-2.5.0")
-        # Sys.setenv(LIB_TBB ="C:\\Users\\enzoc\\.cmdstan\\cmdstan-2.35.0\\stan\\lib\\stan_math\\lib\\tbb_2020.3\\include\\tbb")
-        #Sys.setenv(LIB_TBB ="C:\\Users\\enzoc\\.cmdstan\\cmdstan-2.35.0\\stan\\lib\\stan_math\\lib\\tbb")
-        
-        dummy_data_N <-  100
-        dummy_data_vec <- rnorm(dummy_data_N)
-        dummy_data <- list(N = dummy_data_N, y = dummy_data_vec )
-        # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::tload_and_run_log_prob_grad_all_StanoJSON)
-        r_data_JSON <- tempfile(fileext = ".json")
-        cmdstanr::write_stan_json(dummy_data, r_data_JSON)
-        
-        Sys.setenv(STAN_THREADS="true")
-        model <- bridgestan::StanModel$new("C:/users/enzoc/Downloads/dummy_stan_model_win.stan",
-                                           data = r_data_JSON, 
-                                           seed = 1234,
-                                           make_args = list(
-                                            # sprintf("CXXFLAGS+=-I'%s'", "C:/Users/enzoc/.bridgestan/bridgestan-2.5.0/stan/lib/stan_math/lib/tbb_2020.3/include"),
-                                           #  sprintf("PKG_LIBS+='%s'", "C:\\Users\\enzoc\\.bridgestan/bridgestan-2.5.0/stan/lib/stan_math/lib/tbb/tbb.dll")
-                                           )
-                                           # stanc_args = list("--include-paths=C:\\Users\\enzoc\\.bridgestan\\bridgestan-2.5.0\\stan\\lib\\stan_math\\lib,C:\\Users\\enzoc\\.bridgestan\\bridgestan-2.5.0\\stan\\lib\\stan_math\\lib\\tbb,C:\\Users\\enzoc\\.bridgestan\\bridgestan-2.5.0\\stan\\lib\\stan_math\\lib\\tbb_2020.3,C:\\Users\\enzoc\\.bridgestan\\bridgestan-2.5.0\\stan\\lib\\stan_math\\lib\\tbb_2020.3\\include,C:\\Users\\enzoc\\.bridgestan\\bridgestan-2.5.0\\stan\\lib\\stan_math\\lib\\tbb_2020.3\\include\\tbb,C:\\Users\\enzoc\\.cmdstan\\cmdstan-2.35.0\\stan\\lib\\stan_math\\lib,C:\\Users\\enzoc\\.cmdstan\\cmdstan-2.35.0\\stan\\lib\\stan_math\\lib\\tbb,C:\\Users\\enzoc\\.cmdstan\\cmdstan-2.35.0\\stan\\lib\\stan_math\\lib\\tbb_2020.3,C:\\Users\\enzoc\\.cmdstan\\cmdstan-2.35.0\\stan\\lib\\stan_math\\lib\\tbb_2020.3\\include,C:\\Users\\enzoc\\.cmdstan\\cmdstan-2.35.0\\stan\\lib\\stan_math\\lib\\tbb_2020.3\\tbb")
-        )
-        
-        print(paste0("This model's name is ", model$name(), "."))
-        print(paste0("This model has ", model$param_num(), " parameters."))
-        
-        res <- model$log_density_gradient(1, jacobian = TRUE)
-        
-      }
-      
-      ##  C:\Users\enzoc\.bridgestan\bridgestan-2.5.0\stan\lib\stan_math\lib
-} else { 
-      pkg_dir <- "~/Documents/Work/PhD_work/R_packages/BayesMVP"
-}
-
+ 
 
 options(warning.length =  8000)
 
@@ -80,36 +41,35 @@ require(BayesMVP)
 #          C:\Users\enzoc\.cmdstan\cmdstan-2.35.0\stan\lib\stan_math\lib\tbb_2020.3\include\tbb
 
  
+rstudioapi::restartSession()
 remove.packages("BayesMVP")
 unlink("C:/Users/enzoc/AppData/Local/R/win-library/4.4/00LOCK-BayesMVP", recursive = TRUE)
-devtools::clean_dll(pkg_dir) 
+devtools::clean_dll(pkg_dir)  
+Rcpp::compileAttributes(pkg_dir)  
+devtools::document(pkg_dir)  
+## Install
+devtools::clean_dll(pkg_dir)
 Rcpp::compileAttributes(pkg_dir)
-devtools::document(pkg_dir) 
-# ## Install 
-# devtools::clean_dll(pkg_dir) 
-# Rcpp::compileAttributes(pkg_dir)
-# devtools::install(pkg_dir) 
-# require(BayesMVP)
-## Install w/ custom flags
-devtools::clean_dll(pkg_dir) 
-Rcpp::compileAttributes(pkg_dir)
-devtools::install(pkg_dir,  args = c("--no-test-load")) ## this works (needs "--no-test-load" flag)
-setup_env() # setup bayesMVP env
+devtools::install(pkg_dir)
+require(BayesMVP)
+BayesMVP::install_BayesMVP()
 require(BayesMVP) # this works (after installation using "--no-test-load" flag)
+ 
+
+
+
+remotes::install_github("https://github.com/CerulloE1996/BayesMVP", force = TRUE)
+require(BayesMVP)
+BayesMVP::install_BayesMVP()
+require(BayesMVP) # this works (after installation using "--no-test-load" flag)
+
+
+
 
 
 BayesMVP::detect_vectorization_support()
 
- 
 
-
-rstudioapi::restartSession()
-
-tbb_path <- file.path(Sys.getenv("HOME"), ".cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb")
-list.files(tbb_path, recursive=TRUE, pattern="\\.dll$")
-
-cmdstan_path <- file.path(Sys.getenv("USERPROFILE"), ".cmdstan/cmdstan-2.35.0")
-list.files(cmdstan_path, recursive=TRUE, pattern="tbb")
  
 
 {
@@ -139,78 +99,9 @@ if (.Platform$OS.type == "windows") {
 }
 
 
-
-# 
-# C:\rtools44/x86_64-w64-mingw32.static.posix/bin;
-# C:\rtools44/usr/bin; 
-# C:\rtools44\Users\enzoc\.bridgestan\bridgestan-2.5.0\stan\lib\stan_math\lib\tbb;
-# C:\x86_64-w64-mingw32.static.posix\bin;
-# C:\rtools44\usr\bin;
-# 
-#  
-# C:\PROGRA~1\R\R-44~1.2\bin\x64;
-#  
-# C:\rtools44\usr\bin;
-# C:\rtools44\usr\bin;
-#  
-# C:\rtools44\usr\bin;
-#  
-# C:\Program Files\R\R-4.4.2\bin\x64;
-#  
-# C:\rtools44\usr\bin;
-# C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32\OpenSSH;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0;C:\WINDOWS\System32\OpenSSH;C:\Program Files\Git\cmd;C:\rtools44\x86_64-w64-mingw32.static.posix\bin;C:\rtools44\usr\bin;C:\usr\bin;C:\usr\bin;C:\Windows\System32;C:\Windows;C:\Windows\System32\wbem;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32\OpenSSH;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\Windows\System32;C:\Windows;C:\Windows\System32\wbem;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32\OpenSSH;C:\Program Files\Git\cmd;C:\Users\enzoc\AppData\Local\Microsoft\WindowsApps;C:\Program Files\RStudio\resources\app\bin\quarto\bin;C:\Program Files\RStudio\resources\app\bin\postback;C:\Program Files\Git\bin;C:\Program Files\RStudio\resources\app\bin\quarto\bin;C:\Program Files\RStudio\resources\app\bin\postback
-# 
-# 
-# #### 
-# C:\rtools44/x86_64-w64-mingw32.static.posix/bin;
-# C:\rtools44/usr/bin;
-# \usr\bin;C;
-# C:\rtools44\Users\enzoc\.bridgestan\bridgestan-2.5.0\stan\lib\stan_math\lib\tbb;
-# \x86_64-w64-mingw32.static.posix\bin;
-# C:\rtools44\usr\bin;
-#  
-# C:\PROGRA~1\R\R-44~1.2\bin\x64;
-#  
-# C:\rtools44\usr\bin;
-# C:\rtools44\usr\bin;
-#  
-# C:\rtools44\usr\bin;
-# 
-#  
-# C:\Program Files\R\R-4.4.2\bin\x64;
-#  
-# C:\rtools44\usr\bin;
-
  
 
-
-
-# ## Run the following code to ensure BridgeStan works + downloaded in correct home directory: 
-# {
-#   
-#   Sys.setenv(BRIDGESTAN="C:/Users/enzoc/.bridgestan/bridgestan-2.5.0")
-#   
-#   dummy_data_N <-  100
-#   dummy_data_vec <- rnorm(dummy_data_N)
-#   dummy_data <- list(N = dummy_data_N, y = dummy_data_vec )
-#   # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::tload_and_run_log_prob_grad_all_StanoJSON)
-#   r_data_list <- dummy_data
-#   r_data_JSON <- tempfile(fileext = ".json")
-#   cmdstanr::write_stan_json(r_data_list, r_data_JSON)
-#   
-#   Sys.setenv(STAN_THREADS="true")
-#   model <- bridgestan::StanModel$new("C:/users/enzoc/Downloads/dummy_stan_model_win.stan",
-#                                      data = r_data_JSON, 
-#                                      seed = 1234
-#   )
-#   print(paste0("This model's name is ", model$name(), "."))
-#   print(paste0("This model has ", model$param_num(), " parameters."))
-#   
-#   res <- model$log_density_gradient(1, jacobian = TRUE)
-#   
-# }
-# 
-
+ 
 
 
 
@@ -363,7 +254,7 @@ N <- 500
 ## -----------  initialise model / inits etc
 # based on (informal) testing, more than 8 burnin chains seems unnecessary 
 # and probably not worth the extra overhead (even on a 96-core AMD EPYC Genoa CPU)
-  n_chains_burnin <- 8 
+  n_chains_burnin <- 2
   init_lists_per_chain <- rep(list(init), n_chains_burnin) 
   
    
@@ -398,7 +289,7 @@ N <- 500
   
  #   source(file.path(pkg_dir, "examples/load_R_packages.R"))
   
-  setup_env()
+  #  setup_env()
   
   ###  -----------  Compile + initialise the model using "MVP_model$new(...)" 
   model_obj <- BayesMVP::MVP_model$new(   Model_type = Model_type,
@@ -417,13 +308,13 @@ N <- 500
   ## ----------- Set soe basic sampler settings
   {
     ### seed <- 123
-    n_chains_sampling <- 8
-    n_superchains <- 8 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
+    n_chains_sampling <- 1
+    n_superchains <- 1 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
     n_iter <- 1000                                 
     n_burnin <- 500
     adapt_delta <- 0.80
     learning_rate <- 0.05
-    diffusion_HMC <- TRUE
+    diffusion_HMC <- FALSE
     n_nuisance_to_track <- 10 # set to some small number (< 10) if don't care about making inference on nuisance params (which is most of the time!)
   }
   
@@ -472,8 +363,9 @@ N <- 500
                                                   expr = {    setup_env() 
                                                     
                                        model_samples <-   ( model_obj$sample(   seed = 1,
+                                                                                interval_width_main = 500,
                                                       n_iter = n_iter,
-                                                      clip_iter = 25,
+                                                      clip_iter = 500,
                                                       y = y,
                                                       N = N,
                                                       tau_mult = 2.0,
@@ -682,11 +574,13 @@ N <- 500
 
  ##   Rcpp::sourceCpp("~/Documents/Work/PhD_work/R_packages/BayesMVP/src/main_v9.cpp")
 
-  set.seed(3)
+ 
   
   
   
   {
+    
+    set.seed(1)
     
     init_model_and_vals_object <- model_obj$init_object
     
@@ -747,9 +641,9 @@ N <- 500
         Model_args_as_Rcpp_List$Model_args_vecs_of_mats_int
         Model_args_as_Rcpp_List$Model_args_vecs_of_col_vecs_int
 
-        theta_vec <- rnorm(n = n_params, mean = 0, sd = 0.25)
+        theta_vec <- rnorm(n = n_params, mean = 0, sd = 1)
  
-        theta_vec[(n_us + 1):n_params] <- rnorm(n = n_params_main, mean = 0, sd =0.25 )
+        theta_vec[(n_us + 1):n_params] <- rnorm(n = n_params_main, mean = 0, sd = 1 )
 
         Model_args_as_Rcpp_List$Model_args_doubles[3, 1] <- +5 # overflow - this one seems OK 
         Model_args_as_Rcpp_List$Model_args_doubles[4, 1] <- -5 # underflow - need to fix 
@@ -777,6 +671,8 @@ N <- 500
                                         Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
     
     expr = {
+      
+      require(BayesMVP)
       # 
       # Sys.setenv(BRIDGESTAN="C:/Users/enzoc/.bridgestan/bridgestan-2.5.0")
       # 
@@ -808,10 +704,10 @@ N <- 500
       # List of DLLs to preload
       dll_paths <- c(
         # "C:/Users/enzoc/Documents/BayesMVP/inst/tbb12.dll",
-        "C:/Users/enzoc/Documents/BayesMVP/inst/tbb.dll",
-        "C:/Users/enzoc/Documents/BayesMVP/inst/dummy_stan_model_win_model.so",
-        "C:/Users/enzoc/Documents/BayesMVP/inst/dummy_stan_model_win_model.dll",
-        "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP.dll"
+        "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/tbb_stan/tbb.dll",
+        "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/dummy_stan_model_win_model.so",
+        "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/dummy_stan_model_win_model.dll",
+        "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/BayesMVP.dll"
       )
       
       # Attempt to load each DLL
@@ -834,14 +730,16 @@ N <- 500
     
     
     BayesMVP::Rcpp_wrapper_fn_lp_grad( Model_type = "LC_MVP",
-                                                                     force_autodiff = FALSE,
-                                                                     force_PartialLog = FALSE,
+                                                                     force_autodiff = TRUE,
+                                                                     force_PartialLog = TRUE,
                                                                      multi_attempts = FALSE,
                                                                      theta_main_vec = theta_vec[index_main],
                                                                      theta_us_vec = theta_vec[index_us],
                                                                      y = y,
-                                                                     grad_option = "none",
-                                                                     Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)  } )
+                                                                     grad_option = "all",
+                                                                     Model_args_as_Rcpp_List = Model_args_as_Rcpp_List) 
+    
+    } )
   
  
   
