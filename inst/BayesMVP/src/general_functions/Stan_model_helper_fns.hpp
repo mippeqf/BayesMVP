@@ -41,18 +41,26 @@
  
  
  
+// #ifdef _WIN32
+// #include <dlfcn.h>
+// #include <windows.h>
+// #define dlopen(x,y) LoadLibrary(x)
+// #define dlclose(x)  FreeLibrary((HMODULE)x)
+// #define dlsym(x,y)  GetProcAddress((HMODULE)x,y)
+// #define dlerror() "Windows error"
+// #else
+// #include <dlfcn.h> // For dynamic loading 
+// #endif
+ 
 #ifdef _WIN32
-#include <dlfcn.h>
 #include <windows.h>
-#define dlopen(x,y) LoadLibrary(x)
-#define dlclose(x)  FreeLibrary((HMODULE)x)
-#define dlsym(x,y)  GetProcAddress((HMODULE)x,y)
-#define dlerror() "Windows error"
+#define dlopen(x,y) LoadLibraryA(x)  // Use LoadLibraryA for ANSI strings
+#define dlclose(x) FreeLibrary((HMODULE)x)
+#define dlsym(x,y) GetProcAddress((HMODULE)x,y)
+#define dlerror() GetLastError()  // Get actual Windows error code
 #else
-#include <dlfcn.h> // For dynamic loading 
+#include <dlfcn.h>
 #endif
- 
- 
 
 
  
@@ -75,7 +83,7 @@ using namespace Eigen;
 
 
 // fn to handle JSON via file input and compute the log-prob and gradient
-bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
+ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
                                              const std::string  &json_file, 
                                              unsigned int seed) {
  
@@ -103,75 +111,174 @@ bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
  
  
  
- // fn to dynamically load the user-provided .so file and resolve symbols
-ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data(const std::string &model_so_file, 
-                                               const std::string &json_file,
-                                               unsigned int seed) {
+//// fn to dynamically load the user-provided .so file and resolve symbols
+ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data( const std::string &model_so_file, 
+                                                             const std::string &json_file,
+                                                             unsigned int seed) {
+  
+   void* bs_handle;
    
-       // Load the .so file
-       void* bs_handle = dlopen(model_so_file.c_str(), RTLD_LAZY);
-       if (!bs_handle) {
-         throw std::runtime_error("Error loading .so file: " + std::string(dlerror()));
-       } 
-       
-       // Resolve the bs_model_construct symbol
-       typedef bs_model* (*bs_model_construct_func)(const char*, unsigned int, char**);
-       bs_model_construct_func bs_model_construct = (bs_model_construct_func)dlsym(bs_handle, "bs_model_construct"); 
-       if (!bs_model_construct) {
-         dlclose(bs_handle); 
-         throw std::runtime_error("Error loading symbol 'bs_model_construct': " + std::string(dlerror()));
-       }
-       
-       // Resolve the bs_log_density_gradient symbol 
-       typedef int (*bs_log_density_gradient_func)(bs_model*, bool, bool, const double*, double*, double*, char**);
-       bs_log_density_gradient_func bs_log_density_gradient = (bs_log_density_gradient_func)dlsym(bs_handle, "bs_log_density_gradient");
-       if (!bs_log_density_gradient) { 
-         dlclose(bs_handle);
-         throw std::runtime_error("Error loading symbol 'bs_log_density_gradient': " + std::string(dlerror()));
-       }
-       
-       typedef int (*bs_param_constrain_func)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**);
-       bs_param_constrain_func bs_param_constrain = (bs_param_constrain_func)dlsym(bs_handle, "bs_param_constrain");
-       if (!bs_param_constrain) { 
-         dlclose(bs_handle);
-         throw std::runtime_error("Error loading symbol 'bs_param_constrain': " + std::string(dlerror()));
-       }
-       
-       
-       // Resolve the bs_rng_construct symbol
-       typedef bs_rng* (*bs_rng_construct_func)(unsigned int, char**);
-       bs_rng_construct_func bs_rng_construct = (bs_rng_construct_func)dlsym(bs_handle, "bs_rng_construct"); 
-       if (!bs_rng_construct) {
-         dlclose(bs_handle); 
-         throw std::runtime_error("Error loading symbol 'bs_rng_construct': " + std::string(dlerror()));
-       } 
-       
-       
-       ModelHandle_struct model_handle = {bs_handle,
-                                          bs_model_construct,
-                                          bs_log_density_gradient, 
-                                          bs_param_constrain, 
-                                          bs_rng_construct};
-       
-       bs_model* bs_model_ptr = fn_convert_JSON_data_to_BridgeStan(model_handle, json_file, seed);
-       
-       
-       // return {bs_model_ptr, bs_handle, bs_model_construct, bs_log_density_gradient};  // Return handle and fn pointers 
-       
-       return {bs_handle,                 
-               bs_model_ptr,              
-               bs_model_construct,        
-               bs_log_density_gradient, 
-               bs_param_constrain, 
-               bs_rng_construct};   
+           // Load the DLL/SO file
+        #ifdef _WIN32
+           bs_handle = LoadLibraryA(model_so_file.c_str());
+           if (!bs_handle) {
+             DWORD error = GetLastError();
+             char error_msg[256];
+             FormatMessageA(
+               FORMAT_MESSAGE_FROM_SYSTEM,
+               NULL,
+               error,
+               0,
+               error_msg,
+               sizeof(error_msg),
+               NULL
+             );
+             throw std::runtime_error("Error loading DLL: " + std::string(error_msg));
+           }
+        #else
+           bs_handle = dlopen(model_so_file.c_str(), RTLD_LAZY);
+           if (!bs_handle) {
+             throw std::runtime_error("Error loading .so file: " + std::string(dlerror()));
+           }
+        #endif
+           
+           // Function pointer types
+           typedef bs_model* (*bs_model_construct_func)(const char*, unsigned int, char**);
+           typedef int (*bs_log_density_gradient_func)(bs_model*, bool, bool, const double*, double*, double*, char**);
+           typedef int (*bs_param_constrain_func)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**);
+           typedef bs_rng* (*bs_rng_construct_func)(unsigned int, char**);
+           
+           // Load bs_model_construct
+           bs_model_construct_func bs_model_construct;
+        #ifdef _WIN32
+           bs_model_construct = (bs_model_construct_func)GetProcAddress((HMODULE)bs_handle, "bs_model_construct");
+           if (!bs_model_construct) {
+             DWORD error = GetLastError();
+             char error_msg[256];
+             FormatMessageA(
+               FORMAT_MESSAGE_FROM_SYSTEM,
+               NULL,
+               error,
+               0,
+               error_msg,
+               sizeof(error_msg),
+               NULL
+             );
+             FreeLibrary((HMODULE)bs_handle);
+             throw std::runtime_error("Error loading symbol 'bs_model_construct': " + std::string(error_msg));
+           }
+        #else
+           bs_model_construct = (bs_model_construct_func)dlsym(bs_handle, "bs_model_construct");
+           if (!bs_model_construct) {
+             dlclose(bs_handle);
+             throw std::runtime_error("Error loading symbol 'bs_model_construct': " + std::string(dlerror()));
+           }
+        #endif
+           
+           // Load bs_log_density_gradient
+           bs_log_density_gradient_func bs_log_density_gradient;
+        #ifdef _WIN32
+           bs_log_density_gradient = (bs_log_density_gradient_func)GetProcAddress((HMODULE)bs_handle, "bs_log_density_gradient");
+           if (!bs_log_density_gradient) {
+             DWORD error = GetLastError();
+             char error_msg[256];
+             FormatMessageA(
+               FORMAT_MESSAGE_FROM_SYSTEM,
+               NULL,
+               error,
+               0,
+               error_msg,
+               sizeof(error_msg),
+               NULL
+             );
+             FreeLibrary((HMODULE)bs_handle);
+             throw std::runtime_error("Error loading symbol 'bs_log_density_gradient': " + std::string(error_msg));
+           }
+        #else
+           bs_log_density_gradient = (bs_log_density_gradient_func)dlsym(bs_handle, "bs_log_density_gradient");
+           if (!bs_log_density_gradient) {
+             dlclose(bs_handle);
+             throw std::runtime_error("Error loading symbol 'bs_log_density_gradient': " + std::string(dlerror()));
+           }
+        #endif
+           
+           // Load bs_param_constrain
+           bs_param_constrain_func bs_param_constrain;
+        #ifdef _WIN32
+           bs_param_constrain = (bs_param_constrain_func)GetProcAddress((HMODULE)bs_handle, "bs_param_constrain");
+           if (!bs_param_constrain) {
+             DWORD error = GetLastError();
+             char error_msg[256];
+             FormatMessageA(
+               FORMAT_MESSAGE_FROM_SYSTEM,
+               NULL,
+               error,
+               0,
+               error_msg,
+               sizeof(error_msg),
+               NULL
+             );
+             FreeLibrary((HMODULE)bs_handle);
+             throw std::runtime_error("Error loading symbol 'bs_param_constrain': " + std::string(error_msg));
+           }
+        #else
+           bs_param_constrain = (bs_param_constrain_func)dlsym(bs_handle, "bs_param_constrain");
+           if (!bs_param_constrain) {
+             dlclose(bs_handle);
+             throw std::runtime_error("Error loading symbol 'bs_param_constrain': " + std::string(dlerror()));
+           }
+        #endif
+           
+           // Load bs_rng_construct
+           bs_rng_construct_func bs_rng_construct;
+        #ifdef _WIN32
+           bs_rng_construct = (bs_rng_construct_func)GetProcAddress((HMODULE)bs_handle, "bs_rng_construct");
+           if (!bs_rng_construct) {
+             DWORD error = GetLastError();
+             char error_msg[256];
+             FormatMessageA(
+               FORMAT_MESSAGE_FROM_SYSTEM,
+               NULL,
+               error,
+               0,
+               error_msg,
+               sizeof(error_msg),
+               NULL
+             );
+             FreeLibrary((HMODULE)bs_handle);
+             throw std::runtime_error("Error loading symbol 'bs_rng_construct': " + std::string(error_msg));
+           }
+        #else
+           bs_rng_construct = (bs_rng_construct_func)dlsym(bs_handle, "bs_rng_construct");
+           if (!bs_rng_construct) {
+             dlclose(bs_handle);
+             throw std::runtime_error("Error loading symbol 'bs_rng_construct': " + std::string(dlerror()));
+           }
+        #endif
+           
+           // Create model handle struct
+           ModelHandle_struct model_handle = {
+             bs_handle,
+             bs_model_construct,
+             bs_log_density_gradient,
+             bs_param_constrain,
+             bs_rng_construct
+           };
+           
+           // Convert JSON data to BridgeStan model
+           bs_model* bs_model_ptr = fn_convert_JSON_data_to_BridgeStan(model_handle, json_file, seed);
+           
+           // Return the complete struct
+           return {
+             bs_handle,
+             bs_model_ptr,
+             bs_model_construct,
+             bs_log_density_gradient,
+             bs_param_constrain,
+             bs_rng_construct
+           };
    
  }
- 
- 
- 
- 
- 
- 
 
  
  
