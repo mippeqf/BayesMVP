@@ -230,7 +230,7 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
       
       // Clear all tbb concurrent vectors
       void reset_tbb() { 
-            ///  y_copies.clear();
+            y_copies.clear();
             Model_args_as_cpp_struct_copies.clear();
             EHMC_args_as_cpp_struct_copies.clear();
             EHMC_Metric_as_cpp_struct_copies.clear();
