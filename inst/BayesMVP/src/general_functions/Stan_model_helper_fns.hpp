@@ -76,7 +76,7 @@ using namespace Eigen;
 
 // fn to handle JSON via file input and compute the log-prob and gradient
 bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
-                                             const std::string &json_file, 
+                                             const std::string  &json_file, 
                                              unsigned int seed) {
  
      // Load the Stan model from the .so file using BridgeStan
@@ -104,7 +104,7 @@ bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
  
  
  // fn to dynamically load the user-provided .so file and resolve symbols
- Stan_model_struct fn_load_Stan_model_and_data(const std::string &model_so_file, 
+ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data(const std::string &model_so_file, 
                                                const std::string &json_file,
                                                unsigned int seed) {
    
@@ -178,7 +178,7 @@ bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
  
  
  
- Eigen::Matrix<double, -1, 1> fn_Stan_compute_log_prob_grad(   const Stan_model_struct &Stan_model_as_cpp_struct,  
+Eigen::Matrix<double, -1, 1> fn_Stan_compute_log_prob_grad(    const Stan_model_struct &Stan_model_as_cpp_struct,  
                                                                const Eigen::Matrix<double, -1, 1> &params,
                                                                const int n_params_main, 
                                                                const int n_nuisance,
@@ -235,7 +235,7 @@ bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
  
  
 // fn to clean up Stan model object once sampling is finished 
-void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
+ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
    
              if (Stan_model_as_cpp_struct.bs_model_ptr) {
                bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);

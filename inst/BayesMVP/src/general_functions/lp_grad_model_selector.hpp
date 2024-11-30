@@ -71,7 +71,6 @@ void  fn_lp_grad_InPlace(                Eigen::Ref<Eigen::Matrix<double, -1, 1>
                                          const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                          const std::string &grad_option,
                                          const Model_fn_args_struct  &Model_args_as_cpp_struct,
-                                        // MVP_ThreadLocalWorkspace &MVP_workspace,
                                          const Stan_model_struct &Stan_model_as_cpp_struct) {
 
   const int N = Model_args_as_cpp_struct.N;

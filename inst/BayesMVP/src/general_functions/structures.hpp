@@ -157,8 +157,8 @@ struct Stan_model_struct {
  
  
  
- // struct for other function arguments to make function signitures more general  easier to manage
- // the struct name becomes a return type. So can use as a return argument to functions.
+// struct for other function arguments to make function signitures more general  easier to manage
+// the struct name becomes a return type. So can use as a return argument to functions.
 struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
    
                int N;
