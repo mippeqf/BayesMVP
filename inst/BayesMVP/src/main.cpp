@@ -531,15 +531,14 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
   
   Stan_model_struct Stan_model_as_cpp_struct;
   
-  
-  const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
-  const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
-  const int vec_size = 8;
-  ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks); 
-  int chunk_size = chunk_size_info.chunk_size;
-  const int n_tests = y.cols();
-  
-  //  MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
+  if (Model_type == "Stan") { 
+    
+      unsigned int seed = 123;
+      const std::string model_so_file = Model_args_as_cpp_struct.model_so_file;
+      const std::string json_file_path = Model_args_as_cpp_struct.json_file_path;
+      Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(model_so_file, json_file_path, seed);
+    
+  }
   
   // stan::math::start_nested();
   fn_lp_grad_InPlace(   lp_grad_outs,
@@ -1411,90 +1410,99 @@ inline void clean_vector(Eigen::Matrix<double, -1, 1> &vec) {
 
 
 
-//
-//
-//
-// // [[Rcpp::export]]
-// Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int chain_id,
-//                                                                        const int seed,
-//                                                                        const int n_iter,
-//                                                                        const bool partitioned_HMC,
-//                                                                        const std::string Model_type,
-//                                                                        const bool sample_nuisance,
-//                                                                        const bool force_autodiff,
-//                                                                        const bool force_PartialLog,
-//                                                                        const bool multi_attempts,
-//                                                                        const int n_nuisance_to_track,
-//                                                                        const Eigen::Matrix<double, -1, 1>  theta_main_vector_from_single_chain_input_from_R,
-//                                                                        const Eigen::Matrix<double, -1, 1>  theta_us_vector_from_single_chain_input_from_R,
-//                                                                        const Eigen::Matrix<int, -1, -1> y_Eigen_i,
-//                                                                        const Rcpp::List  &Model_args_as_Rcpp_List,  ///// ALWAYS read-only
-//                                                                        const Rcpp::List  &EHMC_args_as_Rcpp_List,
-//                                                                        const Rcpp::List  &EHMC_Metric_as_Rcpp_List)  {
-//
-//   int N = y_Eigen_i.rows();
-//   int n_params_main = theta_main_vector_from_single_chain_input_from_R.size();
-//   int n_us = theta_us_vector_from_single_chain_input_from_R.size();
-//   int n_params = n_params_main + n_us;
-//
-//   const bool burnin_indicator = false;
-//
-//   HMCResult result_input(n_params_main, n_us, N);
-//
-//   //// convert lists to C++ structs
-//   const Model_fn_args_struct     Model_args_as_cpp_struct =   convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List); ///// ALWAYS read-only
-//   EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
-//   const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
-//
-//   //auto rng = RNGManager::get_thread_local_rng(seed);
-//   static thread_local std::mt19937 rng(static_cast<unsigned int>(seed));
-//
-//   thread_local Stan_model_struct Stan_model_as_cpp_struct;
-//
-//   if (Model_args_as_cpp_struct.model_so_file != "none" && Stan_model_as_cpp_struct.bs_model_ptr == nullptr) {
-//
-//       Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file,
-//                                                              Model_args_as_cpp_struct.json_file_path,
-//                                                              123);
-//
-//   }
-//
-//   HMC_output_single_chain HMC_output_single_chain_i =  fn_sample_HMC_multi_iter_single_thread(result_input,
-//                                                                                               burnin_indicator,
-//                                                                                               rng,
-//                                                                                               n_iter,
-//                                                                                               partitioned_HMC,
-//                                                                                               Model_type,
-//                                                                                               sample_nuisance,
-//                                                                                               force_autodiff,
-//                                                                                               force_PartialLog,
-//                                                                                               multi_attempts,
-//                                                                                               n_nuisance_to_track,
-//                                                                                               y_Eigen_i,
-//                                                                                               Model_args_as_cpp_struct,
-//                                                                                               EHMC_args_as_cpp_struct,
-//                                                                                               EHMC_Metric_as_cpp_struct,
-//                                                                                               Stan_model_as_cpp_struct);
-//
-//   // destroy Stan model object
-//   if (Model_args_as_cpp_struct.model_so_file != "none" && Stan_model_as_cpp_struct.bs_model_ptr != nullptr) {
-//     fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
-//   }
-//
-//
-//    Rcpp::List out_list(5);
-//
-//    out_list(0) = HMC_output_single_chain_i.Eigen_thread_local_trace_buffer;
-//    out_list(1) = HMC_output_single_chain_i.Eigen_thread_local_trace_buffer_div;
-//    out_list(2) = HMC_output_single_chain_i.Eigen_thread_local_trace_buffer_nuisance;
-//
-//
-//    return  out_list;
-//
-//
-// }
-//
-//
+
+
+
+
+
+
+// [[Rcpp::export]]
+Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int chain_id,
+                                                                       const int seed,
+                                                                       const int n_iter,
+                                                                       const bool partitioned_HMC,
+                                                                       const std::string Model_type,
+                                                                       const bool sample_nuisance,
+                                                                       const bool force_autodiff,
+                                                                       const bool force_PartialLog,
+                                                                       const bool multi_attempts,
+                                                                       const int n_nuisance_to_track,
+                                                                       const Eigen::Matrix<double, -1, 1>  theta_main_vector_from_single_chain_input_from_R,
+                                                                       const Eigen::Matrix<double, -1, 1>  theta_us_vector_from_single_chain_input_from_R,
+                                                                       const Eigen::Matrix<int, -1, -1> y_Eigen_i,
+                                                                       const Rcpp::List  &Model_args_as_Rcpp_List,  ///// ALWAYS read-only
+                                                                       const Rcpp::List  &EHMC_args_as_Rcpp_List,
+                                                                       const Rcpp::List  &EHMC_Metric_as_Rcpp_List)  {
+
+  int N = y_Eigen_i.rows();
+  int n_params_main = theta_main_vector_from_single_chain_input_from_R.size();
+  int n_us = theta_us_vector_from_single_chain_input_from_R.size();
+  int n_params = n_params_main + n_us;
+
+  const bool burnin_indicator = false;
+
+  HMCResult result_input(n_params_main, n_us, N);
+
+  //// convert lists to C++ structs
+  const Model_fn_args_struct     Model_args_as_cpp_struct =   convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List); ///// ALWAYS read-only
+  EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
+  const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
+
+  //auto rng = RNGManager::get_thread_local_rng(seed);
+  static thread_local std::mt19937 rng(static_cast<unsigned int>(seed));
+
+  thread_local Stan_model_struct Stan_model_as_cpp_struct;
+
+  if (Model_args_as_cpp_struct.model_so_file != "none" && Stan_model_as_cpp_struct.bs_model_ptr == nullptr) {
+
+      Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file,
+                                                             Model_args_as_cpp_struct.json_file_path,
+                                                             123);
+
+  }
+
+  HMC_output_single_chain HMC_output_single_chain_i(n_iter, n_nuisance_to_track, n_params_main, n_us, N);
+    
+  fn_sample_HMC_multi_iter_single_thread( HMC_output_single_chain_i,
+                                          result_input,
+                                          burnin_indicator,
+                                          chain_id,
+                                          seed,
+                                          rng,
+                                          n_iter,
+                                          partitioned_HMC,
+                                          Model_type,
+                                          sample_nuisance,
+                                          force_autodiff,
+                                          force_PartialLog,
+                                          multi_attempts,
+                                          n_nuisance_to_track,
+                                          y_Eigen_i,
+                                          Model_args_as_cpp_struct,
+                                          EHMC_args_as_cpp_struct,
+                                          EHMC_Metric_as_cpp_struct,
+                                          Stan_model_as_cpp_struct);
+
+  // destroy Stan model object
+  if (Model_args_as_cpp_struct.model_so_file != "none" && Stan_model_as_cpp_struct.bs_model_ptr != nullptr) {
+    fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
+  }
+  
+   Rcpp::List out_list(5);
+
+   out_list(0) = HMC_output_single_chain_i.traces.main;
+   out_list(1) = HMC_output_single_chain_i.traces.div;
+   out_list(2) = HMC_output_single_chain_i.traces.nuisance;
+
+
+   return  out_list;
+
+
+}
+
+
+
+
 
 
 
