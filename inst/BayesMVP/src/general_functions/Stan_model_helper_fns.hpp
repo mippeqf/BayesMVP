@@ -1,8 +1,9 @@
 
 #pragma once
 
- 
- 
+#define EIGEN_NO_DEBUG
+#define EIGEN_DONT_PARALLELIZE
+#define EIGEN_DONT_ALIGN_STATICALLY
  
 
 #include <sstream>
@@ -41,26 +42,35 @@
  
  
  
-// #ifdef _WIN32
-// #include <dlfcn.h>
-// #include <windows.h>
-// #define dlopen(x,y) LoadLibrary(x)
-// #define dlclose(x)  FreeLibrary((HMODULE)x)
-// #define dlsym(x,y)  GetProcAddress((HMODULE)x,y)
-// #define dlerror() "Windows error"
-// #else
-// #include <dlfcn.h> // For dynamic loading 
-// #endif
- 
 #ifdef _WIN32
 #include <windows.h>
 #define dlopen(x,y) LoadLibraryA(x)  // Use LoadLibraryA for ANSI strings
 #define dlclose(x) FreeLibrary((HMODULE)x)
 #define dlsym(x,y) GetProcAddress((HMODULE)x,y)
-#define dlerror() GetLastError()  // Get actual Windows error code
+/// #define dlerror() GetLastError()  // Get actual Windows error code
 #else
 #include <dlfcn.h>
 #endif
+
+
+#ifdef _WIN32
+ inline std::string windows_error_str() {
+   DWORD error = GetLastError();
+   char error_msg[256];
+   FormatMessageA(
+     FORMAT_MESSAGE_FROM_SYSTEM,
+     NULL,
+     error,
+     0,
+     error_msg,
+     sizeof(error_msg),
+     NULL
+   );
+   return std::string(error_msg);
+ }
+#define dlerror() windows_error_str().c_str()
+#endif
+
 
 
  
@@ -68,8 +78,7 @@ using namespace Eigen;
 
  
 
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
+
 
  
 
@@ -377,28 +386,60 @@ Eigen::Matrix<double, -1, 1> fn_Stan_compute_log_prob_grad(    const Stan_model_
  
  
   
- 
- 
-// fn to clean up Stan model object once sampling is finished 
+#ifdef _WIN32
+  
+  
+  
+  //// fn to clean up Stan model object once sampling is finished 
+  ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
+          
+          if (Stan_model_as_cpp_struct.bs_model_ptr) {
+            bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
+            Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
+          }
+          
+          if (Stan_model_as_cpp_struct.bs_handle) {
+            
+            if (FreeLibrary((HMODULE)Stan_model_as_cpp_struct.bs_handle) == 0) {
+              throw std::runtime_error("Error closing DLL file: " + windows_error_str());
+            }
+            
+            Stan_model_as_cpp_struct.bs_handle = nullptr;
+            
+          }
+          
+          
+  }
+  
+  
+  
+  
+  
+#else
+  
+  
 ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
-   
-             if (Stan_model_as_cpp_struct.bs_model_ptr) {
-               bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
-               Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
-             }
-             
-             if (Stan_model_as_cpp_struct.bs_handle) {
-               if (dlclose(Stan_model_as_cpp_struct.bs_handle) != 0) {
-                 throw std::runtime_error("Error closing .so file: " + std::string(dlerror()));
-               } 
-               Stan_model_as_cpp_struct.bs_handle = nullptr;
-             } 
-   
+  
+  if (Stan_model_as_cpp_struct.bs_model_ptr) {
+    bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
+    Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
+  }
+  
+  if (Stan_model_as_cpp_struct.bs_handle) {
+    if (dlclose(Stan_model_as_cpp_struct.bs_handle) != 0) {
+      throw std::runtime_error("Error closing .so file: " + std::string(dlerror()));
+    } 
+    Stan_model_as_cpp_struct.bs_handle = nullptr;
+  } 
+  
 } 
+  
+  
+#endif
+ 
  
  
 
- 
 
  
   
