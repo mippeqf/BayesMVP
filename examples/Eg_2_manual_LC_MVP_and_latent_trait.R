@@ -47,6 +47,7 @@ unlink("C:/Users/enzoc/AppData/Local/R/win-library/4.4/00LOCK-BayesMVP", recursi
 devtools::clean_dll(pkg_dir)  
 Rcpp::compileAttributes(pkg_dir)  
 devtools::document(pkg_dir)  
+
 ## Install
 devtools::clean_dll(pkg_dir)
 Rcpp::compileAttributes(pkg_dir)
@@ -254,7 +255,7 @@ N <- 500
 ## -----------  initialise model / inits etc
 # based on (informal) testing, more than 8 burnin chains seems unnecessary 
 # and probably not worth the extra overhead (even on a 96-core AMD EPYC Genoa CPU)
-  n_chains_burnin <- 2
+  n_chains_burnin <- 8
   init_lists_per_chain <- rep(list(init), n_chains_burnin) 
   
    
@@ -308,8 +309,8 @@ N <- 500
   ## ----------- Set soe basic sampler settings
   {
     ### seed <- 123
-    n_chains_sampling <- 1
-    n_superchains <- 1 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
+    n_chains_sampling <- 8
+    n_superchains <- 8 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
     n_iter <- 1000                                 
     n_burnin <- 500
     adapt_delta <- 0.80
@@ -341,8 +342,7 @@ N <- 500
   RcppParallel::setThreadOptions(numThreads = n_chains_sampling);
   
   
-  model_samples <-            safe_test_wrapper_1(  n_covariates_per_outcome_mat = n_covariates_per_outcome_mat,
-                                                    setup_env = setup_env,
+  model_samples <-            BayesMVP:::safe_test_wrapper_1(  n_covariates_per_outcome_mat = n_covariates_per_outcome_mat,
                                                     update_model = BayesMVP:::update_model,
                                                     model_obj = model_obj,
                                                     n_iter = n_iter,
@@ -360,12 +360,12 @@ N <- 500
                                                     learning_rate = learning_rate,
                                                     n_nuisance_to_track = n_nuisance_to_track,
                                                     
-                                                  expr = {    setup_env() 
+                                                  expr = {    
                                                     
                                        model_samples <-   ( model_obj$sample(   seed = 1,
                                                                                 interval_width_main = 500,
                                                       n_iter = n_iter,
-                                                      clip_iter = 500,
+                                                      clip_iter = 25,
                                                       y = y,
                                                       N = N,
                                                       tau_mult = 2.0,

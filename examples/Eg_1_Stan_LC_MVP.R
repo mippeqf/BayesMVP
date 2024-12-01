@@ -1,5 +1,9 @@
 
- 
+
+
+
+rstudioapi::restartSession()
+
          
 {
   
@@ -27,6 +31,26 @@ if (.Platform$OS.type == "windows") {
   pkg_dir <- "~/Documents/Work/PhD_work/R_packages/BayesMVP"
   
 }
+
+
+
+## Install
+devtools::clean_dll(pkg_dir)
+Rcpp::compileAttributes(pkg_dir)
+devtools::install(pkg_dir)
+require(BayesMVP)
+BayesMVP::install_BayesMVP()
+require(BayesMVP) # this works (after installation using "--no-test-load" flag)
+
+
+
+
+remotes::install_github("https://github.com/CerulloE1996/BayesMVP", force = TRUE)
+require(BayesMVP)
+BayesMVP::install_BayesMVP()
+require(BayesMVP) # this works (after installation using "--no-test-load" flag)
+
+
 
 
 
@@ -185,8 +209,8 @@ N <- 500
       
       
       # model files  
-      Stan_model_file_path <- (file.path("C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5.stan"))
- 
+    #  Stan_model_file_path <- normalizePath(file.path("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5.stan"))
+      Stan_model_file_path <- normalizePath((file.path("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP/inst/stan_models/LC_MVP_bin_PartialLog_v5.stan")))
       
      #  ### modify cmdstanr path if necessary to include custom C++ header files
      #  cmdstanr::cmdstan_path()
@@ -199,7 +223,7 @@ N <- 500
      # # cmdstanr::rebuild_cmdstan()
      #  
      #  
-      mod <- cmdstan_model(Stan_model_file_path) # ,  include_paths = c("/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/stan/math/rev/", 
+    #c  mod <- cmdstan_model(Stan_model_file_path) # ,  include_paths = c("/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/stan/math/rev/", 
                                                        # "/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/"))
  
       # #  source("load_R_packages.R")
@@ -253,13 +277,6 @@ N <- 500
     
 
 
-
-
-
-
-    
-  
-
     
     # make lists of lists for inits 
     n_chains_burnin <- 8 
@@ -287,28 +304,36 @@ N <- 500
     ## ----------- Set basic sampler settings
     {
       ### seed <- 123
-      n_chains_sampling <- 1
-      n_superchains <- 1 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
+      n_chains_sampling <- 8
+      n_superchains <- 8 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
       n_iter <- 1000                                 
       n_burnin <- 500
       adapt_delta <- 0.80
       learning_rate <- 0.05
-      diffusion_HMC <- TRUE
+      diffusion_HMC <- FALSE
       n_nuisance_to_track <- 10 # set to some small number (< 10) if don't care about making inference on nuisance params (which is most of the time!)
     }
     
     
-    model_obj$init_object$model_so_file  <- "C:/Users/enzoc/AppData/Local/R/win-library/4.4/BayesMVP/stan_models/LC_MVP_bin_PartialLog_v5_model.dll"
-    model_obj$init_object$json_file_path <- "C:/Users/enzoc/AppData/Local/R/win-library/4.4/BayesMVP/stan_data/data_fc90d038d7fcb836248ee9d7420d1933.json"
+    if (.Platform$OS.type == "windows") {
+        model_obj$init_object$model_so_file  <- "C:/Users/enzoc/AppData/Local/R/win-library/4.4/BayesMVP/stan_models/LC_MVP_bin_PartialLog_v5_model.dll"
+        model_obj$init_object$json_file_path <- "C:/Users/enzoc/AppData/Local/R/win-library/4.4/BayesMVP/stan_data/data_fc90d038d7fcb836248ee9d7420d1933.json"
+    } else { 
+      
+    }
+    
+    model_obj$init_object$model_so_file
+    model_obj$init_object$Model_args_as_Rcpp_List$model_so_file
     
     model_obj$init_object$Model_args_as_Rcpp_List$model_so_file <-  model_obj$init_object$model_so_file 
     model_obj$init_object$Model_args_as_Rcpp_List$json_file_path <-  model_obj$init_object$json_file_path 
     
     ## sample / run model
+    ## parallel::mcparallel
     model_samples <-   ( model_obj$sample(   seed = 1,
                                              interval_width_main = 500,
                                              n_iter = n_iter,
-                                             clip_iter = 500,
+                                             clip_iter = 25,
                                              y = y,
                                              N = N,
                                              tau_mult = 2.0,
@@ -319,7 +344,7 @@ N <- 500
                                              n_params_main = n_params_main,
                                              n_nuisance = n_nuisance,
                                              #  model_args_list = model_args_list,
-                                             partitioned_HMC = TRUE,
+                                             partitioned_HMC = FALSE,
                                              vect_type = "Stan",
                                              #  vect_type = "AVX512",
                                              #  vect_type = "AVX2",
@@ -340,6 +365,8 @@ N <- 500
                                              metric_shape_main = "dense",
                                              metric_type_main = "Hessian",
                                              n_nuisance_to_track = n_nuisance_to_track)  ) 
+    
+    model_samples <- parallel::mccollect(model_samples)
     
     
  
@@ -396,18 +423,23 @@ N <- 500
     ##  dyn.load("C:\\Users\\enzoc\\Documents\\BayesMVP\\inst\\dummy_stan_model_win_model.dll")
     
     #   tic()
-    # for (i in 1:1000)
+    # # for (i in 1:1000)
+    # 
+    # init_model_and_vals_object$model_so_file
+    # 
+    # Model_args_as_Rcpp_List$model_so_file <-   "C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5_model.so"
+    # Model_args_as_Rcpp_List$json_file_path <- init_model_and_vals_object$json_file_path# "C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5_model.dll"
+    #   
     
-    init_model_and_vals_object$model_so_file
+    Model_args_as_Rcpp_List$model_so_file
+    Model_args_as_Rcpp_List$json_file_path
     
-    Model_args_as_Rcpp_List$model_so_file <-   "C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5_model.so"
-    Model_args_as_Rcpp_List$json_file_path <- init_model_and_vals_object$json_file_path# "C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5_model.dll"
-      
     BayesMVP::detect_vectorization_support()
     
     
     require(BayesMVP)
-    lp_grad_outs <-   safe_test_wrapper_1 ( theta_vec = theta_vec,
+    
+    lp_grad_outs <-   BayesMVP:::safe_test_wrapper_1 ( theta_vec = theta_vec,
                                             index_main = index_main,
                                             index_us = index_us,
                                             y = y,
@@ -416,57 +448,7 @@ N <- 500
                                             expr = {
                                               
                                               require(BayesMVP)
-                                              # 
-                                              # Sys.setenv(BRIDGESTAN="C:/Users/enzoc/.bridgestan/bridgestan-2.5.0")
-                                              # 
-                                              # dummy_data_N <-  100
-                                              # dummy_data_vec <- rnorm(dummy_data_N)
-                                              # dummy_data <- list(N = dummy_data_N, y = dummy_data_vec )
-                                              # # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::tload_and_run_log_prob_grad_all_StanoJSON)
-                                              # r_data_list <- dummy_data
-                                              # r_data_JSON <- tempfile(fileext = ".json")
-                                              # cmdstanr::write_stan_json(r_data_list, r_data_JSON)
-                                              # 
-                                              # Sys.setenv(STAN_THREADS="true")
-                                              # model <- bridgestan::StanModel$new("C:/users/enzoc/Downloads/dummy_stan_model_win.stan",
-                                              #                                    data = r_data_JSON, 
-                                              #                                    seed = 1234
-                                              # )
-                                              # print(paste0("This model's name is ", model$name(), "."))
-                                              # print(paste0("This model has ", model$param_num(), " parameters."))
-                                              # 
-                                              # res <- model$log_density_gradient(1, jacobian = TRUE)
-                                              
-                                              
-                                              # cat("  PATH: ", Sys.getenv("PATH"), "\n")
-                                              # cat("  libPaths: ", paste(.libPaths(), collapse = "; "), "\n")
-                                              # cat("  Working Directory: ", getwd(), "\n")
-                                              
-                                              # cat("Preloading critical DLLs for BayesMVP package\n")
-                                              # 
-                                              # # List of DLLs to preload
-                                              # dll_paths <- c(
-                                              #   # "C:/Users/enzoc/Documents/BayesMVP/inst/tbb12.dll",
-                                              #   "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/tbb_stan/tbb.dll",
-                                              #   "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/libs/x64/dummy_stan_model_win_model.so",
-                                              #   "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/libs/x64/dummy_stan_model_win_model.dll",
-                                              #   "C:/Users/enzoc/Documents/BayesMVP/inst/BayesMVP/inst/BayesMVP.dll"
-                                              # )
-                                              # 
-                                              # # Attempt to load each DLL
-                                              # for (dll in dll_paths) {
-                                              #   
-                                              #   tryCatch(
-                                              #     {
-                                              #       dyn.load(dll)
-                                              #       cat("  Loaded:", dll, "\n")
-                                              #     },
-                                              #     error = function(e) {
-                                              #       cat("  Failed to load:", dll, "\n  Error:", e$message, "\n")
-                                              #     }
-                                              #   )
-                                              #   
-                                              # }
+
                                               
                                               
                                               BayesMVP::Rcpp_wrapper_fn_lp_grad( Model_type = "Stan",
