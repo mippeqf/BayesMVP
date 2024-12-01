@@ -171,76 +171,87 @@ void update_M_dense_main_Hessian_InPlace( Eigen::Ref<Eigen::Matrix<double, -1, -
                                           const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
                                           const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                           const Model_fn_args_struct  &Model_args_as_cpp_struct,
-                                        //  MVP_ThreadLocalWorkspace &MVP_workspace,
                                           const double   &ii, 
                                           const double   &n_burnin, 
                                           const std::string &metric_type) {
   
-  Stan_model_struct Stan_model_as_cpp_struct;
   
-#if HAS_BRIDGESTAN_H
-  if (Model_args_as_cpp_struct.model_so_file != "none") {
-    
-    Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file, 
-                                                           Model_args_as_cpp_struct.json_file_path, 
-                                                           123);
-    
-  }
-#endif
-  
- 
-                  
-                  //// compute proposed Hessian
-                  Eigen::Matrix<double, -1, -1>    Hessian  = num_diff_Hessian_main_given_nuisance(   num_diff_e,
-                                                                                                      shrinkage_factor,
-                                                                                                      Model_type,
-                                                                                                      force_autodiff,
-                                                                                                      force_PartialLog,
-                                                                                                      multi_attemps,
-                                                                                                      theta_main_vec_ref,
-                                                                                                      theta_us_vec_ref, 
-                                                                                                      y_ref,
-                                                                                                      Model_args_as_cpp_struct, 
-                                                                                                    //  MVP_workspace,
-                                                                                                      Stan_model_as_cpp_struct);
-  
-  
-#if HAS_BRIDGESTAN_H
-                    // destroy Stan model object
-                    if (Model_args_as_cpp_struct.model_so_file != "none") {
-                      fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
-                    }
-#endif
+                      const int n_params_main = theta_main_vec_ref.rows();
+                      Eigen::Matrix<double, -1, -1>    Hessian(n_params_main, n_params_main);
+                      
+                      
+                      if (Model_type == "Stan") {
+                      
+                                    Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct.model_so_file, 
+                                                                                                               Model_args_as_cpp_struct.json_file_path, 
+                                                                                                               123);
+                   
+                                    
+                                    //// compute proposed Hessian
+                                    Hessian  = num_diff_Hessian_main_given_nuisance(    num_diff_e,
+                                                                                        shrinkage_factor,
+                                                                                        Model_type,
+                                                                                        force_autodiff,
+                                                                                        force_PartialLog,
+                                                                                        multi_attemps,
+                                                                                        theta_main_vec_ref,
+                                                                                        theta_us_vec_ref, 
+                                                                                        y_ref,
+                                                                                        Model_args_as_cpp_struct, 
+                                                                                        Stan_model_as_cpp_struct);
                     
-  
+                    
+                  
+                                    //// destroy Stan model object
+                                    fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
+                                      
+                      } else { 
                         
-                  // force-symmetric positive-definiteness check
-                  if (!is_positive_definite(Hessian)) {
-                    Hessian = near_PD(Hessian); // Make the Hessian positive-definite
-                  }
-                  
-                  // update M_dense_main
-                  M_dense_main = (1.0 - ratio) * M_dense_main + ratio * Hessian;  
-                  
-                 
-                  if (!is_positive_definite(M_dense_main)) {
-                    M_dense_main = near_PD(M_dense_main);
-                  }
-                  
-                  // update M_inv_dense_main
-                  M_inv_dense_main = M_dense_main.inverse();
-                  
-                  // update M_inv_dense_main_chol
-                  Eigen::LLT<Eigen::MatrixXd> llt(M_inv_dense_main);
-                  if (llt.info() == Eigen::Success) {
-                    
-                    M_inv_dense_main_chol = llt.matrixL();
-                    
-                  } else {
-                    
-                     throw std::runtime_error("Cholesky decomposition failed");
-                    
-                  }
+                                    Stan_model_struct Stan_model_as_cpp_struct; /// dummy struct 
+                        
+                                    //// compute proposed Hessian
+                                    Hessian  = num_diff_Hessian_main_given_nuisance(    num_diff_e,
+                                                                                        shrinkage_factor,
+                                                                                        Model_type,
+                                                                                        force_autodiff,
+                                                                                        force_PartialLog,
+                                                                                        multi_attemps,
+                                                                                        theta_main_vec_ref,
+                                                                                        theta_us_vec_ref, 
+                                                                                        y_ref,
+                                                                                        Model_args_as_cpp_struct, 
+                                                                                        Stan_model_as_cpp_struct);
+                        
+                      }
+  
+                            
+                      // force-symmetric positive-definiteness check
+                      if (!is_positive_definite(Hessian)) {
+                        Hessian = near_PD(Hessian); // Make the Hessian positive-definite
+                      }
+                      
+                      // update M_dense_main
+                      M_dense_main = (1.0 - ratio) * M_dense_main + ratio * Hessian;  
+                      
+                     
+                      if (!is_positive_definite(M_dense_main)) {
+                        M_dense_main = near_PD(M_dense_main);
+                      }
+                      
+                      // update M_inv_dense_main
+                      M_inv_dense_main = M_dense_main.inverse();
+                      
+                      // update M_inv_dense_main_chol
+                      Eigen::LLT<Eigen::MatrixXd> llt(M_inv_dense_main);
+                      if (llt.info() == Eigen::Success) {
+                        
+                        M_inv_dense_main_chol = llt.matrixL();
+                        
+                      } else {
+                        
+                         throw std::runtime_error("Cholesky decomposition failed");
+                        
+                      }
  
   
 }

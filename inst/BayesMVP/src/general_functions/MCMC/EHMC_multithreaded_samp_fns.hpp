@@ -378,10 +378,9 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
             if (Model_type == "Stan") {  
                 
                             // //// For Stan models:  Initialize bs_model* pointer and void* handle
-                            //if (Model_args_as_cpp_struct.model_so_file != "none") {       // Initialize only if not already initialized
-                            Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data( Model_args_as_cpp_struct.model_so_file,
-                                                                                                       Model_args_as_cpp_struct.json_file_path, 
-                                                                                                       seed + i);
+                            Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct.model_so_file,
+                                                                                                                     Model_args_as_cpp_struct.json_file_path, 
+                                                                                                                     seed + i);
                           //  }
                       
                          //////////////////////////////// perform iterations for chain i
@@ -399,15 +398,14 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
                                                                    EHMC_Metric_as_cpp_struct, 
                                                                    Stan_model_as_cpp_struct);
                           ////////////////////////////// end of iteration(s)
-                          
-                          fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);   // destroy Stan model object
+                          //// destroy Stan model object
+                          fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);  
                           
                         
       
             } else  { 
               
                           Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
-              
               
                           //////////////////////////////// perform iterations for chain i
                           fn_sample_HMC_multi_iter_single_thread(  HMC_outputs[i],   
@@ -698,36 +696,50 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
              }
     
             {
-    
-               //////////////////////////////// perform iterations for chain i
-               Stan_model_struct Stan_model_as_cpp_struct; // possibly dummy 
-               
-    #if HAS_BRIDGESTAN_H
-               if (Model_args_as_cpp_struct_copies[i].model_so_file != "none") {
+        
+                   //////////////////////////////// perform iterations for chain i
+                   Stan_model_struct Stan_model_as_cpp_struct; // possibly dummy 
                    
-                   Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct_copies[i].model_so_file,
-                                                                          Model_args_as_cpp_struct_copies[i].json_file_path, 
-                                                                          seed + i);
+                   if (Model_type == "Stan") {  
+                       
+                            Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
+                                                                                                                    Model_args_as_cpp_struct_copies[i].json_file_path, 
+                                                                                                                    seed + i);
+                             
+                            /// Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
+                            
+                           fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
+                                                                      result_input, 
+                                                                      burnin_indicator, i, seed + i, rng, n_iter,
+                                                                      partitioned_HMC,
+                                                                      Model_type, sample_nuisance,
+                                                                      force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
+                                                                      y_copies[i], 
+                                                                      Model_args_as_cpp_struct_copies[i], 
+                                                                      EHMC_args_as_cpp_struct_copies[i], EHMC_Metric_as_cpp_struct_copies[i], 
+                                                                      Stan_model_as_cpp_struct);
+                           //// destroy Stan model object
+                           fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
                  
-               }
-    #endif
-               
-              /// Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
-              
-             fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
-                                                        result_input, 
-                                                        burnin_indicator, i, seed + i, rng, n_iter,
-                                                        partitioned_HMC,
-                                                        Model_type, sample_nuisance,
-                                                        force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
-                                                        y_copies[i], 
-                                                        Model_args_as_cpp_struct_copies[i], 
-                                                        EHMC_args_as_cpp_struct_copies[i], EHMC_Metric_as_cpp_struct_copies[i], 
-                                                        Stan_model_as_cpp_struct);
-                 // destroy Stan model object
-    #if HAS_BRIDGESTAN_H
-                 fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
-    #endif
+                   } else { 
+                     
+                     
+                           Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
+                           
+                           fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
+                                                                      result_input, 
+                                                                      burnin_indicator, i, seed + i, rng, n_iter,
+                                                                      partitioned_HMC,
+                                                                      Model_type, sample_nuisance,
+                                                                      force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
+                                                                      y_copies[i], 
+                                                                      Model_args_as_cpp_struct_copies[i], 
+                                                                      EHMC_args_as_cpp_struct_copies[i], EHMC_Metric_as_cpp_struct_copies[i], 
+                                                                      Stan_model_as_cpp_struct);
+                     
+                     
+                   }
+ 
                  
              /////////////////////////////////////////// end of iteration(s)
                    if (sample_nuisance == true)  {
