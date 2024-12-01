@@ -188,39 +188,39 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   EHMC_args_as_Rcpp_List$eps_us <- 0.01 # just in case fn_find_initial_eps fails
   
   
-  try({
-    
-        if (sample_nuisance == TRUE) {
-          theta_us_vec <-  matrix(theta_vec_mean[index_nuisance])
-        } else {
-          theta_us_vec <- matrix(rep(1, n_nuisance))
-        }
-        
-        
-        par_res <- (fn_find_initial_eps_main_and_us(         theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
-                                                             theta_us_vec_initial_ref = theta_us_vec,
-                                                             seed = seed,
-                                                             Model_type = Model_type,
-                                                             force_autodiff = force_autodiff,
-                                                             force_PartialLog = force_PartialLog,
-                                                             multi_attempts = multi_attempts,
-                                                             y_ref = y,
-                                                             Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
-                                                             EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
-                                                             EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
-        
-        #par_res <- parallel::mccollect(par_proc)
-        par_res <- par_res  ## [[1]]
-        
-        print(paste("step_sizes = ", par_res))
-        ## main
-        EHMC_args_as_Rcpp_List$eps_main <- par_res[[1]]
-        ## nuisance
-        EHMC_args_as_Rcpp_List$eps_us <-   par_res[[2]]
-        
-    
-  })
-  
+  # try({
+  #   
+  #       if (sample_nuisance == TRUE) {
+  #         theta_us_vec <-  matrix(theta_vec_mean[index_nuisance])
+  #       } else {
+  #         theta_us_vec <- matrix(rep(1, n_nuisance))
+  #       }
+  #       
+  #       
+  #       par_res <- (fn_find_initial_eps_main_and_us(         theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
+  #                                                            theta_us_vec_initial_ref = theta_us_vec,
+  #                                                            seed = seed,
+  #                                                            Model_type = Model_type,
+  #                                                            force_autodiff = force_autodiff,
+  #                                                            force_PartialLog = force_PartialLog,
+  #                                                            multi_attempts = multi_attempts,
+  #                                                            y_ref = y,
+  #                                                            Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+  #                                                            EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
+  #                                                            EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
+  #       
+  #       #par_res <- parallel::mccollect(par_proc)
+  #       par_res <- par_res  ## [[1]]
+  #       
+  #       print(paste("step_sizes = ", par_res))
+  #       ## main
+  #       EHMC_args_as_Rcpp_List$eps_main <- par_res[[1]]
+  #       ## nuisance
+  #       EHMC_args_as_Rcpp_List$eps_us <-   par_res[[2]]
+  #       
+  #   
+  # })
+  # 
   
   EHMC_args_as_Rcpp_List$eps_main <- 0.01
   EHMC_args_as_Rcpp_List$eps_us <- 0.01
@@ -290,7 +290,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                   comment(print(ii))
             }
         
-            # if (ii %% 50 == 0) {
+            # if (ii %% 100 == 0) {
             #   gc(reset = TRUE)
             # }
         
@@ -356,7 +356,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
               }
         
         
-              # #           ### current mean theta across all K chains
+             ###### current mean theta across all K chains
              if (sample_nuisance == TRUE) { 
                   theta_vec_current_mean <- rowMeans(rbind(theta_us_vectors_all_chains_input_from_R, theta_main_vectors_all_chains_input_from_R))
                   theta_vec_current_us <-   theta_vec_current_mean[index_nuisance]
@@ -375,71 +375,68 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                shrinkage_factor <- 0.25
                main_vec_for_Hessian <- EHMC_burnin_as_Rcpp_List$snaper_m_vec_main
              }
-             # }
-             
- 
+            
 
       if (ii < n_adapt) {
 
-
-                    ### /////////  ------------------------------------ update snaper_m and snaper_s_empirical for MAIN
-          try({
-          outs_update_snaper_m_and_s <- BayesMVP::fn_update_snaper_m_and_s(EHMC_burnin_as_Rcpp_List$snaper_m_vec_main, 
-                                                                           EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical, 
-                                                                           theta_vec_current_main,  
-                                                                           ii)
-          EHMC_burnin_as_Rcpp_List$snaper_m_vec_main <- outs_update_snaper_m_and_s[,1]
-          EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical <- outs_update_snaper_m_and_s[,2]
-          })
-          #### update snaper_w
-          try({
-          outs_update_eigen_max_and_eigen_vec <-  BayesMVP::fn_update_snaper_w_dense_M(  snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_main,
-                                                                                         eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_main,
-                                                                                         eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_main,
-                                                                                         theta_vec = theta_vec_current_main,
-                                                                                         snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_main,
-                                                                                         ii = ii,
-                                                                                         M_dense_sqrt = EHMC_burnin_as_Rcpp_List$M_dense_sqrt);;
-          EHMC_burnin_as_Rcpp_List$snaper_w_vec_main <- outs_update_eigen_max_and_eigen_vec
-          })
-          ##### update eigen_max and eigen_vec
-          try({
-            outs_update_eigen_max_and_eigen_vec <-  BayesMVP::fn_update_eigen_max_and_eigen_vec(eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_main,
-                                                                                      eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_main,
-                                                                                      snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_main);
-            EHMC_burnin_as_Rcpp_List$eigen_max_main <- max(0.0001, outs_update_eigen_max_and_eigen_vec[1])
-            EHMC_burnin_as_Rcpp_List$eigen_vector_main <- tail(outs_update_eigen_max_and_eigen_vec, length(  EHMC_burnin_as_Rcpp_List$eigen_vector_main))
-          })
-          ### /////////  ------------------------------------ update snaper_m and snaper_s_empirical for NUISANCE
-        if (sample_nuisance == TRUE) { 
-              try({
-              outs_update_snaper_m_and_s <-   BayesMVP::fn_update_snaper_m_and_s(EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,  
-                                                                                 EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical, 
-                                                                                 theta_vec_current_us, 
+                ###### /////////  ------------------------------------ update snaper_m and snaper_s_empirical for MAIN
+                try({
+                outs_update_snaper_m_and_s <- BayesMVP::fn_update_snaper_m_and_s(EHMC_burnin_as_Rcpp_List$snaper_m_vec_main, 
+                                                                                 EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical, 
+                                                                                 theta_vec_current_main,  
                                                                                  ii)
-              EHMC_burnin_as_Rcpp_List$snaper_m_vec_us <- outs_update_snaper_m_and_s[,1]
-              EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical <- outs_update_snaper_m_and_s[,2]
-              })
-              # update snaper_w
-              try({
-                outs_update_eigen_max_and_eigen_vec <-   BayesMVP::fn_update_snaper_w_diag_M(  snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_us,
-                                                                                     eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_us,
-                                                                                     eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_us,
-                                                                                     theta_vec = theta_vec_current_us,
-                                                                                     snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
-                                                                                     ii = ii,
-                                                                                     sqrt_M_vec =  EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec);
-                EHMC_burnin_as_Rcpp_List$snaper_w_vec_us <- outs_update_eigen_max_and_eigen_vec
-              })
-              # update eigen_max and eigen_vec
-              try({
-              outs_update_eigen_max_and_eigen_vec <-   BayesMVP::fn_update_eigen_max_and_eigen_vec(eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_us,
-                                                                                                    eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_us,
-                                                                                                    snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_us);
-              EHMC_burnin_as_Rcpp_List$eigen_max_us <-  max(0.0001, outs_update_eigen_max_and_eigen_vec[1] )
-              EHMC_burnin_as_Rcpp_List$eigen_vector_us <- tail(outs_update_eigen_max_and_eigen_vec, length( EHMC_burnin_as_Rcpp_List$eigen_vector_us ))
-              })
-        }
+                EHMC_burnin_as_Rcpp_List$snaper_m_vec_main <- outs_update_snaper_m_and_s[,1]
+                EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical <- outs_update_snaper_m_and_s[,2]
+                })
+                #### update snaper_w
+                try({
+                outs_update_eigen_max_and_eigen_vec <-  BayesMVP::fn_update_snaper_w_dense_M(  snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_main,
+                                                                                               eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_main,
+                                                                                               eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_main,
+                                                                                               theta_vec = theta_vec_current_main,
+                                                                                               snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_main,
+                                                                                               ii = ii,
+                                                                                               M_dense_sqrt = EHMC_burnin_as_Rcpp_List$M_dense_sqrt);;
+                EHMC_burnin_as_Rcpp_List$snaper_w_vec_main <- outs_update_eigen_max_and_eigen_vec
+                })
+                ##### update eigen_max and eigen_vec
+                try({
+                  outs_update_eigen_max_and_eigen_vec <-  BayesMVP::fn_update_eigen_max_and_eigen_vec(eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_main,
+                                                                                            eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_main,
+                                                                                            snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_main);
+                  EHMC_burnin_as_Rcpp_List$eigen_max_main <- max(0.0001, outs_update_eigen_max_and_eigen_vec[1])
+                  EHMC_burnin_as_Rcpp_List$eigen_vector_main <- tail(outs_update_eigen_max_and_eigen_vec, length(  EHMC_burnin_as_Rcpp_List$eigen_vector_main))
+                })
+                ###### /////////  ------------------------------------ update snaper_m and snaper_s_empirical for NUISANCE
+              if (sample_nuisance == TRUE) { 
+                    try({
+                    outs_update_snaper_m_and_s <-   BayesMVP::fn_update_snaper_m_and_s(EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,  
+                                                                                       EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical, 
+                                                                                       theta_vec_current_us, 
+                                                                                       ii)
+                    EHMC_burnin_as_Rcpp_List$snaper_m_vec_us <- outs_update_snaper_m_and_s[,1]
+                    EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical <- outs_update_snaper_m_and_s[,2]
+                    })
+                    # update snaper_w
+                    try({
+                      outs_update_eigen_max_and_eigen_vec <-   BayesMVP::fn_update_snaper_w_diag_M(  snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_us,
+                                                                                           eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_us,
+                                                                                           eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_us,
+                                                                                           theta_vec = theta_vec_current_us,
+                                                                                           snaper_m_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
+                                                                                           ii = ii,
+                                                                                           sqrt_M_vec =  EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec);
+                      EHMC_burnin_as_Rcpp_List$snaper_w_vec_us <- outs_update_eigen_max_and_eigen_vec
+                    })
+                    # update eigen_max and eigen_vec
+                    try({
+                    outs_update_eigen_max_and_eigen_vec <-   BayesMVP::fn_update_eigen_max_and_eigen_vec(eigen_max = EHMC_burnin_as_Rcpp_List$eigen_max_us,
+                                                                                                          eigen_vector = EHMC_burnin_as_Rcpp_List$eigen_vector_us,
+                                                                                                          snaper_w_vec = EHMC_burnin_as_Rcpp_List$snaper_w_vec_us);
+                    EHMC_burnin_as_Rcpp_List$eigen_max_us <-  max(0.0001, outs_update_eigen_max_and_eigen_vec[1] )
+                    EHMC_burnin_as_Rcpp_List$eigen_vector_us <- tail(outs_update_eigen_max_and_eigen_vec, length( EHMC_burnin_as_Rcpp_List$eigen_vector_us ))
+                    })
+              }
 
       }
 
@@ -492,8 +489,6 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
                       #       # ## //////////// update M_dense (for main param) using Hessian (num_diff)
                       try({
-
-
                         
                           print(paste("updating Hessian"))
                         

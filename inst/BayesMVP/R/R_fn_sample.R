@@ -166,6 +166,8 @@ sample_model  <-    function(     Model_type,
                                                                                      multi_attempts = multi_attempts,
                                                                                      Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)
                 
+              ##  gc(reset = TRUE)
+                
                 
                ## print(paste("hello 2"))
         
@@ -207,7 +209,7 @@ sample_model  <-    function(     Model_type,
 
                 {
 
-                  gc(reset = TRUE)
+                 ## gc(reset = TRUE)
 
 
                   tictoc::tic("post-burnin timer")
