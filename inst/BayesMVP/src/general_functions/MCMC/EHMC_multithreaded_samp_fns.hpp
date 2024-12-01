@@ -1,9 +1,9 @@
 #pragma once
 
-#define EIGEN_DONT_ALIGN_STATICALLY
+
 #define EIGEN_NO_DEBUG
 #define EIGEN_DONT_PARALLELIZE
-
+#define EIGEN_DONT_ALIGN_STATICALLY
 
 using namespace Rcpp;
 using namespace Eigen; 
@@ -37,8 +37,8 @@ using two_layer_std_vec_of_EigenMats_int = std::vector<std::vector<Eigen::Matrix
 
 using three_layer_std_vec_of_EigenVecs_dbl =  std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>>;
 using three_layer_std_vec_of_EigenVecs_int =  std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>>;
-using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>; 
-using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
+using three_layer_std_vec_of_EigenMats_dbl =  std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>; 
+using three_layer_std_vec_of_EigenMats_int =  std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
  
 
  
