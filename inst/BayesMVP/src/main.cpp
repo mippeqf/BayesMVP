@@ -731,80 +731,43 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
                                                                       const std::string metric_type
 ) {
   
-   const int N = y.rows();
-   const int n_us = theta_us_vec.rows()  ;
-   const int n_params_main =  theta_main_vec.rows()  ;
-   const int n_params = n_params_main + n_us;
-  
-   const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-   
-   Eigen::Matrix<double, -1, -1> M_dense_main_copy = M_dense_main;
-   Eigen::Matrix<double, -1, -1> M_inv_dense_main_copy = M_inv_dense_main;
-   Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol_copy = M_inv_dense_main_chol;
-
-  
-  #if HAS_BRIDGESTAN_H
-  
-        Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file,
-                                                                  Model_args_as_cpp_struct.json_file_path,
-                                                                  123);
+         const int N = y.rows();
+         const int n_us = theta_us_vec.rows()  ;
+         const int n_params_main =  theta_main_vec.rows()  ;
+         const int n_params = n_params_main + n_us;
         
-         update_M_dense_main_Hessian_InPlace(    M_dense_main_copy,
-                                                 M_inv_dense_main_copy,
-                                                 M_inv_dense_main_chol_copy,
-                                                 shrinkage_factor,
-                                                 ratio_Hess_main,
-                                                 interval_width,
-                                                 num_diff_e,
-                                                 Model_type,
-                                                 force_autodiff,
-                                                 force_PartialLog,
-                                                 multi_attempts,
-                                                 theta_main_vec,
-                                                 theta_us_vec,
-                                                 y,
-                                                 Model_args_as_cpp_struct,
-                                                 ii,
-                                                 n_burnin,
-                                                 metric_type);
+         const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
          
-         }
-      
-           //// destroy Stan model object
-           fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
-
-  #else
-
+         Eigen::Matrix<double, -1, -1> M_dense_main_copy = M_dense_main;
+         Eigen::Matrix<double, -1, -1> M_inv_dense_main_copy = M_inv_dense_main;
+         Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol_copy = M_inv_dense_main_chol;
+         
+          
+         update_M_dense_main_Hessian_InPlace(     M_dense_main_copy,
+                                                  M_inv_dense_main_copy,
+                                                  M_inv_dense_main_chol_copy,
+                                                  shrinkage_factor,
+                                                  ratio_Hess_main,
+                                                  interval_width,
+                                                  num_diff_e,
+                                                  Model_type,
+                                                  force_autodiff,
+                                                  force_PartialLog,
+                                                  multi_attempts,
+                                                  theta_main_vec,
+                                                  theta_us_vec,
+                                                  y,
+                                                  Model_args_as_cpp_struct,
+                                                  ii,
+                                                  n_burnin,
+                                                  metric_type);
+       
         
-        Stan_model_struct Stan_model_as_cpp_struct; /// dummy struct 
-        
-        update_M_dense_main_Hessian_InPlace(    M_dense_main_copy,
-                                                M_inv_dense_main_copy,
-                                                M_inv_dense_main_chol_copy,
-                                                shrinkage_factor,
-                                                ratio_Hess_main,
-                                                interval_width,
-                                                num_diff_e,
-                                                Model_type,
-                                                force_autodiff,
-                                                force_PartialLog,
-                                                multi_attempts,
-                                                theta_main_vec,
-                                                theta_us_vec,
-                                                y,
-                                                Model_args_as_cpp_struct,
-                                                ii,
-                                                n_burnin,
-                                                metric_type);
-
-  #endif
-
-  
-   return Rcpp::List::create(
-     Rcpp::Named("M_dense_main_copy") = M_dense_main_copy,
-     Rcpp::Named("M_inv_dense_main_copy") = M_inv_dense_main_copy,
-     Rcpp::Named("M_inv_dense_main_chol_copy") = M_inv_dense_main_chol_copy
-   );
+         return Rcpp::List::create(
+           Rcpp::Named("M_dense_main_copy") = M_dense_main_copy,
+           Rcpp::Named("M_inv_dense_main_copy") = M_inv_dense_main_copy,
+           Rcpp::Named("M_inv_dense_main_chol_copy") = M_inv_dense_main_chol_copy
+         );
 
 
 
