@@ -67,8 +67,24 @@ using namespace Eigen;
   
 
  
- 
- 
+
+using std_vec_of_EigenVecs_dbl = std::vector<Eigen::Matrix<double, -1, 1>>;
+using std_vec_of_EigenVecs_int = std::vector<Eigen::Matrix<int, -1, 1>>;
+using std_vec_of_EigenMats_dbl = std::vector<Eigen::Matrix<double, -1, -1>>;
+using std_vec_of_EigenMats_int = std::vector<Eigen::Matrix<int, -1, -1>>;
+
+using two_layer_std_vec_of_EigenVecs_dbl = std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>;
+using two_layer_std_vec_of_EigenVecs_int = std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>;
+using two_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>;
+using two_layer_std_vec_of_EigenMats_int = std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>;
+
+
+using three_layer_std_vec_of_EigenVecs_dbl =  std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>>;
+using three_layer_std_vec_of_EigenVecs_int =  std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>>;
+using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>;
+using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
+
+
  
  
 // struct for other function arguments to make function signitures more general  easier to manage
