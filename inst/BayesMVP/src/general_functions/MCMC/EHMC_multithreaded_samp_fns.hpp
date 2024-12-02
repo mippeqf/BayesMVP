@@ -680,7 +680,7 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
                 thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
             #else  // Linux version 
                 stan::math::ChainableStack ad_tape;
-                //thread_local stan::math::nested_rev_autodiff nested;
+                stan::math::nested_rev_autodiff nested;
                 thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i)); // Declare and initialize in one line
             #endif
       
