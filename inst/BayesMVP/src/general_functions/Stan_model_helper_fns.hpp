@@ -1,8 +1,6 @@
 
 #pragma once
 
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
  
 
 #include <sstream>
@@ -44,7 +42,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #define RTLD_LAZY 0  // Windows doesn't need this flag but define for compatibility
-#define dlopen(x,y) LoadLibraryA(x)
+#define dlopen(x,y) LoadLibrary(x) //#define dlopen(x,y) LoadLibraryA(x)
 #define dlclose(x) FreeLibrary((HMODULE)x)
 #define dlsym(x,y) GetProcAddress((HMODULE)x,y)
 #else
@@ -52,20 +50,24 @@
 #endif
 
 #ifdef _WIN32
- inline const char* windows_error_str() {
-   static char error_msg[256];  // Static buffer to ensure lifetime
+inline std::string windows_error_str() {
+   
+   char error_msg[256];
    DWORD error = GetLastError();
-   FormatMessageA(
-     FORMAT_MESSAGE_FROM_SYSTEM,
-     NULL,
-     error,
-     0,
-     error_msg,
-     sizeof(error_msg),
-     NULL
-   );
-   return error_msg;
+   DWORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+   
+   FormatMessageA(   flags,
+                     NULL,
+                     error,
+                     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                     error_msg,
+                     sizeof(error_msg),
+                     NULL);
+   
+   return std::string(error_msg);
+   
  }
+ 
 #define dlerror() windows_error_str()
 #endif
 
@@ -81,13 +83,103 @@ using namespace Eigen;
  
 
  
+#if HAS_BRIDGESTAN_H
+ 
+ // Struct to hold the model handle and function pointers
+ // struct ModelHandle_struct {
+ //   
+ //   void* bs_handle = nullptr;
+ //   bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;   
+ //   int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
+ //   int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
+ //   bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;  
+ //   void (*bs_model_destruct)(bs_model*) = nullptr;
+ //   
+ // };
+ 
+ // Struct to hold the model handle and function pointers
+ struct ModelHandle_struct {
+   
+       void* bs_handle = nullptr;
+       bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;   
+       int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
+       int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
+       bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;  
+       void (*bs_model_destruct)(bs_model*) = nullptr;
+       
+       ModelHandle_struct() = default;
+       ~ModelHandle_struct() {
+         bs_handle = nullptr;
+         bs_model_construct = nullptr;
+         bs_log_density_gradient = nullptr;
+         bs_param_constrain = nullptr;
+         bs_rng_construct = nullptr;
+         bs_model_destruct = nullptr;
+       }
+       
+       // Prevent copying
+       ModelHandle_struct(const ModelHandle_struct&) = delete;
+       ModelHandle_struct& operator=(const ModelHandle_struct&) = delete;
+       
+       // Allow moving
+       ModelHandle_struct(ModelHandle_struct&&) = default;
+       ModelHandle_struct& operator=(ModelHandle_struct&&) = default;
+   
+ };
+ 
+  
+#else
+ 
+ /// otherwise make dummy struct
+ struct ModelHandle_struct {
+   
+   void* bs_handle = nullptr; 
+   
+ }; 
+ 
+  
+#endif
+ 
+ 
+ 
+ 
+#if HAS_BRIDGESTAN_H 
+  
+ struct Stan_model_struct {
+   
+   void* bs_handle = nullptr; // has no arguments
+   bs_model* bs_model_ptr = nullptr; // has no arguments
+   bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;
+   int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
+   int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
+   bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;
+   void (*bs_model_destruct)(bs_model*) = nullptr;
+   
+ };
+ 
+#else 
+ 
+ /// otherwise make dummy struct
+ struct Stan_model_struct {
+   
+   void* bs_handle = nullptr;
+   
+ }; 
+ 
+ 
+#endif 
+ 
+ 
+ 
+ 
+ 
  
  
  
 
 
 //// fn to handle JSON via file input and compute the log-prob and gradient
-ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
+bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
                                              const std::string  &json_file, 
                                              unsigned int seed) {
  
@@ -111,171 +203,10 @@ ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &m
 
 
  
-#ifdef _WIN32
- 
-
- 
-//// fn to dynamically load the user-provided .so file and resolve symbols
-ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data(  const std::string &model_so_file, 
-                                                              const std::string &json_file,
-                                                              unsigned int seed) {
-   
-             void* bs_handle;
-             
-             // Load the DLL/SO file
- 
-             bs_handle = LoadLibraryA(model_so_file.c_str());
-             if (!bs_handle) {
-               DWORD error = GetLastError();
-               char error_msg[256];
-               FormatMessageA(
-                 FORMAT_MESSAGE_FROM_SYSTEM,
-                 NULL,
-                 error,
-                 0,
-                 error_msg,
-                 sizeof(error_msg),
-                 NULL
-               );
-               throw std::runtime_error("Error loading DLL: " + std::string(error_msg));
-             }
- 
-             
-             // Function pointer types
-             typedef bs_model* (*bs_model_construct_func)(const char*, unsigned int, char**);
-             typedef int (*bs_log_density_gradient_func)(bs_model*, bool, bool, const double*, double*, double*, char**);
-             typedef int (*bs_param_constrain_func)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**);
-             typedef bs_rng* (*bs_rng_construct_func)(unsigned int, char**);
-             typedef void (*bs_model_destruct_func)(bs_model*);
-             
-             // Load bs_model_construct
-             bs_model_construct_func bs_model_construct = (bs_model_construct_func)GetProcAddress((HMODULE)bs_handle, "bs_model_construct");
-             if (!bs_model_construct) {
-               DWORD error = GetLastError();
-               char error_msg[256];
-               FormatMessageA(
-                 FORMAT_MESSAGE_FROM_SYSTEM,
-                 NULL,
-                 error,
-                 0,
-                 error_msg,
-                 sizeof(error_msg),
-                 NULL
-               );
-               FreeLibrary((HMODULE)bs_handle);
-               throw std::runtime_error("Error loading symbol 'bs_model_construct': " + std::string(error_msg));
-             }
- 
-             
-             // Load bs_log_density_gradient
-             bs_log_density_gradient_func bs_log_density_gradient = (bs_log_density_gradient_func)GetProcAddress((HMODULE)bs_handle, "bs_log_density_gradient");
-             if (!bs_log_density_gradient) {
-               DWORD error = GetLastError();
-               char error_msg[256];
-               FormatMessageA(
-                 FORMAT_MESSAGE_FROM_SYSTEM,
-                 NULL,
-                 error,
-                 0,
-                 error_msg,
-                 sizeof(error_msg),
-                 NULL
-               );
-               FreeLibrary((HMODULE)bs_handle);
-               throw std::runtime_error("Error loading symbol 'bs_log_density_gradient': " + std::string(error_msg));
-             }
- 
-             
-             // Load bs_param_constrain
-             bs_param_constrain_func bs_param_constrain = (bs_param_constrain_func)GetProcAddress((HMODULE)bs_handle, "bs_param_constrain");
-             if (!bs_param_constrain) {
-               DWORD error = GetLastError();
-               char error_msg[256];
-               FormatMessageA(
-                 FORMAT_MESSAGE_FROM_SYSTEM,
-                 NULL,
-                 error,
-                 0,
-                 error_msg,
-                 sizeof(error_msg),
-                 NULL
-               );
-               FreeLibrary((HMODULE)bs_handle);
-               throw std::runtime_error("Error loading symbol 'bs_param_constrain': " + std::string(error_msg));
-             }
- 
-             
-             // Load bs_rng_construct
-             bs_rng_construct_func bs_rng_construct = (bs_rng_construct_func)GetProcAddress((HMODULE)bs_handle, "bs_rng_construct");
-             if (!bs_rng_construct) {
-               DWORD error = GetLastError();
-               char error_msg[256];
-               FormatMessageA(
-                 FORMAT_MESSAGE_FROM_SYSTEM,
-                 NULL,
-                 error, 
-                 0,
-                 error_msg,
-                 sizeof(error_msg),
-                 NULL
-               );
-               FreeLibrary((HMODULE)bs_handle);
-               throw std::runtime_error("Error loading symbol 'bs_rng_construct': " + std::string(error_msg));
-             }
- 
-             //// Load bs_model_destruct 
-             bs_model_destruct_func bs_model_destruct = (bs_model_destruct_func)GetProcAddress((HMODULE)bs_handle, "bs_model_destruct");
-             if (!bs_model_destruct) {
-               DWORD error = GetLastError();
-               char error_msg[256];
-               FormatMessageA(
-                 FORMAT_MESSAGE_FROM_SYSTEM,
-                 NULL,
-                 error,
-                 0,
-                 error_msg,
-                 sizeof(error_msg),
-                 NULL
-               );
-               FreeLibrary((HMODULE)bs_handle);
-               throw std::runtime_error("Error loading symbol 'bs_model_destruct': " + std::string(error_msg));
-             }
-             
-             // Create model handle struct
-             ModelHandle_struct model_handle = {
-               bs_handle,
-               bs_model_construct,
-               bs_log_density_gradient,
-               bs_param_constrain,
-               bs_rng_construct,
-               bs_model_destruct
-             };
-             
-             // Convert JSON data to BridgeStan model
-             bs_model* bs_model_ptr = fn_convert_JSON_data_to_BridgeStan(model_handle, json_file, seed);
-             
-             // Return the complete struct
-             return {
-               bs_handle,
-               bs_model_ptr,
-               bs_model_construct,
-               bs_log_density_gradient,
-               bs_param_constrain,
-               bs_rng_construct,
-               bs_model_destruct
-             };
-             
- }
- 
- 
- 
- 
-
-#else 
 
  
 // fn to dynamically load the user-provided .so file and resolve symbols
-ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data( const std::string &model_so_file, 
+Stan_model_struct fn_load_Stan_model_and_data( const std::string &model_so_file, 
                                                              const std::string &json_file,
                                                              unsigned int seed) {
    
@@ -350,7 +281,6 @@ ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data( const std::string &
  }
  
  
-#endif
  
  
  
@@ -411,58 +341,54 @@ Eigen::Matrix<double, -1, 1> fn_Stan_compute_log_prob_grad(    const Stan_model_
  
  
   
+ 
+
+
+
 #ifdef _WIN32
+ 
+void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
+   
+         if (Stan_model_as_cpp_struct.bs_model_ptr && Stan_model_as_cpp_struct.bs_model_destruct) {
+           Stan_model_as_cpp_struct.bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
+           Stan_model_as_cpp_struct.bs_model_ptr = nullptr; 
+         }
+         
+         if (Stan_model_as_cpp_struct.bs_handle) {
+           
+            // void* handle = Stan_model_as_cpp_struct.bs_handle;  // Keep a copy
+           // Stan_model_as_cpp_struct.bs_handle = nullptr;  // Clear it first
+           if (FreeLibrary((HMODULE)Stan_model_as_cpp_struct.bs_handle) == 0) {  // Windows: 0 means error
+               throw std::runtime_error("Error closing library: " + std::string(dlerror())); 
+             } 
+                Stan_model_as_cpp_struct.bs_handle = nullptr;
+         }
+ 
+   
+}
+
+#else
+
+void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
   
-//// fn to clean up Stan model object once sampling is finished 
-ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
-  
-        if (Stan_model_as_cpp_struct.bs_model_ptr) {
-            Stan_model_as_cpp_struct.bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
-            Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
+        if (Stan_model_as_cpp_struct.bs_model_ptr && Stan_model_as_cpp_struct.bs_model_destruct) {
+          Stan_model_as_cpp_struct.bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
+          Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
         }
         
         if (Stan_model_as_cpp_struct.bs_handle) {
-            
-            if (FreeLibrary((HMODULE)Stan_model_as_cpp_struct.bs_handle) == 0) {
-              //// throw std::runtime_error("Error closing .dll file: " + windows_error_str());
-              throw std::runtime_error(std::string("Error closing .dll file: ") + windows_error_str());
+          
+            void* handle = Stan_model_as_cpp_struct.bs_handle;  // Keep a copy
+            Stan_model_as_cpp_struct.bs_handle = nullptr;  // Clear it first
+            if (dlclose(handle) != 0) {  // Use the copy
+              throw std::runtime_error("Error closing library: " + std::string(dlerror()));
             }
-            Stan_model_as_cpp_struct.bs_handle = nullptr;
-            
+          
         }
-        
+  
 }
-  
-#else
-  
-ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
-    
-      if (Stan_model_as_cpp_struct.bs_model_ptr) {
-        Stan_model_as_cpp_struct.bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
-        Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
-      }
-      
-      if (Stan_model_as_cpp_struct.bs_handle) {
-        
-        if (dlclose(Stan_model_as_cpp_struct.bs_handle) != 0) {
-         ///  throw std::runtime_error("Error closing .so file: " + std::string(dlerror()));
-          throw std::runtime_error(("Error closing .so file: "));
-        } 
-        Stan_model_as_cpp_struct.bs_handle = nullptr;
-        
-      } 
-  
-} 
-  
-  
+ 
 #endif
- 
- 
- 
-
-
- 
-  
   
   
   

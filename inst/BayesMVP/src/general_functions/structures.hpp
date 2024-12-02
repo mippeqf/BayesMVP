@@ -66,127 +66,6 @@
 using namespace Eigen;
   
 
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
- 
- 
- // // First define the basic types we'll use
- // using VectorXd = Eigen::Matrix<double, -1, 1>;
- // using MatrixXd = Eigen::Matrix<double, -1, -1>;
- // using VectorXi = Eigen::Matrix<int, -1, 1>;
- // using MatrixXi = Eigen::Matrix<int, -1, -1>;
- // 
- // // Define aligned vector types
- // using AlignedVecXd = std::vector<VectorXd, Eigen::aligned_allocator<VectorXd>>;
- // using AlignedMatXd = std::vector<MatrixXd, Eigen::aligned_allocator<MatrixXd>>;
- // using AlignedVecXi = std::vector<VectorXi, Eigen::aligned_allocator<VectorXi>>;
- // using AlignedMatXi = std::vector<MatrixXi, Eigen::aligned_allocator<MatrixXi>>;
- // 
- // // Single layer vectors
- // using std_vec_of_EigenVecs_dbl = AlignedVecXd;
- // using std_vec_of_EigenVecs_int = AlignedVecXi;
- // using std_vec_of_EigenMats_dbl = AlignedMatXd;
- // using std_vec_of_EigenMats_int = AlignedMatXi;
- // 
- // // Two layer vectors (vector of vectors)
- // using two_layer_std_vec_of_EigenVecs_dbl = std::vector<AlignedVecXd, Eigen::aligned_allocator<AlignedVecXd>>;
- // using two_layer_std_vec_of_EigenVecs_int = std::vector<AlignedVecXi, Eigen::aligned_allocator<AlignedVecXi>>;
- // using two_layer_std_vec_of_EigenMats_dbl = std::vector<AlignedMatXd, Eigen::aligned_allocator<AlignedMatXd>>;
- // using two_layer_std_vec_of_EigenMats_int = std::vector<AlignedMatXi, Eigen::aligned_allocator<AlignedMatXi>>;
- // 
- // // Three layer vectors
- // using three_layer_std_vec_of_EigenVecs_dbl = std::vector<two_layer_std_vec_of_EigenVecs_dbl, 
- //                                                          Eigen::aligned_allocator<two_layer_std_vec_of_EigenVecs_dbl>>;
- // using three_layer_std_vec_of_EigenVecs_int = std::vector<two_layer_std_vec_of_EigenVecs_int, 
- //                                                          Eigen::aligned_allocator<two_layer_std_vec_of_EigenVecs_int>>;
- // using three_layer_std_vec_of_EigenMats_dbl = std::vector<two_layer_std_vec_of_EigenMats_dbl, 
- //                                                          Eigen::aligned_allocator<two_layer_std_vec_of_EigenMats_dbl>>;
- // using three_layer_std_vec_of_EigenMats_int = std::vector<two_layer_std_vec_of_EigenMats_int, 
- //                                                          Eigen::aligned_allocator<two_layer_std_vec_of_EigenMats_int
- // 
-
-using std_vec_of_EigenVecs_dbl = std::vector<Eigen::Matrix<double, -1, 1>>;
-using std_vec_of_EigenVecs_int = std::vector<Eigen::Matrix<int, -1, 1>>;
-
-using std_vec_of_EigenMats_dbl = std::vector<Eigen::Matrix<double, -1, -1>>;
-using std_vec_of_EigenMats_int = std::vector<Eigen::Matrix<int, -1, -1>>;
-
-using two_layer_std_vec_of_EigenVecs_dbl =  std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>;
-using two_layer_std_vec_of_EigenVecs_int = std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>;
-
-using two_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>;
-using two_layer_std_vec_of_EigenMats_int = std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>;
-
-
-using three_layer_std_vec_of_EigenVecs_dbl =  std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>>;
-using three_layer_std_vec_of_EigenVecs_int =  std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>>;
-
-using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>;
-using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
- 
- 
-
- 
- 
-#if HAS_BRIDGESTAN_H
- 
- // Struct to hold the model handle and function pointers
-struct ModelHandle_struct {
- 
-   void* bs_handle = nullptr;
-   bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;   
-   int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
-   int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
-   bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;  
-   void (*bs_model_destruct)(bs_model*) = nullptr;
- 
-};
-
-#else
- 
-/// otherwise make dummy struct
-struct ModelHandle_struct {
- 
- void* bs_handle = nullptr;
- 
-}; 
- 
- 
-#endif
- 
- 
- 
- 
-#if HAS_BRIDGESTAN_H
- 
-struct Stan_model_struct {
-   
-   void* bs_handle = nullptr; // has no arguments
-   bs_model* bs_model_ptr = nullptr; // has no arguments
-   bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;
-   int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
-   int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
-   bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;
-   void (*bs_model_destruct)(bs_model*) = nullptr;
-    
-};
-
-#else
-
-/// otherwise make dummy struct
-struct Stan_model_struct {
-  
-  void* bs_handle = nullptr;
-  
-}; 
-
- 
-#endif
- 
- 
- 
- 
- 
  
  
  
@@ -194,7 +73,7 @@ struct Stan_model_struct {
  
 // struct for other function arguments to make function signitures more general  easier to manage
 // the struct name becomes a return type. So can use as a return argument to functions.
-struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
+struct   Model_fn_args_struct {
    
                int N;
                int n_nuisance;
@@ -368,7 +247,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
  
  // struct for other function arguments to make function signitures more general  easier to manage
  // the struct name becomes a return type. So can use as a return argument to functions.
- struct alignas(EIGEN_MAX_ALIGN_BYTES)   EHMC_burnin_struct {  // all params in this struct are shared between all chains
+ struct   EHMC_burnin_struct {  // all params in this struct are shared between all chains
    
    // for main params
    double adapt_delta_main; // shared between all chains
@@ -474,7 +353,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
  // the struct name becomes a return type. So can use as a return argument to functions.
  
 //// we dont want to modify any of these so can use const & throughout the struct. 
-struct alignas(EIGEN_MAX_ALIGN_BYTES) EHMC_Metric_struct { // all params in this struct are shared between all chains
+struct  EHMC_Metric_struct { // all params in this struct are shared between all chains
    
    //// for main params
    Eigen::Matrix<double, -1, -1> M_dense_main; // using & here AND in the constructor (bit below) is very efficient but have to be careful when calling constructor 
@@ -515,7 +394,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES) EHMC_Metric_struct { // all params in this
  
  
  
-struct alignas(EIGEN_MAX_ALIGN_BYTES)   HMCResult {
+struct  HMCResult {
    
          Eigen::Matrix<double, -1, 1> lp_and_grad_outs;
          
@@ -573,12 +452,12 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   HMCResult {
  
 
   
-struct alignas(EIGEN_MAX_ALIGN_BYTES) HMC_output_single_chain {
+struct  HMC_output_single_chain {
 
-           alignas(EIGEN_MAX_ALIGN_BYTES) HMCResult result_input;
+             HMCResult result_input;
 
            // Group trace buffers together
-           struct alignas(EIGEN_MAX_ALIGN_BYTES) TraceBuffers {
+           struct   TraceBuffers {
              Eigen::Matrix<double, -1, -1> main;
              Eigen::Matrix<double, -1, -1> div;
              Eigen::Matrix<double, -1, -1> nuisance;
@@ -586,7 +465,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES) HMC_output_single_chain {
            } traces;
 
            // Group diagnostic vectors together
-           struct alignas(EIGEN_MAX_ALIGN_BYTES) Diagnostics {
+           struct  Diagnostics {
              Eigen::Matrix<int, -1, 1> div_us;
              Eigen::Matrix<int, -1, 1> div_main;
              Eigen::Matrix<double, -1, 1> p_jump_us;
