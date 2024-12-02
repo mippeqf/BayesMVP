@@ -6,6 +6,8 @@
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::plugins(cpp17)]]
  
+#define EIGEN_NO_DEBUG
+#define EIGEN_DONT_PARALLELIZE
  
 //// Stan includes
 #include <stan/math/prim.hpp>
@@ -17,12 +19,6 @@
 //// Eigen includes
 #include "eigen_config.hpp"
 
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE 
-
-
-//#include <Eigen/Core>
-//#include <Eigen/Dense>
 #undef OUT
 #include <RcppEigen.h>
 #include <unsupported/Eigen/SpecialFunctions>
@@ -542,7 +538,7 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
     
   } 
   
-  // stan::math::start_nested();
+ 
   fn_lp_grad_InPlace(   lp_grad_outs,
                         Model_type,
                         force_autodiff, force_PartialLog, multi_attempts,
@@ -551,7 +547,9 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
                         grad_option,
                         Model_args_as_cpp_struct,//MVP_workspace,
                         Stan_model_as_cpp_struct);
-  // stan::math::recover_memory_nested();
+  
+  fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
+ 
   
   return lp_grad_outs;
   
