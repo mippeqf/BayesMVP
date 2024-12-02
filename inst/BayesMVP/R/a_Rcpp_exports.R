@@ -466,6 +466,64 @@ fn_R_RcppParallel_EHMC_single_iter_burnin <- function(n_threads_R,
 
 
 
+#' @useDynLib BayesMVP, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @export
+fn_R_OpenMP_EHMC_single_iter_burnin <- function(  n_threads_R,
+                                                  seed_R, 
+                                                  n_iter_R, 
+                                                  n_adapt, 
+                                                  burnin_indicator, 
+                                                  Model_type_R, 
+                                                  sample_nuisance_R, 
+                                                  force_autodiff_R, 
+                                                  force_PartialLog_R, 
+                                                  multi_attempts_R, 
+                                                  n_nuisance_to_track,
+                                                  max_eps_main, 
+                                                  max_eps_us, 
+                                                  partitioned_HMC_R, 
+                                                  metric_type_main, 
+                                                  shrinkage_factor, 
+                                                  metric_type_nuisance, 
+                                                  tau_main_target, 
+                                                  tau_us_target, 
+                                                  clip_iter,
+                                                  gap, 
+                                                  main_L_manual,
+                                                  us_L_manual, 
+                                                  L_main_if_manual,
+                                                  L_us_if_manual, 
+                                                  max_L, 
+                                                  tau_mult, 
+                                                  ratio_M_us, 
+                                                  ratio_Hess_main,
+                                                  M_interval_width, 
+                                                  theta_main_vectors_all_chains_input_from_R, 
+                                                  theta_us_vectors_all_chains_input_from_R, 
+                                                  y_Eigen_R, 
+                                                  Model_args_as_Rcpp_List, 
+                                                  EHMC_args_as_Rcpp_List, 
+                                                  EHMC_Metric_as_Rcpp_List, 
+                                                  EHMC_burnin_as_Rcpp_List) {
+  
+  .Call(`_BayesMVP_fn_R_RcppParallel_EHMC_single_iter_burnin`, n_threads_R, seed_R, 
+        n_iter_R, n_adapt, burnin_indicator, Model_type_R, sample_nuisance_R, 
+        force_autodiff_R, force_PartialLog_R, multi_attempts_R, n_nuisance_to_track, 
+        max_eps_main, max_eps_us, partitioned_HMC_R, metric_type_main, shrinkage_factor, 
+        metric_type_nuisance, tau_main_target, tau_us_target, clip_iter, gap, 
+        main_L_manual, us_L_manual, L_main_if_manual, L_us_if_manual, max_L, 
+        tau_mult, ratio_M_us, ratio_Hess_main, M_interval_width, 
+        theta_main_vectors_all_chains_input_from_R, theta_us_vectors_all_chains_input_from_R, 
+        y_Eigen_R,
+        Model_args_as_Rcpp_List,
+        EHMC_args_as_Rcpp_List,
+        EHMC_Metric_as_Rcpp_List,
+        EHMC_burnin_as_Rcpp_List)
+  
+}
+
+
 
 
 

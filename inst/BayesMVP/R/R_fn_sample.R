@@ -94,7 +94,6 @@ sample_model  <-    function(     Model_type,
                                     Model_args_as_Rcpp_List$Model_args_strings[6,1] <-  vect_type
                                   }, silent = TRUE)
 
-
                  }
                 
                      
@@ -125,13 +124,13 @@ sample_model  <-    function(     Model_type,
  
                 
                 # # parallel::mcparallel
-                
                 RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
                 
                # print(paste("hello 1"))
                 
                 init_burnin_object <-                           init_and_run_burnin( Model_type = Model_type,
                                                                                      sample_nuisance = sample_nuisance,
+                                                                                     parallel_method = parallel_method,
                                                                                      y = y,
                                                                                      N = N,
                                                                                      init_object = init_object,
