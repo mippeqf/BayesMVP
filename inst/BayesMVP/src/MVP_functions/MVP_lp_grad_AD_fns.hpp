@@ -62,7 +62,7 @@ using namespace Eigen;
 
 
 
-  inline stan::math::var  inv_Phi_approx_var( stan::math::var x )  {
+inline stan::math::var  inv_Phi_approx_var( stan::math::var x )  {
   stan::math::var m_logit_p =   stan::math::log( 1.0/x  - 1.0)  ;
   stan::math::var x_i = -0.3418*m_logit_p;
   stan::math::var asinh_stuff_div_3 =  0.33333333333333331483 *  stan::math::log( x_i  +   stan::math::sqrt(  stan::math::fma(x_i, x_i, 1.0) ) )  ;          // now do arc_sinh part
@@ -72,7 +72,7 @@ using namespace Eigen;
 
 
 
-  inline Eigen::Matrix<stan::math::var, -1, 1  >  inv_Phi_approx_var( Eigen::Matrix<stan::math::var, -1, 1  > x )  {
+inline Eigen::Matrix<stan::math::var, -1, 1  >  inv_Phi_approx_var( Eigen::Matrix<stan::math::var, -1, 1  > x )  {
   Eigen::Matrix<stan::math::var, -1, 1  > x_i = -0.3418*stan::math::log( ( 1.0/x.array()  - 1.0).matrix() );
   Eigen::Matrix<stan::math::var, -1, 1  > asinh_stuff_div_3 =  0.33333333333333331483 *  stan::math::log( x_i  +   stan::math::sqrt(  stan::math::fma(x_i, x_i, 1.0) ) )  ;          // now do arc_sinh part
   Eigen::Matrix<stan::math::var, -1, 1  > exp_x_i =   stan::math::exp(asinh_stuff_div_3);
@@ -81,7 +81,7 @@ using namespace Eigen;
 
 
 
-  inline stan::math::var  inv_Phi_approx_from_logit_prob_var( stan::math::var logit_p )  {
+inline stan::math::var  inv_Phi_approx_from_logit_prob_var( stan::math::var logit_p )  {
   stan::math::var x_i = 0.3418*logit_p;
   stan::math::var asinh_stuff_div_3 =  0.33333333333333331483 *  stan::math::log( x_i  +   stan::math::sqrt(  stan::math::fma(x_i, x_i, 1.0) ) )  ;          // now do arc_sinh part
   stan::math::var exp_x_i =   stan::math::exp(asinh_stuff_div_3);
@@ -94,7 +94,7 @@ using namespace Eigen;
 
 
 
-  inline Eigen::Matrix<stan::math::var, -1, 1  >   log_sum_exp_2d_Stan_var(   Eigen::Matrix<stan::math::var, -1, 2  >  x )  {
+inline Eigen::Matrix<stan::math::var, -1, 1  >   log_sum_exp_2d_Stan_var(   Eigen::Matrix<stan::math::var, -1, 2  >  x )  {
   
   int N = x.rows();
   Eigen::Matrix<stan::math::var, -1, 2  > rowwise_maxes_2d_array(N, 2);
@@ -123,11 +123,11 @@ using namespace Eigen;
 
 
 void                             fn_lp_and_grad_MVP_Pinkney_AD_log_scale_InPlace_process(    Eigen::Ref<Eigen::Matrix<double, -1, 1>> out_mat,
-                                                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_main_vec_ref,
-                                                                                             const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
-                                                                                             const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
-                                                                                             const std::string &grad_option,
-                                                                                             const Model_fn_args_struct &Model_args_as_cpp_struct
+                                                                                             const Eigen::Matrix<double, -1, 1> theta_main_vec_ref,
+                                                                                             const Eigen::Matrix<double, -1, 1> theta_us_vec_ref,
+                                                                                             const Eigen::Matrix<int, -1, -1> y_ref,
+                                                                                             const std::string grad_option,
+                                                                                             const Model_fn_args_struct Model_args_as_cpp_struct
 ) {
   
   
@@ -147,7 +147,7 @@ void                             fn_lp_and_grad_MVP_Pinkney_AD_log_scale_InPlace
   const int n_params = n_params_main + n_us;
   
   //////////////  access elements from struct and read 
-  const std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>  &X =  Model_args_as_cpp_struct.Model_args_2_layer_vecs_of_mats_double[0]; 
+  const std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>  X =  Model_args_as_cpp_struct.Model_args_2_layer_vecs_of_mats_double[0]; 
   
   const bool exclude_priors = Model_args_as_cpp_struct.Model_args_bools(0);
   const bool CI =             Model_args_as_cpp_struct.Model_args_bools(1);
@@ -196,7 +196,7 @@ void                             fn_lp_and_grad_MVP_Pinkney_AD_log_scale_InPlace
   // const Eigen::Matrix<double, -1, -1> LT_known_bs_values = Model_args_as_cpp_struct.Model_args_mats_double[3]; 
    //// const Eigen::Matrix<double, -1, -1> &n_covariates_per_outcome_vec = Model_args_as_cpp_struct.Model_args_mats_double[4]; 
   
-  const Eigen::Matrix<int, -1, -1> &n_covariates_per_outcome_vec = Model_args_as_cpp_struct.Model_args_mats_int[0];
+  const Eigen::Matrix<int, -1, -1> n_covariates_per_outcome_vec = Model_args_as_cpp_struct.Model_args_mats_int[0];
   
   const std::vector<Eigen::Matrix<double, -1, -1>>   prior_coeffs_mean  = Model_args_as_cpp_struct.Model_args_vecs_of_mats_double[0]; 
   const std::vector<Eigen::Matrix<double, -1, -1>>   prior_coeffs_sd   =  Model_args_as_cpp_struct.Model_args_vecs_of_mats_double[1]; 
