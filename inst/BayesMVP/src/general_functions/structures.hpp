@@ -69,6 +69,41 @@ using namespace Eigen;
 #define EIGEN_NO_DEBUG
 #define EIGEN_DONT_PARALLELIZE
  
+ 
+ // // First define the basic types we'll use
+ // using VectorXd = Eigen::Matrix<double, -1, 1>;
+ // using MatrixXd = Eigen::Matrix<double, -1, -1>;
+ // using VectorXi = Eigen::Matrix<int, -1, 1>;
+ // using MatrixXi = Eigen::Matrix<int, -1, -1>;
+ // 
+ // // Define aligned vector types
+ // using AlignedVecXd = std::vector<VectorXd, Eigen::aligned_allocator<VectorXd>>;
+ // using AlignedMatXd = std::vector<MatrixXd, Eigen::aligned_allocator<MatrixXd>>;
+ // using AlignedVecXi = std::vector<VectorXi, Eigen::aligned_allocator<VectorXi>>;
+ // using AlignedMatXi = std::vector<MatrixXi, Eigen::aligned_allocator<MatrixXi>>;
+ // 
+ // // Single layer vectors
+ // using std_vec_of_EigenVecs_dbl = AlignedVecXd;
+ // using std_vec_of_EigenVecs_int = AlignedVecXi;
+ // using std_vec_of_EigenMats_dbl = AlignedMatXd;
+ // using std_vec_of_EigenMats_int = AlignedMatXi;
+ // 
+ // // Two layer vectors (vector of vectors)
+ // using two_layer_std_vec_of_EigenVecs_dbl = std::vector<AlignedVecXd, Eigen::aligned_allocator<AlignedVecXd>>;
+ // using two_layer_std_vec_of_EigenVecs_int = std::vector<AlignedVecXi, Eigen::aligned_allocator<AlignedVecXi>>;
+ // using two_layer_std_vec_of_EigenMats_dbl = std::vector<AlignedMatXd, Eigen::aligned_allocator<AlignedMatXd>>;
+ // using two_layer_std_vec_of_EigenMats_int = std::vector<AlignedMatXi, Eigen::aligned_allocator<AlignedMatXi>>;
+ // 
+ // // Three layer vectors
+ // using three_layer_std_vec_of_EigenVecs_dbl = std::vector<two_layer_std_vec_of_EigenVecs_dbl, 
+ //                                                          Eigen::aligned_allocator<two_layer_std_vec_of_EigenVecs_dbl>>;
+ // using three_layer_std_vec_of_EigenVecs_int = std::vector<two_layer_std_vec_of_EigenVecs_int, 
+ //                                                          Eigen::aligned_allocator<two_layer_std_vec_of_EigenVecs_int>>;
+ // using three_layer_std_vec_of_EigenMats_dbl = std::vector<two_layer_std_vec_of_EigenMats_dbl, 
+ //                                                          Eigen::aligned_allocator<two_layer_std_vec_of_EigenMats_dbl>>;
+ // using three_layer_std_vec_of_EigenMats_int = std::vector<two_layer_std_vec_of_EigenMats_int, 
+ //                                                          Eigen::aligned_allocator<two_layer_std_vec_of_EigenMats_int
+ // 
 
 using std_vec_of_EigenVecs_dbl = std::vector<Eigen::Matrix<double, -1, 1>>;
 using std_vec_of_EigenVecs_int = std::vector<Eigen::Matrix<int, -1, 1>>;
@@ -86,9 +121,8 @@ using two_layer_std_vec_of_EigenMats_int = std::vector<std::vector<Eigen::Matrix
 using three_layer_std_vec_of_EigenVecs_dbl =  std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>>;
 using three_layer_std_vec_of_EigenVecs_int =  std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>>;
 
-using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>; 
+using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>;
 using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
-
  
  
 
@@ -96,17 +130,17 @@ using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector
  
 #if HAS_BRIDGESTAN_H
  
- 
-// Struct to hold the model handle and function pointers
+ // Struct to hold the model handle and function pointers
 struct ModelHandle_struct {
-    
+ 
    void* bs_handle = nullptr;
-   bs_model* (*bs_model_construct)(const char*, unsigned int, char**);
-   int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**);
+   bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;   
+   int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
    int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
-   bs_rng* (*bs_rng_construct)(unsigned int, char**);
-   
-}; 
+   bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;  
+   void (*bs_model_destruct)(bs_model*) = nullptr;
+ 
+};
 
 #else
  
@@ -127,12 +161,13 @@ struct ModelHandle_struct {
  
 struct Stan_model_struct {
    
-   void* bs_handle = nullptr;
-   bs_model* bs_model_ptr = nullptr;
+   void* bs_handle = nullptr; // has no arguments
+   bs_model* bs_model_ptr = nullptr; // has no arguments
    bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;
    int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
    int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
-   bs_rng* (*bs_rng_construct)(unsigned int, char**);
+   bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;
+   void (*bs_model_destruct)(bs_model*) = nullptr;
     
 };
 
@@ -367,34 +402,34 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
    
    /////// constructor
    EHMC_burnin_struct(
-     ///// main params
-     const double &adapt_delta_main_,
-     const double &LR_main_,
-     const double &eps_m_adam_main_,
-     const double &eps_v_adam_main_,
-     const double &tau_m_adam_main_,
-     const double &tau_v_adam_main_,
-     const double &eigen_max_main_,  
-     const Eigen::VectorXi  &index_main_,
-     const Eigen::Matrix<double, -1, -1> &M_dense_sqrt_,
-     const Eigen::Matrix<double, -1, 1>  &snaper_m_vec_main_,
-     const Eigen::Matrix<double, -1, 1>  &snaper_s_vec_main_empirical_,
-     const Eigen::Matrix<double, -1, 1>  &snaper_w_vec_main_,
-     const Eigen::Matrix<double, -1, 1>  &eigen_vector_main_,   
-     ///// nuisance
-     const double &adapt_delta_us_,
-     const double &LR_us_,
-     const double &eps_m_adam_us_,
-     const double &eps_v_adam_us_,
-     const double &tau_m_adam_us_,
-     const double &tau_v_adam_us_,
-     const double &eigen_max_us_,  
-     const Eigen::VectorXi  &index_us_,
-     const Eigen::Matrix<double, -1, 1>  &sqrt_M_us_vec_,
-     const Eigen::Matrix<double, -1, 1>  &snaper_m_vec_us_, 
-     const Eigen::Matrix<double, -1, 1>  &snaper_s_vec_us_empirical_, 
-     const Eigen::Matrix<double, -1, 1>  &snaper_w_vec_us_,
-     const Eigen::Matrix<double, -1, 1>  &eigen_vector_us_   
+      ///// main params
+      double adapt_delta_main_,
+      double LR_main_,
+      double eps_m_adam_main_,
+      double eps_v_adam_main_,
+      double tau_m_adam_main_,
+      double tau_v_adam_main_,
+      double eigen_max_main_,  
+      Eigen::VectorXi  index_main_,
+      Eigen::Matrix<double, -1, -1> M_dense_sqrt_,
+      Eigen::Matrix<double, -1, 1>  snaper_m_vec_main_,
+      Eigen::Matrix<double, -1, 1>  snaper_s_vec_main_empirical_,
+      Eigen::Matrix<double, -1, 1>  snaper_w_vec_main_,
+      Eigen::Matrix<double, -1, 1>  eigen_vector_main_,   
+      ///// nuisance
+      double adapt_delta_us_,
+      double LR_us_,
+      double eps_m_adam_us_,
+      double eps_v_adam_us_,
+      double tau_m_adam_us_,
+      double tau_v_adam_us_,
+      double eigen_max_us_,  
+      Eigen::VectorXi  index_us_,
+      Eigen::Matrix<double, -1, 1>  sqrt_M_us_vec_,
+      Eigen::Matrix<double, -1, 1>  snaper_m_vec_us_, 
+      Eigen::Matrix<double, -1, 1>  snaper_s_vec_us_empirical_, 
+      Eigen::Matrix<double, -1, 1>  snaper_w_vec_us_,
+      Eigen::Matrix<double, -1, 1>  eigen_vector_us_   
    ) :  
      ///// main params
      adapt_delta_main(adapt_delta_main_),
@@ -438,15 +473,15 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
  // struct for other function arguments to make function signitures more general  easier to manage
  // the struct name becomes a return type. So can use as a return argument to functions.
  
- /// we dont want to modify any of these so can use const & throughout the struct. 
- struct alignas(EIGEN_MAX_ALIGN_BYTES) EHMC_Metric_struct { // all params in this struct are shared between all chains
+//// we dont want to modify any of these so can use const & throughout the struct. 
+struct alignas(EIGEN_MAX_ALIGN_BYTES) EHMC_Metric_struct { // all params in this struct are shared between all chains
    
-   // for main params
+   //// for main params
    Eigen::Matrix<double, -1, -1> M_dense_main; // using & here AND in the constructor (bit below) is very efficient but have to be careful when calling constructor 
    Eigen::Matrix<double, -1, -1> M_inv_dense_main;
    Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol;
    Eigen::Matrix<double, -1, 1>  M_inv_main_vec;
-   // for nuisance params
+   //// for nuisance params
    Eigen::Matrix<double, -1, 1>  M_inv_us_vec;
    Eigen::Matrix<double, -1, 1>  M_us_vec;
    
@@ -454,13 +489,13 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
    
    /////// constructor w/ eevrything (some can be empty)
    EHMC_Metric_struct(
-     const Eigen::Matrix<double, -1, -1>  &M_dense_main_,
-     const Eigen::Matrix<double, -1, -1>  &M_inv_dense_main_,
-     const Eigen::Matrix<double, -1, -1>  &M_inv_dense_main_chol_,
-     const Eigen::Matrix<double, -1, 1>   &M_inv_main_vec_,
-     const Eigen::Matrix<double, -1, 1>   &M_inv_us_vec_,
-     const Eigen::Matrix<double, -1, 1>   &M_us_vec_,
-     const std::string  &metric_shape_main_
+     Eigen::Matrix<double, -1, -1>  M_dense_main_,
+     Eigen::Matrix<double, -1, -1>  M_inv_dense_main_,
+     Eigen::Matrix<double, -1, -1>  M_inv_dense_main_chol_,
+     Eigen::Matrix<double, -1, 1>   M_inv_main_vec_,
+     Eigen::Matrix<double, -1, 1>   M_inv_us_vec_,
+     Eigen::Matrix<double, -1, 1>   M_us_vec_,
+     std::string  metric_shape_main_
    ) : 
      M_dense_main(M_dense_main_),
      M_inv_dense_main(M_inv_dense_main_),
@@ -471,7 +506,7 @@ struct alignas(EIGEN_MAX_ALIGN_BYTES)   Model_fn_args_struct {
      metric_shape_main(metric_shape_main_)
    {}
    
- }; 
+}; 
  
  
  
@@ -641,254 +676,6 @@ ChunkSizeInfo calculate_chunk_sizes(const int N,
 
 
   
- 
- 
- 
- // 
- // 
- // 
- // // storage struct
- // struct MVP_ThreadLocalWorkspace {
- //   
- //             ////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
- //             //// Matrices used in MVP / LC_MVP calculations
- //             ////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
- //             std::vector<Eigen::Matrix<double, -1, -1>>   Z_std_norm;
- //             std::vector<Eigen::Matrix<double, -1, -1>>   Bound_Z;
- //             std::vector<Eigen::Matrix<double, -1, -1>>   Bound_U_Phi_Bound_Z;
- //             std::vector<Eigen::Matrix<double, -1, -1>>   prob;
- //             std::vector<Eigen::Matrix<double, -1, -1>>   Phi_Z;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, -1>   y1_log_prob;
- //             Eigen::Matrix<double, -1, -1>   phi_Z_recip;
- //             Eigen::Matrix<double, -1, -1>   phi_Bound_Z;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, -1>     u_grad_array_CM_chunk;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, -1>     common_grad_term_1;
- //             Eigen::Matrix<double, -1, -1>     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip;
- //             Eigen::Matrix<double, -1, -1>     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip;
- //             Eigen::Matrix<double, -1, -1>     prob_rowwise_prod_temp;
- //             Eigen::Matrix<double, -1, -1>     prob_recip_rowwise_prod_temp;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, 1>      prod_container_or_inc_array;
- //             Eigen::Matrix<double, -1, 1>      derivs_chain_container_vec;
- //             Eigen::Matrix<double, -1, 1>      prob_rowwise_prod_temp_all;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, -1>     grad_prob;
- //             Eigen::Matrix<double, -1, -1>     z_grad_term;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, -1>     y_chunk;
- //             Eigen::Matrix<double, -1, -1>     u_array;
- //             Eigen::Matrix<double, -1, -1>     y_sign;
- //             Eigen::Matrix<double, -1, -1>     y_m_y_sign_x_u;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, -1>   u_grad_array_CM_chunk_block;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, 1>   u_unc_vec_chunk;
- //             Eigen::Matrix<double, -1, 1>   u_vec_chunk;
- //             Eigen::Matrix<double, -1, 1>   du_wrt_duu_chunk;
- //             Eigen::Matrix<double, -1, 1>   d_J_wrt_duu_chunk;
- //             ///////////////////////////////////////////////
- //             Eigen::Matrix<double, -1, -1>   lp_array;
- //             ///////////////////////////////////////////////
- //   
- //   // Keep track of current dimensions
- //   int current_chunk_size;
- //   
- //   ///// Constructor
- //   MVP_ThreadLocalWorkspace( int chunk_size,
- //                             int n_tests,
- //                             int n_class) : 
- //     current_chunk_size(chunk_size) {
- //     
- //     // Initialize vectors of matrices
- //     Z_std_norm.resize(n_class);
- //     Bound_Z.resize(n_class);
- //     Bound_U_Phi_Bound_Z.resize(n_class);
- //     prob.resize(n_class);
- //     Phi_Z.resize(n_class);
- //     
- //     // Initialize each matrix
- //     for (int c = 0; c < n_class; c++) {
- //       Z_std_norm[c] = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //       Bound_Z[c] = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //       Bound_U_Phi_Bound_Z[c] = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //       prob[c] = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //       Phi_Z[c] = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     }
- //     
- //     ///////////////////////////////////////////////
- //     y1_log_prob = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     phi_Z_recip = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     phi_Bound_Z = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     ///////////////////////////////////////////////
- //     u_grad_array_CM_chunk = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     ///////////////////////////////////////////////
- //     common_grad_term_1 = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     prob_rowwise_prod_temp = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     prob_recip_rowwise_prod_temp = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     ///////////////////////////////////////////////
- //     prod_container_or_inc_array = Eigen::Matrix<double, -1, 1>(chunk_size);
- //     derivs_chain_container_vec =  Eigen::Matrix<double, -1, 1>(chunk_size);
- //     prob_rowwise_prod_temp_all =  Eigen::Matrix<double, -1, 1>(chunk_size);
- //     ///////////////////////////////////////////////
- //     grad_prob = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     z_grad_term = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     ///////////////////////////////////////////////
- //     y_chunk = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     u_array = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     y_sign = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     y_m_y_sign_x_u = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     ///////////////////////////////////////////////
- //     u_grad_array_CM_chunk_block = Eigen::Matrix<double, -1, -1>(chunk_size, n_tests);
- //     ///////////////////////////////////////////////
- //     u_unc_vec_chunk =   Eigen::Matrix<double, -1, 1>(chunk_size * n_tests);
- //     u_vec_chunk =       Eigen::Matrix<double, -1, 1>(chunk_size * n_tests);
- //     du_wrt_duu_chunk =  Eigen::Matrix<double, -1, 1>(chunk_size * n_tests);
- //     d_J_wrt_duu_chunk = Eigen::Matrix<double, -1, 1>(chunk_size * n_tests);
- //     ///////////////////////////////////////////////
- //     lp_array = Eigen::Matrix<double, -1, -1>(chunk_size, n_class);
- //     ///////////////////////////////////////////////
- // 
- //               ///////////////////////////////////////////////
- //               y1_log_prob.setZero();
- //               phi_Z_recip.setZero();
- //               phi_Bound_Z.setZero();
- //               ///////////////////////////////////////////////
- //               u_grad_array_CM_chunk.setZero();
- //               ///////////////////////////////////////////////
- //               common_grad_term_1.setZero();
- //               y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.setZero();
- //               y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.setZero();
- //               prob_rowwise_prod_temp.setZero();
- //               prob_recip_rowwise_prod_temp.setZero();
- //               ///////////////////////////////////////////////
- //               prod_container_or_inc_array.setZero();
- //               derivs_chain_container_vec.setZero();
- //               prob_rowwise_prod_temp_all.setZero();
- //               ///////////////////////////////////////////////
- //               grad_prob.setZero();
- //               z_grad_term.setZero();
- //               ///////////////////////////////////////////////
- //               y_chunk.setZero();
- //               u_array.setZero();
- //               y_sign.setZero();
- //               y_m_y_sign_x_u.setZero();
- //               ///////////////////////////////////////////////
- //               u_grad_array_CM_chunk_block.setZero();
- //               ///////////////////////////////////////////////
- //               u_unc_vec_chunk.setZero();
- //               u_vec_chunk.setZero();
- //               du_wrt_duu_chunk.setZero();
- //               d_J_wrt_duu_chunk.setZero();
- //               ///////////////////////////////////////////////
- //               lp_array.setZero();
- //               ///////////////////////////////////////////////
- //   }
- //   
- //   //// Resize method for when chunk size changes
- //   void resize_for_last_chunk(int last_chunk_size, 
- //                              int n_tests,
- //                              int n_class) {
- //     
- //             ///////////////////////////////////////////////
- //             for (int c = 0; c < n_class; c++) {
- //               Z_std_norm[c].resize(last_chunk_size, n_tests);
- //               Bound_Z[c].resize(last_chunk_size, n_tests);
- //               Bound_U_Phi_Bound_Z[c].resize(last_chunk_size, n_tests);
- //               prob[c].resize(last_chunk_size, n_tests);
- //               Phi_Z[c].resize(last_chunk_size, n_tests);
- //             }
- //             ///////////////////////////////////////////////
- //             y1_log_prob.resize(last_chunk_size, n_tests);
- //             phi_Z_recip.resize(last_chunk_size, n_tests);
- //             phi_Bound_Z.resize(last_chunk_size, n_tests);
- //             ///////////////////////////////////////////////
- //             u_grad_array_CM_chunk.resize(last_chunk_size, n_tests);
- //             ///////////////////////////////////////////////
- //             common_grad_term_1.resize(last_chunk_size, n_tests);
- //             y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.resize(last_chunk_size, n_tests);
- //             y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.resize(last_chunk_size, n_tests);
- //             prob_rowwise_prod_temp.resize(last_chunk_size, n_tests);
- //             prob_recip_rowwise_prod_temp.resize(last_chunk_size, n_tests);
- //             ///////////////////////////////////////////////
- //             prod_container_or_inc_array.resize(last_chunk_size);
- //             derivs_chain_container_vec.resize(last_chunk_size);
- //             prob_rowwise_prod_temp_all.resize(last_chunk_size);
- //             ///////////////////////////////////////////////
- //             grad_prob.resize(last_chunk_size, n_tests);
- //             z_grad_term.resize(last_chunk_size, n_tests);
- //             ///////////////////////////////////////////////
- //             y_chunk.resize(last_chunk_size, n_tests);
- //             u_array.resize(last_chunk_size, n_tests);
- //             y_sign.resize(last_chunk_size, n_tests);
- //             y_m_y_sign_x_u.resize(last_chunk_size, n_tests);
- //             ///////////////////////////////////////////////
- //             u_grad_array_CM_chunk_block.resize(last_chunk_size, n_tests);
- //             ///////////////////////////////////////////////
- //             u_unc_vec_chunk.resize(last_chunk_size * n_tests);
- //             u_vec_chunk.resize(last_chunk_size * n_tests);
- //             du_wrt_duu_chunk.resize(last_chunk_size * n_tests);
- //             d_J_wrt_duu_chunk.resize(last_chunk_size * n_tests);
- //             ///////////////////////////////////////////////
- //             lp_array.resize(last_chunk_size, n_class);
- //             ///////////////////////////////////////////////
- //             
- //             /// Reset values (to zero)
- //             ///////////////////////////////////////////////
- //             y1_log_prob.setZero();
- //             phi_Z_recip.setZero();
- //             phi_Bound_Z.setZero();
- //             ///////////////////////////////////////////////
- //             u_grad_array_CM_chunk.setZero();
- //             ///////////////////////////////////////////////
- //             common_grad_term_1.setZero();
- //             y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.setZero();
- //             y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.setZero();
- //             prob_rowwise_prod_temp.setZero();
- //             prob_recip_rowwise_prod_temp.setZero();
- //             ///////////////////////////////////////////////
- //             prod_container_or_inc_array.setZero();
- //             derivs_chain_container_vec.setZero();
- //             prob_rowwise_prod_temp_all.setZero();
- //             ///////////////////////////////////////////////
- //             grad_prob.setZero();
- //             z_grad_term.setZero();
- //             ///////////////////////////////////////////////
- //             y_chunk.setZero();
- //             u_array.setZero();
- //             y_sign.setZero();
- //             y_m_y_sign_x_u.setZero();
- //             ///////////////////////////////////////////////
- //             u_grad_array_CM_chunk_block.setZero();
- //             ///////////////////////////////////////////////
- //             u_unc_vec_chunk.setZero();
- //             u_vec_chunk.setZero();
- //             du_wrt_duu_chunk.setZero();
- //             d_J_wrt_duu_chunk.setZero();
- //             ///////////////////////////////////////////////
- //             lp_array.setZero();
- //             ///////////////////////////////////////////////
- //     
- //   }
- //   
- // };
- // 
- // 
- // 
- // 
- // 
- // 
- // 
- 
- 
- 
- 
- 
- 
  
  
   

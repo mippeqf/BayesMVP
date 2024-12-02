@@ -3,7 +3,6 @@
 
 #define EIGEN_NO_DEBUG
 #define EIGEN_DONT_PARALLELIZE
-#define EIGEN_DONT_ALIGN_STATICALLY
  
 
 #include <sstream>
@@ -44,19 +43,18 @@
  
 #ifdef _WIN32
 #include <windows.h>
-#define dlopen(x,y) LoadLibraryA(x)  // Use LoadLibraryA for ANSI strings
+#define RTLD_LAZY 0  // Windows doesn't need this flag but define for compatibility
+#define dlopen(x,y) LoadLibraryA(x)
 #define dlclose(x) FreeLibrary((HMODULE)x)
 #define dlsym(x,y) GetProcAddress((HMODULE)x,y)
-/// #define dlerror() GetLastError()  // Get actual Windows error code
 #else
 #include <dlfcn.h>
 #endif
 
-
 #ifdef _WIN32
- inline std::string windows_error_str() {
+ inline const char* windows_error_str() {
+   static char error_msg[256];  // Static buffer to ensure lifetime
    DWORD error = GetLastError();
-   char error_msg[256];
    FormatMessageA(
      FORMAT_MESSAGE_FROM_SYSTEM,
      NULL,
@@ -66,9 +64,9 @@
      sizeof(error_msg),
      NULL
    );
-   return std::string(error_msg);
+   return error_msg;
  }
-#define dlerror() windows_error_str().c_str()
+#define dlerror() windows_error_str()
 #endif
 
 
@@ -83,15 +81,12 @@ using namespace Eigen;
  
 
  
-
-
-
  
  
  
 
 
-// fn to handle JSON via file input and compute the log-prob and gradient
+//// fn to handle JSON via file input and compute the log-prob and gradient
 ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
                                              const std::string  &json_file, 
                                              unsigned int seed) {
@@ -120,8 +115,8 @@ ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &m
  
 
  
- //// fn to dynamically load the user-provided .so file and resolve symbols
- ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data( const std::string &model_so_file, 
+//// fn to dynamically load the user-provided .so file and resolve symbols
+ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data(  const std::string &model_so_file, 
                                                               const std::string &json_file,
                                                               unsigned int seed) {
    
@@ -151,6 +146,7 @@ ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &m
              typedef int (*bs_log_density_gradient_func)(bs_model*, bool, bool, const double*, double*, double*, char**);
              typedef int (*bs_param_constrain_func)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**);
              typedef bs_rng* (*bs_rng_construct_func)(unsigned int, char**);
+             typedef void (*bs_model_destruct_func)(bs_model*);
              
              // Load bs_model_construct
              bs_model_construct_func bs_model_construct = (bs_model_construct_func)GetProcAddress((HMODULE)bs_handle, "bs_model_construct");
@@ -227,6 +223,23 @@ ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &m
                throw std::runtime_error("Error loading symbol 'bs_rng_construct': " + std::string(error_msg));
              }
  
+             //// Load bs_model_destruct 
+             bs_model_destruct_func bs_model_destruct = (bs_model_destruct_func)GetProcAddress((HMODULE)bs_handle, "bs_model_destruct");
+             if (!bs_model_destruct) {
+               DWORD error = GetLastError();
+               char error_msg[256];
+               FormatMessageA(
+                 FORMAT_MESSAGE_FROM_SYSTEM,
+                 NULL,
+                 error,
+                 0,
+                 error_msg,
+                 sizeof(error_msg),
+                 NULL
+               );
+               FreeLibrary((HMODULE)bs_handle);
+               throw std::runtime_error("Error loading symbol 'bs_model_destruct': " + std::string(error_msg));
+             }
              
              // Create model handle struct
              ModelHandle_struct model_handle = {
@@ -234,7 +247,8 @@ ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &m
                bs_model_construct,
                bs_log_density_gradient,
                bs_param_constrain,
-               bs_rng_construct
+               bs_rng_construct,
+               bs_model_destruct
              };
              
              // Convert JSON data to BridgeStan model
@@ -247,7 +261,8 @@ ALWAYS_INLINE bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &m
                bs_model_construct,
                bs_log_density_gradient,
                bs_param_constrain,
-               bs_rng_construct
+               bs_rng_construct,
+               bs_model_destruct
              };
              
  }
@@ -286,13 +301,13 @@ ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data( const std::string &
              throw std::runtime_error("Error loading symbol 'bs_log_density_gradient': " + std::string(dlerror()));
            }  
            
+           // Resolve the bs_param_constrain symbol 
            typedef int (*bs_param_constrain_func)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**);
            bs_param_constrain_func bs_param_constrain = (bs_param_constrain_func)dlsym(bs_handle, "bs_param_constrain");
            if (!bs_param_constrain) { 
              dlclose(bs_handle);
              throw std::runtime_error("Error loading symbol 'bs_param_constrain': " + std::string(dlerror()));
            } 
-           
            
            // Resolve the bs_rng_construct symbol
            typedef bs_rng* (*bs_rng_construct_func)(unsigned int, char**);
@@ -302,12 +317,21 @@ ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data( const std::string &
              throw std::runtime_error("Error loading symbol 'bs_rng_construct': " + std::string(dlerror()));
            }   
            
+           // Resolve the bs_model_destruct symbol
+           void (*bs_model_destruct_func)(bs_model*);
+           bs_model_destruct_func bs_model_destruct = (bs_model_destruct_func)dlsym(bs_handle, "bs_model_destruct"); 
+           if (!bs_model_destruct) {
+             dlclose(bs_handle); 
+             throw std::runtime_error("Error loading symbol 'bs_model_destruct': " + std::string(dlerror()));
+           }    
+           
            
            ModelHandle_struct model_handle = {bs_handle,
                                               bs_model_construct,
                                               bs_log_density_gradient, 
                                               bs_param_constrain, 
-                                              bs_rng_construct};
+                                              bs_rng_construct,
+                                              bs_model_destruct};
            
            bs_model* bs_model_ptr = fn_convert_JSON_data_to_BridgeStan(model_handle, json_file, seed);
    
@@ -319,7 +343,8 @@ ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data( const std::string &
                    bs_model_construct,        
                    bs_log_density_gradient, 
                    bs_param_constrain, 
-                   bs_rng_construct};   
+                   bs_rng_construct,
+                   bs_model_destruct};   
            
    
  }
@@ -388,49 +413,44 @@ Eigen::Matrix<double, -1, 1> fn_Stan_compute_log_prob_grad(    const Stan_model_
   
 #ifdef _WIN32
   
+//// fn to clean up Stan model object once sampling is finished 
+ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
   
-  
-  //// fn to clean up Stan model object once sampling is finished 
-  ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
-          
-          if (Stan_model_as_cpp_struct.bs_model_ptr) {
-            bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
+        if (Stan_model_as_cpp_struct.bs_model_ptr) {
+            Stan_model_as_cpp_struct.bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
             Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
-          }
-          
-          if (Stan_model_as_cpp_struct.bs_handle) {
+        }
+        
+        if (Stan_model_as_cpp_struct.bs_handle) {
             
             if (FreeLibrary((HMODULE)Stan_model_as_cpp_struct.bs_handle) == 0) {
-              throw std::runtime_error("Error closing DLL file: " + windows_error_str());
+              //// throw std::runtime_error("Error closing .dll file: " + windows_error_str());
+              throw std::runtime_error(std::string("Error closing .dll file: ") + windows_error_str());
             }
-            
             Stan_model_as_cpp_struct.bs_handle = nullptr;
             
-          }
-          
-          
-  }
-  
-  
-  
-  
+        }
+        
+}
   
 #else
   
-  
 ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
-  
-  if (Stan_model_as_cpp_struct.bs_model_ptr) {
-    bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
-    Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
-  }
-  
-  if (Stan_model_as_cpp_struct.bs_handle) {
-    if (dlclose(Stan_model_as_cpp_struct.bs_handle) != 0) {
-      throw std::runtime_error("Error closing .so file: " + std::string(dlerror()));
-    } 
-    Stan_model_as_cpp_struct.bs_handle = nullptr;
-  } 
+    
+      if (Stan_model_as_cpp_struct.bs_model_ptr) {
+        Stan_model_as_cpp_struct.bs_model_destruct(Stan_model_as_cpp_struct.bs_model_ptr);
+        Stan_model_as_cpp_struct.bs_model_ptr = nullptr;
+      }
+      
+      if (Stan_model_as_cpp_struct.bs_handle) {
+        
+        if (dlclose(Stan_model_as_cpp_struct.bs_handle) != 0) {
+         ///  throw std::runtime_error("Error closing .so file: " + std::string(dlerror()));
+          throw std::runtime_error(std::string("Error closing .dll file: ") + windows_error_str());
+        } 
+        Stan_model_as_cpp_struct.bs_handle = nullptr;
+        
+      } 
   
 } 
   
