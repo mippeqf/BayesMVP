@@ -71,7 +71,10 @@ ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  
   for (int l = 0; l < L_ii; l++) {
     
           // Update velocity (first half step)
-          velocity_us_vec_proposed_ref.array() += (0.5 * eps * lp_and_grad_outs.segment(1, n_nuisance).array()  * M_inv_us_vec.array());
+          auto grad_segment = lp_and_grad_outs.segment(1, n_nuisance);
+          auto update = (0.5 * eps * grad_segment.array() * M_inv_us_vec.array());
+          velocity_us_vec_proposed_ref.array() += update;
+          //velocity_us_vec_proposed_ref.array() += (0.5 * eps * lp_and_grad_outs.segment(1, n_nuisance).array()  * M_inv_us_vec.array());
           
           //// updae params by full step
           theta_us_vec_proposed_ref.array()  +=  eps *     velocity_us_vec_proposed_ref.array() ;
@@ -83,7 +86,10 @@ ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  
                              Stan_model_as_cpp_struct);
           
           // Update velocity (second half step)
-          velocity_us_vec_proposed_ref.array() += (0.5 * eps *  lp_and_grad_outs.segment(1, n_nuisance).array()  * M_inv_us_vec.array());
+          auto grad_segment_2 = lp_and_grad_outs.segment(1, n_nuisance);
+          auto update_2 = (0.5 * eps * grad_segment_2.array() * M_inv_us_vec.array());
+          velocity_us_vec_proposed_ref.array() += update_2;
+          //velocity_us_vec_proposed_ref.array() += (0.5 * eps *  lp_and_grad_outs.segment(1, n_nuisance).array()  * M_inv_us_vec.array());
     
   } // End of leapfrog steps
   

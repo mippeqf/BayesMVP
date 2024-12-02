@@ -168,7 +168,9 @@ ALWAYS_INLINE bool check_divergence_Eigen(   const HMCResult &result_input,
   for (int l = 0; l < L_ii; l++) {
         
         // Update velocity (first half step)
-        velocity_main_vec_proposed_ref.array() +=  ( 0.5 * eps * M_inv_dense_main *  grad_main ).array() ; 
+        auto temp = (M_inv_dense_main * grad_main);
+        velocity_main_vec_proposed_ref.array() += (0.5 * eps * temp).array();
+       // velocity_main_vec_proposed_ref.array() +=  ( 0.5 * eps * M_inv_dense_main *  grad_main ).array() ; 
         
         //// updae params by full step
         theta_main_vec_proposed_ref.array()  +=  eps *     velocity_main_vec_proposed_ref.array() ;
@@ -179,10 +181,12 @@ ALWAYS_INLINE bool check_divergence_Eigen(   const HMCResult &result_input,
                            theta_main_vec_proposed_ref, theta_us_vec_initial_ref, y_ref, grad_option, 
                            Model_args_as_cpp_struct, //MVP_workspace, 
                            Stan_model_as_cpp_struct);
-        grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
+        auto grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
         
         // Update velocity (second half step)
-        velocity_main_vec_proposed_ref.array() +=  ( 0.5 * eps * M_inv_dense_main *  grad_main ).array() ;   
+        auto temp_2 = (M_inv_dense_main * grad_main);
+        velocity_main_vec_proposed_ref.array() += (0.5 * eps * temp_2).array();
+        //velocity_main_vec_proposed_ref.array() +=  ( 0.5 * eps * M_inv_dense_main *  grad_main ).array() ;   
     
   } // End of leapfrog steps 
   
@@ -231,6 +235,8 @@ ALWAYS_INLINE bool check_divergence_Eigen(   const HMCResult &result_input,
   Eigen::Matrix<double, -1, 1> grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
   
   for (int l = 0; l < L_ii; l++) {
+    
+
     
         // Update velocity (first half step)
         velocity_main_vec_proposed_ref.array() +=  ( 0.5 * eps * M_inv_main_vec.array() *  grad_main.array() ).array() ; 

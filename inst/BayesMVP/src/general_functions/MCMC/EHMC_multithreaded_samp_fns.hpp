@@ -109,7 +109,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                      
                      if (partitioned_HMC == true) {
                        
-                       stan::math::start_nested();
+                               stan::math::start_nested();
                    
                                //////////////////////////////////////// sample nuisance (GIVEN main)
                                if (sample_nuisance == true)   {
@@ -146,7 +146,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                    
                                  } /// end of main_params part of iteration
                                
-                               stan::math::recover_memory_nested(); 
+                                 stan::math::recover_memory_nested(); 
                      
                      } else {  //// sample all params at once 
                                          stan::math::start_nested();
@@ -674,13 +674,13 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
       
             // RNG not thread_local to avoid Windows TLS issues
             #ifdef _WIN32   // Windows 
-                __declspec(align(16)) thread_local stan::math::ChainableStack ad_tape;
-                __declspec(align(16)) thread_local stan::math::nested_rev_autodiff nested;
+                 stan::math::ChainableStack ad_tape;
+                 //stan::math::nested_rev_autodiff nested;
                 // Non thread_local RNG for Windows
                 thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
             #else  // Linux version 
-                thread_local stan::math::ChainableStack ad_tape;
-                thread_local stan::math::nested_rev_autodiff nested;
+                stan::math::ChainableStack ad_tape;
+                //thread_local stan::math::nested_rev_autodiff nested;
                 thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i)); // Declare and initialize in one line
             #endif
       
