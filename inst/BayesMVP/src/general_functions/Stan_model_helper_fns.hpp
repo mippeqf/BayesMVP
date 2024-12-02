@@ -318,7 +318,7 @@ ALWAYS_INLINE Stan_model_struct fn_load_Stan_model_and_data( const std::string &
            }   
            
            // Resolve the bs_model_destruct symbol
-           void (*bs_model_destruct_func)(bs_model*);
+           typedef void (*bs_model_destruct_func)(bs_model*);
            bs_model_destruct_func bs_model_destruct = (bs_model_destruct_func)dlsym(bs_handle, "bs_model_destruct"); 
            if (!bs_model_destruct) {
              dlclose(bs_handle); 
@@ -446,7 +446,7 @@ ALWAYS_INLINE void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp
         
         if (dlclose(Stan_model_as_cpp_struct.bs_handle) != 0) {
          ///  throw std::runtime_error("Error closing .so file: " + std::string(dlerror()));
-          throw std::runtime_error(std::string("Error closing .dll file: ") + windows_error_str());
+          throw std::runtime_error(("Error closing .so file: "));
         } 
         Stan_model_as_cpp_struct.bs_handle = nullptr;
         
