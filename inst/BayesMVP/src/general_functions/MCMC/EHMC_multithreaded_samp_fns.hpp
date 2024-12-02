@@ -3,7 +3,6 @@
 
 #define EIGEN_NO_DEBUG
 #define EIGEN_DONT_PARALLELIZE
-#define EIGEN_DONT_ALIGN_STATICALLY
 
 using namespace Rcpp;
 using namespace Eigen; 
@@ -56,7 +55,6 @@ using three_layer_std_vec_of_EigenMats_int =  std::vector<std::vector<std::vecto
  
  
 
- 
  
 static std::mutex print_mutex; //// global mutex 
 
@@ -664,7 +662,7 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
   ////////////// RcppParallel Parallel operator
   void operator() (std::size_t begin, std::size_t end) {
     
-    std::size_t i = begin;  // each thread processes only the chain at index `i`
+    std::size_t i = begin;  //// each thread processes only the chain at index `i`
     {
       
       const int N = Model_args_as_cpp_struct_copies[i].N;
@@ -673,17 +671,14 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
       const int n_params = n_params_main + n_us;
       const bool burnin_indicator = true;
       const int n_nuisance_to_track = 1;
-
       
             // RNG not thread_local to avoid Windows TLS issues
-           #ifdef _WIN32
-                // Windows-specific initialization
+            #ifdef _WIN32   // Windows 
                 __declspec(align(16)) thread_local stan::math::ChainableStack ad_tape;
                 __declspec(align(16)) thread_local stan::math::nested_rev_autodiff nested;
                 // Non thread_local RNG for Windows
                 thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
-            #else
-                // Linux version - keep original thread_local behavior
+            #else  // Linux version 
                 thread_local stan::math::ChainableStack ad_tape;
                 thread_local stan::math::nested_rev_autodiff nested;
                 thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i)); // Declare and initialize in one line
