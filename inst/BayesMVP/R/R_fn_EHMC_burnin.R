@@ -218,7 +218,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   # 
   
   EHMC_args_as_Rcpp_List$eps_main <- 0.01
-  EHMC_args_as_Rcpp_List$eps_us <- 0.01
+  EHMC_args_as_Rcpp_List$eps_us <- 0.0001
   
   print(  EHMC_args_as_Rcpp_List$eps_main) 
   print(  EHMC_args_as_Rcpp_List$eps_us)
@@ -649,43 +649,43 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
  
  
 # #
-                                        result <-   BayesMVP:::fn_R_OpenMP_EHMC_single_iter_burnin(  n_threads_R = n_chains_burnin,
-                                                                                                     seed_R = seed,
-                                                                                                     sample_nuisance_R = sample_nuisance,
-                                                                                                     n_nuisance_to_track = n_nuisance_to_track,
-                                                                                                     n_iter_R = 1,
-                                                                                                     n_adapt  = 0,
-                                                                                                     partitioned_HMC_R = partitioned_HMC,
-                                                                                                     clip_iter = clip_iter,
-                                                                                                     gap =  gap,
-                                                                                                     burnin_indicator = FALSE,
-                                                                                                     metric_type_nuisance = metric_type_nuisance,
-                                                                                                     metric_type_main = metric_type_main,
-                                                                                                     shrinkage_factor = shrinkage_factor,
-                                                                                                     max_eps_main = max_eps_main,
-                                                                                                     max_eps_us = max_eps_us,
-                                                                                                     tau_main_target = 0, # dummy arg
-                                                                                                     tau_us_target = 0,   # dummy arg
-                                                                                                     main_L_manual = FALSE,  # dummy arg
-                                                                                                     L_main_if_manual = 0,   # dummy arg
-                                                                                                     us_L_manual = FALSE,    # dummy arg
-                                                                                                     L_us_if_manual = 0,     # dummy arg
-                                                                                                     max_L = max_L,
-                                                                                                     tau_mult = tau_mult,
-                                                                                                     ratio_M_us = ratio_M_us,
-                                                                                                     ratio_Hess_main = ratio_M_main,
-                                                                                                     M_interval_width = interval_width_main,
-                                                                                                     Model_type_R =  Model_type,
-                                                                                                     force_autodiff_R = TRUE ,
-                                                                                                     force_PartialLog_R = TRUE ,
-                                                                                                     multi_attempts_R = FALSE,
-                                                                                                     theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R,
-                                                                                                     theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,
-                                                                                                     y_Eigen_R =  y,
-                                                                                                     Model_args_as_Rcpp_List =  Model_args_as_Rcpp_List,
-                                                                                                     EHMC_args_as_Rcpp_List =   EHMC_args_as_Rcpp_List,
-                                                                                                     EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List,
-                                                                                                     EHMC_burnin_as_Rcpp_List = EHMC_burnin_as_Rcpp_List)
+                                        result <-   fn(  n_threads_R = n_chains_burnin,
+                                                         seed_R = seed,
+                                                         sample_nuisance_R = sample_nuisance,
+                                                         n_nuisance_to_track = n_nuisance_to_track,
+                                                         n_iter_R = 1,
+                                                         n_adapt  = 0,
+                                                         partitioned_HMC_R = partitioned_HMC,
+                                                         clip_iter = clip_iter,
+                                                         gap =  gap,
+                                                         burnin_indicator = FALSE,
+                                                         metric_type_nuisance = metric_type_nuisance,
+                                                         metric_type_main = metric_type_main,
+                                                         shrinkage_factor = shrinkage_factor,
+                                                         max_eps_main = max_eps_main,
+                                                         max_eps_us = max_eps_us,
+                                                         tau_main_target = 0, # dummy arg
+                                                         tau_us_target = 0,   # dummy arg
+                                                         main_L_manual = FALSE,  # dummy arg
+                                                         L_main_if_manual = 0,   # dummy arg
+                                                         us_L_manual = FALSE,    # dummy arg
+                                                         L_us_if_manual = 0,     # dummy arg
+                                                         max_L = max_L,
+                                                         tau_mult = tau_mult,
+                                                         ratio_M_us = ratio_M_us,
+                                                         ratio_Hess_main = ratio_M_main,
+                                                         M_interval_width = interval_width_main,
+                                                         Model_type_R =  Model_type,
+                                                         force_autodiff_R = TRUE ,
+                                                         force_PartialLog_R = TRUE ,
+                                                         multi_attempts_R = FALSE,
+                                                         theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R,
+                                                         theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,
+                                                         y_Eigen_R =  y,
+                                                         Model_args_as_Rcpp_List =  Model_args_as_Rcpp_List,
+                                                         EHMC_args_as_Rcpp_List =   EHMC_args_as_Rcpp_List,
+                                                         EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List,
+                                                         EHMC_burnin_as_Rcpp_List = EHMC_burnin_as_Rcpp_List)
 
                            #  result <- parallel::mccollect(result)
 
@@ -734,8 +734,10 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                            EHMC_burnin_as_Rcpp_List$LR_main,
                                                                                            p_jump_main, EHMC_burnin_as_Rcpp_List$adapt_delta_main,
                                                                                            beta1_adam, beta2_adam, eps_adam)
+                                        
+                                        comment(print(paste("eps_outs (main) = ", adapt_eps_outs)))
 
-                                        EHMC_args_as_Rcpp_List$eps_main <-   min(1, adapt_eps_outs[1])   ;  EHMC_args_as_Rcpp_List$eps_main
+                                        EHMC_args_as_Rcpp_List$eps_main <-   min(1,  adapt_eps_outs[1])   ;  EHMC_args_as_Rcpp_List$eps_main
                                         EHMC_burnin_as_Rcpp_List$eps_m_adam_main <-  adapt_eps_outs[2]   ; EHMC_burnin_as_Rcpp_List$eps_m_adam_main
                                         EHMC_burnin_as_Rcpp_List$eps_v_adam_main <-  adapt_eps_outs[3]   ;    EHMC_burnin_as_Rcpp_List$eps_v_adam_main
 
@@ -747,10 +749,12 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                                 ii, n_adapt, EHMC_burnin_as_Rcpp_List$LR_us,
                                                                                                 p_jump_us, EHMC_burnin_as_Rcpp_List$adapt_delta_us,
                                                                                                 beta1_adam, beta2_adam, eps_adam)
+                                            
+                                            comment(print(paste("eps_outs (nuisance) = ", adapt_eps_outs)))
     
                                             EHMC_args_as_Rcpp_List$eps_us <-          min(2.5,   adapt_eps_outs[1] )
                                             EHMC_burnin_as_Rcpp_List$eps_m_adam_us  <- adapt_eps_outs[2]
-                                            EHMC_burnin_as_Rcpp_List$eps_v_adam_us <- adapt_eps_outs[3]
+                                            EHMC_burnin_as_Rcpp_List$eps_v_adam_us <-  adapt_eps_outs[3]
                                         }
 
                         }
