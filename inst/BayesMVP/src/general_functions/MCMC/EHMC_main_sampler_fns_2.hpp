@@ -355,15 +355,16 @@ void                                        fn_standard_HMC_main_only_single_ite
     double energy_old = 0.0;
     double energy_new = 0.0;
     
-    result_input.store_current_state(); // sets initial theta and velocity to current theta and velocity
+    result_input.main_theta_vec_0 =  result_input.main_theta_vec;
+    result_input.us_theta_vec_0 =  result_input.us_theta_vec;
 
   {
 
       {
           Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
           generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
-          if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
-          if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
+          if (metric_shape_main == "dense") result_input.main_velocity_0_vec  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
+          if (metric_shape_main == "diag")  result_input.main_velocity_0_vec.array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
       
    
@@ -375,8 +376,8 @@ void                                        fn_standard_HMC_main_only_single_ite
         
       try {
         
-              result_input.main_velocity_vec_proposed()  =   result_input.main_velocity_0_vec(); // set initial velocity
-              result_input.main_theta_vec_proposed() =       result_input.main_theta_vec_0();   // set initial theta   
+              result_input.main_velocity_vec_proposed  =   result_input.main_velocity_0_vec; // set initial velocity
+              result_input.main_theta_vec_proposed =       result_input.main_theta_vec_0;   // set initial theta   
       
                 ////---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
                 generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
@@ -384,19 +385,78 @@ void                                        fn_standard_HMC_main_only_single_ite
                 if (L_ii < 1) { L_ii = 1 ; }
                 
                 //// initial lp  
-                fn_lp_grad_InPlace(     result_input.lp_and_grad_outs(), 
+                fn_lp_grad_InPlace(     result_input.lp_and_grad_outs, 
                                         Model_type, 
                                         force_autodiff, force_PartialLog, multi_attempts,
-                                        result_input.main_theta_vec(),  result_input.us_theta_vec(), 
+                                        result_input.main_theta_vec,  result_input.us_theta_vec, 
                                         y_ref, 
                                         grad_option,
                                         Model_args_as_cpp_struct,  
                                         Stan_model_as_cpp_struct);
                 
-                log_posterior_0 =  result_input.lp_and_grad_outs()(0);
+                log_posterior_0 =  result_input.lp_and_grad_outs(0);
                 U_x_initial = - log_posterior_0; //// initial energy
                 
-                Eigen::Matrix<double, -1, 1> grad_main =  result_input.lp_and_grad_outs().segment(1 + n_nuisance, n_params_main);
+                // if (metric_shape_main == "dense") {
+                // 
+                //             // leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    result_input.main_velocity_vec_proposed, 
+                //             //                                                           result_input.main_theta_vec_proposed, 
+                //             //                                                           result_input.lp_and_grad_outs, 
+                //             //                                                           result_input.us_theta_vec,
+                //             //                                                           EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main,
+                //             //                                                           y_ref,
+                //             //                                                           L_ii, EHMC_args_as_cpp_struct.eps_main,
+                //             //                                                           Model_type, 
+                //             //                                                           force_autodiff, force_PartialLog, multi_attempts, 
+                //             //                                                           grad_option,
+                //             //                                                           Model_args_as_cpp_struct, 
+                //             //                                                           Stan_model_as_cpp_struct, 
+                //             //                                                           fn_lp_grad_InPlace);
+                //   
+                // } else if (metric_shape_main == "diag") {
+                //   
+                //       leapfrog_integrator_diag_M_standard_HMC_main_InPlace(     result_input.main_velocity_vec_proposed, 
+                //                                                                 result_input.main_theta_vec_proposed, 
+                //                                                                 result_input.lp_and_grad_outs, 
+                //                                                                 result_input.us_theta_vec,
+                //                                                                 EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec,
+                //                                                                 y_ref,
+                //                                                                 L_ii, EHMC_args_as_cpp_struct.eps_main,
+                //                                                                 Model_type, 
+                //                                                                 force_autodiff, force_PartialLog, multi_attempts, 
+                //                                                                 grad_option,
+                //                                                                 Model_args_as_cpp_struct, 
+                //                                                                 Stan_model_as_cpp_struct, 
+                //                                                                 fn_lp_grad_InPlace);
+                // }
+                
+                
+                // Eigen::Matrix<double, -1, 1> grad_main =  result_input.lp_and_grad_outs.segment(1 + n_nuisance, n_params_main);
+                // 
+                // for (int l = 0; l < L_ii; l++) {
+                //   
+                //       // Update velocity (first half step)
+                //       Eigen::Matrix<double, -1, 1> temp_1 = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main * grad_main;
+                //       result_input.main_velocity_vec_proposed.array() +=    0.5 * EHMC_args_as_cpp_struct.eps_main * temp_1.array() ; 
+                //       
+                //       //// updae params by full step
+                //       result_input.main_theta_vec_proposed.array()  +=  EHMC_args_as_cpp_struct.eps_main * result_input.main_velocity_vec_proposed.array() ;
+                //       
+                //       // Update lp and gradients
+                //       fn_lp_grad_InPlace(  result_input.lp_and_grad_outs, 
+                //                            Model_type, force_autodiff, force_PartialLog, multi_attempts,
+                //                            result_input.main_theta_vec_proposed, result_input.us_theta_vec, y_ref, grad_option,  
+                //                            Model_args_as_cpp_struct,  
+                //                            Stan_model_as_cpp_struct);
+                //       grad_main =   result_input.lp_and_grad_outs.segment(1 + n_nuisance, n_params_main);
+                //       
+                //       // Update velocity (second half step)
+                //       Eigen::Matrix<double, -1, 1> temp_2 = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main * grad_main;
+                //       result_input.main_velocity_vec_proposed.array() +=    0.5 * EHMC_args_as_cpp_struct.eps_main * temp_2.array() ;
+                //   
+                // } // End of leapfrog steps  
+                
+                Eigen::Matrix<double, -1, 1> grad_main =  result_input.lp_and_grad_outs.segment(1 + n_nuisance, n_params_main);
                 Eigen::Matrix<double, -1, 1> grad_scaled = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main * grad_main;
                 double step_size = EHMC_args_as_cpp_struct.eps_main;
                 double half_step_size = 0.5 * EHMC_args_as_cpp_struct.eps_main;
@@ -404,73 +464,77 @@ void                                        fn_standard_HMC_main_only_single_ite
                 for (int l = 0; l < L_ii; l++) {
                       
                       // First half step for velocity
-                      result_input.main_velocity_vec_proposed().array() += half_step_size * grad_scaled.array();
-                      check_numeric_stability(result_input.main_velocity_vec_proposed(), "velocity_half_step");
+                      result_input.main_velocity_vec_proposed.array() += half_step_size * grad_scaled.array();
+                      check_numeric_stability(result_input.main_velocity_vec_proposed, "velocity_half_step");
                       
                       // Full step for position
-                      result_input.main_theta_vec_proposed().array() += step_size * result_input.main_velocity_vec_proposed().array();
-                      check_numeric_stability(result_input.main_theta_vec_proposed(), "position_step");
+                      result_input.main_theta_vec_proposed.array() += step_size * result_input.main_velocity_vec_proposed.array();
+                      check_numeric_stability(result_input.main_theta_vec_proposed, "position_step");
                       
                       // Update gradients
                       // Update lp and gradients
-                      fn_lp_grad_InPlace(  result_input.lp_and_grad_outs(), 
+                      fn_lp_grad_InPlace(  result_input.lp_and_grad_outs, 
                                            Model_type, force_autodiff, force_PartialLog, multi_attempts,
-                                           result_input.main_theta_vec_proposed(), result_input.us_theta_vec(),
-                                           y_ref, grad_option,  
+                                           result_input.main_theta_vec_proposed, result_input.us_theta_vec, y_ref, grad_option,  
                                            Model_args_as_cpp_struct,  
                                            Stan_model_as_cpp_struct);
-                      grad_main =   result_input.lp_and_grad_outs.segment(1 + n_nuisance, n_params_main)();
+                      grad_main =   result_input.lp_and_grad_outs.segment(1 + n_nuisance, n_params_main);
                       grad_scaled = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main * grad_main;
                       check_numeric_stability(grad_main, "gradient_update");
                       
                       // Second half step for velocity 
-                      result_input.main_velocity_vec_proposed().array() += half_step_size * grad_scaled.array();
-                      check_numeric_stability(result_input.main_velocity_vec_proposed(), "velocity_final");
+                      result_input.main_velocity_vec_proposed.array() += half_step_size * grad_scaled.array();
+                      check_numeric_stability(result_input.main_velocity_vec_proposed, "velocity_final");
                   
                 }
                 
+                
                 //// proposed lp  
-                log_posterior_prop =  result_input.lp_and_grad_outs()(0);
+                log_posterior_prop =  result_input.lp_and_grad_outs(0);
                 U_x_prop = - log_posterior_prop; // initial energy
               
                 //////////////////////////////////////////////////////////////////    M-H acceptance step  (i.e, Accept/Reject step)
                 if (metric_shape_main == "dense") {
                     
-                    energy_old = U_x_initial + compute_kinetic_energy_dense(result_input.main_velocity_0_vec(), EHMC_Metric_struct_as_cpp_struct.M_dense_main);
-                    energy_new = U_x_prop +    compute_kinetic_energy_dense(result_input.main_velocity_vec_proposed(), EHMC_Metric_struct_as_cpp_struct.M_dense_main);
+                    energy_old = U_x_initial + compute_kinetic_energy_dense(result_input.main_velocity_0_vec, EHMC_Metric_struct_as_cpp_struct.M_dense_main);
+                    energy_new = U_x_prop +    compute_kinetic_energy_dense(result_input.main_velocity_vec_proposed, EHMC_Metric_struct_as_cpp_struct.M_dense_main);
                     log_ratio = - energy_new + energy_old;
                     
                 } else if (metric_shape_main == "diag") {
                   
-                    energy_old = U_x_initial + compute_kinetic_energy_diag(result_input.main_velocity_0_vec(), EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec);
-                    energy_new = U_x_prop +    compute_kinetic_energy_diag(result_input.main_velocity_vec_proposed(), EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec);
+                    energy_old = U_x_initial + compute_kinetic_energy_diag(result_input.main_velocity_0_vec, EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec);
+                    energy_new = U_x_prop +    compute_kinetic_energy_diag(result_input.main_velocity_vec_proposed, EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec);
                     log_ratio = - energy_new + energy_old;
                   
                 }
        
               if  ( (check_divergence_Eigen(  result_input,  
-                                              result_input.lp_and_grad_outs(), 
+                                              result_input.lp_and_grad_outs, 
                                               energy_old, 
                                               energy_new) == true) || (proposal_div(log_ratio, energy_old, energy_new) == true) )      {     /// if main_div, reject proposal 
                   
-                      //// if  div, reject proposal 
-                      result_input.main_div() = 1;  
-                      result_input.main_p_jump() = 0.0;
-                      result_input.reject_proposal_main();  // # reject proposal
+                      result_input.main_p_jump = 0.0;
+                      result_input.main_theta_vec  =   result_input.main_theta_vec_0;    
+                      result_input.main_velocity_vec = result_input.main_velocity_0_vec;
+                      result_input.main_div = 1;  // and set main_div indiator to 1
                 
               }  else {  // if no main_div, carry on with MH step 
                 
                           result_input.main_div = 0;
-                          result_input.main_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
+                          result_input.main_p_jump = std::min(1.0, stan::math::exp(log_ratio));
                           
                           std::uniform_real_distribution<double> unif(0.0, 1.0);
+                          double acceptance_rand = unif(rng); 
                       
-                      if   (unif(rng) > result_input.main_p_jump())   { 
-                             result_input.reject_proposal_main();  // # reject proposal
-                      } else {   
-                             result_input.accept_proposal_main(); // # accept proposal
+                      if   (acceptance_rand > result_input.main_p_jump)   {  // # reject proposal
+                            result_input.main_theta_vec  =   result_input.main_theta_vec_0;  
+                            result_input.main_velocity_vec = result_input.main_velocity_0_vec;
+                      } else {   // # accept proposal
+                            result_input.main_theta_vec  =    result_input.main_theta_vec_proposed ; 
+                            result_input.main_velocity_vec =  result_input.main_velocity_vec_proposed ;
                       }
-                   
+                  
+                     // return result_input;
                       
               }
 
@@ -478,12 +542,11 @@ void                                        fn_standard_HMC_main_only_single_ite
         
                 // std::cout << "  Could not evaluate lp_grad function when sampling main parameters " << ")\n";
           
-                result_input.main_div() = 1; // record as div 
-                result_input.main_p_jump() = 0.0;
-                result_input.reject_proposal_main(); // # reject proposal
-                // result_input.main_theta_vec()  =   result_input.main_theta_vec_0();  // old (struct) code
-                // result_input.main_velocity_vec = result_input.main_velocity_0_vec(); // old (struct) code
-             
+                result_input.main_div = 1;
+                result_input.main_p_jump = 0.0;
+                result_input.main_theta_vec  =   result_input.main_theta_vec_0; 
+                result_input.main_velocity_vec = result_input.main_velocity_0_vec;
+                // return result_input;
               
       }
       
@@ -495,7 +558,8 @@ void                                        fn_standard_HMC_main_only_single_ite
     
 
   }
-   
+  
+ // return result_input;
 
 
 }

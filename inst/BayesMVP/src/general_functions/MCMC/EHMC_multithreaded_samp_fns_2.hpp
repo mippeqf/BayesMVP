@@ -45,7 +45,7 @@ static std::mutex print_mutex; //// global mutex
    
    
 
-void                    fn_sample_HMC_multi_iter_single_thread(                    HMC_output_single_chain &HMC_output_single_chain_i,
+void                                       fn_sample_HMC_multi_iter_single_thread(                HMC_output_single_chain &HMC_output_single_chain_i,
                                                                                                   HMCResult &result_input,
                                                                                                   const bool burnin_indicator,
                                                                                                   const int chain_id,
@@ -53,17 +53,17 @@ void                    fn_sample_HMC_multi_iter_single_thread(                 
                                                                                                   std::mt19937 &rng,
                                                                                                   const int n_iter,
                                                                                                   const bool partitioned_HMC,
-                                                                                                  const std::string &Model_type,
+                                                                                                  const std::string Model_type,
                                                                                                   const bool sample_nuisance,
                                                                                                   const bool force_autodiff,
                                                                                                   const bool force_PartialLog,
                                                                                                   const bool multi_attempts,
                                                                                                   const int n_nuisance_to_track,
-                                                                                                  const Eigen::Matrix<int, -1, -1> &y_Eigen_i,
-                                                                                                  const Model_fn_args_struct &Model_args_as_cpp_struct,  ///// ALWAYS read-only
+                                                                                                  const Eigen::Matrix<int, -1, -1> y_Eigen_i,
+                                                                                                  const Model_fn_args_struct Model_args_as_cpp_struct,  ///// ALWAYS read-only
                                                                                                   EHMC_fn_args_struct  &EHMC_args_as_cpp_struct,
-                                                                                                  const EHMC_Metric_struct   &EHMC_Metric_as_cpp_struct, 
-                                                                                                  const Stan_model_struct    &Stan_model_as_cpp_struct)  {
+                                                                                                  const EHMC_Metric_struct   EHMC_Metric_as_cpp_struct, 
+                                                                                                  const Stan_model_struct    Stan_model_as_cpp_struct)  {
   
  
      const int N =  Model_args_as_cpp_struct.N;
@@ -76,19 +76,17 @@ void                    fn_sample_HMC_multi_iter_single_thread(                 
          ///////////////////////////////////////// perform iterations for adaptation interval
          ////// main iteration loop
          for (int ii = 0; ii < n_iter; ++ii) {
-                     
-                     //// reset initial theta's
-                     result_input.main_theta_vec_0 =  result_input.main_theta_vec;
-                     result_input.us_theta_vec_0 =  result_input.us_theta_vec;
            
-                     // if (burnin_indicator == false) {
-                     //     if (ii %  static_cast<int>(std::round(static_cast<double>(n_iter)/4.0)) == 0) {
-                     //         std::lock_guard<std::mutex> lock(print_mutex);
-                     //         double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter));
-                     //         std::cout << "Chain #" << chain_id << " - Sampling is around " << pct_complete << " % complete" << "\n";
-                     //     }
-                     // }
+                     if (burnin_indicator == false) {
+                         if (ii %  static_cast<int>(std::round(static_cast<double>(n_iter)/4.0)) == 0) {
+                             std::lock_guard<std::mutex> lock(print_mutex);
+                             double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter));
+                             std::cout << "Chain #" << chain_id << " - Sampling is around " << pct_complete << " % complete" << "\n";
+                         }
+                     }
                      
+                     result_input.main_theta_vec_0 =      result_input.main_theta_vec;
+                     result_input.us_theta_vec_0 =        result_input.us_theta_vec;
                      
                      if (partitioned_HMC == true) {
                        
@@ -102,8 +100,9 @@ void                    fn_sample_HMC_multi_iter_single_thread(                 
                                                                                                           Model_type, 
                                                                                                           force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                                           y_Eigen_i,
-                                                                                                          Model_args_as_cpp_struct, // MVP_workspace, 
-                                                                                                          EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
+                                                                                                          Model_args_as_cpp_struct,  
+                                                                                                          EHMC_args_as_cpp_struct, 
+                                                                                                          EHMC_Metric_as_cpp_struct, 
                                                                                                           Stan_model_as_cpp_struct);
                                         
                                          
@@ -119,8 +118,9 @@ void                    fn_sample_HMC_multi_iter_single_thread(                 
                                                                                                      Model_type,  
                                                                                                      force_autodiff, force_PartialLog,  multi_attempts,
                                                                                                      y_Eigen_i,
-                                                                                                     Model_args_as_cpp_struct, //MVP_workspace,
-                                                                                                     EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
+                                                                                                     Model_args_as_cpp_struct, 
+                                                                                                     EHMC_args_as_cpp_struct, 
+                                                                                                     EHMC_Metric_as_cpp_struct, 
                                                                                                      Stan_model_as_cpp_struct);
                                 
                                        
@@ -138,8 +138,9 @@ void                    fn_sample_HMC_multi_iter_single_thread(                 
                                                                                               Model_type, 
                                                                                               force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                               y_Eigen_i,
-                                                                                              Model_args_as_cpp_struct,  //MVP_workspace, 
-                                                                                              EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
+                                                                                              Model_args_as_cpp_struct,  
+                                                                                              EHMC_args_as_cpp_struct, 
+                                                                                              EHMC_Metric_as_cpp_struct, 
                                                                                               Stan_model_as_cpp_struct);
                                          stan::math::recover_memory_nested(); 
                                          
@@ -164,10 +165,6 @@ void                    fn_sample_HMC_multi_iter_single_thread(                 
                        // }
                        
 
-                       
-                       //// reset initial theta's
-                       result_input.main_theta_vec_0 =  result_input.main_theta_vec;
-                       result_input.us_theta_vec_0 =  result_input.us_theta_vec;
 
            
          } ////////////////////// end of iteration(s)
@@ -175,7 +172,7 @@ void                    fn_sample_HMC_multi_iter_single_thread(                 
          
     HMC_output_single_chain_i.result_input = result_input;
     
-   /// return HMC_output_single_chain_i;
+   // return HMC_output_single_chain_i;
      
    }
      
@@ -237,13 +234,13 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                             Eigen::Matrix<double, -1, -1>  &velocity_us_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar
 ) {
        
-       //  #ifdef _OPENMP
-       omp_set_num_threads(n_threads);
-       omp_set_dynamic(0);     
-       //  #endif
+       // //  #ifdef _OPENMP
+       // omp_set_num_threads(n_threads);
+       // omp_set_dynamic(0);     
+       // //  #endif
        
        //// parallel for-loop
-       ///#pragma omp parallel for
+       ////  #pragma omp parallel for
        for (int i = 0; i < n_threads; i++) {   
          
              const int N =  Model_args_as_cpp_struct_copies[i].N;
@@ -253,9 +250,9 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
              const bool burnin_indicator = false;
              const int n_nuisance_to_track = 1;
              
-             thread_local stan::math::ChainableStack ad_tape;
-             //stan::math::nested_rev_autodiff nested;
-             thread_local std::mt19937 rng(static_cast<unsigned int>(seed + 1000*i));
+             stan::math::ChainableStack ad_tape;
+             stan::math::nested_rev_autodiff nested;
+             std::mt19937 rng(static_cast<unsigned int>(seed + i));
          
          {
            
@@ -280,7 +277,7 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                                                                                                 Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                                 seed + i * 1000);
                      
-                     fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
+                      fn_sample_HMC_multi_iter_single_thread(   HMC_outputs[i],
                                                                 result_input, 
                                                                 burnin_indicator, 
                                                                 i, seed + i * 1000, rng, n_iter,
@@ -299,7 +296,7 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                  
                      Stan_model_struct Stan_model_as_cpp_struct; ////  dummy struct
                      
-                     fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
+                      fn_sample_HMC_multi_iter_single_thread(   HMC_outputs[i], 
                                                                 result_input, 
                                                                 burnin_indicator, 
                                                                 i, seed + i * 1000, rng, n_iter,
@@ -563,7 +560,7 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
 #ifdef _WIN32   // Windows 
            stan::math::ChainableStack ad_tape;
            stan::math::nested_rev_autodiff nested;
-           std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
+           thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
 #else  // Linux version 
            thread_local stan::math::ChainableStack ad_tape;
            thread_local stan::math::nested_rev_autodiff nested;
@@ -608,7 +605,7 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
       
       thread_local Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
       
-      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
+      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i], 
                                                  result_input, 
                                                  burnin_indicator, i, seed + i * 1000, rng, n_iter,
                                                  partitioned_HMC,
@@ -854,9 +851,9 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
       
       HMCResult result_input(n_params_main, n_us, N); // JUST putting this as thread_local doesnt fix the "lagging chain 0" issue. 
       
-      const Eigen::Matrix<int, -1, -1> &y_copy = y_copies[i]; /// make local copy of y
-      const Model_fn_args_struct &Model_args_as_cpp_struct = Model_args_as_cpp_struct_copies[i];
-      const EHMC_Metric_struct &EHMC_Metric_as_cpp_struct = EHMC_Metric_as_cpp_struct_copies[i];
+      // const Eigen::Matrix<int, -1, -1> &y_copy = y_copies[i]; /// make local copy of y
+      // const Model_fn_args_struct &Model_args_as_cpp_struct = Model_args_as_cpp_struct_copies[i];
+      // const EHMC_Metric_struct &EHMC_Metric_as_cpp_struct = EHMC_Metric_as_cpp_struct_copies[i];
     
           {
     
@@ -870,13 +867,13 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
             if (Model_type == "Stan") {  
                 
                             // //// For Stan models:  Initialize bs_model* pointer and void* handle
-                            Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct.model_so_file,
-                                                                                                                     Model_args_as_cpp_struct.json_file_path, 
+                            Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
+                                                                                                        Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                                                      seed + i);
                           //  }
                       
                          //////////////////////////////// perform iterations for chain i
-                         fn_sample_HMC_multi_iter_single_thread(   HMC_outputs[i] ,
+                          fn_sample_HMC_multi_iter_single_thread(   HMC_outputs[i],
                                                                    result_input, 
                                                                    burnin_indicator, 
                                                                    i, seed + i + 1, rng, n_iter,
@@ -884,10 +881,10 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
                                                                    Model_type,  sample_nuisance,
                                                                    force_autodiff, force_PartialLog,  multi_attempts,  
                                                                    n_nuisance_to_track, 
-                                                                   y_copy, 
-                                                                   Model_args_as_cpp_struct,  
+                                                                   y_copies[i], 
+                                                                   Model_args_as_cpp_struct_copies[i],  
                                                                    EHMC_args_as_cpp_struct_copies[i],
-                                                                   EHMC_Metric_as_cpp_struct, 
+                                                                   EHMC_Metric_as_cpp_struct_copies[i], 
                                                                    Stan_model_as_cpp_struct);
                           ////////////////////////////// end of iteration(s)
                           //// destroy Stan model object
@@ -900,7 +897,7 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
                           Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
               
                           //////////////////////////////// perform iterations for chain i
-                          fn_sample_HMC_multi_iter_single_thread(  HMC_outputs[i],   
+                          fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i], 
                                                                    result_input, 
                                                                    burnin_indicator, 
                                                                    i, seed + i + 1, rng, n_iter,
@@ -908,10 +905,10 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
                                                                    Model_type,  sample_nuisance, 
                                                                    force_autodiff, force_PartialLog,  multi_attempts,  
                                                                    n_nuisance_to_track, 
-                                                                   y_copy, 
-                                                                   Model_args_as_cpp_struct, 
+                                                                   y_copies[i], 
+                                                                   Model_args_as_cpp_struct_copies[i], 
                                                                    EHMC_args_as_cpp_struct_copies[i], 
-                                                                   EHMC_Metric_as_cpp_struct, 
+                                                                   EHMC_Metric_as_cpp_struct_copies[i], 
                                                                    Stan_model_as_cpp_struct);
                           ////////////////////////////// end of iteration(s)
                           
