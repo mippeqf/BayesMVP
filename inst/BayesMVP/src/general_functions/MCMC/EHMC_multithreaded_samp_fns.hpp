@@ -250,21 +250,8 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
              stan::math::ChainableStack ad_tape;
              stan::math::nested_rev_autodiff nested;
              thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i));
-             
-             const Eigen::Matrix<int, -1, -1> &y_Eigen_i = y_copies[i]; // make a copy of data
-             const Model_fn_args_struct &Model_args_as_cpp_struct_ref = Model_args_as_cpp_struct_copies[i];
-             const EHMC_Metric_struct   &EHMC_Metric_as_cpp_struct_ref = EHMC_Metric_as_cpp_struct_copies[i];
          
          {
-           
-           ///////////////////////////////////////// perform iterations for adaptation interval
-           HMCResult result_input(n_params_main, n_us, N);
-           result_input.main_theta_vec = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
-           result_input.main_theta_vec_0 = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
-           result_input.us_theta_vec = theta_us_vectors_all_chains_input_from_R_RcppPar.col(i);
-           result_input.us_theta_vec_0 = theta_us_vectors_all_chains_input_from_R_RcppPar.col(i);
-           
-           HMC_output_single_chain HMC_output_single_chain_i(n_iter, n_nuisance_to_track, n_params_main, n_us, N);
            
            {
              
@@ -289,7 +276,8 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                      
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 result_input, 
-                                                                burnin_indicator, i, seed + i * 1000, rng, n_iter,
+                                                                burnin_indicator, 
+                                                                i, seed + i * 1000, rng, n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
                                                                 force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
