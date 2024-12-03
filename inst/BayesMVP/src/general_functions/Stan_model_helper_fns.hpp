@@ -356,12 +356,12 @@ void fn_bs_destroy_Stan_model(Stan_model_struct &Stan_model_as_cpp_struct) {
          
          if (Stan_model_as_cpp_struct.bs_handle) {
            
-            // void* handle = Stan_model_as_cpp_struct.bs_handle;  // Keep a copy
-           // Stan_model_as_cpp_struct.bs_handle = nullptr;  // Clear it first
-           if (FreeLibrary((HMODULE)Stan_model_as_cpp_struct.bs_handle) == 0) {  // Windows: 0 means error
-               throw std::runtime_error("Error closing library: " + std::string(dlerror())); 
-             } 
-                Stan_model_as_cpp_struct.bs_handle = nullptr;
+           void* handle = Stan_model_as_cpp_struct.bs_handle;  // Keep a copy
+           Stan_model_as_cpp_struct.bs_handle = nullptr;  // Clear it first
+           if (FreeLibrary((HMODULE)handle) == 0) {  // Use the copy
+             throw std::runtime_error("Error closing library: " + std::string(dlerror()));
+           }
+           
          }
  
    
