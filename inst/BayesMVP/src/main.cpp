@@ -104,9 +104,7 @@
     #include "omp.h"
 #endif
     
-    
-    
- 
+
 ///// General functions (e.g. fast exp() and log() approximations). Most of these are not model-specific.
 #include "general_functions/var_fns.hpp"
 #include "general_functions/double_fns.hpp"
@@ -126,6 +124,7 @@
 #include "general_functions/array_creators_Eigen_fns.hpp"
 #include "general_functions/array_creators_other_fns.hpp"
 #include "general_functions/structures.hpp"
+#include "general_functions/classes.hpp"
 
 #include <Rcpp.h>
 
@@ -938,24 +937,20 @@ Eigen::Matrix<double, -1, 1>     fn_Rcpp_wrapper_adapt_eps_ADAM(   double eps,  
 ) {
 
 
-  Eigen::Matrix<double, -1, 1>  out_vec  =    adapt_eps_ADAM(  eps,
-                                                               eps_m_adam,
-                                                               eps_v_adam,
-                                                               iter,
-                                                               n_burnin,
-                                                               LR,
-                                                               p_jump,
-                                                               adapt_delta,
-                                                               beta1_adam,
-                                                               beta2_adam,
-                                                               eps_adam);
+  return    adapt_eps_ADAM(  eps,
+                             eps_m_adam,
+                             eps_v_adam,
+                             iter,
+                             n_burnin,
+                             LR,
+                             p_jump,
+                             adapt_delta,
+                             beta1_adam,
+                             beta2_adam,
+                             eps_adam);
 
 
-  out_vec(0) = eps;
-  out_vec(1) = eps_m_adam;
-  out_vec(2) = eps_v_adam;
-
-  return out_vec;
+ 
 
 }
 
