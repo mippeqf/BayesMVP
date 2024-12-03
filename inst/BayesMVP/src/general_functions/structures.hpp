@@ -26,7 +26,7 @@
 #include <stdexcept>  
 #include <complex>
   
-#include <dlfcn.h> // For dynamic loading 
+////#include <dlfcn.h> // For dynamic loading 
  
  
 #include <map>
@@ -66,8 +66,6 @@
 using namespace Eigen;
   
 
- 
-
 using std_vec_of_EigenVecs_dbl = std::vector<Eigen::Matrix<double, -1, 1>>;
 using std_vec_of_EigenVecs_int = std::vector<Eigen::Matrix<int, -1, 1>>;
 using std_vec_of_EigenMats_dbl = std::vector<Eigen::Matrix<double, -1, -1>>;
@@ -85,6 +83,8 @@ using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector
 using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
 
 
+ 
+ 
  
  
 // struct for other function arguments to make function signitures more general  easier to manage
@@ -410,54 +410,57 @@ struct  EHMC_Metric_struct { // all params in this struct are shared between all
  
  
  
-struct  HMCResult {
-   
-         Eigen::Matrix<double, -1, 1> lp_and_grad_outs;
-         
-         Eigen::Matrix<double, -1, 1> main_theta_vec_0;
-         Eigen::Matrix<double, -1, 1> main_theta_vec;
-         Eigen::Matrix<double, -1, 1> main_theta_vec_proposed;
-         Eigen::Matrix<double, -1, 1> main_velocity_0_vec;
-         Eigen::Matrix<double, -1, 1> main_velocity_vec_proposed;
-         Eigen::Matrix<double, -1, 1> main_velocity_vec;
-         
-         double main_p_jump;
-         int main_div;
-         
-         Eigen::Matrix<double, -1, 1> us_theta_vec_0;
-         Eigen::Matrix<double, -1, 1> us_theta_vec;
-         Eigen::Matrix<double, -1, 1> us_theta_vec_proposed;
-         Eigen::Matrix<double, -1, 1> us_velocity_0_vec;
-         Eigen::Matrix<double, -1, 1> us_velocity_vec_proposed;
-         Eigen::Matrix<double, -1, 1> us_velocity_vec;
-         
-         double us_p_jump;
-         int us_div;
-         
-         // Constructor to initialize matrix sizes
-         HMCResult(int n_params_main, int n_us,  int N)
-           : lp_and_grad_outs(Eigen::Matrix<double, -1, 1>::Zero((1 + N + n_params_main + n_us))),
-             main_theta_vec_0(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
-             main_theta_vec(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
-             main_theta_vec_proposed(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
-             main_velocity_0_vec(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
-             main_velocity_vec_proposed(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
-             main_velocity_vec(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
-             main_p_jump(0.0),
-             main_div(0),
-             us_theta_vec_0(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
-             us_theta_vec(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
-             us_theta_vec_proposed(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
-             us_velocity_0_vec(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
-             us_velocity_vec_proposed(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
-             us_velocity_vec(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
-             us_p_jump(0.0),
-             us_div(0)
-         {}
-   
-};
- 
- 
+// struct   HMCResult {
+//   
+//          //// EIGEN_MAKE_ALIGNED_OPERATOR_NEW 
+//          Eigen::Matrix<double, -1, 1> lp_and_grad_outs;
+//          
+//          Eigen::Matrix<double, -1, 1> main_theta_vec_0;
+//          Eigen::Matrix<double, -1, 1> main_theta_vec;
+//          Eigen::Matrix<double, -1, 1> main_theta_vec_proposed;
+//          Eigen::Matrix<double, -1, 1> main_velocity_0_vec;
+//          Eigen::Matrix<double, -1, 1> main_velocity_vec_proposed;
+//          Eigen::Matrix<double, -1, 1> main_velocity_vec;
+//          
+//          double main_p_jump;
+//          int main_div;
+//          
+//          Eigen::Matrix<double, -1, 1> us_theta_vec_0;
+//          Eigen::Matrix<double, -1, 1> us_theta_vec;
+//          Eigen::Matrix<double, -1, 1> us_theta_vec_proposed;
+//          Eigen::Matrix<double, -1, 1> us_velocity_0_vec;
+//          Eigen::Matrix<double, -1, 1> us_velocity_vec_proposed;
+//          Eigen::Matrix<double, -1, 1> us_velocity_vec;
+//          
+//          double us_p_jump;
+//          int us_div;
+//          
+//          //// Constructor to initialize matrix sizes
+//          HMCResult(int n_params_main, 
+//                    int n_us,  
+//                    int N)
+//            : lp_and_grad_outs(Eigen::Matrix<double, -1, 1>::Zero((1 + N + n_params_main + n_us))),
+//              main_theta_vec_0(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
+//              main_theta_vec(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
+//              main_theta_vec_proposed(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
+//              main_velocity_0_vec(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
+//              main_velocity_vec_proposed(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
+//              main_velocity_vec(Eigen::Matrix<double, -1, 1>::Zero(n_params_main)),
+//              main_p_jump(0.0),
+//              main_div(0),
+//              us_theta_vec_0(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
+//              us_theta_vec(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
+//              us_theta_vec_proposed(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
+//              us_velocity_0_vec(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
+//              us_velocity_vec_proposed(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
+//              us_velocity_vec(Eigen::Matrix<double, -1, 1>::Zero(n_us)),
+//              us_p_jump(0.0),
+//              us_div(0)
+//          {}
+//    
+// };
+//  
+//  
  
  
  
@@ -468,20 +471,21 @@ struct  HMCResult {
  
 
   
-struct  HMC_output_single_chain {
+struct   HMC_output_single_chain {
+  
+           ////  EIGEN_MAKE_ALIGNED_OPERATOR_NEW  
+           HMCResult result_input;
 
-             HMCResult result_input;
-
-           // Group trace buffers together
-           struct   TraceBuffers {
+           //// Group trace buffers together
+           struct  TraceBuffers {
              Eigen::Matrix<double, -1, -1> main;
              Eigen::Matrix<double, -1, -1> div;
              Eigen::Matrix<double, -1, -1> nuisance;
              Eigen::Matrix<double, -1, -1> log_lik;
            } traces;
 
-           // Group diagnostic vectors together
-           struct  Diagnostics {
+           //// Group diagnostic vectors together
+           struct     Diagnostics {
              Eigen::Matrix<int, -1, 1> div_us;
              Eigen::Matrix<int, -1, 1> div_main;
              Eigen::Matrix<double, -1, 1> p_jump_us;
@@ -489,7 +493,7 @@ struct  HMC_output_single_chain {
            } diagnostics;
 
            
-       // Constructor
+       //// Constructor
        HMC_output_single_chain(int n_iter,
                                int n_nuisance_to_track, 
                                int n_params_main, 
@@ -568,6 +572,99 @@ ChunkSizeInfo calculate_chunk_sizes(const int N,
         return info;
   
 }
+
+
+
+
+
+ 
+#if HAS_BRIDGESTAN_H
+
+//// Struct to hold the model handle and function pointers
+struct ModelHandle_struct {
+  
+  void* bs_handle = nullptr;
+  bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;
+  int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
+  int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
+  bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;
+  void (*bs_model_destruct)(bs_model*) = nullptr;
+  
+};
+
+// // Struct to hold the model handle and function pointers
+// struct ModelHandle_struct {
+//   
+//       void* bs_handle = nullptr;
+//       bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;   
+//       int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
+//       int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
+//       bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;  
+//       void (*bs_model_destruct)(bs_model*) = nullptr;
+//       
+//       ModelHandle_struct() = default;
+//       ~ModelHandle_struct() {
+//         bs_handle = nullptr;
+//         bs_model_construct = nullptr;
+//         bs_log_density_gradient = nullptr;
+//         bs_param_constrain = nullptr;
+//         bs_rng_construct = nullptr;
+//         bs_model_destruct = nullptr;
+//       }
+//       
+//       // Prevent copying 
+//       ModelHandle_struct(const ModelHandle_struct&) = delete;
+//       ModelHandle_struct& operator=(const ModelHandle_struct&) = delete;
+//       
+//       // Allow moving
+//       ModelHandle_struct(ModelHandle_struct&&) = default;
+//       ModelHandle_struct& operator=(ModelHandle_struct&&) = default;
+//   
+// };
+// 
+
+#else
+
+/// otherwise make dummy struct 
+struct ModelHandle_struct {
+  
+  void* bs_handle = nullptr; 
+  
+}; 
+
+
+#endif
+
+
+ 
+
+#if HAS_BRIDGESTAN_H 
+
+struct Stan_model_struct {
+  
+  void* bs_handle = nullptr; // has no arguments
+  bs_model* bs_model_ptr = nullptr; // has no arguments
+  bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;
+  int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
+  int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr; 
+  bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;
+  void (*bs_model_destruct)(bs_model*) = nullptr;
+  
+};
+
+#else 
+
+/// otherwise make dummy struct
+struct Stan_model_struct {
+    
+  void* bs_handle = nullptr;
+  
+}; 
+
+
+#endif 
+
+
 
 
   
