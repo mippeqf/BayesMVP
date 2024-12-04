@@ -855,7 +855,7 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
 
 
 // [[Rcpp::export]]
-Rcpp::List                         fn_find_initial_eps_main_and_us(      Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref,
+Rcpp::List                         fn_find_initial_eps_main_and_us(           Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref,
                                                                               Eigen::Matrix<double, -1, 1> theta_us_vec_initial_ref,
                                                                               const double seed,
                                                                               const std::string Model_type,
@@ -876,12 +876,12 @@ Rcpp::List                         fn_find_initial_eps_main_and_us(      Eigen::
       const int N = y_ref.rows();
 
       HMCResult result_input(n_params_main, n_params, N);
-      result_input.main_theta_vec = theta_main_vec_initial_ref;
-      result_input.main_theta_vec_0 = theta_main_vec_initial_ref;
-      result_input.main_theta_vec_proposed = theta_main_vec_initial_ref;
-      result_input.main_velocity_0_vec = theta_main_vec_initial_ref;
-      result_input.main_velocity_vec_proposed = theta_main_vec_initial_ref;
-      result_input.main_velocity_vec = theta_main_vec_initial_ref;
+      result_input.main_theta_vec() = theta_main_vec_initial_ref;
+      result_input.main_theta_vec_0()  = theta_main_vec_initial_ref;
+      result_input.main_theta_vec_proposed()  = theta_main_vec_initial_ref;
+      result_input.main_velocity_0_vec()  = theta_main_vec_initial_ref;
+      result_input.main_velocity_vec_proposed()  = theta_main_vec_initial_ref;
+      result_input.main_velocity_vec()  = theta_main_vec_initial_ref;
 
       // convert Rcpp::List to cpp structs and pass by reference
       const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
