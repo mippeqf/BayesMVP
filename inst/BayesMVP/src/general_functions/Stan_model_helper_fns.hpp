@@ -79,11 +79,37 @@ using namespace Eigen;
  
 
 
+ 
+ 
+ ////  Struct to hold the model handle and function pointers
+ struct ModelHandle_struct {
 
+   void* bs_handle = nullptr;
+   bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;
+   int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
+   int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
+   bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;
+   void (*bs_model_destruct)(bs_model*) = nullptr;
+
+ };
  
  
  
+ struct Stan_model_struct {
+   
+   void* bs_handle = nullptr; // has no arguments
+   bs_model* bs_model_ptr = nullptr; // has no arguments
+   bs_model* (*bs_model_construct)(const char*, unsigned int, char**) = nullptr;
+   int (*bs_log_density_gradient)(bs_model*, bool, bool, const double*, double*, double*, char**) = nullptr;
+   int (*bs_param_constrain)(bs_model*, bool, bool, const double*, double*, bs_rng*, char**) = nullptr;
+   bs_rng* (*bs_rng_construct)(unsigned int, char**) = nullptr;
+   void (*bs_model_destruct)(bs_model*) = nullptr;
+   
+ };
  
+ 
+ 
+  
  
  
 
