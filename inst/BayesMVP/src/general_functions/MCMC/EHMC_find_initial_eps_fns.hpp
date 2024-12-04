@@ -69,13 +69,14 @@ std::vector<double>                                   fn_find_initial_eps_main_a
    /// initial lp  
    double log_posterior = 0.0;
    //Eigen::Matrix<double, -1, 1>  lp_and_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);
-   fn_lp_grad_InPlace(   result_input.lp_and_grad_outs, 
+   fn_lp_grad_InPlace(   result_input.lp_and_grad_outs(), 
                          Model_type, 
                          force_autodiff, force_PartialLog, multi_attempts,
-                         result_input.main_theta_vec,  result_input.us_theta_vec, y_ref, grad_option,
+                         result_input.main_theta_vec(),  result_input.us_theta_vec(),
+                         y_ref, grad_option,
                          Model_args_as_cpp_struct, //MVP_workspace, 
                          Stan_model_as_cpp_struct); 
-   log_posterior =  result_input.lp_and_grad_outs(0);
+   log_posterior =  result_input.lp_and_grad_outs()(0);
    
    
    for (int i = 0; i < 25; i++) { 
@@ -111,17 +112,17 @@ std::vector<double>                                   fn_find_initial_eps_main_a
        
        
  
-       log_posterior =  result_input.lp_and_grad_outs(0); // update lp
+       log_posterior =  result_input.lp_and_grad_outs()(0); // update lp
        
        
-       if    ( (result_input.us_div == 0) && (result_input.main_div == 0) )  { // if no divs
+       if    ( (result_input.us_div() == 0) && (result_input.main_div() == 0) )  { // if no divs
          
-         if (result_input.us_p_jump < 0.80) {
+         if (result_input.us_p_jump() < 0.80) {
            EHMC_args_as_cpp_struct.eps_us = 0.5 * EHMC_args_as_cpp_struct.eps_us;
            EHMC_args_as_cpp_struct.tau_us =       EHMC_args_as_cpp_struct.eps_us ;
          }
          
-         if (result_input.main_p_jump < 0.80) {
+         if (result_input.main_p_jump() < 0.80) {
            EHMC_args_as_cpp_struct.eps_main = 0.5 * EHMC_args_as_cpp_struct.eps_main;
            EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main ;
          } 

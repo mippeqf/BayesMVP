@@ -250,7 +250,7 @@ void                                        fn_standard_HMC_dual_single_iter_InP
                 
                     std::uniform_real_distribution<double> unif(0.0, 1.0);
                 
-                if    (unif(rng) > result_input.main_p_jump)   {  // # reject proposal
+                if    (unif(rng) > result_input.main_p_jump())   {  // # reject proposal
                       result_input.reject_proposal_main();  // # reject proposal
                       result_input.reject_proposal_us();  // # reject proposal
                 } else {   // # accept proposal

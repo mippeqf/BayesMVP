@@ -33,127 +33,127 @@ using namespace Eigen;
 
 
 
-//  
-// ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
-//                                                                                 Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
-//                                                                                 Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
-//                                                                                 const Eigen::Matrix<double, -1, 1> &theta_main_vec_initial_ref,
-//                                                                                 const Eigen::Matrix<double, -1, 1> &M_inv_us_vec,
-//                                                                                 const Eigen::Matrix<int, -1, -1> &y_ref,
-//                                                                                 const int L_ii, 
-//                                                                                 const double eps,
-//                                                                                 const std::string &Model_type,
-//                                                                                 const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts, 
-//                                                                                 const std::string &grad_option,
-//                                                                                 const Model_fn_args_struct &Model_args_as_cpp_struct,
-//                                                                                 const Stan_model_struct &Stan_model_as_cpp_struct,
-//                                                                                 std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
-//                                                                                                    const std::string &,
-//                                                                                                    const bool, const bool, const bool,
-//                                                                                                    const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
-//                                                                                                    const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
-//                                                                                                    const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
-//                                                                                                    const std::string &,
-//                                                                                                    const Model_fn_args_struct &,
-//                                                                                                    const Stan_model_struct &)> fn_lp_grad_InPlace
-//                                                               
-// ) {
-//   
-//       const int n_nuisance = velocity_us_vec_proposed_ref.size();
-//       Eigen::Matrix<double, -1, 1> grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
-//       
-//       for (int l = 0; l < L_ii; l++) {
-//         
-//               // Update velocity (first half step)
-//               Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
-//               velocity_us_vec_proposed_ref.array() += 0.5 * eps * temp_1.array();
-//               
-//               //// updae params by full step
-//               theta_us_vec_proposed_ref.array()  +=  eps *     velocity_us_vec_proposed_ref.array() ;
-//               
-//               // Update lp and gradients
-//               fn_lp_grad_InPlace(lp_and_grad_outs, Model_type, force_autodiff, force_PartialLog, multi_attempts,
-//                                  theta_main_vec_initial_ref, theta_us_vec_proposed_ref, y_ref, grad_option, 
-//                                  Model_args_as_cpp_struct,  
-//                                  Stan_model_as_cpp_struct);
-//               grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
-//               
-//               // Update velocity (second half step)
-//               Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
-//               velocity_us_vec_proposed_ref.array() += 0.5 * eps * temp_2.array();
-//         
-//       } // End of leapfrog steps
-//   
-// }
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-// 
-//  
-// ALWAYS_INLINE    void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
-//                                                                         Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
-//                                                                         Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
-//                                                                         Eigen::Matrix<double, -1, 1> &theta_us_vec_current_segment,
-//                                                                         Eigen::Matrix<double, -1, 1> &velocity_us_vec_current_segment,
-//                                                                         const Eigen::Matrix<double, -1, 1> &theta_main_vec_initial_ref,
-//                                                                         const Eigen::Matrix<double, -1, 1> &M_inv_us_vec,
-//                                                                         const Eigen::Matrix<int, -1, -1> &y_ref,
-//                                                                         const int L_ii,  
-//                                                                         const double eps_1, const double cos_eps_2, const double sin_eps_2,
-//                                                                         const std::string &Model_type, 
-//                                                                         const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts, 
-//                                                                         const std::string &grad_option,
-//                                                                         const Model_fn_args_struct &Model_args_as_cpp_struct,
-//                                                                         const Stan_model_struct &Stan_model_as_cpp_struct,
-//                                                                         std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
-//                                                                                            const std::string &,
-//                                                                                            const bool, const bool, const bool,
-//                                                                                            const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
-//                                                                                            const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
-//                                                                                            const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
-//                                                                                            const std::string &,
-//                                                                                            const Model_fn_args_struct &,
-//                                                                                            const Stan_model_struct &)> fn_lp_grad_InPlace
-//                                                                         
-// ) {
-//   
-//   const int n_nuisance = velocity_us_vec_proposed_ref.size();
-//   Eigen::Matrix<double, -1, 1> grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
-//   
-//   for (int l = 0; l < L_ii; l++) {
-//     
-//           // Update velocity (first half step)
-//           Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
-//           velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * temp_1.array();
-//           
-//           // Full step for position + update velocity again (only for Gaussian)
-//           theta_us_vec_current_segment.array() = theta_us_vec_proposed_ref.array();
-//           velocity_us_vec_current_segment.array() = velocity_us_vec_proposed_ref.array();
-//           theta_us_vec_proposed_ref.array() =    (cos_eps_2 * theta_us_vec_current_segment.array()     + sin_eps_2 * velocity_us_vec_current_segment.array());
-//           velocity_us_vec_proposed_ref.array() = (cos_eps_2 * velocity_us_vec_current_segment.array()  - sin_eps_2 * theta_us_vec_current_segment.array());
-//           
-//           // Update lp and gradients
-//           fn_lp_grad_InPlace(lp_and_grad_outs, Model_type, force_autodiff, force_PartialLog, multi_attempts,
-//                              theta_main_vec_initial_ref, theta_us_vec_proposed_ref, y_ref, grad_option, 
-//                              Model_args_as_cpp_struct,  
-//                              Stan_model_as_cpp_struct);
-//           
-//           // Update velocity (second half step)
-//           Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
-//           velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * temp_2.array();
-//     
-//   } // End of leapfrog steps
-//   
-// }
-// 
-// 
-// 
-// 
+
+ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
+                                                                                Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
+                                                                                Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
+                                                                                const Eigen::Matrix<double, -1, 1> &theta_main_vec_initial_ref,
+                                                                                const Eigen::Matrix<double, -1, 1> &M_inv_us_vec,
+                                                                                const Eigen::Matrix<int, -1, -1> &y_ref,
+                                                                                const int L_ii,
+                                                                                const double eps,
+                                                                                const std::string &Model_type,
+                                                                                const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts,
+                                                                                const std::string &grad_option,
+                                                                                const Model_fn_args_struct &Model_args_as_cpp_struct,
+                                                                                const Stan_model_struct &Stan_model_as_cpp_struct,
+                                                                                std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
+                                                                                                   const std::string &,
+                                                                                                   const bool, const bool, const bool,
+                                                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
+                                                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
+                                                                                                   const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
+                                                                                                   const std::string &,
+                                                                                                   const Model_fn_args_struct &,
+                                                                                                   const Stan_model_struct &)> fn_lp_grad_InPlace
+
+) {
+
+      const int n_nuisance = velocity_us_vec_proposed_ref.size();
+      Eigen::Matrix<double, -1, 1> grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
+
+      for (int l = 0; l < L_ii; l++) {
+
+              // Update velocity (first half step)
+              Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
+              velocity_us_vec_proposed_ref.array() += 0.5 * eps * temp_1.array();
+
+              //// updae params by full step
+              theta_us_vec_proposed_ref.array()  +=  eps *     velocity_us_vec_proposed_ref.array() ;
+
+              // Update lp and gradients
+              fn_lp_grad_InPlace(lp_and_grad_outs, Model_type, force_autodiff, force_PartialLog, multi_attempts,
+                                 theta_main_vec_initial_ref, theta_us_vec_proposed_ref, y_ref, grad_option,
+                                 Model_args_as_cpp_struct,
+                                 Stan_model_as_cpp_struct);
+              grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
+
+              // Update velocity (second half step)
+              Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
+              velocity_us_vec_proposed_ref.array() += 0.5 * eps * temp_2.array();
+
+      } // End of leapfrog steps
+
+}
+
+
+
+
+
+
+
+
+
+
+  
+ALWAYS_INLINE    void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
+                                                                        Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
+                                                                        Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
+                                                                        Eigen::Matrix<double, -1, 1> &theta_us_vec_current_segment,
+                                                                        Eigen::Matrix<double, -1, 1> &velocity_us_vec_current_segment,
+                                                                        const Eigen::Matrix<double, -1, 1> &theta_main_vec_initial_ref,
+                                                                        const Eigen::Matrix<double, -1, 1> &M_inv_us_vec,
+                                                                        const Eigen::Matrix<int, -1, -1> &y_ref,
+                                                                        const int L_ii,
+                                                                        const double eps_1, const double cos_eps_2, const double sin_eps_2,
+                                                                        const std::string &Model_type,
+                                                                        const bool force_autodiff, const bool force_PartialLog, const bool multi_attempts,
+                                                                        const std::string &grad_option,
+                                                                        const Model_fn_args_struct &Model_args_as_cpp_struct,
+                                                                        const Stan_model_struct &Stan_model_as_cpp_struct,
+                                                                        std::function<void(Eigen::Ref<Eigen::Matrix<double, -1, 1>>,
+                                                                                           const std::string &,
+                                                                                           const bool, const bool, const bool,
+                                                                                           const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
+                                                                                           const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>,
+                                                                                           const Eigen::Ref<const Eigen::Matrix<int, -1, -1>>,
+                                                                                           const std::string &,
+                                                                                           const Model_fn_args_struct &,
+                                                                                           const Stan_model_struct &)> fn_lp_grad_InPlace
+
+) {
+
+  const int n_nuisance = velocity_us_vec_proposed_ref.size();
+  Eigen::Matrix<double, -1, 1> grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
+
+  for (int l = 0; l < L_ii; l++) {
+
+          // Update velocity (first half step)
+          Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
+          velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * temp_1.array();
+
+          // Full step for position + update velocity again (only for Gaussian)
+          theta_us_vec_current_segment.array() = theta_us_vec_proposed_ref.array();
+          velocity_us_vec_current_segment.array() = velocity_us_vec_proposed_ref.array();
+          theta_us_vec_proposed_ref.array() =    (cos_eps_2 * theta_us_vec_current_segment.array()     + sin_eps_2 * velocity_us_vec_current_segment.array());
+          velocity_us_vec_proposed_ref.array() = (cos_eps_2 * velocity_us_vec_current_segment.array()  - sin_eps_2 * theta_us_vec_current_segment.array());
+
+          // Update lp and gradients
+          fn_lp_grad_InPlace(lp_and_grad_outs, Model_type, force_autodiff, force_PartialLog, multi_attempts,
+                             theta_main_vec_initial_ref, theta_us_vec_proposed_ref, y_ref, grad_option,
+                             Model_args_as_cpp_struct,
+                             Stan_model_as_cpp_struct);
+
+          // Update velocity (second half step)
+          Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
+          velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * temp_2.array();
+
+  } // End of leapfrog steps
+
+}
+
+
+
 
 
 
@@ -185,7 +185,7 @@ void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        
       const int n_params_main = Model_args_as_cpp_struct.n_params_main;
       const int n_params = n_params_main +  n_nuisance;
   
-      const std::string grad_option = "all"; ///////////////////// DEBUG
+      const std::string grad_option = "us_only"; ///////////////////// DEBUG
       
       const double eps_1 = EHMC_args_as_cpp_struct.eps_us; ; // std::sqrt(h);
       const double eps_1_sq = eps_1 * eps_1; /// h_sq is equiv. to MALA step-size  ??
@@ -200,7 +200,9 @@ void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        
       double energy_old = 0.0;
       double energy_new = 0.0;
       
-      result_input.store_current_state(); // sets initial theta and velocity to current theta and velocity
+     //// result_input.store_current_state(); // sets initial theta and velocity to current theta and velocity
+     result_input.main_theta_vec_0() =  result_input.main_theta_vec();
+     result_input.us_theta_vec_0() =  result_input.us_theta_vec();
       
   {
 
@@ -217,8 +219,8 @@ void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        
       try {
         
         
-            result_input.us_velocity_vec_proposed() =            result_input.us_velocity_0_vec() ;    // set initial velocity
-            result_input.us_theta_vec_proposed() =  result_input.us_theta_vec_0();                     // set initial theta   
+            result_input.us_velocity_vec_proposed() =            result_input.us_velocity_0_vec() ;    // set TO initial velocity
+            result_input.us_theta_vec_proposed() =  result_input.us_theta_vec();                     // set TO CURRENT theta   
     
             // ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
               generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_us,    EHMC_args_as_cpp_struct.tau_us_ii, rng);
@@ -240,81 +242,81 @@ void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        
               log_posterior_0 =  result_input.lp_and_grad_outs()(0);
               U_x_initial = - log_posterior_0; // initial energy
     
-           // if (EHMC_args_as_cpp_struct.diffusion_HMC == true) {
-           //   
-           //         //// make params/containers for sampling u's using advanced HMC
-           //         Eigen::Matrix<double, -1, 1>  theta_us_vec_current_segment =     result_input.us_theta_vec;
-           //         Eigen::Matrix<double, -1, 1>  velocity_us_vec_current_segment =  result_input.us_velocity_vec;
-           //   
-           //         leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(   result_input.us_velocity_vec_proposed, 
-           //                                                                      result_input.us_theta_vec_proposed, 
-           //                                                                      result_input.lp_and_grad_outs, 
-           //                                                                      theta_us_vec_current_segment, 
-           //                                                                      velocity_us_vec_current_segment,
-           //                                                                      result_input.main_theta_vec,
-           //                                                                      EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec,
-           //                                                                      y_ref,
-           //                                                                      L_ii,
-           //                                                                      eps_1, cos_eps_2, sin_eps_2,
-           //                                                                      Model_type, 
-           //                                                                      force_autodiff, force_PartialLog, multi_attempts, 
-           //                                                                      grad_option,
-           //                                                                      Model_args_as_cpp_struct,
-           //                                                                      Stan_model_as_cpp_struct,
-           //                                                                      fn_lp_grad_InPlace);
-           //        
-           // } else  {
-           //      
-           //        // leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(   result_input.us_velocity_vec_proposed, 
-           //        //                                                             result_input.us_theta_vec_proposed, 
-           //        //                                                             result_input.lp_and_grad_outs, 
-           //        //                                                             result_input.main_theta_vec,
-           //        //                                                             EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec,
-           //        //                                                             y_ref,
-           //        //                                                             L_ii,
-           //        //                                                             EHMC_args_as_cpp_struct.eps_us,
-           //        //                                                             Model_type, 
-           //        //                                                             force_autodiff, force_PartialLog, multi_attempts, 
-           //        //                                                             grad_option,
-           //        //                                                             Model_args_as_cpp_struct,
-           //        //                                                             Stan_model_as_cpp_struct,
-           //        //                                                             fn_lp_grad_InPlace);
-           //        
-           // 
-           //         
-           // }
-           
-           
-           
-           Eigen::Matrix<double, -1, 1> grad_us =  result_input.lp_and_grad_outs.segment(1, n_nuisance);
-           double step_size = EHMC_args_as_cpp_struct.eps_us;
-           double half_step_size = 0.5 * step_size;
-           
-           for (int l = 0; l < L_ii; l++) {
-             
-                   //// Update velocity (first half step)
-                   Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec.array();
-                   result_input.us_velocity_vec_proposed().array() += half_step_size * temp_1.array();
-                   check_numeric_stability(result_input.us_velocity_vec_proposed(), "velocity_half_step");
-                   
-                   //// updae params by full step
-                   result_input.us_theta_vec_proposed().array()  +=  step_size * result_input.us_velocity_vec_proposed().array() ;
-                   check_numeric_stability(result_input.us_theta_vec_proposed, "position_step");
-                   
-                   //// Update lp and gradients
-                   fn_lp_grad_InPlace(result_input.lp_and_grad_outs(), Model_type, force_autodiff, force_PartialLog, multi_attempts, 
-                                      result_input.main_theta_vec(), result_input.us_theta_vec_proposed(), y_ref, grad_option, 
-                                      Model_args_as_cpp_struct,  
-                                      Stan_model_as_cpp_struct);
-                   grad_us =  result_input.lp_and_grad_outs().segment(1, n_nuisance);
-                   check_numeric_stability(grad_us, "gradient_update");
-                   
-                   //// Update velocity (second half step)
-                   Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec.array();
-                   result_input.us_velocity_vec_proposed().array() += half_step_size * temp_2.array();
-                   check_numeric_stability(result_input.us_velocity_vec_proposed(), "velocity_final");
-               
+           if (EHMC_args_as_cpp_struct.diffusion_HMC == true) {
+
+                   //// make params/containers for sampling u's using advanced HMC
+                   Eigen::Matrix<double, -1, 1>  theta_us_vec_current_segment =     result_input.us_theta_vec();
+                   Eigen::Matrix<double, -1, 1>  velocity_us_vec_current_segment =  result_input.us_velocity_vec();
+
+                   leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(   result_input.us_velocity_vec_proposed(),
+                                                                                result_input.us_theta_vec_proposed(),
+                                                                                result_input.lp_and_grad_outs(),
+                                                                                theta_us_vec_current_segment,
+                                                                                velocity_us_vec_current_segment,
+                                                                                result_input.main_theta_vec(),
+                                                                                EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec,
+                                                                                y_ref,
+                                                                                L_ii,
+                                                                                eps_1, cos_eps_2, sin_eps_2,
+                                                                                Model_type,
+                                                                                force_autodiff, force_PartialLog, multi_attempts,
+                                                                                grad_option,
+                                                                                Model_args_as_cpp_struct,
+                                                                                Stan_model_as_cpp_struct,
+                                                                                fn_lp_grad_InPlace);
+
+           } else  {
+
+                  leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(   result_input.us_velocity_vec_proposed(),
+                                                                              result_input.us_theta_vec_proposed(),
+                                                                              result_input.lp_and_grad_outs(),
+                                                                              result_input.main_theta_vec(),
+                                                                              EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec,
+                                                                              y_ref,
+                                                                              L_ii,
+                                                                              EHMC_args_as_cpp_struct.eps_us,
+                                                                              Model_type,
+                                                                              force_autodiff, force_PartialLog, multi_attempts,
+                                                                              grad_option,
+                                                                              Model_args_as_cpp_struct,
+                                                                              Stan_model_as_cpp_struct,
+                                                                              fn_lp_grad_InPlace);
+
+
+
            }
+           
+           
+           
+           // Eigen::Matrix<double, -1, 1> grad_us =  result_input.lp_and_grad_outs().segment(1, n_nuisance);
+           // double step_size = EHMC_args_as_cpp_struct.eps_us;
+           // double half_step_size = 0.5 * step_size;
+           // 
+           // for (int l = 0; l < L_ii; l++) {
+           //   
+           //         //// Update velocity (first half step)
+           //         Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec.array();
+           //         result_input.us_velocity_vec_proposed().array() += half_step_size * temp_1.array();
+           //         check_numeric_stability(result_input.us_velocity_vec_proposed(), "velocity_half_step");
+           //         
+           //         //// updae params by full step
+           //         result_input.us_theta_vec_proposed().array()  +=  step_size * result_input.us_velocity_vec_proposed().array() ;
+           //         check_numeric_stability(result_input.us_theta_vec_proposed(), "position_step");
+           //         
+           //         //// Update lp and gradients
+           //         fn_lp_grad_InPlace(result_input.lp_and_grad_outs(), Model_type, force_autodiff, force_PartialLog, multi_attempts, 
+           //                            result_input.main_theta_vec(), result_input.us_theta_vec_proposed(), y_ref, grad_option, 
+           //                            Model_args_as_cpp_struct,  
+           //                            Stan_model_as_cpp_struct);
+           //         grad_us =  result_input.lp_and_grad_outs().segment(1, n_nuisance);
+           //         check_numeric_stability(grad_us, "gradient_update");
+           //         
+           //         //// Update velocity (second half step)
+           //         Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec.array();
+           //         result_input.us_velocity_vec_proposed().array() += half_step_size * temp_2.array();
+           //         check_numeric_stability(result_input.us_velocity_vec_proposed(), "velocity_final");
+           //     
+           // }
                   
                   //// proposed lp  
                   log_posterior_prop =   result_input.lp_and_grad_outs()(0);
@@ -362,7 +364,7 @@ void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        
 
       } catch (...) { // if iteration fails (recorded as us_div)
         
-              //  std::cout << "  Could not evaluate lp_grad function when sampling nuisance parameters " << ")\n";
+                std::cout << "  Could not evaluate lp_grad function when sampling nuisance parameters " << ")\n";
 
                 result_input.us_div() = 1; // record as div 
                 result_input.us_p_jump() = 0.0;
