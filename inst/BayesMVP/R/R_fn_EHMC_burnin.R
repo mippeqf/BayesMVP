@@ -752,6 +752,13 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                             EHMC_burnin_as_Rcpp_List$eps_m_adam_us  <- adapt_eps_outs[2]
                                             EHMC_burnin_as_Rcpp_List$eps_v_adam_us <- adapt_eps_outs[3]
                                         }
+                                        
+                                        if (div_main[kk] == 1) { 
+                                          EHMC_args_as_Rcpp_List$eps_main <- 0.5 * EHMC_args_as_Rcpp_List$eps_main
+                                        }
+                                        if (div_us[kk] == 1) { 
+                                          EHMC_args_as_Rcpp_List$eps_us <- 0.5 * EHMC_args_as_Rcpp_List$eps_us
+                                        }
 
                         }
 
