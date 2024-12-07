@@ -34,17 +34,18 @@ override CXX_COMPILER_TYPE = $(shell where /R "C:\rtools44\mingw64\bin" ccache 2
 override CPP_COMPILER_TYPE = $(shell where /R "C:\rtools44\mingw64\bin" ccache 2>NUL && echo "ccache gcc" || echo "gcc")
 override CXX_STD = -std=gnu++17 # Use C++17
 
-override BASE_FLAGS =   -O3  -march=native  -mtune=native \
+override BASE_FLAGS =   -O1  -march=native  -mtune=native \
                         -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread \
                         -fpermissive \
-                        -DNDEBUG  -ffp-contract=fast \
                         -mfma -mavx -mavx2 \
-                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math \
-                        -flarge-source-files
+                        -flarge-source-files \
+                        -fopenmp -lgomp
 
 ##                         -mavx512vl -mavx512dq  -mavx512f \
  
- 
+##                         -fno-math-errno  -fno-signed-zeros  -fno-trapping-math \
+##                         -DNDEBUG  -ffp-contract=fast \
+
 
 
 # Get Windows user profile directory directly
@@ -259,7 +260,7 @@ PKG_LIBS += $(DUMMY_MODEL_SO) # load the .so before the .dll (Windows only)
 PKG_LIBS += $(DUMMY_MODEL_DLL) # load .dll AFTER loading .so (Windows only)
 ## PKG_LIBS += $(PKG_INST_PATH)/BayesMVP.dll  
 
-
+PKG_LIBS += -fopenmp -lgomp
 
 
 $(SHLIB): $(OBJECTS)
