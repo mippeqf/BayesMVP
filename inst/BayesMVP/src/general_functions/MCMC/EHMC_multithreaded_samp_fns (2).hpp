@@ -45,7 +45,7 @@ static std::mutex print_mutex; //// global mutex
    
    
 
-ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(                    HMC_output_single_chain &HMC_output_single_chain_i,
+void                    fn_sample_HMC_multi_iter_single_thread(                    HMC_output_single_chain &HMC_output_single_chain_i,
                                                                                                   HMCResult &result_input,
                                                                                                   const bool burnin_indicator,
                                                                                                   const int chain_id,
@@ -76,17 +76,19 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
          ///////////////////////////////////////// perform iterations for adaptation interval
          ////// main iteration loop
          for (int ii = 0; ii < n_iter; ++ii) {
-           
-                     if (burnin_indicator == false) {
-                         if (ii %  static_cast<int>(std::round(static_cast<double>(n_iter)/4.0)) == 0) {
-                             std::lock_guard<std::mutex> lock(print_mutex);
-                             double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter));
-                             std::cout << "Chain #" << chain_id << " - Sampling is around " << pct_complete << " % complete" << "\n";
-                         }
-                     }
                      
-                     result_input.main_theta_vec_0 =      result_input.main_theta_vec;
-                     result_input.us_theta_vec_0 =        result_input.us_theta_vec;
+                     //// reset initial theta's
+                     result_input.main_theta_vec_0 =  result_input.main_theta_vec;
+                     result_input.us_theta_vec_0 =  result_input.us_theta_vec;
+           
+                     // if (burnin_indicator == false) {
+                     //     if (ii %  static_cast<int>(std::round(static_cast<double>(n_iter)/4.0)) == 0) {
+                     //         std::lock_guard<std::mutex> lock(print_mutex);
+                     //         double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter));
+                     //         std::cout << "Chain #" << chain_id << " - Sampling is around " << pct_complete << " % complete" << "\n";
+                     //     }
+                     // }
+                     
                      
                      if (partitioned_HMC == true) {
                        
@@ -162,6 +164,10 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                        // }
                        
 
+                       
+                       //// reset initial theta's
+                       result_input.main_theta_vec_0 =  result_input.main_theta_vec;
+                       result_input.us_theta_vec_0 =  result_input.us_theta_vec;
 
            
          } ////////////////////// end of iteration(s)
@@ -193,7 +199,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
      
      
 ////// OpenMP -- instead of a Worker struct, make it a function
-void EHMC_burnin_openmp(    const int  n_threads,
+void EHMC_burnin_OpenMP(    const int  n_threads,
                             const int  seed,
                             const int  n_iter,
                             const bool partitioned_HMC,
@@ -202,8 +208,10 @@ void EHMC_burnin_openmp(    const int  n_threads,
                             const bool force_autodiff,
                             const bool force_PartialLog,
                             const bool multi_attempts,
+                            ///// inputs
                             const Eigen::Matrix<double, -1, -1>  &theta_main_vectors_all_chains_input_from_R_RcppPar,
                             const Eigen::Matrix<double, -1, -1>  &theta_us_vectors_all_chains_input_from_R_RcppPar,
+                            ///// other outputs  
                             Eigen::Matrix<double, -1, -1>   &other_main_out_vector_all_chains_output_to_R_RcppPar,
                             Eigen::Matrix<double, -1, -1>   &other_us_out_vector_all_chains_output_to_R_RcppPar,
                             //// data
@@ -235,7 +243,7 @@ void EHMC_burnin_openmp(    const int  n_threads,
        //  #endif
        
        //// parallel for-loop
-       #pragma omp parallel for
+       ///#pragma omp parallel for
        for (int i = 0; i < n_threads; i++) {   
          
              const int N =  Model_args_as_cpp_struct_copies[i].N;
@@ -245,24 +253,11 @@ void EHMC_burnin_openmp(    const int  n_threads,
              const bool burnin_indicator = false;
              const int n_nuisance_to_track = 1;
              
-             stan::math::ChainableStack ad_tape;
-             stan::math::nested_rev_autodiff nested;
-             thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i));
-             
-             const Eigen::Matrix<int, -1, -1> &y_Eigen_i = y_copies[i]; // make a copy of data
-             const Model_fn_args_struct &Model_args_as_cpp_struct_ref = Model_args_as_cpp_struct_copies[i];
-             const EHMC_Metric_struct   &EHMC_Metric_as_cpp_struct_ref = EHMC_Metric_as_cpp_struct_copies[i];
+             thread_local stan::math::ChainableStack ad_tape;
+             //stan::math::nested_rev_autodiff nested;
+             thread_local std::mt19937 rng(static_cast<unsigned int>(seed + 1000*i));
          
          {
-           
-           ///////////////////////////////////////// perform iterations for adaptation interval
-           HMCResult result_input(n_params_main, n_us, N);
-           result_input.main_theta_vec = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
-           result_input.main_theta_vec_0 = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
-           result_input.us_theta_vec = theta_us_vectors_all_chains_input_from_R_RcppPar.col(i);
-           result_input.us_theta_vec_0 = theta_us_vectors_all_chains_input_from_R_RcppPar.col(i);
-           
-           HMC_output_single_chain HMC_output_single_chain_i(n_iter, n_nuisance_to_track, n_params_main, n_us, N);
            
            {
              
@@ -287,7 +282,8 @@ void EHMC_burnin_openmp(    const int  n_threads,
                      
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 result_input, 
-                                                                burnin_indicator, i, seed + i * 1000, rng, n_iter,
+                                                                burnin_indicator, 
+                                                                i, seed + i * 1000, rng, n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
                                                                 force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -305,7 +301,8 @@ void EHMC_burnin_openmp(    const int  n_threads,
                      
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 result_input, 
-                                                                burnin_indicator, i, seed + i * 1000, rng, n_iter,
+                                                                burnin_indicator, 
+                                                                i, seed + i * 1000, rng, n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
                                                                 force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -320,21 +317,21 @@ void EHMC_burnin_openmp(    const int  n_threads,
              
              if (sample_nuisance == true)  {
                //////// Write results back to the shared array once half-iteration completed
-               theta_us_vectors_all_chains_output_to_R_RcppPar.column(i) =         fn_convert_EigenColVec_to_RMatrixColumn(  result_input.us_theta_vec ,  theta_us_vectors_all_chains_output_to_R_RcppPar.column(i));
+               theta_us_vectors_all_chains_output_to_R_RcppPar.col(i) =         result_input.us_theta_vec;
                //// for burnin / ADAM-tau adaptation only
-               theta_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn( result_input.us_theta_vec_0,      theta_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
-               theta_us_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn(  result_input.us_theta_vec_proposed ,     theta_us_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
-               velocity_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn( result_input.us_velocity_0_vec,         velocity_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
-               velocity_us_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn( result_input.us_velocity_vec_proposed,  velocity_us_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
+               theta_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.col(i) =  result_input.us_theta_vec_0;
+               theta_us_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.col(i) = result_input.us_theta_vec_proposed ;
+               velocity_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.col(i) = result_input.us_velocity_0_vec;
+               velocity_us_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.col(i) =  result_input.us_velocity_vec_proposed;
              }
              
              //////// Write results back to the shared array once half-iteration completed
-             theta_main_vectors_all_chains_output_to_R_RcppPar.column(i) =          fn_convert_EigenColVec_to_RMatrixColumn(result_input.main_theta_vec,  theta_main_vectors_all_chains_output_to_R_RcppPar.column(i));
+             theta_main_vectors_all_chains_output_to_R_RcppPar.col(i) =    result_input.main_theta_vec;
              ///// for burnin / ADAM-tau adaptation only
-             theta_main_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn( result_input.main_theta_vec_0,      theta_main_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
-             theta_main_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn(result_input.main_theta_vec_proposed,     theta_main_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
-             velocity_main_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn( result_input.main_velocity_0_vec,         velocity_main_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
-             velocity_main_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn( result_input.main_velocity_vec_proposed,  velocity_main_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
+             theta_main_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.col(i) =  result_input.main_theta_vec_0;
+             theta_main_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.col(i) = result_input.main_theta_vec_proposed;
+             velocity_main_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.col(i) =  result_input.main_velocity_0_vec;
+             velocity_main_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar.col(i) = result_input.main_velocity_vec_proposed;
              
              //////// compute summaries at end of iterations from each chain
              //// other outputs (once all iterations finished) - main
@@ -378,7 +375,7 @@ void EHMC_burnin_openmp(    const int  n_threads,
      }
 
 
-
+}
 
 
 
@@ -715,63 +712,62 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
  
  
 struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
-  
-    //  static std::atomic<bool> thread_locals_need_reset;
-    
-      void reset_Eigen() {
-            theta_main_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
-            theta_us_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
-      }
-      
-      // Clear all tbb concurrent vectors
-      void reset_tbb() { 
-            y_copies.clear();
-            Model_args_as_cpp_struct_copies.clear();
-            EHMC_args_as_cpp_struct_copies.clear();
-            EHMC_Metric_as_cpp_struct_copies.clear();
-            HMC_outputs.clear();
-      }
-      
-      void reset() {
-            reset_tbb();
-            reset_Eigen();
-      } 
-      
-      //////////////////// ---- declare variables
-      const int  seed;
-      const int  n_threads;
-      const int  n_iter;
-      const bool partitioned_HMC;
-      
-      //// local storage 
-      tbb::concurrent_vector<HMC_output_single_chain> HMC_outputs;
-      
-      //// references to R trace matrices
-      std::vector<Rcpp::NumericMatrix> &R_trace_output;
-      std::vector<Rcpp::NumericMatrix> &R_trace_divs;
-      const int n_nuisance_to_track;
-      std::vector<Rcpp::NumericMatrix> &R_trace_nuisance;
-      //// this only gets used for built-in models, for Stan models log_lik must be defined in the "transformed parameters" block.
-      std::vector<Rcpp::NumericMatrix> &R_trace_log_lik;     
-      
-      //// Input data (to read)
-      Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_input_from_R_RcppPar;
-      Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_input_from_R_RcppPar;
-      
-      //// data
-      tbb::concurrent_vector<Eigen::Matrix<int, -1, -1>>   y_copies;  
-      
-      //// input structs
-      tbb::concurrent_vector<Model_fn_args_struct>   Model_args_as_cpp_struct_copies;  
-      tbb::concurrent_vector<EHMC_fn_args_struct>    EHMC_args_as_cpp_struct_copies;  
-      tbb::concurrent_vector<EHMC_Metric_struct>     EHMC_Metric_as_cpp_struct_copies;  
-      
-      //// other args (read only)
-      const std::string Model_type;
-      const bool sample_nuisance;
-      const bool force_autodiff;
-      const bool force_PartialLog;
-      const bool multi_attempts; 
+
+          void reset_Eigen() {
+                theta_main_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
+                theta_us_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
+          }
+          
+          // Clear all tbb concurrent vectors
+          void reset_tbb() { 
+                y_copies.clear();
+                Model_args_as_cpp_struct_copies.clear();
+                EHMC_args_as_cpp_struct_copies.clear();
+                EHMC_Metric_as_cpp_struct_copies.clear();
+                HMC_outputs.clear();
+          }
+          
+          void reset() {
+                reset_tbb();
+                reset_Eigen();
+          } 
+          
+          //////////////////// ---- declare variables
+          const int  seed;
+          const int  n_threads;
+          const int  n_iter;
+          const bool partitioned_HMC;
+          
+          //// local storage 
+          tbb::concurrent_vector<HMC_output_single_chain> HMC_outputs;
+          
+          //// references to R trace matrices
+          std::vector<Rcpp::NumericMatrix> &R_trace_output;
+          std::vector<Rcpp::NumericMatrix> &R_trace_divs;
+          const int n_nuisance_to_track;
+          std::vector<Rcpp::NumericMatrix> &R_trace_nuisance;
+          
+          //// this only gets used for built-in models, for Stan models log_lik must be defined in the "transformed parameters" block.
+          std::vector<Rcpp::NumericMatrix> &R_trace_log_lik;     
+          
+          //// Input data (to read)
+          Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_input_from_R_RcppPar;
+          Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_input_from_R_RcppPar;
+          
+          //// data
+          tbb::concurrent_vector<Eigen::Matrix<int, -1, -1>>   y_copies;  
+          
+          //// input structs
+          tbb::concurrent_vector<Model_fn_args_struct>   Model_args_as_cpp_struct_copies;  
+          tbb::concurrent_vector<EHMC_fn_args_struct>    EHMC_args_as_cpp_struct_copies;  
+          tbb::concurrent_vector<EHMC_Metric_struct>     EHMC_Metric_as_cpp_struct_copies;  
+          
+          //// other args (read only)
+          const std::string Model_type;
+          const bool sample_nuisance;
+          const bool force_autodiff;
+          const bool force_PartialLog;
+          const bool multi_attempts; 
       
   ////////////// Constructor (initialise these with the SOURCE format)
   RcppParallel_EHMC_sampling(  const int  &n_threads_R,

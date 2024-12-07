@@ -34,7 +34,7 @@ using namespace Eigen;
 
 
 
-ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
+void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                                 Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
                                                                                 Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                                 const Eigen::Matrix<double, -1, 1> &theta_main_vec_initial_ref,
@@ -96,7 +96,7 @@ ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  
 
 
   
-ALWAYS_INLINE    void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
+void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                         Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
                                                                         Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                         Eigen::Matrix<double, -1, 1> &theta_us_vec_current_segment,
@@ -143,7 +143,8 @@ ALWAYS_INLINE    void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(
                              theta_main_vec_initial_ref, theta_us_vec_proposed_ref, y_ref, grad_option,
                              Model_args_as_cpp_struct,
                              Stan_model_as_cpp_struct);
-
+          grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
+          
           // Update velocity (second half step)
           Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
           velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * temp_2.array();

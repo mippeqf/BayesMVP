@@ -196,7 +196,7 @@ void check_numeric_stability(const Eigen::Matrix<double, -1, 1> &vec,
 
 
 
-ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                               Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                               Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                               const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
@@ -256,7 +256,14 @@ ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Ei
 
 
 
-ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+
+
+
+
+
+
+
+void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                                                 Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                                                 Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                                                 const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
@@ -312,9 +319,8 @@ ALWAYS_INLINE   void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(      
 }
 
 
-// 
-// 
-// 
+
+
 
 
 
@@ -367,9 +373,7 @@ void                                        fn_standard_HMC_main_only_single_ite
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
           if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
-      
-   
-
+     
     {
       
  
@@ -377,10 +381,10 @@ void                                        fn_standard_HMC_main_only_single_ite
         
       try {
         
-              result_input.main_velocity_vec_proposed()  =   result_input.main_velocity_0_vec(); // set initial velocity
-              result_input.main_theta_vec_proposed() =       result_input.main_theta_vec();   // set to CURRENT theta   
+                result_input.main_velocity_vec_proposed()  =   result_input.main_velocity_0_vec(); // set initial velocity
+                result_input.main_theta_vec_proposed() =       result_input.main_theta_vec();   // set to CURRENT theta   
       
-                ////---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
+                //// ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
                 generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
                 int    L_ii = std::ceil(  EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
                 if (L_ii < 1) { L_ii = 1 ; }
