@@ -282,11 +282,13 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                      Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                                 Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                                 seed + i * 1000);
+                 
+                     std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
                      
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 result_input, 
                                                                 burnin_indicator, 
-                                                                i, seed + i * 1000, rngs[i], n_iter,
+                                                                i, seed + i * 1000, rng_ref, n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
                                                                 force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -305,7 +307,7 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 result_input, 
                                                                 burnin_indicator, 
-                                                                i, seed + i * 1000, rngs[i], n_iter,
+                                                                i, seed + i * 1000, rng_ref, n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
                                                                 force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -603,9 +605,11 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
                                                                                  Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                  seed + i * 1000);
       
+      std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+      
       fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                  result_input, 
-                                                 burnin_indicator, i, seed + i * 1000, rngs[i], n_iter,
+                                                 burnin_indicator, i, seed + i * 1000, rng_ref, n_iter,
                                                  partitioned_HMC,
                                                  Model_type, sample_nuisance,
                                                  force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -620,9 +624,11 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
       
       thread_local Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
       
+      std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+      
       fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                  result_input, 
-                                                 burnin_indicator, i, seed + i * 1000, rngs[i], n_iter,
+                                                 burnin_indicator, i, seed + i * 1000, rng_ref, n_iter,
                                                  partitioned_HMC,
                                                  Model_type, sample_nuisance,
                                                  force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -891,12 +897,14 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
                                                                                                         Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                                                      seed + i);
                           //  }
-                      
+                    
+                         std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+                    
                          //////////////////////////////// perform iterations for chain i
                          fn_sample_HMC_multi_iter_single_thread(   HMC_outputs[i] ,
                                                                    result_input, 
                                                                    burnin_indicator, 
-                                                                   i, seed + i + 1, rngs[i], n_iter,
+                                                                   i, seed + i + 1, rng_ref, n_iter,
                                                                    partitioned_HMC,
                                                                    Model_type,  sample_nuisance,
                                                                    force_autodiff, force_PartialLog,  multi_attempts,  
@@ -916,11 +924,13 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
               
                           Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
               
+                          std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+              
                           //////////////////////////////// perform iterations for chain i
                           fn_sample_HMC_multi_iter_single_thread(  HMC_outputs[i],   
                                                                    result_input, 
                                                                    burnin_indicator, 
-                                                                   i, seed + i + 1, rngs[i], n_iter,
+                                                                   i, seed + i + 1, rng_ref, n_iter,
                                                                    partitioned_HMC,
                                                                    Model_type,  sample_nuisance, 
                                                                    force_autodiff, force_PartialLog,  multi_attempts,  
