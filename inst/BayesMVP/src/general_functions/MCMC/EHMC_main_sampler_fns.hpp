@@ -440,16 +440,22 @@ void                                        fn_standard_HMC_main_only_single_ite
                 U_x_prop = - log_posterior_prop; // initial energy
               
                 //////////////////////////////////////////////////////////////////    M-H acceptance step  (i.e, Accept/Reject step)
+                energy_old = U_x_initial;
+                energy_new = U_x_prop;
+                
                 if (metric_shape_main == "dense") {
                     
-                    energy_old = U_x_initial + compute_kinetic_energy_dense(result_input.main_velocity_0_vec(), EHMC_Metric_struct_as_cpp_struct.M_dense_main);
-                    energy_new = U_x_prop +    compute_kinetic_energy_dense(result_input.main_velocity_vec_proposed(), EHMC_Metric_struct_as_cpp_struct.M_dense_main);
+                    energy_old += 0.5 * result_input.main_velocity_0_vec().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main * result_input.main_velocity_0_vec();
+                    energy_new += 0.5 * result_input.main_velocity_vec_proposed().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main * result_input.main_velocity_vec_proposed();
                     log_ratio = - energy_new + energy_old;
                     
                 } else if (metric_shape_main == "diag") {
                   
-                    energy_old = U_x_initial + compute_kinetic_energy_diag(result_input.main_velocity_0_vec(), EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec);
-                    energy_new = U_x_prop +    compute_kinetic_energy_diag(result_input.main_velocity_vec_proposed(), EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec);
+                    // energy_old = U_x_initial + compute_kinetic_energy_diag(result_input.main_velocity_0_vec(), 1.0 / EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec.array());
+                   // energy_new = U_x_prop +    compute_kinetic_energy_diag(result_input.main_velocity_vec_proposed(), EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec);
+                    
+                    energy_old +=  0.5 * (result_input.main_velocity_0_vec().array().square() * (1.0 / EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec.array())).sum();
+                    energy_new +=  0.5 * (result_input.main_velocity_vec_proposed().array().square() * (1.0 / EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec.array())).sum();
                     log_ratio = - energy_new + energy_old;
                   
                 }
