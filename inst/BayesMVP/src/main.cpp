@@ -4,6 +4,7 @@
 
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::depends(RcppZiggurat)]]
 // [[Rcpp::plugins(cpp17)]]
  
 #define EIGEN_NO_DEBUG
@@ -98,6 +99,8 @@
 #include <stan/io/json/rapidjson_parser.hpp>   
    
  
+#include <Ziggurat.h>
+static Ziggurat::Ziggurat::Ziggurat zigg;
  
    
 #if __has_include("omp.h")
@@ -220,6 +223,7 @@
 
 using namespace Rcpp;
 using namespace Eigen;
+
 
 
 
@@ -1912,6 +1916,111 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
 
 }
 
+
+
+
+
+
+
+// [[Rcpp::export]]
+Rcpp::List                                   Rcpp_fn_OpenMP_EHMC_sampling(  const int n_threads_R,
+                                                                                  const int seed_R,
+                                                                                  const int n_iter_R,
+                                                                                  const bool iter_one_by_one,
+                                                                                  const bool partitioned_HMC_R,
+                                                                                  const std::string Model_type_R,
+                                                                                  const bool sample_nuisance_R,
+                                                                                  const bool force_autodiff_R,
+                                                                                  const bool force_PartialLog_R,
+                                                                                  const bool multi_attempts_R,
+                                                                                  const int n_nuisance_to_track,
+                                                                                  const Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_input_from_R,
+                                                                                  const Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_input_from_R,
+                                                                                  const Eigen::Matrix<int, -1, -1> y_Eigen_R,
+                                                                                  const Rcpp::List Model_args_as_Rcpp_List,  ///// ALWAYS read-only
+                                                                                  const Rcpp::List EHMC_args_as_Rcpp_List,
+                                                                                  const Rcpp::List EHMC_Metric_as_Rcpp_List
+) {
+  
+        //// key dimensions
+        const int n_params_main = theta_main_vectors_all_chains_input_from_R.rows();
+        const int n_us = theta_us_vectors_all_chains_input_from_R.rows();
+         
+        //// create EMPTY OUTPUT / containers* to be filled (each col filled from different thread w/ each col corresponding to a different chain)
+        Rcpp::NumericMatrix  theta_main_vectors_all_chains_output_to_R =  fn_convert_EigenMat_to_RcppMat_dbl(theta_main_vectors_all_chains_input_from_R);   // write to this
+         
+        //// nuisance
+        Rcpp::NumericMatrix  theta_us_vectors_all_chains_output_to_R  = fn_convert_EigenMat_to_RcppMat_dbl(theta_us_vectors_all_chains_input_from_R);
+         
+        //// convert lists to C++ structs
+        const Model_fn_args_struct     Model_args_as_cpp_struct =   convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List); ///// ALWAYS read-only
+        const EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
+        const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
+        //// replicate these structs for thread-safety as we will be modifying them for burnin
+        std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  n_threads_R); // read-only
+        std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R); // need to edit these !!
+        std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, n_threads_R); // read-only
+         
+        ///// Traces
+        const int N = Model_args_as_cpp_struct.N;
+        std::vector<Rcpp::NumericMatrix> trace_output =  vec_of_mats_Rcpp(n_params_main, n_iter_R, n_threads_R);
+        std::vector<Rcpp::NumericMatrix> trace_output_divs =  vec_of_mats_Rcpp(1, n_iter_R, n_threads_R);
+        std::vector<Rcpp::NumericMatrix> trace_output_nuisance =  vec_of_mats_Rcpp(n_nuisance_to_track, n_iter_R, n_threads_R);
+        std::vector<Rcpp::NumericMatrix> trace_output_log_lik = vec_of_mats_Rcpp(N, n_iter_R, n_threads_R);  //// possibly dummy
+         
+        ///// data copies
+        std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), n_threads_R);
+        for (int kk = 0; kk < n_threads_R; ++kk) {
+          y_copies_R[kk] = y_Eigen_R;
+        }
+        
+        // tbb::task_scheduler_init init(n_threads_R);
+        warmUpThreads(n_threads_R);
+        
+        //// call OpenMP fn 
+            EHMC_sampling_OpenMP(   n_threads_R,
+                                    seed_R,
+                                    n_iter_R,
+                                    partitioned_HMC_R,
+                                    Model_type_R,
+                                    sample_nuisance_R,
+                                    force_autodiff_R,
+                                    force_PartialLog_R,
+                                    multi_attempts_R,
+                                    ///// inputs
+                                    theta_main_vectors_all_chains_input_from_R,
+                                    theta_us_vectors_all_chains_input_from_R,
+                                    ///// outputs (main)
+                                    trace_output,
+                                    ///// data
+                                    y_copies_R,
+                                    ///// structs
+                                    Model_args_as_cpp_struct_copies_R, ///// ALWAYS read-only
+                                    EHMC_args_as_cpp_struct_copies_R,
+                                    EHMC_Metric_as_cpp_struct_copies_R,
+                                    ///// traces
+                                    trace_output_divs,
+                                    n_nuisance_to_track,
+                                    trace_output_nuisance,
+                                    trace_output_log_lik
+        );
+        
+        ///  //// Reset everything
+        //// parallel_hmc_sampling.reset();
+        
+        //// Return results
+        return Rcpp::List::create(trace_output,
+                                  trace_output_divs,
+                                  trace_output_nuisance,
+                                  theta_main_vectors_all_chains_output_to_R,
+                                  theta_us_vectors_all_chains_output_to_R,
+                                  trace_output_log_lik
+        );
+        
+  
+  
+  
+}
 
 
 
