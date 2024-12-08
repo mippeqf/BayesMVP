@@ -405,6 +405,39 @@ Rcpp_fn_RcppParallel_EHMC_sampling <- function(n_threads_R,
 }
 
 
+
+
+#' @useDynLib BayesMVP, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @export
+Rcpp_fn_OpenMP_EHMC_sampling <- function(      n_threads_R, 
+                                               seed_R, 
+                                               n_iter_R, 
+                                               iter_one_by_one, 
+                                               partitioned_HMC_R, 
+                                               Model_type_R, 
+                                               sample_nuisance_R, 
+                                               force_autodiff_R, 
+                                               force_PartialLog_R, 
+                                               multi_attempts_R, 
+                                               n_nuisance_to_track, 
+                                               theta_main_vectors_all_chains_input_from_R, 
+                                               theta_us_vectors_all_chains_input_from_R, 
+                                               y_Eigen_R, 
+                                               Model_args_as_Rcpp_List, 
+                                               EHMC_args_as_Rcpp_List, 
+                                               EHMC_Metric_as_Rcpp_List) {
+  
+  .Call(`_BayesMVP_Rcpp_fn_RcppParallel_EHMC_sampling`, n_threads_R, seed_R, n_iter_R, 
+        iter_one_by_one, partitioned_HMC_R, Model_type_R, sample_nuisance_R, 
+        force_autodiff_R, force_PartialLog_R, multi_attempts_R, n_nuisance_to_track, 
+        theta_main_vectors_all_chains_input_from_R, theta_us_vectors_all_chains_input_from_R, 
+        y_Eigen_R, Model_args_as_Rcpp_List, EHMC_args_as_Rcpp_List, EHMC_Metric_as_Rcpp_List)
+  
+}
+
+
+
 #' @useDynLib BayesMVP, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 #' @export

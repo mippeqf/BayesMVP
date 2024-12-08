@@ -230,11 +230,11 @@ sample_model  <-    function(     Model_type,
                   # }
 
                   if (parallel_method == "OpenMP") { 
-                    Rcpp_parallel_sampling_fn <- Rcpp_fn_openMP_EHMC_sampling
+                    Rcpp_parallel_sampling_fn <- Rcpp_fn_OpenMP_EHMC_sampling
                   } else { ###  use RcppParallel
                     Rcpp_parallel_sampling_fn <- Rcpp_fn_RcppParallel_EHMC_sampling
                   }
-                  
+         
                   
                   # print(Model_args_as_Rcpp_List)
                   # print(dim(theta_us_vectors_all_chains_input_from_R))
