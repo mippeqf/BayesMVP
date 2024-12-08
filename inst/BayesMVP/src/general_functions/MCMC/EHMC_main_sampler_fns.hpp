@@ -2,7 +2,6 @@
 #pragma once
 
  
- 
 
 
 #include <random>
@@ -20,60 +19,98 @@
  
  
 using namespace Eigen;
+ 
+ 
+ 
+ 
+ 
+ 
+
 
  
+
  
- 
- 
- 
- 
+
  
 // HMC sampler functions   ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-
-// 
-// Eigen::Matrix<double, -1, 1> generate_random_std_norm_vec_Return(   int n_params, 
-//                                                                     std::mt19937  &rng) {
-//   
-//     Eigen::Matrix<double, -1, 1> std_norm_vec(n_params);
-//     
-//     std::normal_distribution<double> dist(0.0, 1.0); 
-//     for (int d = 0; d < n_params; d++) {
-//       std_norm_vec(d) = dist(rng);
-//     }
-//     
-//     return std_norm_vec;
-//   
-// }
-// 
-
  
-
-
-void generate_random_std_norm_vec(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
-                                    int n_params, 
-                                    std::mt19937  &rng) {
-  
- // static int call_count = 0;
-
-  std::normal_distribution<double> dist(0.0, 1.0); 
-  for (int d = 0; d < n_params; d++) {
-    double r = dist(rng);
-   // std::cout << "Call " << call_count << " Draw " << d << ": " << r << "\n";
-    std_norm_vec(d) = r;
-  }
-  
- // call_count++;
-
+ALWAYS_INLINE   void generate_random_std_norm_vec_zigg(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                       int n_params) {
+   
+    
+   
+   for (int d = 0; d < n_params; d++) {
+     std_norm_vec(d) =  zigg.norm();
+   } 
+   
+ }
+ 
+ 
+ 
+ALWAYS_INLINE   void generate_random_std_norm_vec_R(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                     int n_params) {
+ 
+   for (int d = 0; d < n_params; d++) {
+     double r = R::rnorm(0, 1);
+     std_norm_vec(d) = r;
+   }
+   
+ }
+ 
+ 
+ 
+ALWAYS_INLINE   void generate_random_std_norm_vec(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                     int n_params, 
+                                     std::mt19937  &rng) {
+   
+   std::normal_distribution<double> dist(0.0, 1.0); 
+   for (int d = 0; d < n_params; d++) {
+     double r = dist(rng);
+     // std::cout << "Call " << call_count << " Draw " << d << ": " << r << "\n";
+     std_norm_vec(d) = r;
+   }
+   
 }
-
-
+ 
+ 
+ 
+ 
+ALWAYS_INLINE  double runif_zigg( double lower,
+                                   double upper) { 
+  
+  double rnorm_zigg = zigg.norm();
+  double runif_std_zigg = stan::math::Phi(rnorm_zigg);
+  double runif_zigg = lower + (upper - lower)*runif_std_zigg;
+  return runif_zigg;
+  
+  
+}
+ 
+ 
+ 
+ALWAYS_INLINE  void generate_random_tau_ii_zigg(    double tau, 
+                                     double &tau_ii  // ref because assigning
+ ) {
+   
+   tau_ii = runif_zigg(0, 2.0 * tau);
+   
+ }
+ 
+ 
+ 
+ALWAYS_INLINE  void generate_random_tau_ii_R(   double tau, 
+                                 double &tau_ii  // ref because assigning
+) {
+   
+   tau_ii = R::runif(0, 2.0 * tau);
+   
+}
  
 
-
-// Another function using the same RNG
-void generate_random_tau_ii(  double tau, 
+ 
+ALWAYS_INLINE  void generate_random_tau_ii(  double tau, 
                                                              double &tau_ii,  // ref because assigning
                                                              std::mt19937  &rng) {
 
@@ -91,7 +128,7 @@ void generate_random_tau_ii(  double tau,
 
 
 
-bool check_divergence_Eigen(                  const HMCResult &result_input,
+ALWAYS_INLINE  bool check_divergence_Eigen(                  const HMCResult &result_input,
                                               const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                               const double hamiltonian_energy,
                                               const double previous_hamiltonian_energy) {
@@ -130,7 +167,7 @@ bool check_divergence_Eigen(                  const HMCResult &result_input,
 
 
 
-double compute_kinetic_energy_diag(const Eigen::Matrix<double, -1, 1> &velocity, 
+ALWAYS_INLINE  double compute_kinetic_energy_diag(const Eigen::Matrix<double, -1, 1> &velocity, 
                                    const Eigen::Matrix<double, -1, 1> &M_vec) {
   
   double energy = 0.0;
@@ -149,7 +186,8 @@ double compute_kinetic_energy_diag(const Eigen::Matrix<double, -1, 1> &velocity,
 }
  
  
-double compute_kinetic_energy_dense( const Eigen::Matrix<double, -1, 1>  &velocity, 
+ 
+ALWAYS_INLINE  double compute_kinetic_energy_dense( const Eigen::Matrix<double, -1, 1>  &velocity, 
                                      const Eigen::Matrix<double, -1, -1> &M_dense) {
    
    // Use M * v first to minimize roundoff error accumulation
@@ -172,7 +210,7 @@ double compute_kinetic_energy_dense( const Eigen::Matrix<double, -1, 1>  &veloci
 
  
 
-bool proposal_div(    const double log_ratio, 
+ALWAYS_INLINE  bool proposal_div(    const double log_ratio, 
                       const double energy_old, 
                       const double energy_new) {
    
@@ -188,8 +226,10 @@ bool proposal_div(    const double log_ratio,
    
 }
 
+ 
+ 
 
-void check_numeric_stability(const Eigen::Matrix<double, -1, 1> &vec, 
+ALWAYS_INLINE  void check_numeric_stability(const Eigen::Matrix<double, -1, 1> &vec, 
                              const std::string &name) {
   
   if (vec.hasNaN()) {
@@ -208,7 +248,7 @@ void check_numeric_stability(const Eigen::Matrix<double, -1, 1> &vec,
 
 
 
-void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                               Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                               Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                               const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
@@ -275,7 +315,7 @@ void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Eigen::Matrix<dou
 
 
 
-void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                                                 Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                                                 Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                                                 const Eigen::Matrix<double, -1, 1> &theta_us_vec_initial_ref,
@@ -339,7 +379,7 @@ void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       Eigen::Matrix<d
 
 
 
-void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
+ALWAYS_INLINE  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
                                                                                                      const bool  burnin, 
                                                                                                      std::mt19937  &rng,
                                                                                                      const int seed,
@@ -381,7 +421,8 @@ void                                        fn_standard_HMC_main_only_single_ite
 
       {
           Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
-          generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
+          // generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
+          generate_random_std_norm_vec_R(std_norm_vec_main, n_params_main);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
           if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
@@ -397,7 +438,8 @@ void                                        fn_standard_HMC_main_only_single_ite
                 result_input.main_theta_vec_proposed() =       result_input.main_theta_vec();   // set to CURRENT theta   
       
                 //// ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
-                generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
+                // generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
+                generate_random_tau_ii_R(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii);
                 int    L_ii = std::ceil(  EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
                 if (L_ii < 1) { L_ii = 1 ; }
                 
@@ -463,9 +505,6 @@ void                                        fn_standard_HMC_main_only_single_ite
                     
                 } else if (metric_shape_main == "diag") {
                   
-                    // energy_old = U_x_initial + compute_kinetic_energy_diag(result_input.main_velocity_0_vec(), 1.0 / EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec.array());
-                   // energy_new = U_x_prop +    compute_kinetic_energy_diag(result_input.main_velocity_vec_proposed(), EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec);
-                    
                     energy_old +=  0.5 * (result_input.main_velocity_0_vec().array().square() * (1.0 / EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec.array())).sum();
                     energy_new +=  0.5 * (result_input.main_velocity_vec_proposed().array().square() * (1.0 / EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec.array())).sum();
                     log_ratio = - energy_new + energy_old;
@@ -489,7 +528,8 @@ void                                        fn_standard_HMC_main_only_single_ite
                           
                           std::uniform_real_distribution<double> unif(0.0, 1.0);
                       
-                      if   (unif(rng) > result_input.main_p_jump())   { 
+                      //  if   (unif(rng) > result_input.main_p_jump())   { 
+                      if   (R::runif(0, 1) > result_input.main_p_jump())   { 
                              result_input.reject_proposal_main();  // # reject proposal
                       } else {   
                              result_input.accept_proposal_main(); // # accept proposal

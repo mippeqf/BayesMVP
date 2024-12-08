@@ -1,7 +1,6 @@
 
 #pragma once
 
-
  
  
 #include <random>
@@ -16,12 +15,8 @@
  
  
  
- 
- 
 using namespace Eigen;
  
- 
-
   
   
  
@@ -34,7 +29,7 @@ using namespace Eigen;
 
 
 
-void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
+ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                                 Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
                                                                                 Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                                 const Eigen::Matrix<double, -1, 1> &theta_main_vec_initial_ref,
@@ -96,7 +91,7 @@ void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  Eigen::Matrix<do
 
 
   
-void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
+ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                         Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
                                                                         Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                                                         Eigen::Matrix<double, -1, 1> &theta_us_vec_current_segment,
@@ -165,7 +160,7 @@ void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  Eigen::Matrix<d
 
 
  
-void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(                       HMCResult &result_input,
+ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(                       HMCResult &result_input,
                                                                                                const bool burnin,
                                                                                                std::mt19937  &rng,
                                                                                                const int seed,
@@ -209,7 +204,8 @@ void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        
 
     {
        Eigen::Matrix<double, -1, 1> std_norm_vec_us(n_nuisance); // testing if static thread_local makes more efficient
-       generate_random_std_norm_vec(std_norm_vec_us, n_nuisance, rng);
+       // generate_random_std_norm_vec(std_norm_vec_us, n_nuisance, rng);
+       generate_random_std_norm_vec_R(std_norm_vec_us, n_nuisance);
        result_input.us_velocity_0_vec().array() = ( std_norm_vec_us.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //.cast<float>() ;  
     }
      
@@ -224,8 +220,9 @@ void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        
             result_input.us_theta_vec_proposed() =  result_input.us_theta_vec();                     // set TO CURRENT theta   
     
             // ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
-              generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_us,    EHMC_args_as_cpp_struct.tau_us_ii, rng);
-            
+              // generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_us,    EHMC_args_as_cpp_struct.tau_us_ii, rng);
+              generate_random_tau_ii_R(   EHMC_args_as_cpp_struct.tau_us,    EHMC_args_as_cpp_struct.tau_us_ii);
+              
               int    L_ii;
               if (EHMC_args_as_cpp_struct.diffusion_HMC == true)   L_ii = std::ceil(  EHMC_args_as_cpp_struct.tau_us_ii /  eps_1 );
               if (EHMC_args_as_cpp_struct.diffusion_HMC == false)  L_ii = std::ceil(  EHMC_args_as_cpp_struct.tau_us_ii /  EHMC_args_as_cpp_struct.eps_us );
@@ -330,9 +327,10 @@ void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        
                     result_input.us_div() = 0;
                     result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                     
-                    std::uniform_real_distribution<double> unif(0.0, 1.0);
+                    // std::uniform_real_distribution<double> unif(0.0, 1.0);
                     
-                    if   (unif(rng) >  result_input.us_p_jump())  {  
+                    if   (R::runif(0, 1) >  result_input.us_p_jump())  { 
+                    // if   (unif(rng) >  result_input.us_p_jump())  {  
                        result_input.reject_proposal_us();  // # reject proposal
                     } else {   // # accept proposal
                        result_input.accept_proposal_us(); // # accept proposal

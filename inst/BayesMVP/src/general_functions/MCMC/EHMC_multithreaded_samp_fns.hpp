@@ -1,9 +1,7 @@
 #pragma once
 
  
-
-using namespace Rcpp;
-using namespace Eigen; 
+ 
 
  
 
@@ -20,8 +18,6 @@ using namespace Eigen;
 #include <thread>
 #include <functional>
 
-
-
  
  
 //// ANSI codes for different colors
@@ -34,8 +30,9 @@ using namespace Eigen;
 #define CYAN    "\033[36m"
 
  
+using namespace Rcpp;
+using namespace Eigen;
  
-
  
 static std::mutex print_mutex; //// global mutex 
 
@@ -72,6 +69,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
      const int n_params = n_params_main + n_us;
      
      const bool burnin = false; 
+ 
  
          ///////////////////////////////////////// perform iterations for adaptation interval
          ////// main iteration loop
@@ -194,7 +192,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
      
      
      
-//// OpenMP -- instead of a Worker struct, make it a function
+//// OpenMP
 void EHMC_burnin_OpenMP(    const int  n_threads,
                             const int  seed,
                             const int  n_iter,
@@ -232,6 +230,8 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                             Eigen::Matrix<double, -1, -1>  &velocity_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar,
                             Eigen::Matrix<double, -1, -1>  &velocity_us_prop_burnin_tau_adapt_all_chains_output_to_R_RcppPar
 ) {
+  
+       RNGScope scope; // Creates RAII-style scope for R's RNG  (e.g. for R::runif(0, 1), etc)
        
        //  #ifdef _OPENMP
        omp_set_num_threads(n_threads);
@@ -244,8 +244,9 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
          rngs.emplace_back(rng); // .seed(seed * (i + 1));
        } 
        
+       
        //// parallel for-loop
-      //// #pragma omp parallel for
+       #pragma omp parallel for
        for (int i = 0; i < n_threads; i++) {   
          
              const int N =  Model_args_as_cpp_struct_copies[i].N;
@@ -385,6 +386,12 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
 
 
 }
+
+
+
+
+
+
 
 
 
@@ -601,7 +608,7 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
     //////////////////////////////// perform iterations for chain i
     if (Model_type == "Stan") {  
       
-      thread_local Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
+      Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                  Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                  seed + i * 1000);
       
@@ -611,7 +618,8 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
       
       fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                  result_input, 
-                                                 burnin_indicator, i, seed + i * 1000, rng, n_iter,
+                                                 burnin_indicator, 
+                                                 i, seed + i * 1000, rng, n_iter,
                                                  partitioned_HMC,
                                                  Model_type, sample_nuisance,
                                                  force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -624,7 +632,7 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
       
     } else { 
       
-      thread_local Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
+      Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
       
      // std::uniform_real_distribution<double> unif(0.0, 1.0);
       std::mt19937 &rng = rngs[i];   
@@ -632,7 +640,8 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
       
       fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                  result_input, 
-                                                 burnin_indicator, i, seed + i * 1000, rng, n_iter,
+                                                 burnin_indicator, 
+                                                 i, seed + i * 1000, rng, n_iter,
                                                  partitioned_HMC,
                                                  Model_type, sample_nuisance,
                                                  force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -733,8 +742,13 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
 
  
  
-struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
-
+class RcppParallel_EHMC_sampling : public RcppParallel::Worker {
+  
+private:
+  RNGScope scope; 
+  
+  
+public:
           void reset_Eigen() {
                 theta_main_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
                 theta_us_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
@@ -793,6 +807,7 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
           const bool multi_attempts; 
           
           tbb::concurrent_vector<std::mt19937> rngs;  // one RNG per thread
+          
       
   ////////////// Constructor (initialise these with the SOURCE format)
   RcppParallel_EHMC_sampling(  const int  &n_threads_R,
@@ -822,6 +837,7 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
                                std::vector<Rcpp::NumericMatrix> &trace_output_log_lik
                                )
     :
+    scope(),
     n_threads(n_threads_R),
     seed(seed_R),
     n_iter(n_iter_R),
@@ -978,7 +994,7 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
             }
           }
 
-          // Copy nuisance if needed
+          // Copy nuisance  
           if (sample_nuisance) {
             for (int ii = 0; ii < HMC_outputs[i].trace_nuisance().cols(); ++ii) {
               for (int param = 0; param < HMC_outputs[i].trace_nuisance().rows(); ++param) {
@@ -987,7 +1003,7 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
             }
           }
 
-          // Copy log-lik if needed (for built-in models only)
+          // Copy log-lik   (for built-in models only)
           if (Model_type != "Stan") {
             for (int ii = 0; ii < HMC_outputs[i].trace_log_lik().cols(); ++ii) {
               for (int param = 0; param < HMC_outputs[i].trace_log_lik().rows(); ++param) {
@@ -1006,15 +1022,192 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
 
 
  
-//// std::atomic<bool> RcppParallel_EHMC_sampling::thread_locals_need_reset{false};
+ 
 
 
 
 
+//// --------------------------------- OpenMP  functions  -- SAMPLING fn ------------------------------------------------------------------------------------------------------------------------------------------- 
 
 
 
+ 
 
+//// OpenMP  - SAMPLING
+void EHMC_sampling_OpenMP(    const int  n_threads,
+                              const int  seed,
+                              const int  n_iter,
+                              const bool partitioned_HMC,
+                              const std::string &Model_type,
+                              const bool sample_nuisance,
+                              const bool force_autodiff,
+                              const bool force_PartialLog,
+                              const bool multi_attempts,
+                              ///// inputs
+                              const Eigen::Matrix<double, -1, -1>  &theta_main_vectors_all_chains_input_from_R_RcppPar,
+                              const Eigen::Matrix<double, -1, -1>  &theta_us_vectors_all_chains_input_from_R_RcppPar,
+                              //// output (main)
+                              std::vector<Rcpp::NumericMatrix> &trace_output,
+                              //// data
+                              const std::vector<Eigen::Matrix<int, -1, -1>>   &y_copies,
+                              //////////////  input structs
+                              std::vector<Model_fn_args_struct> &Model_args_as_cpp_struct_copies,
+                              std::vector<EHMC_fn_args_struct>  &EHMC_args_as_cpp_struct_copies,
+                              std::vector<EHMC_Metric_struct>   &EHMC_Metric_as_cpp_struct_copies,
+                              /////////////
+                              std::vector<Rcpp::NumericMatrix> &trace_divs,
+                              const int &n_nuisance_to_track_R,
+                              std::vector<Rcpp::NumericMatrix> &trace_nuisance,
+                              std::vector<Rcpp::NumericMatrix> &trace_log_lik
+) {
+  
+  RNGScope scope; // Creates RAII-style scope for R's RNG  (e.g. for R::runif(0, 1), etc)
+  
+  //// local storage 
+  const int N = Model_args_as_cpp_struct_copies[0].N;
+  const int n_us =  Model_args_as_cpp_struct_copies[0].n_nuisance;
+  const int n_params_main = Model_args_as_cpp_struct_copies[0].n_params_main;
+  const int n_nuisance_to_track = 1;
+  
+  std::vector<HMC_output_single_chain> HMC_outputs;
+  for (int i = 0; i < n_threads; ++i) {
+    HMC_output_single_chain HMC_output_single_chain(n_iter, n_nuisance_to_track, n_params_main, n_us, N);
+    HMC_outputs.emplace_back(HMC_output_single_chain);
+  }
+  
+  std::vector<std::mt19937> rngs;  // one RNG per thread 
+  for(int i = 0; i < n_threads; i++) {
+    std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
+    rngs.emplace_back(rng); // .seed(seed * (i + 1));
+  } 
+  
+  omp_set_num_threads(n_threads);
+  omp_set_dynamic(0);
+  
+  //// parallel for-loop
+  #pragma omp parallel for
+  for (int i = 0; i < n_threads; i++) {   
+        
+        const int N =  Model_args_as_cpp_struct_copies[i].N;
+        const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
+        const int n_params_main = Model_args_as_cpp_struct_copies[i].n_params_main;
+        const int n_params = n_params_main + n_us;
+        const bool burnin_indicator = false;
+        const int n_nuisance_to_track = 1;
+        
+        stan::math::ChainableStack ad_tape;
+        stan::math::nested_rev_autodiff nested;
+        
+        ///////////////////////////////////////// perform iterations for adaptation interval
+        HMCResult result_input(n_params_main, n_us, N);
+        result_input.main_theta_vec() = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
+        result_input.main_theta_vec_0() = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
+        
+        if (sample_nuisance == true)  {
+          result_input.us_theta_vec() = theta_us_vectors_all_chains_input_from_R_RcppPar.col(i);
+          result_input.us_theta_vec_0() = theta_us_vectors_all_chains_input_from_R_RcppPar.col(i);
+        }
+        
+          //////////////////////////////// perform iterations for chain i
+          if (Model_type == "Stan") {  
+            
+            Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
+                                                                                       Model_args_as_cpp_struct_copies[i].json_file_path, 
+                                                                                       seed + i * 1000);
+            
+            // std::uniform_real_distribution<double> unif(0.0, 1.0);
+            std::mt19937 &rng = rngs[i];   
+            // std::cout << "Test random number for chain " << i << ": " << unif(rng) << std::endl;
+            
+            fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
+                                                       result_input, 
+                                                       burnin_indicator, 
+                                                       i, seed + i * 1000, rng, n_iter,
+                                                       partitioned_HMC,
+                                                       Model_type, sample_nuisance,
+                                                       force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
+                                                       y_copies[i], 
+                                                       Model_args_as_cpp_struct_copies[i], 
+                                                       EHMC_args_as_cpp_struct_copies[i], 
+                                                       EHMC_Metric_as_cpp_struct_copies[i], 
+                                                       Stan_model_as_cpp_struct);
+            
+            fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct); //// destroy Stan model object
+            
+          } else { 
+            
+            Stan_model_struct Stan_model_as_cpp_struct; ////  dummy struct
+            
+            // std::uniform_real_distribution<double> unif(0.0, 1.0);
+            std::mt19937 &rng = rngs[i];   
+            // std::cout << "Test random number for chain " << i << ": " << unif(rng) << std::endl;
+            
+            fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
+                                                       result_input, 
+                                                       burnin_indicator, 
+                                                       i, seed + i * 1000, rng, n_iter,
+                                                       partitioned_HMC,
+                                                       Model_type, sample_nuisance,
+                                                       force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
+                                                       y_copies[i], 
+                                                       Model_args_as_cpp_struct_copies[i], 
+                                                       EHMC_args_as_cpp_struct_copies[i], 
+                                                       EHMC_Metric_as_cpp_struct_copies[i], 
+                                                       Stan_model_as_cpp_struct);
+            
+            
+          }
+ 
+ 
+    
+  }  //// end of parallel OpenMP loop
+  
+  
+  
+  // At end of sampling, copy results directly to R matrices
+    for (size_t i = 0; i < n_threads; ++i) {
+      
+            // Copy main trace
+            for (int ii = 0; ii < HMC_outputs[i].trace_main().cols(); ++ii) {
+              for (int param = 0; param < HMC_outputs[i].trace_main().rows(); ++param) {
+                trace_output[i](param, ii) = std::move(HMC_outputs[i].trace_main()(param, ii));
+              }
+            }
+            
+            // Copy divs
+            for (int ii = 0; ii < HMC_outputs[i].trace_div().cols(); ++ii) {
+              for (int param = 0; param < HMC_outputs[i].trace_div().rows(); ++param) {
+                trace_divs[i](param, ii) = std::move(HMC_outputs[i].trace_div()(param, ii));
+              }
+            }
+            
+            // Copy nuisance  
+            if (sample_nuisance) {
+              for (int ii = 0; ii < HMC_outputs[i].trace_nuisance().cols(); ++ii) {
+                for (int param = 0; param < HMC_outputs[i].trace_nuisance().rows(); ++param) {
+                  trace_nuisance[i](param, ii) = std::move(HMC_outputs[i].trace_nuisance()(param, ii));
+                }
+              }
+            }
+            
+            // Copy log-lik   (for built-in models only)
+            if (Model_type != "Stan") {
+              for (int ii = 0; ii < HMC_outputs[i].trace_log_lik().cols(); ++ii) {
+                for (int param = 0; param < HMC_outputs[i].trace_log_lik().rows(); ++param) {
+                  trace_log_lik[i](param, ii) =  std::move(HMC_outputs[i].trace_log_lik()(param, ii));
+                }
+              }
+            }
+      
+    }
+ 
+  
+  
+}
+
+
+
+ 
 
 
 

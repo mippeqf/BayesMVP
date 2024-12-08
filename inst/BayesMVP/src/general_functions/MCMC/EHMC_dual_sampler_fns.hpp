@@ -15,7 +15,7 @@ using namespace Eigen;
  
  
  
-void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
+ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                                                Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                                      Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
                                                                                      Eigen::Matrix<double, -1, 1> &theta_us_vec_proposed_ref,
@@ -89,7 +89,7 @@ void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Eigen::Matrix<dou
 
 
 
-void                                        fn_standard_HMC_dual_single_iter_InPlace_process(    HMCResult &result_input,
+ALWAYS_INLINE  void                                        fn_standard_HMC_dual_single_iter_InPlace_process(    HMCResult &result_input,
                                                                                                  const bool  burnin, 
                                                                                                  std::mt19937  &rng,
                                                                                                  const int seed,
@@ -130,20 +130,19 @@ void                                        fn_standard_HMC_dual_single_iter_InP
 
       { /// draw velocity for main   
           Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
-          generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
+          // generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
+          generate_random_std_norm_vec_R(std_norm_vec_main, n_params_main);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
         ///  if (metric_shape_main == "diag")  result_input.main_velocity_0_vec.array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
       { /// draw velocity for nuisance
           Eigen::Matrix<double, -1, 1> std_norm_vec_us(n_nuisance); // testing if static thread_local makes more efficient
-          generate_random_std_norm_vec(std_norm_vec_us, n_nuisance, rng);
+          // generate_random_std_norm_vec(std_norm_vec_us, n_nuisance, rng);
+          generate_random_std_norm_vec_R(std_norm_vec_us, n_nuisance);
           result_input.us_velocity_0_vec().array() = ( std_norm_vec_us.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //.cast<float>() ;  
       }
-      
-   
 
     {
-      
  
       { 
         
@@ -155,7 +154,8 @@ void                                        fn_standard_HMC_dual_single_iter_InP
         result_input.us_theta_vec_proposed() =       result_input.us_theta_vec_0();   // set to initial theta 
 
         // ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
-          generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
+          // generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
+          generate_random_tau_ii_R(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii);
           int    L_ii = std::ceil( EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
           if (L_ii < 1) { L_ii = 1 ; }
           
@@ -211,13 +211,13 @@ void                                        fn_standard_HMC_dual_single_iter_InP
           //////////////////////////////////////////////////////////////////    M-H acceptance step  (i.e, Accept/Reject step)
           if (metric_shape_main == "dense") {
        
-              const Eigen::Matrix<double, 1, -1>  &velocity_0_x_M_dense_main = result_input.main_velocity_0_vec().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
+              const Eigen::Matrix<double, 1, -1>  velocity_0_x_M_dense_main = result_input.main_velocity_0_vec().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
               energy_old = U_x_initial ;
               energy_old  +=  0.5 * ( velocity_0_x_M_dense_main * result_input.main_velocity_0_vec() ).eval()(0, 0) ; // for main
               energy_old  +=  0.5 * (  result_input.us_velocity_0_vec().array()  *  result_input.us_velocity_0_vec().array() * ( EHMC_Metric_struct_as_cpp_struct.M_us_vec ).array() ).sum() ; // for nuisance
             
               
-              const Eigen::Matrix<double, 1, -1>  &velocity_prop_x_M_dense_main =  result_input.main_velocity_vec_proposed().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
+              const Eigen::Matrix<double, 1, -1>  velocity_prop_x_M_dense_main =  result_input.main_velocity_vec_proposed().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
               energy_new  =  U_x_prop;  
               energy_new  +=  0.5 * ( velocity_prop_x_M_dense_main *  result_input.main_velocity_vec_proposed()  ).eval()(0, 0) ; // for main
               energy_new  +=  0.5 * (  result_input.us_velocity_vec_proposed().array()  *  result_input.us_velocity_vec_proposed().array() * ( EHMC_Metric_struct_as_cpp_struct.M_us_vec ).array() ).sum() ; // for nuisance
@@ -248,9 +248,9 @@ void                                        fn_standard_HMC_dual_single_iter_InP
                     result_input.us_div() = 0;
                     result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                 
-                    std::uniform_real_distribution<double> unif(0.0, 1.0);
+                    // std::uniform_real_distribution<double> unif(0.0, 1.0);
                 
-                if    (unif(rng) > result_input.main_p_jump())   {  // # reject proposal
+                if    (R::runif(0, 1) > result_input.main_p_jump())   {  // # reject proposal
                       result_input.reject_proposal_main();  // # reject proposal
                       result_input.reject_proposal_us();  // # reject proposal
                 } else {   // # accept proposal
