@@ -32,30 +32,39 @@ using namespace Eigen;
 
 
 
-Eigen::Matrix<double, -1, 1> generate_random_std_norm_vec_Return(   int n_params, 
-                                                                    std::mt19937  &rng) {
+// 
+// Eigen::Matrix<double, -1, 1> generate_random_std_norm_vec_Return(   int n_params, 
+//                                                                     std::mt19937  &rng) {
+//   
+//     Eigen::Matrix<double, -1, 1> std_norm_vec(n_params);
+//     
+//     std::normal_distribution<double> dist(0.0, 1.0); 
+//     for (int d = 0; d < n_params; d++) {
+//       std_norm_vec(d) = dist(rng);
+//     }
+//     
+//     return std_norm_vec;
+//   
+// }
+// 
+
+ 
+
+
+void generate_random_std_norm_vec(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                    int n_params, 
+                                    std::mt19937  &rng) {
   
-    Eigen::Matrix<double, -1, 1> std_norm_vec(n_params);
-    
-    std::normal_distribution<double> dist(0.0, 1.0); 
-    for (int d = 0; d < n_params; d++) {
-      std_norm_vec(d) = dist(rng);
-    }
-    
-    return std_norm_vec;
-  
-}
-
-
-
-void generate_random_std_norm_vec( Eigen::Matrix<double, -1, 1> &std_norm_vec,
-                                                                  int n_params, 
-                                                                  std::mt19937  &rng) {
+ // static int call_count = 0;
 
   std::normal_distribution<double> dist(0.0, 1.0); 
   for (int d = 0; d < n_params; d++) {
-    std_norm_vec(d) = dist(rng);
+    double r = dist(rng);
+   // std::cout << "Call " << call_count << " Draw " << d << ": " << r << "\n";
+    std_norm_vec(d) = r;
   }
+  
+ // call_count++;
 
 }
 
@@ -68,8 +77,11 @@ void generate_random_tau_ii(  double tau,
                                                              double &tau_ii,  // ref because assigning
                                                              std::mt19937  &rng) {
 
+//  static int call_count = 0;
   std::uniform_real_distribution<double> dist(0.0, 2.0 * tau);
-  tau_ii = dist(rng); // assign random value
+  tau_ii = dist(rng);
+ // std::cout << "Tau draw " << call_count << ": " << tau_ii << "\n";
+//  call_count++;
 
 }
 

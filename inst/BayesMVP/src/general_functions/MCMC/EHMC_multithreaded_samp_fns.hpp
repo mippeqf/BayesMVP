@@ -24,7 +24,7 @@ using namespace Eigen;
 
  
  
-// ANSI codes for different colors
+//// ANSI codes for different colors
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
@@ -76,14 +76,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
          ///////////////////////////////////////// perform iterations for adaptation interval
          ////// main iteration loop
          for (int ii = 0; ii < n_iter; ++ii) {
-           
-                     if (burnin_indicator == false) {
-                         if (ii %  static_cast<int>(std::round(static_cast<double>(n_iter)/4.0)) == 0) {
-                             std::lock_guard<std::mutex> lock(print_mutex);
-                             double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter));
-                             std::cout << "Chain #" << chain_id << " - Sampling is around " << pct_complete << " % complete" << "\n";
-                         }
-                     }
+
                      
                      // result_input.main_theta_vec_0() =      result_input.main_theta_vec();
                      // result_input.us_theta_vec_0() =        result_input.us_theta_vec();
@@ -161,7 +154,15 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                        }
                        
          
-                       
+         
+                 if (burnin_indicator == false) {
+                   if (ii %  static_cast<int>(std::round(static_cast<double>(n_iter)/4.0)) == 0) {
+                     std::lock_guard<std::mutex> lock(print_mutex);
+                     double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter));
+                     std::cout << "Chain #" << chain_id << " - Sampling is around " << pct_complete << " % complete" << "\n";
+                   }
+                 }
+                               
 
 
            
@@ -188,12 +189,12 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
      
      
      
-// --------------------------------- OpenMP  functions  -- BURNIN fn ------------------------------------------------------------------------------------------------------------------------------------------- 
+//// --------------------------------- OpenMP  functions  -- BURNIN fn ------------------------------------------------------------------------------------------------------------------------------------------- 
      
      
      
      
-////// OpenMP -- instead of a Worker struct, make it a function
+//// OpenMP -- instead of a Worker struct, make it a function
 void EHMC_burnin_OpenMP(    const int  n_threads,
                             const int  seed,
                             const int  n_iter,
@@ -237,11 +238,9 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
        omp_set_dynamic(0);     
        //  #endif
        
-       tbb::concurrent_vector<std::mt19937> rngs;  // one RNG per thread
-       
-       rngs.reserve(n_threads);
+       std::vector<std::mt19937> rngs;  // one RNG per thread
        for(int i = 0; i < n_threads; i++) {
-         std::mt19937 rng(static_cast<unsigned int>((seed * (i + 1))));
+         std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
          rngs.emplace_back(rng); // .seed(seed * (i + 1));
        } 
        
@@ -258,7 +257,6 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
              
              stan::math::ChainableStack ad_tape;
              stan::math::nested_rev_autodiff nested;
-             // thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i));
          
          {
            
@@ -282,13 +280,15 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                      Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                                 Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                                 seed + i * 1000);
-                 
-                     std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+                     
+                     // std::uniform_real_distribution<double> unif(0.0, 1.0);
+                       std::mt19937 &rng = rngs[i];   
+                     // std::cout << "Test random number for chain " << i << ": " << unif(rng) << std::endl;
                      
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 result_input, 
                                                                 burnin_indicator, 
-                                                                i, seed + i * 1000, rng_ref, n_iter,
+                                                                i, seed + i * 1000, rng, n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
                                                                 force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -303,11 +303,15 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                } else { 
                  
                      Stan_model_struct Stan_model_as_cpp_struct; ////  dummy struct
+                 
+                     // std::uniform_real_distribution<double> unif(0.0, 1.0);
+                      std::mt19937 &rng = rngs[i];   
+                     // std::cout << "Test random number for chain " << i << ": " << unif(rng) << std::endl;
                      
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 result_input, 
                                                                 burnin_indicator, 
-                                                                i, seed + i * 1000, rng_ref, n_iter,
+                                                                i, seed + i * 1000, rng, n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
                                                                 force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -439,7 +443,7 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
        
        //// other args (read only)
        std::string Model_type;
-       bool sample_nuisance;
+       bool sample_nuisance; 
        bool force_autodiff;
        bool force_PartialLog;
        bool multi_attempts;
@@ -546,15 +550,13 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
              const int n_params_main = Model_args_as_cpp_struct_copies[0].n_params_main;
              const int n_nuisance_to_track = 1;
              
-             HMC_outputs.reserve(n_threads_R);
              for (int i = 0; i < n_threads_R; ++i) {
                HMC_output_single_chain HMC_output_single_chain(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N);
                HMC_outputs.emplace_back(HMC_output_single_chain);
              }
              
-             rngs.reserve(n_threads_R);
              for(int i = 0; i < n_threads_R; i++) {
-               std::mt19937 rng(static_cast<unsigned int>((seed * (i + 1))));
+               std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
                rngs.emplace_back(rng); // .seed(seed * (i + 1));
              } 
          
@@ -577,11 +579,9 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
 #ifdef _WIN32   // Windows 
            stan::math::ChainableStack ad_tape;
            stan::math::nested_rev_autodiff nested;
-          // std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
 #else  // Linux version 
            thread_local stan::math::ChainableStack ad_tape;
            thread_local stan::math::nested_rev_autodiff nested;
-        //   thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000)); // Declare and initialize in one line
 #endif
            
 {
@@ -605,11 +605,13 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
                                                                                  Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                  seed + i * 1000);
       
-      std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+     // std::uniform_real_distribution<double> unif(0.0, 1.0);
+      std::mt19937 &rng = rngs[i];   
+     // std::cout << "Test random number for chain " << i << ": " << unif(rng) << std::endl;
       
       fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                  result_input, 
-                                                 burnin_indicator, i, seed + i * 1000, rng_ref, n_iter,
+                                                 burnin_indicator, i, seed + i * 1000, rng, n_iter,
                                                  partitioned_HMC,
                                                  Model_type, sample_nuisance,
                                                  force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -624,11 +626,13 @@ struct RcppParallel_EHMC_burnin: public RcppParallel::Worker {
       
       thread_local Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
       
-      std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+     // std::uniform_real_distribution<double> unif(0.0, 1.0);
+      std::mt19937 &rng = rngs[i];   
+     // std::cout << "Test random number for chain " << i << ": " << unif(rng) << std::endl;
       
       fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                  result_input, 
-                                                 burnin_indicator, i, seed + i * 1000, rng_ref, n_iter,
+                                                 burnin_indicator, i, seed + i * 1000, rng, n_iter,
                                                  partitioned_HMC,
                                                  Model_type, sample_nuisance,
                                                  force_autodiff, force_PartialLog,  multi_attempts,  n_nuisance_to_track, 
@@ -847,15 +851,13 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
         const int n_us =  Model_args_as_cpp_struct_copies[0].n_nuisance;
         const int n_params_main = Model_args_as_cpp_struct_copies[0].n_params_main;
 
-        HMC_outputs.reserve(n_threads_R);
         for (int i = 0; i < n_threads_R; ++i) {
           HMC_output_single_chain HMC_output_single_chain(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N);
           HMC_outputs.emplace_back(HMC_output_single_chain);
         }
         
-        rngs.reserve(n_threads_R);
         for(int i = 0; i < n_threads_R; i++) {
-          std::mt19937 rng(static_cast<unsigned int>((seed * (i + 1))));
+          std::mt19937 rng(static_cast<unsigned int>(seed + i * 1000));
           rngs.emplace_back(rng); // .seed(seed * (i + 1));
         } 
   }
@@ -877,8 +879,6 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
       static thread_local stan::math::ChainableStack ad_tape;
       static thread_local stan::math::nested_rev_autodiff nested;
       
-     // thread_local std::mt19937 rng(static_cast<unsigned int>(seed + i + 1));
-      
       HMCResult result_input(n_params_main, n_us, N); // JUST putting this as thread_local doesnt fix the "lagging chain 0" issue. 
     
           {
@@ -891,20 +891,21 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
 
               
             if (Model_type == "Stan") {  
-                
-                            // //// For Stan models:  Initialize bs_model* pointer and void* handle
-                            Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
+ 
+                          Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                                         Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                                                      seed + i);
-                          //  }
+                     
                     
-                         std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+                        //  std::uniform_real_distribution<double> unif(0.0, 1.0);
+                          std::mt19937 &rng = rngs[i];   
+                         // std::cout << "Test random number for chain " << i << ": " << unif(rng) << std::endl;
                     
                          //////////////////////////////// perform iterations for chain i
                          fn_sample_HMC_multi_iter_single_thread(   HMC_outputs[i] ,
                                                                    result_input, 
                                                                    burnin_indicator, 
-                                                                   i, seed + i + 1, rng_ref, n_iter,
+                                                                   i, seed + i * 1000, rng, n_iter,
                                                                    partitioned_HMC,
                                                                    Model_type,  sample_nuisance,
                                                                    force_autodiff, force_PartialLog,  multi_attempts,  
@@ -924,13 +925,15 @@ struct RcppParallel_EHMC_sampling : public RcppParallel::Worker {
               
                           Stan_model_struct Stan_model_as_cpp_struct; ///  dummy struct
               
-                          std::reference_wrapper<std::mt19937> rng_ref = std::ref(rngs[i]);
+                         // std::uniform_real_distribution<double> unif(0.0, 1.0);
+                          std::mt19937 &rng = rngs[i];   
+                         // std::cout << "Test random number for chain " << i << ": " << unif(rng) << std::endl;
               
                           //////////////////////////////// perform iterations for chain i
                           fn_sample_HMC_multi_iter_single_thread(  HMC_outputs[i],   
                                                                    result_input, 
                                                                    burnin_indicator, 
-                                                                   i, seed + i + 1, rng_ref, n_iter,
+                                                                   i, seed + i * 1000, rng, n_iter,
                                                                    partitioned_HMC,
                                                                    Model_type,  sample_nuisance, 
                                                                    force_autodiff, force_PartialLog,  multi_attempts,  
