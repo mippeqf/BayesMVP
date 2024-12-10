@@ -4,7 +4,10 @@
 
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppEigen)]]
+
 // [[Rcpp::depends(RcppZiggurat)]]
+// [[Rcpp::depends(dqrng)]]
+
 // [[Rcpp::plugins(cpp17)]]
  
 #define EIGEN_NO_DEBUG
@@ -101,6 +104,12 @@
  
 #include <Ziggurat.h>
 static Ziggurat::Ziggurat::Ziggurat zigg;
+ 
+
+#include <dqrng_distribution.h>
+#include <dqrng_generator.h>
+#include <dqrng_sample.h>
+#include <xoshiro.h>
  
    
 #if __has_include("omp.h")
@@ -993,7 +1002,6 @@ Eigen::Matrix<double, -1, -1>  fn_update_snaper_m_and_s(     Eigen::Matrix<doubl
       Eigen::Matrix<double, -1, 1> current_variances = ( theta_vec_mean_m_snaper_m.array() * theta_vec_mean_m_snaper_m.array() ).matrix() ;
       snaper_s_empirical = (1.0 - eta_m)*snaper_s_empirical   +   eta_m*current_variances;
     
-    
       Eigen::Matrix<double, -1, -1> out_mat(snaper_m.rows(), 2);
       out_mat.col(0) = snaper_m;
       out_mat.col(1) = snaper_s_empirical;
@@ -1420,14 +1428,14 @@ Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int
 
   const bool burnin_indicator = false;
 
-
-
   //// convert lists to C++ structs
   const Model_fn_args_struct     Model_args_as_cpp_struct =   convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List); ///// ALWAYS read-only
   EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
   const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
 
-  std::mt19937 rng(static_cast<unsigned int>(seed));
+  // boost::random::mt19937 rng(seed);
+  
+  auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed);
 
   Stan_model_struct Stan_model_as_cpp_struct;
 
@@ -2226,6 +2234,7 @@ Rcpp::List                            fn_R_OpenMP_EHMC_single_iter_burnin(   int
   //// local storage 
   const int N = Model_args_as_cpp_struct.N;
   std::vector<HMC_output_single_chain> HMC_outputs;
+  HMC_outputs.reserve(n_threads_R);
   for (int i = 0; i < n_threads_R; ++i) {
     HMC_output_single_chain HMC_output_single_chain(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N);
     HMC_outputs.emplace_back(HMC_output_single_chain);
