@@ -2,9 +2,6 @@
 
 
 class HMCResult {
-   
-   
-
            
          /////////// -------------- PRIVATE members (ONLY accessible WITHIN this class)
          private:
@@ -60,41 +57,41 @@ class HMCResult {
            
            //// "getters"/"setters" to access the private members
            Eigen::Matrix<double, -1, 1> &lp_and_grad_outs() { return lp_and_grad_outs_; }
-           const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs() const { return lp_and_grad_outs_; }
+           // const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs() const { return lp_and_grad_outs_; }
            //// main
            Eigen::Matrix<double, -1, 1> &main_theta_vec_0() { return main_theta_vec_0_; }
-           const Eigen::Matrix<double, -1, 1> &main_theta_vec_0() const { return main_theta_vec_0_; }
+           //const Eigen::Matrix<double, -1, 1> &main_theta_vec_0() const { return main_theta_vec_0_; }
            Eigen::Matrix<double, -1, 1> &main_theta_vec() { return main_theta_vec_; }
-           const Eigen::Matrix<double, -1, 1> &main_theta_vec() const { return main_theta_vec_; }
+           //const Eigen::Matrix<double, -1, 1> &main_theta_vec() const { return main_theta_vec_; }
            Eigen::Matrix<double, -1, 1> &main_theta_vec_proposed() { return main_theta_vec_proposed_; }
-           const Eigen::Matrix<double, -1, 1> &main_theta_vec_proposed() const { return main_theta_vec_proposed_; }
+           //const Eigen::Matrix<double, -1, 1> &main_theta_vec_proposed() const { return main_theta_vec_proposed_; }
            Eigen::Matrix<double, -1, 1> &main_velocity_0_vec() { return main_velocity_0_vec_; }
-           const Eigen::Matrix<double, -1, 1> &main_velocity_0_vec() const { return main_velocity_0_vec_; }
+           //const Eigen::Matrix<double, -1, 1> &main_velocity_0_vec() const { return main_velocity_0_vec_; }
            Eigen::Matrix<double, -1, 1> &main_velocity_vec_proposed() { return main_velocity_vec_proposed_; }
-           const Eigen::Matrix<double, -1, 1> &main_velocity_vec_proposed() const { return main_velocity_vec_proposed_; }
+           //const Eigen::Matrix<double, -1, 1> &main_velocity_vec_proposed() const { return main_velocity_vec_proposed_; }
            Eigen::Matrix<double, -1, 1> &main_velocity_vec() { return main_velocity_vec_; }
-           const Eigen::Matrix<double, -1, 1> &main_velocity_vec() const { return main_velocity_vec_; }
+           //const Eigen::Matrix<double, -1, 1> &main_velocity_vec() const { return main_velocity_vec_; }
            double &main_p_jump() { return main_p_jump_; }
-           const double &main_p_jump() const { return main_p_jump_; }
+           //const double &main_p_jump() const { return main_p_jump_; }
            int &main_div() { return main_div_; }
-           const int &main_div() const { return main_div_; }
+           //const int &main_div() const { return main_div_; }
            //// nuisance
            Eigen::Matrix<double, -1, 1> &us_theta_vec_0() { return us_theta_vec_0_; }
-           const Eigen::Matrix<double, -1, 1> &us_theta_vec_0() const { return us_theta_vec_0_; }
+           //const Eigen::Matrix<double, -1, 1> &us_theta_vec_0() const { return us_theta_vec_0_; }
            Eigen::Matrix<double, -1, 1> &us_theta_vec() { return us_theta_vec_; }
-           const Eigen::Matrix<double, -1, 1> &us_theta_vec() const { return us_theta_vec_; }
+           //const Eigen::Matrix<double, -1, 1> &us_theta_vec() const { return us_theta_vec_; }
            Eigen::Matrix<double, -1, 1> &us_theta_vec_proposed() { return us_theta_vec_proposed_; }
-           const Eigen::Matrix<double, -1, 1> &us_theta_vec_proposed() const { return us_theta_vec_proposed_; }
+           //const Eigen::Matrix<double, -1, 1> &us_theta_vec_proposed() const { return us_theta_vec_proposed_; }
            Eigen::Matrix<double, -1, 1> &us_velocity_0_vec() { return us_velocity_0_vec_; }
-           const Eigen::Matrix<double, -1, 1> &us_velocity_0_vec() const { return us_velocity_0_vec_; }
+           //const Eigen::Matrix<double, -1, 1> &us_velocity_0_vec() const { return us_velocity_0_vec_; }
            Eigen::Matrix<double, -1, 1> &us_velocity_vec_proposed() { return us_velocity_vec_proposed_; }
-           const Eigen::Matrix<double, -1, 1> &us_velocity_vec_proposed() const { return us_velocity_vec_proposed_; }
+           //const Eigen::Matrix<double, -1, 1> &us_velocity_vec_proposed() const { return us_velocity_vec_proposed_; }
            Eigen::Matrix<double, -1, 1> &us_velocity_vec() { return us_velocity_vec_; }
-           const Eigen::Matrix<double, -1, 1> &us_velocity_vec() const { return us_velocity_vec_; }
+           //const Eigen::Matrix<double, -1, 1> &us_velocity_vec() const { return us_velocity_vec_; }
            double &us_p_jump() { return us_p_jump_; }
-           const double &us_p_jump() const { return us_p_jump_; }
+           //const double &us_p_jump() const { return us_p_jump_; }
            int &us_div() { return us_div_; }
-           const int &us_div() const { return us_div_; }
+           //const int &us_div() const { return us_div_; }
            
            
            /////////// --------------  PUBLIC HELPER FNS - local to this class 
@@ -206,27 +203,27 @@ class HMC_output_single_chain {
           
           // Getters for result_input
           HMCResult &result_input() { return result_input_; }
-          const HMCResult &result_input() const { return result_input_; }
+          //const HMCResult &result_input() const { return result_input_; }
           
           // Getters for traces
           Eigen::Matrix<double, -1, -1> &trace_main() { return traces_.main; }
-          const Eigen::Matrix<double, -1, -1> &trace_main() const { return traces_.main; }
+          //const Eigen::Matrix<double, -1, -1> &trace_main() const { return traces_.main; }
           Eigen::Matrix<double, -1, -1> &trace_div() { return traces_.div; }
-          const Eigen::Matrix<double, -1, -1> &trace_div() const { return traces_.div; }
+          //const Eigen::Matrix<double, -1, -1> &trace_div() const { return traces_.div; }
           Eigen::Matrix<double, -1, -1> &trace_nuisance() { return traces_.nuisance; }
-          const Eigen::Matrix<double, -1, -1> &trace_nuisance() const { return traces_.nuisance; }
+          //const Eigen::Matrix<double, -1, -1> &trace_nuisance() const { return traces_.nuisance; }
           Eigen::Matrix<double, -1, -1> &trace_log_lik() { return traces_.log_lik; }
-          const Eigen::Matrix<double, -1, -1> &trace_log_lik() const { return traces_.log_lik; }
+          //const Eigen::Matrix<double, -1, -1> &trace_log_lik() const { return traces_.log_lik; }
           
           // Getters for diagnostics
           Eigen::Matrix<int, -1, 1> &diagnostics_div_us() { return diagnostics_.div_us; }
-          const Eigen::Matrix<int, -1, 1> &diagnostics_div_us() const { return diagnostics_.div_us; }
+          //const Eigen::Matrix<int, -1, 1> &diagnostics_div_us() const { return diagnostics_.div_us; }
           Eigen::Matrix<int, -1, 1> &diagnostics_div_main() { return diagnostics_.div_main; }
-          const Eigen::Matrix<int, -1, 1> &diagnostics_div_main() const { return diagnostics_.div_main; }
+          //const Eigen::Matrix<int, -1, 1> &diagnostics_div_main() const { return diagnostics_.div_main; }
           Eigen::Matrix<double, -1, 1> &diagnostics_p_jump_us() { return diagnostics_.p_jump_us; }
-          const Eigen::Matrix<double, -1, 1> &diagnostics_p_jump_us() const { return diagnostics_.p_jump_us; }
+          //const Eigen::Matrix<double, -1, 1> &diagnostics_p_jump_us() const { return diagnostics_.p_jump_us; }
           Eigen::Matrix<double, -1, 1> &diagnostics_p_jump_main() { return diagnostics_.p_jump_main; }
-          const Eigen::Matrix<double, -1, 1> &diagnostics_p_jump_main() const { return diagnostics_.p_jump_main; }
+          //const Eigen::Matrix<double, -1, 1> &diagnostics_p_jump_main() const { return diagnostics_.p_jump_main; }
           
           
           /////////// --------------  PUBLIC HELPER FNS - local to this class 
