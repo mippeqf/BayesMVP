@@ -55,13 +55,13 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  E
 ) {
 
       const int n_nuisance = velocity_us_vec_proposed_ref.size();
-      Eigen::Matrix<double, -1, 1> grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
+      //Eigen::Matrix<double, -1, 1> grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
 
       for (int l = 0; l < L_ii; l++) {
 
               // Update velocity (first half step)
-              Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
-              velocity_us_vec_proposed_ref.array() += 0.5 * eps * temp_1.array();
+              //Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
+              velocity_us_vec_proposed_ref.array() += 0.5 * eps * lp_and_grad_outs.segment(1, n_nuisance).array()  * M_inv_us_vec.array();
 
               //// updae params by full step
               theta_us_vec_proposed_ref.array()  +=  eps *     velocity_us_vec_proposed_ref.array() ;
@@ -71,11 +71,11 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  E
                                  theta_main_vec_initial_ref, theta_us_vec_proposed_ref, y_ref, grad_option,
                                  Model_args_as_cpp_struct,
                                  Stan_model_as_cpp_struct);
-              grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
+              //grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
 
               // Update velocity (second half step)
-              Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
-              velocity_us_vec_proposed_ref.array() += 0.5 * eps * temp_2.array();
+              //Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
+              velocity_us_vec_proposed_ref.array() += 0.5 * eps * lp_and_grad_outs.segment(1, n_nuisance).array()  * M_inv_us_vec.array();
 
       } // End of leapfrog steps
 
@@ -159,10 +159,10 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  
 
 
 
- 
-ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(                       HMCResult &result_input,
+template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        HMCResult &result_input,
                                                                                                const bool burnin,
-                                                                                               std::mt19937  &rng,
+                                                                                               T &rng,
                                                                                                const int seed,
                                                                                                const std::string &Model_type,
                                                                                                const bool  force_autodiff,
@@ -204,8 +204,7 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
 
     {
        Eigen::Matrix<double, -1, 1> std_norm_vec_us(n_nuisance); // testing if static thread_local makes more efficient
-       // generate_random_std_norm_vec(std_norm_vec_us, n_nuisance, rng);
-       generate_random_std_norm_vec_R(std_norm_vec_us, n_nuisance);
+       generate_random_std_norm_vec(std_norm_vec_us, n_nuisance, rng);
        result_input.us_velocity_0_vec().array() = ( std_norm_vec_us.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //.cast<float>() ;  
     }
      
@@ -215,13 +214,13 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
  
       try {
         
-        
             result_input.us_velocity_vec_proposed() =            result_input.us_velocity_0_vec() ;    // set TO initial velocity
             result_input.us_theta_vec_proposed() =  result_input.us_theta_vec();                     // set TO CURRENT theta   
     
-            // ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
-              // generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_us,    EHMC_args_as_cpp_struct.tau_us_ii, rng);
-              generate_random_tau_ii_R(   EHMC_args_as_cpp_struct.tau_us,    EHMC_args_as_cpp_struct.tau_us_ii);
+            // ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///------------------------------------
+              if (EHMC_args_as_cpp_struct.tau_us < EHMC_args_as_cpp_struct.eps_us) { EHMC_args_as_cpp_struct.tau_us = EHMC_args_as_cpp_struct.eps_us; }
+              generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_us,    EHMC_args_as_cpp_struct.tau_us_ii, rng);
+              if (EHMC_args_as_cpp_struct.tau_us_ii < EHMC_args_as_cpp_struct.eps_us) { EHMC_args_as_cpp_struct.tau_us_ii = EHMC_args_as_cpp_struct.eps_us; }
               
               int    L_ii;
               if (EHMC_args_as_cpp_struct.diffusion_HMC == true)   L_ii = std::ceil(  EHMC_args_as_cpp_struct.tau_us_ii /  eps_1 );
@@ -297,13 +296,8 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
                     
                     energy_old +=  0.5 * (result_input.us_velocity_0_vec().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
                     energy_new +=  0.5 * (result_input.us_velocity_vec_proposed().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
-                    
-                //energy_old += compute_kinetic_energy_diag(result_input.us_velocity_0_vec(), EHMC_Metric_struct_as_cpp_struct.M_us_vec);
-                //energy_new += compute_kinetic_energy_diag(result_input.us_velocity_vec_proposed(), EHMC_Metric_struct_as_cpp_struct.M_us_vec);
                 
                 if (EHMC_args_as_cpp_struct.diffusion_HMC == true)  {
-                  //energy_old += compute_kinetic_energy_diag(result_input.us_theta_vec_0(), EHMC_Metric_struct_as_cpp_struct.M_us_vec);
-                  //energy_new += compute_kinetic_energy_diag(result_input.us_theta_vec_proposed(), EHMC_Metric_struct_as_cpp_struct.M_us_vec);
                   energy_old +=  0.5 * (result_input.us_theta_vec_0().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
                   energy_new +=  0.5 * (result_input.us_theta_vec_proposed().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
                 }
@@ -327,10 +321,12 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
                     result_input.us_div() = 0;
                     result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                     
-                    // std::uniform_real_distribution<double> unif(0.0, 1.0);
+                   // trng::uniform_dist<> unif(0.0, 1.0);
+                   dqrng::uniform_distribution unif(0.0, 1.0); 
                     
-                    if   (R::runif(0, 1) >  result_input.us_p_jump())  { 
-                    // if   (unif(rng) >  result_input.us_p_jump())  {  
+                   //  if  (stan::math::uniform_rng(0.0, 1.0, rng) > result_input.us_p_jump())   {  // # reject proposal
+                   if  (unif(*rng) > result_input.us_p_jump())   {  // # reject proposal
+                 //   if  (R::runif(0, 1) > result_input.us_p_jump())   {  // # reject proposal
                        result_input.reject_proposal_us();  // # reject proposal
                     } else {   // # accept proposal
                        result_input.accept_proposal_us(); // # accept proposal

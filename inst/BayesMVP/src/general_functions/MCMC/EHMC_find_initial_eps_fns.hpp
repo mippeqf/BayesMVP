@@ -30,16 +30,14 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                                                                                             const bool  multi_attempts,
                                                                                             const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                                                             const Model_fn_args_struct &Model_args_as_cpp_struct,
-                                                                                          //  MVP_ThreadLocalWorkspace &MVP_workspace,
                                                                                             EHMC_fn_args_struct  &EHMC_args_as_cpp_struct, /// pass by ref. to modify (???)
                                                                                             const EHMC_Metric_struct   &EHMC_Metric_struct_as_cpp_struct
 ) {
    
-    stan::math::ChainableStack ad_tape;
-    stan::math::nested_rev_autodiff nested;
+   stan::math::ChainableStack ad_tape;
+   stan::math::nested_rev_autodiff nested;
    
-   // auto rng = RNGManager::get_thread_local_rng(seed);
-   std::mt19937 rng(static_cast<unsigned int>(seed));
+   auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed);
    
    const int N = Model_args_as_cpp_struct.N;
    const int n_nuisance =  Model_args_as_cpp_struct.n_nuisance;

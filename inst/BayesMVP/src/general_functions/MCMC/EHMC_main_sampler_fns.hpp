@@ -37,9 +37,7 @@ using namespace Eigen;
 
  
 ALWAYS_INLINE   void generate_random_std_norm_vec_zigg(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
-                                       int n_params) {
-   
-    
+                                                         int n_params) {
    
    for (int d = 0; d < n_params; d++) {
      std_norm_vec(d) =  zigg.norm();
@@ -52,32 +50,44 @@ ALWAYS_INLINE   void generate_random_std_norm_vec_zigg(  Eigen::Matrix<double, -
 ALWAYS_INLINE   void generate_random_std_norm_vec_R(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
                                      int n_params) {
  
-   for (int d = 0; d < n_params; d++) {
-     double r = R::rnorm(0, 1);
-     std_norm_vec(d) = r;
+ for (int d = 0; d < n_params; d++) {
+     std_norm_vec(d) = R::rnorm(0, 1);
    }
    
  }
  
  
  
-ALWAYS_INLINE   void generate_random_std_norm_vec(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
-                                     int n_params, 
-                                     std::mt19937  &rng) {
+//template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+ALWAYS_INLINE   void generate_random_std_norm_vec(   Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                                     int n_params, 
+                                                     T &rng) {
    
-   std::normal_distribution<double> dist(0.0, 1.0); 
+  // std::normal_distribution<double> dist(0.0, 1.0); 
+
+  // trng::normal_dist<> dist(0.0, 1.0);
+  dqrng::normal_distribution dist(0.0, 1.0); 
+//  dqrng::uniform_distribution dist(0.0, 1.0); 
+  
    for (int d = 0; d < n_params; d++) {
-     double r = dist(rng);
-     // std::cout << "Call " << call_count << " Draw " << d << ": " << r << "\n";
-     std_norm_vec(d) = r;
+     
+      double norm_draw = dist(*rng);
+      std_norm_vec(d) = norm_draw;
+   
+      // double unif_draw = dist(*rng);
+      // double norm_draw = stan::math::inv_Phi(unif_draw);
+      // std_norm_vec(d) = norm_draw;
+      
+      // std_norm_vec(d) = R::rnorm(0, 1);
+      
    }
    
 }
  
  
  
- 
-ALWAYS_INLINE  double runif_zigg( double lower,
+ALWAYS_INLINE  double runif_zigg(  double lower,
                                    double upper) { 
   
   double rnorm_zigg = zigg.norm();
@@ -94,7 +104,7 @@ ALWAYS_INLINE  void generate_random_tau_ii_zigg(    double tau,
                                      double &tau_ii  // ref because assigning
  ) {
    
-   tau_ii = runif_zigg(0, 2.0 * tau);
+   tau_ii = runif_zigg(0.0, 2.0 * tau);
    
  }
  
@@ -104,31 +114,27 @@ ALWAYS_INLINE  void generate_random_tau_ii_R(   double tau,
                                  double &tau_ii  // ref because assigning
 ) {
    
-   tau_ii = R::runif(0, 2.0 * tau);
+   tau_ii = R::runif(0.0, 2.0 * tau);
    
 }
  
 
  
+template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
 ALWAYS_INLINE  void generate_random_tau_ii(  double tau, 
-                                                             double &tau_ii,  // ref because assigning
-                                                             std::mt19937  &rng) {
-
-//  static int call_count = 0;
-  std::uniform_real_distribution<double> dist(0.0, 2.0 * tau);
-  tau_ii = dist(rng);
- // std::cout << "Tau draw " << call_count << ": " << tau_ii << "\n";
-//  call_count++;
+                                             double &tau_ii,  // ref because assigning
+                                             T &rng) {
+  
+  dqrng::uniform_distribution dist(0.0, 2.0 * tau); 
+  tau_ii = dist(*rng);
 
 }
 
 
+ 
 
 
-
-
-
-ALWAYS_INLINE  bool check_divergence_Eigen(                  const HMCResult &result_input,
+ALWAYS_INLINE  bool check_divergence_Eigen(   const HMCResult &result_input,
                                               const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs,
                                               const double hamiltonian_energy,
                                               const double previous_hamiltonian_energy) {
@@ -378,10 +384,10 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       
 
 
 
-
+template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
 ALWAYS_INLINE  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
                                                                                                      const bool  burnin, 
-                                                                                                     std::mt19937  &rng,
+                                                                                                     T &rng,
                                                                                                      const int seed,
                                                                                                      const std::string &Model_type,
                                                                                                      const bool  force_autodiff,
@@ -421,8 +427,7 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
 
       {
           Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
-          // generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
-          generate_random_std_norm_vec_R(std_norm_vec_main, n_params_main);
+          generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
           if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
@@ -437,9 +442,10 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                 result_input.main_velocity_vec_proposed()  =   result_input.main_velocity_0_vec(); // set initial velocity
                 result_input.main_theta_vec_proposed() =       result_input.main_theta_vec();   // set to CURRENT theta   
       
-                //// ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------------------------------------------------------------------
-                // generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
-                generate_random_tau_ii_R(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii);
+                //// ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------
+                if (EHMC_args_as_cpp_struct.tau_main < EHMC_args_as_cpp_struct.eps_main) { EHMC_args_as_cpp_struct.tau_main = EHMC_args_as_cpp_struct.eps_main; }
+                generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
+                if (EHMC_args_as_cpp_struct.tau_main_ii < EHMC_args_as_cpp_struct.eps_main) { EHMC_args_as_cpp_struct.tau_main_ii = EHMC_args_as_cpp_struct.eps_main; }
                 int    L_ii = std::ceil(  EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
                 if (L_ii < 1) { L_ii = 1 ; }
                 
@@ -456,38 +462,74 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                 log_posterior_0 =  result_input.lp_and_grad_outs()(0);
                 U_x_initial = - log_posterior_0; //// initial energy
                 
-                Eigen::Matrix<double, -1, 1> grad_main =  result_input.lp_and_grad_outs().segment(1 + n_nuisance, n_params_main);
-                Eigen::Matrix<double, -1, 1> grad_scaled = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main * grad_main;
-                double step_size = EHMC_args_as_cpp_struct.eps_main;
-                double half_step_size = 0.5 * EHMC_args_as_cpp_struct.eps_main;
- 
-                for (int l = 0; l < L_ii; l++) {
-                      
-                      // First half step for velocity
-                      result_input.main_velocity_vec_proposed().array() += half_step_size * grad_scaled.array();
-                      check_numeric_stability(result_input.main_velocity_vec_proposed(), "velocity_half_step");
-                      
-                      // Full step for position
-                      result_input.main_theta_vec_proposed().array() += step_size * result_input.main_velocity_vec_proposed().array();
-                      check_numeric_stability(result_input.main_theta_vec_proposed(), "position_step");
-                      
-                      // Update gradients
-                      // Update lp and gradients
-                      fn_lp_grad_InPlace(  result_input.lp_and_grad_outs(), 
-                                           Model_type, force_autodiff, force_PartialLog, multi_attempts,
-                                           result_input.main_theta_vec_proposed(), result_input.us_theta_vec(),
-                                           y_ref, grad_option,  
-                                           Model_args_as_cpp_struct,  
-                                           Stan_model_as_cpp_struct);
-                      grad_main =   result_input.lp_and_grad_outs().segment(1 + n_nuisance, n_params_main);
-                      grad_scaled = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main * grad_main;
-                      check_numeric_stability(grad_main, "gradient_update");
-                      
-                      // Second half step for velocity 
-                      result_input.main_velocity_vec_proposed().array() += half_step_size * grad_scaled.array();
-                      check_numeric_stability(result_input.main_velocity_vec_proposed(), "velocity_final");
+                // Eigen::Matrix<double, -1, 1> grad_main =  result_input.lp_and_grad_outs().segment(1 + n_nuisance, n_params_main);
+                // Eigen::Matrix<double, -1, 1> grad_scaled = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main * grad_main;
+                // double step_size = EHMC_args_as_cpp_struct.eps_main;
+                // double half_step_size = 0.5 * EHMC_args_as_cpp_struct.eps_main;
+                // 
+                // for (int l = 0; l < L_ii; l++) {
+                //       
+                //           // First half step for velocity
+                //           result_input.main_velocity_vec_proposed().array() += half_step_size * grad_scaled.array();
+                //           check_numeric_stability(result_input.main_velocity_vec_proposed(), "velocity_half_step");
+                //           
+                //           // Full step for position
+                //           result_input.main_theta_vec_proposed().array() += step_size * result_input.main_velocity_vec_proposed().array();
+                //           check_numeric_stability(result_input.main_theta_vec_proposed(), "position_step");
+                //           
+                //           // Update lp and gradients
+                //           fn_lp_grad_InPlace(  result_input.lp_and_grad_outs(), 
+                //                                Model_type, force_autodiff, force_PartialLog, multi_attempts,
+                //                                result_input.main_theta_vec_proposed(), result_input.us_theta_vec(),
+                //                                y_ref, grad_option,  
+                //                                Model_args_as_cpp_struct,  
+                //                                Stan_model_as_cpp_struct);
+                //           grad_main =   result_input.lp_and_grad_outs().segment(1 + n_nuisance, n_params_main);
+                //           grad_scaled = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main * grad_main;
+                //           check_numeric_stability(grad_main, "gradient_update");
+                //           
+                //           // Second half step for velocity 
+                //           result_input.main_velocity_vec_proposed().array() += half_step_size * grad_scaled.array();
+                //           check_numeric_stability(result_input.main_velocity_vec_proposed(), "velocity_final");
+                //   
+                // }
+                
+                if (metric_shape_main == "dense") { 
+                  
+                    leapfrog_integrator_dense_M_standard_HMC_main_InPlace(      result_input.main_velocity_vec_proposed(),
+                                                                                result_input.main_theta_vec_proposed(),
+                                                                                result_input.lp_and_grad_outs(),
+                                                                                result_input.us_theta_vec(),
+                                                                                EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main,
+                                                                                y_ref,
+                                                                                L_ii,
+                                                                                EHMC_args_as_cpp_struct.eps_main,
+                                                                                Model_type,
+                                                                                force_autodiff, force_PartialLog, multi_attempts,
+                                                                                grad_option,
+                                                                                Model_args_as_cpp_struct,
+                                                                                Stan_model_as_cpp_struct,
+                                                                                fn_lp_grad_InPlace);
+                  
+                } else { 
+                  
+                  leapfrog_integrator_diag_M_standard_HMC_main_InPlace(      result_input.main_velocity_vec_proposed(),
+                                                                              result_input.main_theta_vec_proposed(),
+                                                                              result_input.lp_and_grad_outs(),
+                                                                              result_input.us_theta_vec(),
+                                                                              EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec,
+                                                                              y_ref,
+                                                                              L_ii,
+                                                                              EHMC_args_as_cpp_struct.eps_main,
+                                                                              Model_type,
+                                                                              force_autodiff, force_PartialLog, multi_attempts,
+                                                                              grad_option,
+                                                                              Model_args_as_cpp_struct,
+                                                                              Stan_model_as_cpp_struct,
+                                                                              fn_lp_grad_InPlace);
                   
                 }
+                
                 
                 //// proposed lp  
                 log_posterior_prop =  result_input.lp_and_grad_outs()(0);
@@ -526,10 +568,12 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                           result_input.main_div() = 0;
                           result_input.main_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                           
-                          std::uniform_real_distribution<double> unif(0.0, 1.0);
-                      
-                      //  if   (unif(rng) > result_input.main_p_jump())   { 
-                      if   (R::runif(0, 1) > result_input.main_p_jump())   { 
+                        //  trng::uniform_dist<> unif(0.0, 1.0);
+                        dqrng::uniform_distribution unif(0.0, 1.0); 
+                          
+                     //  if  (stan::math::uniform_rng(0.0, 1.0, rng) > result_input.main_p_jump())   {  // # reject proposal
+                     if  (unif(*rng) > result_input.main_p_jump())   {  // # reject proposal
+                   //   if  (R::runif(0, 1) > result_input.main_p_jump())   {  // # reject proposal
                              result_input.reject_proposal_main();  // # reject proposal
                       } else {   
                              result_input.accept_proposal_main(); // # accept proposal
@@ -545,8 +589,6 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                 result_input.main_div() = 1; // record as div 
                 result_input.main_p_jump() = 0.0;
                 result_input.reject_proposal_main(); // # reject proposal
-                // result_input.main_theta_vec()  =   result_input.main_theta_vec_0();  // old (struct) code
-                // result_input.main_velocity_vec = result_input.main_velocity_0_vec(); // old (struct) code
              
               
       }
