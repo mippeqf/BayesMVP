@@ -216,13 +216,13 @@ sample_model  <-    function(     Model_type,
                   # }
 
                   if (parallel_method == "OpenMP") { 
-                    Rcpp_parallel_sampling_fn <- Rcpp_fn_OpenMP_EHMC_sampling
+                    fn <- Rcpp_fn_OpenMP_EHMC_sampling
                   } else { ###  use RcppParallel
-                    Rcpp_parallel_sampling_fn <- Rcpp_fn_RcppParallel_EHMC_sampling
+                    fn <- Rcpp_fn_RcppParallel_EHMC_sampling
                   }
                   
                   ### Call C++ parallel sampling function
-                  result <-       (BayesMVP:::Rcpp_parallel_sampling_fn(   n_threads_R = n_chains_sampling,
+                  result <-       (fn(   n_threads_R = n_chains_sampling,
                                                                 sample_nuisance_R = sample_nuisance,
                                                                 n_nuisance_to_track = n_nuisance_to_track,
                                                                 seed_R = seed,
