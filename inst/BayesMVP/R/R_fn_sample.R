@@ -57,7 +57,6 @@ sample_model  <-    function(     Model_type,
                   n_nuisance <- 9 # dummy
                 }
  
-                
                 # init_model_object <- init_object$init_model_object
                 # init_vals_object <- init_object$init_vals_object
  
@@ -73,12 +72,7 @@ sample_model  <-    function(     Model_type,
                     Model_args_as_Rcpp_List$n_nuisance <- n_nuisance
                 }
                 
- 
-                # Model_args_as_Rcpp_List$model_so_file <- init_object$Model_args_as_Rcpp_List$model_so_file
-                # print(   Model_args_as_Rcpp_List$model_so_file)
-                
                 print(paste("n_nuisance = ", n_nuisance))
-  
                 
                  if (Model_type != "Stan") {
 
@@ -95,8 +89,6 @@ sample_model  <-    function(     Model_type,
                                   }, silent = TRUE)
 
                  }
-                
-                     
                       
                       n_class <- 0 
                       
@@ -107,7 +99,6 @@ sample_model  <-    function(     Model_type,
                       }
                       
                       print(paste("n_class = ", n_class))
-                      
                       
                       if (n_class == 1) {
                             
@@ -120,13 +111,8 @@ sample_model  <-    function(     Model_type,
                            # Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]] <-  (Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]])
                             
                       }
- 
- 
-                
-                # # parallel::mcparallel
+
                 RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
-                
-               # print(paste("hello 1"))
                 
                 init_burnin_object <-                           init_and_run_burnin( Model_type = Model_type,
                                                                                      sample_nuisance = sample_nuisance,
@@ -234,15 +220,9 @@ sample_model  <-    function(     Model_type,
                   } else { ###  use RcppParallel
                     Rcpp_parallel_sampling_fn <- Rcpp_fn_RcppParallel_EHMC_sampling
                   }
-         
-                  
-                  # print(Model_args_as_Rcpp_List)
-                  # print(dim(theta_us_vectors_all_chains_input_from_R))
-                  # print(dim(y))
-                  # print(EHMC_args_as_Rcpp_List)
                   
                   ### Call C++ parallel sampling function
-                  result <-       (Rcpp_parallel_sampling_fn(   n_threads_R = n_chains_sampling,
+                  result <-       (BayesMVP:::Rcpp_parallel_sampling_fn(   n_threads_R = n_chains_sampling,
                                                                 sample_nuisance_R = sample_nuisance,
                                                                 n_nuisance_to_track = n_nuisance_to_track,
                                                                 seed_R = seed,
@@ -259,10 +239,6 @@ sample_model  <-    function(     Model_type,
                                                                 Model_args_as_Rcpp_List =  Model_args_as_Rcpp_List,
                                                                 EHMC_args_as_Rcpp_List =   EHMC_args_as_Rcpp_List,
                                                                 EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
-
-
-
-                  ##  result <- parallel::mccollect(result) ; result <- result[[1]]
 
 
                   try({

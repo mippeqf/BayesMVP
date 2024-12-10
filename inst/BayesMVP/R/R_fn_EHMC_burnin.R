@@ -173,8 +173,6 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
          lkj_cholesky_eta <- matrix(lkj_cholesky_eta)
        }
        Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]] <- lkj_cholesky_eta
-       
-       
       # Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]] <- list(Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]])
    }
    
@@ -612,7 +610,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
                            
                                     ## --------- 
-                                       median_nuisance_var <- 1#max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical)
+                                       median_nuisance_var <- 1 #max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical)
                                        M_as_inv_snaper_s_vec_us_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
                                        M_as_inv_snaper_s_vec_us_empirical_scaled <- median_nuisance_var * M_as_inv_snaper_s_vec_us_empirical
                                        M_inv_as_snaper_s_vec_us_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_us_empirical_scaled
@@ -650,7 +648,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
  
 # #
                                         result <-   fn(  n_threads_R = n_chains_burnin,
-                                                                                                     seed_R = seed,
+                                                                                                     seed_R = seed + ii,
                                                                                                      sample_nuisance_R = sample_nuisance,
                                                                                                      n_nuisance_to_track = n_nuisance_to_track,
                                                                                                      n_iter_R = 1,
@@ -708,20 +706,27 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
           })
 
 
+    
+    
                                       try({
-                                        for (kk in 1:n_chains_burnin) {
-                                          div_main[kk] <- result[[3]][, kk][2]
-                                          p_jump_per_chain[kk] <-   result[[3]][, kk][1]
-                                          if (sample_nuisance == TRUE) { 
-                                            div_us[kk] <- result[[5]][, kk][2]
-                                            p_jump_us_per_chain[kk] <-   result[[5]][, kk][1]
-                                          }
-                                        }
+                                        
+                                            div_main <- div_us <- c()
+                                            p_jump_per_chain <- p_jump_us_per_chain <- c()
+                                            
+                                            for (kk in 1:n_chains_burnin) {
+                                              div_main[kk] <- result[[3]][, kk][2]
+                                              p_jump_per_chain[kk] <-   result[[3]][, kk][1]
+                                              if (sample_nuisance == TRUE) { 
+                                                div_us[kk] <- result[[5]][, kk][2]
+                                                p_jump_us_per_chain[kk] <-   result[[5]][, kk][1]
+                                              }
+                                            }
+                                        
                                       })
 
-                                      p_jump_main <- mean(p_jump_per_chain)
+                                      p_jump_main <- mean(p_jump_per_chain, na.rm = TRUE)
                                       if (sample_nuisance == TRUE) { 
-                                         p_jump_us <- mean(p_jump_us_per_chain)
+                                         p_jump_us <- mean(p_jump_us_per_chain, na.rm = TRUE)
                                       }
 
                         if (ii < n_adapt) {
@@ -735,7 +740,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                            p_jump_main, EHMC_burnin_as_Rcpp_List$adapt_delta_main,
                                                                                            beta1_adam, beta2_adam, eps_adam)
 
-                                        EHMC_args_as_Rcpp_List$eps_main <-   min(1, adapt_eps_outs[1])   ;  EHMC_args_as_Rcpp_List$eps_main
+                                        EHMC_args_as_Rcpp_List$eps_main <-    min(1, adapt_eps_outs[1])   ;  EHMC_args_as_Rcpp_List$eps_main
                                         EHMC_burnin_as_Rcpp_List$eps_m_adam_main <-  adapt_eps_outs[2]   ; EHMC_burnin_as_Rcpp_List$eps_m_adam_main
                                         EHMC_burnin_as_Rcpp_List$eps_v_adam_main <-  adapt_eps_outs[3]   ;    EHMC_burnin_as_Rcpp_List$eps_v_adam_main
 
@@ -753,12 +758,12 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                             EHMC_burnin_as_Rcpp_List$eps_v_adam_us <- adapt_eps_outs[3]
                                         }
                                         
-                                        if (div_main[kk] == 1) { 
-                                          EHMC_args_as_Rcpp_List$eps_main <- 0.5 * EHMC_args_as_Rcpp_List$eps_main
-                                        }
-                                        if (div_us[kk] == 1) { 
-                                          EHMC_args_as_Rcpp_List$eps_us <- 0.5 * EHMC_args_as_Rcpp_List$eps_us
-                                        }
+                                        # if (div_main[kk] == 1) { 
+                                        #   EHMC_args_as_Rcpp_List$eps_main <- 0.75 * EHMC_args_as_Rcpp_List$eps_main
+                                        # }
+                                        # if (div_us[kk] == 1) { 
+                                        #   EHMC_args_as_Rcpp_List$eps_us <- 0.75 * EHMC_args_as_Rcpp_List$eps_us
+                                        # }
 
                         }
 

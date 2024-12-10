@@ -210,13 +210,6 @@ create_summary_and_traces <- function(    model_results,
   force_autodiff <- model_results$force_autodiff
   force_PartialLog <- model_results$force_PartialLog
   multi_attempts <- model_results$multi_attempts
-
-  
-
-  
-  
-  
-  
   
   {
 
