@@ -77,9 +77,9 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
          for (int ii = 0; ii < n_iter; ++ii) {
            
                      //// make a copy of rng for iteration ii + advance rng by ii
-                     auto rng_ii = rng->clone(chain_id * n_iter + ii + 1);    
-                     // auto rng_ii = rng->clone(0);  // Get a copy
-                     // rng_ii->advance(chain_id * n_iter + ii + 1);  // Then advance it
+                     auto rng_ii = (burnin_indicator == 0)
+                     ? dqrng::generator<pcg64>(seed + chain_id * n_iter + ii + 1, chain_id * n_iter + ii + 1)
+                     : dqrng::generator<pcg64>(seed + chain_id, chain_id);  // For burnin, just use chain-specific values
                  
                      if (partitioned_HMC == true) {
                        
