@@ -186,12 +186,6 @@ static Ziggurat::Ziggurat::Ziggurat zigg;
 #endif
 
 
-// #undef HAS_BRIDGESTAN_H //// override
-// #define HAS_BRIDGESTAN_H 0 //// override
-
-
-
-
 #if HAS_BRIDGESTAN_H
     #include "general_functions/Stan_model_helper_fns.hpp"
 #endif
@@ -203,17 +197,17 @@ static Ziggurat::Ziggurat::Ziggurat zigg;
 
 
 ////////// ADAM / SNAPER-HMC general functions
-#include "general_functions/MCMC/EHMC_adapt_eps_fn.hpp"
-#include "general_functions/MCMC/EHMC_adapt_tau_fns.hpp"
-#include "general_functions/MCMC/EHMC_adapt_M_Hessian_fns.hpp"
+#include "MCMC/EHMC_adapt_eps_fn.hpp"
+#include "MCMC/EHMC_adapt_tau_fns.hpp"
+#include "MCMC/EHMC_adapt_M_Hessian_fns.hpp"
 
 ////////// EHMC sampler functions
 #if COMPILE_MCMC_MAIN
-  #include "general_functions/MCMC/EHMC_main_sampler_fns.hpp"
-  #include "general_functions/MCMC/EHMC_nuisance_sampler_fns.hpp"
-  #include "general_functions/MCMC/EHMC_dual_sampler_fns.hpp"
-  #include "general_functions/MCMC/EHMC_find_initial_eps_fns.hpp"
-  #include "general_functions/MCMC/EHMC_multithreaded_samp_fns.hpp"
+  #include "MCMC/EHMC_main_sampler_fns.hpp"
+  #include "MCMC/EHMC_nuisance_sampler_fns.hpp"
+  #include "MCMC/EHMC_dual_sampler_fns.hpp"
+  #include "MCMC/EHMC_find_initial_eps_fns.hpp"
+  #include "MCMC/EHMC_multithreaded_samp_fns.hpp"
 #endif
 
 
@@ -2143,6 +2137,7 @@ Rcpp::List                                   Rcpp_fn_OpenMP_EHMC_sampling(  cons
 Rcpp::List                            fn_R_OpenMP_EHMC_single_iter_burnin(   int n_threads_R,
                                                                         int seed_R,
                                                                         int n_iter_R,
+                                                                        int current_iter_R,
                                                                         int n_adapt,
                                                                         const bool burnin_indicator,
                                                                         std::string Model_type_R,
@@ -2245,6 +2240,7 @@ Rcpp::List                            fn_R_OpenMP_EHMC_single_iter_burnin(   int
   EHMC_burnin_OpenMP(         n_threads_R,
                               seed_R,
                               one,
+                              current_iter_R,
                               partitioned_HMC_R,
                               Model_type_R,
                               sample_nuisance_R,
@@ -2314,6 +2310,7 @@ Rcpp::List                            fn_R_OpenMP_EHMC_single_iter_burnin(   int
 Rcpp::List                                        fn_R_RcppParallel_EHMC_single_iter_burnin(  int n_threads_R,
                                                                                               int seed_R,
                                                                                               int n_iter_R,
+                                                                                              int current_iter_R,
                                                                                               int n_adapt,
                                                                                               const bool burnin_indicator,
                                                                                               std::string Model_type_R,
@@ -2409,6 +2406,7 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
   RcppParallel_EHMC_burnin parallel_hmc_test(         n_threads_R,
                                                       seed_R,
                                                       one,
+                                                      current_iter_R,
                                                       partitioned_HMC_R,
                                                       Model_type_R,
                                                       sample_nuisance_R,
