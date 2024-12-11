@@ -252,7 +252,7 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
        for (int i = 0; i < n_threads; i++) {  
             
              // auto rng = global_rng->clone(i + current_iter + 1);  // Create thread local copy and advance it by thread number + 1 jumps
-             auto rng = dqrng::generator<pcg64>(seed + current_iter, i);
+             auto rng = dqrng::generator<pcg64>(seed + current_iter, i + current_iter * n_threads);
          
              const int N =  Model_args_as_cpp_struct_copies[i].N;
              const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
@@ -574,7 +574,7 @@ public:
          {
            
            // auto rng = global_rng->clone(i + 1);  // Create thread local copy and advance it by thread number + 1 jumps
-           auto rng = dqrng::generator<pcg64>(seed + current_iter, i);
+           auto rng = dqrng::generator<pcg64>(seed + current_iter, i + current_iter * n_threads);
            
            const int N = Model_args_as_cpp_struct_copies[i].N;
            const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
@@ -874,8 +874,8 @@ public:
     
     {
     
-      static  thread_local stan::math::ChainableStack ad_tape;
-      static  thread_local stan::math::nested_rev_autodiff nested;
+      static thread_local stan::math::ChainableStack ad_tape;
+      static thread_local stan::math::nested_rev_autodiff nested;
       
       HMCResult result_input(n_params_main, n_us, N); // JUST putting this as thread_local doesnt fix the "lagging chain 0" issue. 
     
