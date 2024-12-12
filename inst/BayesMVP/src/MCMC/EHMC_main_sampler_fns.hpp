@@ -63,10 +63,7 @@ ALWAYS_INLINE   void generate_random_std_norm_vec(   Eigen::Matrix<double, -1, 1
                                                      int n_params, 
                                                      T &rng) {
    
-  // std::normal_distribution<double> dist(0.0, 1.0); 
-  // trng::normal_dist<> dist(0.0, 1.0);
   dqrng::normal_distribution dist(0.0, 1.0); 
-//  dqrng::uniform_distribution dist(0.0, 1.0); 
   
    for (int d = 0; d < n_params; d++) {
       double norm_draw = dist(*rng);
