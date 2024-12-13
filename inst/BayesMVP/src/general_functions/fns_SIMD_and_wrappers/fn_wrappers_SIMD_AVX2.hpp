@@ -43,123 +43,122 @@ typedef __m256d (*FuncAVX2_wo_checks)(const __m256d);
  
  
  
- 
  template <typename T, typename FuncAVX2, typename FuncDouble>
- inline void fn_AVX2_row_or_col_vector(   Eigen::Ref<T>  x, 
-                                            FuncAVX2 fn_AVX2, 
-                                            FuncDouble fn_double) {
+ ALWAYS_INLINE  void fn_AVX2_row_or_col_vector(   Eigen::Ref<T>  x,
+                                                  const FuncAVX2 &fn_AVX2,
+                                                  const FuncDouble &fn_double) {
    
    
    const int N = x.size();
    const int vect_size = 4;
    const double vect_siz_dbl = 4.0;
    const int N_divisible_by_vect_size = std::floor( static_cast<double>(N) / vect_siz_dbl) * vect_size;
-   
-   T x_temp = x; // make a copy 
+    
+   Eigen::Matrix<double, -1, 1> x_tail(vect_size); // last vect_size elements
+   {
+     int counter = 0;
+     for (int i = N - vect_size; i < N; ++i) {
+       x_tail(counter) = fn_double(x(i));
+       counter += 1;
+     } 
+   }
    
    if (N >= vect_size) {
      
      for (int i = 0; i + vect_size <= N_divisible_by_vect_size; i += vect_size) {
-       const __m256d AVX_array = _mm256_loadu_pd(&x(i));
+       
+       const __m256d AVX_array = _mm256_load_pd(&x(i));
        const __m256d AVX_array_out = fn_AVX2(AVX_array);
-       _mm256_storeu_pd(&x_temp(i), AVX_array_out);
+       _mm256_store_pd(&x(i), AVX_array_out);
+       
      }
      
-     const int start_index = N - vect_size;
-     const int end_index = N;
-     for (int i = start_index; i < end_index; ++i) {
-       x_temp(i) = fn_double(x(i));
-     }
-     // }
+     /// x.tail(vect_size) = x_tail
      
-   }  else {   // If N < 4, handle everything with scalar operations
+     if (N_divisible_by_vect_size != N) {    // Handle remainder
+       int counter = 0;
+       for (int i = N - vect_size; i < N; ++i) {
+         x(i) =  (x_tail(counter));
+         counter += 1;
+       }
+     }
+     
+     
+   }  else {   // If N < vect_size, handle everything with scalar operations
      
      for (int i = 0; i < N; ++i) {
-       x_temp(i) = fn_double(x(i));
+       x(i) = fn_double(x(i));
      }
      
    }
-   
-   x = x_temp;
-   
+    
    
  }
+ 
+ 
+ 
  
  
  
  
  template<typename T, typename FuncAVX2, typename FuncDouble>
- inline void fn_AVX2_matrix(  Eigen::Ref<T> x, 
-                                FuncAVX2 fn_AVX2,
-                                FuncDouble fn_double) {
+ ALWAYS_INLINE  void fn_AVX2_matrix(  Eigen::Ref<T> x,
+                                      const FuncAVX512 &fn_AVX2, 
+                                      const FuncDouble &fn_double) {
    
    const int n_rows = x.rows();
    const int n_cols = x.cols();
-   const int vect_size = 4;
-   const double vect_siz_dbl = 4.0;
-   const int rows_divisible_by_vect_size = std::floor( static_cast<double>(n_rows) / vect_siz_dbl) * vect_size;
-    
-   T x_temp = x; // make a copy 
    
-   for (int j = 0; j < n_cols; ++j) { /// loop through cols first as col-major storage
-     
-     //// Make sure we have at least 8 rows before trying AVX
-     if (n_rows >= vect_size) {
-       
-       for (int i = 0; i < rows_divisible_by_vect_size; i += vect_size) {
-         const __m256d AVX_array = _mm256_loadu_pd(&x(i, j));
-         const __m256d AVX_array_out = fn_AVX2(AVX_array);
-         _mm256_storeu_pd(&x_temp(i, j), AVX_array_out);
-       }
-       
-       //// Handle remaining rows with double fns
-       const int start_index = n_rows - vect_size;
-       const int end_index = n_rows;
-       for (int i = start_index; i < end_index; ++i) { 
-         x_temp(i, j) = fn_double(x(i, j));
-       }
-
-       
-     } else {    //// If n_rows < 4, handle entire row with double operations
-       for (int i = 0; i < n_rows; ++i) {
-         x_temp(i, j) = fn_double(x(i, j));
-       } 
+   if (n_rows > n_cols) { // if data in "long" format
+     for (int j = 0; j < n_cols; ++j) {   
+       Eigen::Matrix<double, -1, 1> x_col = x.col(j);
+       Eigen::Ref<Eigen::Matrix<double, -1, 1>> x_col_Ref(x_col);
+       fn_AVX2_row_or_col_vector<typename T::ColXpr>(x_col_Ref, fn_AVX2, fn_double);
+       x.col(j) = x_col_Ref;
      }
-     
+   } else { 
+     for (int j = 0; j < n_rows; ++j) {
+       Eigen::Matrix<double, 1, -1> x_row = x.row(j);
+       using RowType = decltype(x_row);
+       Eigen::Ref<Eigen::Matrix<double, 1, -1>> x_row_Ref(x_row); 
+       fn_AVX2_row_or_col_vector<RowType>(x_row_Ref, fn_AVX2, fn_double);
+       x.row(j) = x_row_Ref;
+     }
    }
    
-   x = x_temp; 
    
-   
- }
-  
+ } 
+ 
+ 
+ 
+ 
  
  
  
  template <typename T, typename FuncAVX2, typename FuncDouble>
- inline void fn_AVX2_dbl_Eigen(Eigen::Ref<T> x, 
-                                 FuncAVX2 fn_AVX2, 
-                                 FuncDouble fn_double) {
+ ALWAYS_INLINE  void fn_AVX2_dbl_Eigen(Eigen::Ref<T> x, 
+                                         const FuncAVX2 &fn_AVX2, 
+                                         const FuncDouble &fn_double) {
    
    constexpr int n_rows = T::RowsAtCompileTime;
    constexpr int n_cols = T::ColsAtCompileTime;
-    
+   
    if constexpr (n_rows == 1 && n_cols == -1) {   // Row vector case
-     
-         fn_AVX2_row_or_col_vector(x, fn_AVX2, fn_double);
+      
+      fn_AVX2_row_or_col_vector(x, fn_AVX2, fn_double);
      
    } else if constexpr (n_rows == -1 && n_cols == 1) {  // Column vector case
      
-         fn_AVX2_row_or_col_vector(x, fn_AVX2, fn_double);
+      fn_AVX2_row_or_col_vector(x, fn_AVX2, fn_double);
      
    } else {   // General matrix case
-      
-         fn_AVX2_matrix(x, fn_AVX2, fn_double);
+     
+      fn_AVX2_matrix(x, fn_AVX2, fn_double);
      
    }
    
  }
- 
+  
  
  
 

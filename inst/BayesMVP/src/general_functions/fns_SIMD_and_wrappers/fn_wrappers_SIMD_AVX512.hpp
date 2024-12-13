@@ -94,53 +94,10 @@ typedef __m512d (*FuncAVX512_wo_checks)(const __m512d);
 
 
  }
- // 
  
  
  
  
-// template <typename T, typename FuncAVX512, typename FuncDouble>
-// ALWAYS_INLINE  void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x, 
-//                                                    const FuncAVX512 &fn_AVX512, 
-//                                                    const FuncDouble &fn_double) {
-//   
-//   
-//   const int N = x.size();
-//   const int vect_size = 8;
-//   const double vect_siz_dbl = 8.0;
-//   const int N_divisible_by_vect_size = std::floor( static_cast<double>(N) / vect_siz_dbl) * vect_size;
-//  
-//   typename T::PlainObject x_temp = x; // make a copy
-//   
-//   if (N >= vect_size) {
-//     
-//           for (int i = 0; i + vect_size <= N_divisible_by_vect_size; i += vect_size) {
-//             
-//                 const __m512d AVX_array = _mm512_load_pd(&x(i)); 
-//                 const __m512d AVX_array_out = fn_AVX512(AVX_array);
-//                 _mm512_store_pd(&x_temp(i), AVX_array_out);
-//            
-//           }
-//            
-//            if (N_divisible_by_vect_size != N) {    // Handle remainder
-//              for (int i = N - vect_size; i < N; ++i) {
-//                x_temp(i) = fn_double(x(i));
-//              }
-//            }
-//            
-//   }  else {   // If N < vect_size, handle everything with scalar operations
-//     
-//         for (int i = 0; i < N; ++i) {
-//           x_temp(i) = fn_double(x(i));
-//         }
-//         
-//   }
-//   
-//     x = x_temp;
-// 
-//   
-// }
-
  
  
  
