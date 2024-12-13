@@ -156,7 +156,8 @@ ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Ei
  
 
 
-template<typename T = std::mt19937>
+template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+//template<typename T = std::mt19937>
 ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InPlace_process(    HMCResult &result_input,
                                                                                                  const bool  burnin, 
                                                                                                  T &rng,
@@ -197,13 +198,13 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
 
       { /// draw velocity for main   
           Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
-          generate_random_std_norm_vec(std_norm_vec_main, n_params_main, rng);
+          generate_random_std_norm_vec_dqrng(std_norm_vec_main, n_params_main, rng);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
         ///  if (metric_shape_main == "diag")  result_input.main_velocity_0_vec.array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
       { /// draw velocity for nuisance
           Eigen::Matrix<double, -1, 1> std_norm_vec_us(n_nuisance); // testing if static thread_local makes more efficient
-          generate_random_std_norm_vec(std_norm_vec_us, n_nuisance, rng);
+          generate_random_std_norm_vec_dqrng(std_norm_vec_us, n_nuisance, rng);
           result_input.us_velocity_0_vec().array() = ( std_norm_vec_us.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //.cast<float>() ;  
       }
 
@@ -220,7 +221,7 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
 
         // ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------
         if (EHMC_args_as_cpp_struct.tau_main < EHMC_args_as_cpp_struct.eps_main) { EHMC_args_as_cpp_struct.tau_main = EHMC_args_as_cpp_struct.eps_main; }
-          generate_random_tau_ii(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
+          generate_random_tau_ii_dqrng(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
           if (EHMC_args_as_cpp_struct.tau_main_ii < EHMC_args_as_cpp_struct.eps_main) { EHMC_args_as_cpp_struct.tau_main_ii = EHMC_args_as_cpp_struct.eps_main; }
           int    L_ii = std::ceil( EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
           if (L_ii < 1) { L_ii = 1 ; }
@@ -330,11 +331,10 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
                     result_input.us_div() = 0;
                     result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                     
-                    std::uniform_real_distribution <double> unif(0.0, 1.0);
-                   //  dqrng::uniform_distribution unif(0.0, 1.0);  
+                   // std::uniform_real_distribution <double> unif(0.0, 1.0);
+                    dqrng::uniform_distribution unif(0.0, 1.0);  
 
-              //  if  (stan::math::uniform_rng(0.0, 1.0, rng) > result_input.main_p_jump())   {  // # reject proposal
-                if  (unif(rng) > result_input.main_p_jump())   {  // # reject proposal
+                if  (unif(*rng) > result_input.main_p_jump())   {  // # reject proposal
              //  if  (R::runif(0, 1) > result_input.main_p_jump())   {  // # reject proposal
                       result_input.reject_proposal_main();  // # reject proposal
                       result_input.reject_proposal_us();  // # reject proposal

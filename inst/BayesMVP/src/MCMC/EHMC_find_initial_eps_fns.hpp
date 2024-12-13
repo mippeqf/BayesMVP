@@ -37,7 +37,8 @@ std::vector<double>                                   fn_find_initial_eps_main_a
    stan::math::ChainableStack ad_tape;
    stan::math::nested_rev_autodiff nested;
    
-   std::mt19937 rng(seed); 
+   // std::mt19937 rng(seed); 
+   auto rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
    
    const int N = Model_args_as_cpp_struct.N;
    const int n_nuisance =  Model_args_as_cpp_struct.n_nuisance;

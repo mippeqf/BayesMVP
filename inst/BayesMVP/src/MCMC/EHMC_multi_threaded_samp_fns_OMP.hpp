@@ -107,6 +107,8 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
          HMC_inputs.emplace_back(HMCResult);
        } 
        
+       auto global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
+       
        //// parallel for-loop
        #pragma omp parallel for shared(HMC_outputs, HMC_inputs)
        for (int i = 0; i < n_threads; i++) {  
@@ -125,8 +127,10 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
              stan::math::ChainableStack ad_tape;
              stan::math::nested_rev_autodiff nested;
              
-             const int seed_i = seed + 1000*chain_id;
-             std::mt19937 rng(seed_i);
+             // const int seed_i = seed + 1000*chain_id;
+             // std::mt19937 rng(seed_i);
+             const int seed_i = seed + chain_id + 1; // for xoshiro rng
+             auto rng = global_rng->clone(seed_i); // for xoshiro rng
              
          {
            
@@ -333,6 +337,8 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
   omp_set_num_threads(n_threads);
   omp_set_dynamic(0);
   
+  auto global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
+  
   //// parallel for-loop
   #pragma omp parallel for shared(HMC_outputs)
   for (int i = 0; i < n_threads; i++) {  
@@ -352,8 +358,10 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
         thread_local stan::math::ChainableStack ad_tape;
         thread_local stan::math::nested_rev_autodiff nested;
         
-        const int seed_i = seed + 1000*chain_id;
-        std::mt19937 rng(seed_i);
+        // const int seed_i = seed + 1000*chain_id;
+        // std::mt19937 rng(seed_i);
+        const int seed_i = seed + chain_id + 1; // for xoshiro rng
+        auto rng = global_rng->clone(seed_i); // for xoshiro rng
         
         int current_iter = 0; // gets assigned later for post-burnin
         
