@@ -354,11 +354,13 @@ create_summary_and_traces <- function(    model_results,
   #   warning("NOTE: can only compute log_lik a posteriori if ALL nuisance are tracked. \n Note it's also possible to compute log_lik during sampling by specifying: save_log_lik_trace = TRUE")
   # }
   
-   
+  message(print(paste(model_so_file)))
+  message(print(paste(json_file_path)))
+  
   ## print(n_params_main)
    pars_indicies_to_track <- 1:n_par_inc_tp_and_gq
    n_params_full <- n_par_inc_tp_and_gq
-   all_param_outs_trace <-    (BayesMVP::fn_compute_param_constrain_from_trace_parallel(    unc_params_trace_input_main = main_trace,
+   all_param_outs_trace <-    (BayesMVP:::fn_compute_param_constrain_from_trace_parallel(    unc_params_trace_input_main = main_trace,
                                                                                   unc_params_trace_input_nuisance = nuisance_trace, # doesnt matter as not tracking nuisance
                                                                                   pars_indicies_to_track = pars_indicies_to_track,
                                                                                   n_params_full = n_params_full,
