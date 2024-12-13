@@ -1429,10 +1429,6 @@ Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int
   EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
   const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
 
-  // boost::random::mt19937 rng(seed);
-  
-  auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed);
-
   Stan_model_struct Stan_model_as_cpp_struct;
 
   if (Model_args_as_cpp_struct.model_so_file != "none" && Stan_model_as_cpp_struct.bs_model_ptr == nullptr) {
@@ -1454,13 +1450,15 @@ Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int
   
   HMC_output_single_chain  HMC_output_single_chain_i(n_iter, n_nuisance_to_track, n_params_main, n_us, N);
 
+  std::mt19937 rng(seed);
+  
      fn_sample_HMC_multi_iter_single_thread(    HMC_output_single_chain_i,
                                                 result_input,
                                                 burnin_indicator,
                                                 1, // chain_id
                                                 1, // current_iter
                                                 seed,
-                                                /// rng,
+                                                rng,
                                                 n_iter,
                                                 partitioned_HMC,
                                                 Model_type,
