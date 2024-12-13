@@ -47,9 +47,6 @@ using namespace Eigen;
   
   
 class RcppParallel_EHMC_burnin : public RcppParallel::Worker {
-    
-//private:
- // std::unique_ptr<dqrng::random_64bit_generator> global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
   
 public:
        void reset_Eigen() {
@@ -229,8 +226,6 @@ public:
            
            const int chain_id = i;
            
-           // auto rng = dqrng::generator<pcg64>(seed + current_iter, i + current_iter * n_threads);
-           
            const int N = Model_args_as_cpp_struct_copies[i].N;
            const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
            const int n_params_main = Model_args_as_cpp_struct_copies[i].n_params_main;
@@ -243,16 +238,7 @@ public:
              stan::math::ChainableStack ad_tape;
              stan::math::nested_rev_autodiff nested;
              
-             // dqrng::dqset_seed(seed);
-             
-             // const int seed_i = seed + 1000*chain_id;
-             // std::mt19937 rng(seed_i);
-             // auto rng = global_rng->clone(chain_id + 1); // for xoshiro rng
-             //const int seed_i = seed + chain_id + 1; // for xoshiro rng
-             //auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed_i);  // for xoshiro rng
-             // auto rng = dqrng::generator<pcg64>(seed, i);
-             
-             pcg64 rng(seed, i);
+             pcg64 rng(seed, chain_id); // each chain gets its own RNG stream
             
             ///////////////////////////////////////// perform iterations for adaptation interval
             HMC_inputs[i].main_theta_vec() = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
@@ -404,9 +390,6 @@ public:
  
 class RcppParallel_EHMC_sampling : public RcppParallel::Worker {
   
-//private:
-//  std::unique_ptr<dqrng::random_64bit_generator> global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed));  
-  
 public:
           void reset_Eigen() {
                 theta_main_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
@@ -554,18 +537,9 @@ public:
       thread_local stan::math::ChainableStack ad_tape;
       thread_local stan::math::nested_rev_autodiff nested;
       
-      // const int seed_i = seed + 1000*chain_id;
-      // std::mt19937 rng(seed_i);
-      // auto rng = global_rng->clone(chain_id + 1); // for xoshiro rng
-      // const int seed_i = seed + chain_id + 1; // for xoshiro rng
-      // auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed_i);  // for xoshiro rng
-      // auto rng = dqrng::generator<pcg64>(seed, i);
-      
       int current_iter = 0; // gets assigned later for post-burnin
       
-      pcg64 rng(seed, i);
-      
-      // HMCResult result_input(n_params_main, n_us, N); // JUST putting this as thread_local doesnt fix the "lagging chain 0" issue. 
+      pcg64 rng(seed, chain_id); // each chain gets its own RNG stream
     
           {
     

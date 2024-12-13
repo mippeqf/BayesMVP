@@ -106,16 +106,12 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
          HMCResult HMCResult(n_params_main, n_us, N);
          HMC_inputs.emplace_back(HMCResult);
        } 
-       
-      // auto global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
-       
+
        //// parallel for-loop
        #pragma omp parallel for shared(HMC_outputs, HMC_inputs)
        for (int i = 0; i < n_threads; i++) {  
          
              const int chain_id = i;
-            
-             // auto rng = dqrng::generator<pcg64>(seed + current_iter, i + current_iter * n_threads);
          
              const int N =  Model_args_as_cpp_struct_copies[i].N;
              const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
@@ -127,14 +123,7 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
              stan::math::ChainableStack ad_tape;
              stan::math::nested_rev_autodiff nested;
              
-             // const int seed_i = seed + 1000*chain_id;
-             // std::mt19937 rng(seed_i);
-             // auto rng = global_rng->clone(chain_id + 1); // for xoshiro rng
-             // const int seed_i = seed + chain_id + 1; // for xoshiro rng
-             // auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed_i);  // for xoshiro rng
-             // auto rng = dqrng::generator<pcg64>(seed, i);
-             
-             pcg64 rng(seed, i);
+             pcg64 rng(seed, chain_id); // each chain gets its own RNG stream
              
          {
            
@@ -340,16 +329,12 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
   
   omp_set_num_threads(n_threads);
   omp_set_dynamic(0);
-  
- // auto global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
-  
+
   //// parallel for-loop
   #pragma omp parallel for shared(HMC_outputs)
   for (int i = 0; i < n_threads; i++) {  
     
         const int chain_id = i;
-        
-        // auto rng = dqrng::generator<pcg64>(seed, i);
     
         const int N =  Model_args_as_cpp_struct_copies[i].N;
         const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
@@ -362,14 +347,7 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
         thread_local stan::math::ChainableStack ad_tape;
         thread_local stan::math::nested_rev_autodiff nested;
         
-        // const int seed_i = seed + 1000*chain_id;
-        // std::mt19937 rng(seed_i);
-        // auto rng = global_rng->clone(chain_id + 1); // for xoshiro rng
-        // const int seed_i = seed + chain_id + 1; // for xoshiro rng
-        // auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed_i);  // for xoshiro rng
-        // auto rng = dqrng::generator<pcg64>(seed, i);
-        
-        pcg64 rng(seed, i);
+        pcg64 rng(seed, chain_id); // each chain gets its own RNG stream
         
         int current_iter = 0; // gets assigned later for post-burnin
         

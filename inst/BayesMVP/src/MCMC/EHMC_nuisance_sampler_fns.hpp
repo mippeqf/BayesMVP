@@ -124,8 +124,8 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  
   for (int l = 0; l < L_ii; l++) {
 
           // Update velocity (first half step)
-          Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
-          velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * temp_1.array();
+          //Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
+          velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * grad_us.array()  * M_inv_us_vec.array();
 
           // Full step for position + update velocity again (only for Gaussian)
           theta_us_vec_current_segment.array() = theta_us_vec_proposed_ref.array();
@@ -141,8 +141,8 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  
           grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
           
           // Update velocity (second half step)
-          Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
-          velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * temp_2.array();
+          //Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
+          velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * grad_us.array()  * M_inv_us_vec.array();
 
   } // End of leapfrog steps
 
@@ -157,9 +157,6 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  
 
 
 
-
-// template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
-//template<typename T = std::mt19937>
 template<typename T = pcg64>
 ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        HMCResult &result_input,
                                                                                                const bool burnin,
@@ -322,7 +319,6 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
                     result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                     
                      std::uniform_real_distribution<double> unif(0.0, 1.0);
-                   //  dqrng::uniform_distribution unif(0.0, 1.0); 
                     
                    if  (unif(rng) > result_input.us_p_jump())   {  // # reject proposal
                  //   if  (R::runif(0, 1) > result_input.us_p_jump())   {  // # reject proposal

@@ -275,8 +275,8 @@ ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Ei
       for (int l = 0; l < L_ii; l++) {
 
             // Update velocity (first half step)
-            Eigen::Matrix<double, -1, 1> temp_1 = M_inv_dense_main * grad_main;
-            velocity_main_vec_proposed_ref.array() +=    0.5 * eps * temp_1.array() ;
+            //Eigen::Matrix<double, -1, 1> temp_1 = M_inv_dense_main * grad_main;
+            velocity_main_vec_proposed_ref.array() +=    0.5 * eps * (M_inv_dense_main * grad_main).array() ;
 
             //// updae params by full step
             theta_main_vec_proposed_ref.array()  +=  eps *     velocity_main_vec_proposed_ref.array() ;
@@ -290,8 +290,8 @@ ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_main_InPlace(    Ei
             grad_main =   lp_and_grad_outs.segment(1 + n_nuisance, n_params_main);
 
             // Update velocity (second half step)
-            Eigen::Matrix<double, -1, 1> temp_2 = M_inv_dense_main * grad_main;
-            velocity_main_vec_proposed_ref.array() +=    0.5 * eps * temp_2.array() ;
+            //Eigen::Matrix<double, -1, 1> temp_2 = M_inv_dense_main * grad_main;
+            velocity_main_vec_proposed_ref.array() +=    0.5 * eps * (M_inv_dense_main * grad_main).array() ;
 
       } // End of leapfrog steps
 
@@ -369,9 +369,6 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       
 
 
 
-
-// template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
-//template<typename T = std::mt19937>
 template<typename T = pcg64>
 ALWAYS_INLINE  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
                                                                                                      const bool  burnin, 
@@ -525,7 +522,6 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                           result_input.main_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                           
                           std::uniform_real_distribution<double> unif(0.0, 1.0);
-                       // dqrng::uniform_distribution unif(0.0, 1.0); 
                           
                      if  (unif(rng) > result_input.main_p_jump())   {  // # reject proposal
                    //   if  (R::runif(0, 1) > result_input.main_p_jump())   {  // # reject proposal
