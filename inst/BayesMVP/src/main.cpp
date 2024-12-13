@@ -1450,7 +1450,8 @@ Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int
   
   HMC_output_single_chain  HMC_output_single_chain_i(n_iter, n_nuisance_to_track, n_params_main, n_us, N);
 
-  std::mt19937 rng(seed);
+  // std::mt19937 rng(seed);
+  auto rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
   
      fn_sample_HMC_multi_iter_single_thread(    HMC_output_single_chain_i,
                                                 result_input,
