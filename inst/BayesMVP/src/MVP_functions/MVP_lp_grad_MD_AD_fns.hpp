@@ -322,167 +322,167 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   {
 
  
-  // {     ////////////////////////// local AD block
-  // 
-  //         stan::math::start_nested();  ////////////////////////
-  //         
-  //         //// these need to be outside the AD block
-  //         Eigen::Matrix<stan::math::var, -1, 1  >  Omega_raw_vec_var =  stan::math::to_var(Omega_raw_vec_double) ;
-  //         std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_unconstrained_var = fn_convert_std_vec_of_corrs_to_3d_array_var(Eigen_vec_to_std_vec_var(Omega_raw_vec_var),  n_tests, n_class);
-  //         std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  L_Omega_var = vec_of_mats_var(n_tests, n_tests, n_class);
-  //         stan::math::var target_AD = 0.0;
-  //         std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_var   = vec_of_mats_var(n_tests, n_tests, n_class);
-  //     
-  //         {
-  //     
-  //               stan::math::var log_det_J_L_Omega = 0.0;
-  //     
-  //               for (int c = 0; c < n_class; ++c) {
-  //     
-  //                     Eigen::Matrix<stan::math::var, -1, -1>  ub = stan::math::to_var(ub_corr[c]);
-  //                     Eigen::Matrix<stan::math::var, -1, -1>  lb = stan::math::to_var(lb_corr[c]);
-  //                     Eigen::Matrix<stan::math::var, -1, -1>  Chol_Schur_outs =  Pinkney_LDL_bounds_opt(n_tests, lb, ub, Omega_unconstrained_var[c], known_values_indicator[c], known_values[c]) ;
-  //                     L_Omega_var[c]   =  Chol_Schur_outs.block(1, 0, n_tests, n_tests);
-  //                     Omega_var[c] =   L_Omega_var[c] * L_Omega_var[c].transpose() ;
-  //     
-  //                     log_det_J_L_Omega +=   Chol_Schur_outs(0, 0); // now can set prior directly on Omega (as this is Jacobian adjustment)
-  //     
-  //               }
-  //     
-  //               log_det_J_L_Omega_double += log_det_J_L_Omega.val();
-  //               target_AD += log_det_J_L_Omega;
-  //     
-  //          }
-  //     
-  //         {
-  //     
-  //               stan::math::var prior_densities_L_Omega = 0.0;
-  //     
-  //                   for (int c = 0; c < n_class; ++c) {
-  //     
-  //                         if ( (corr_prior_beta == false)   &&  (corr_prior_norm == false) ) {
-  //                           prior_densities_L_Omega +=  stan::math::lkj_corr_cholesky_lpdf(L_Omega_var[c], lkj_cholesky_eta(c)) ;
-  //                         } else if ( (corr_prior_beta == true)   &&  (corr_prior_norm == false) ) {
-  //                           for (int i = 1; i < n_tests; i++) {
-  //                             for (int j = 0; j < i; j++) {
-  //                               prior_densities_L_Omega +=  stan::math::beta_lpdf(  (Omega_var[c](i, j) + 1)/2, prior_for_corr_a[c](i, j), prior_for_corr_b[c](i, j));
-  //                             }
-  //                           }
-  //                           //  Jacobian for  Omega -> L_Omega transformation for prior log-densities (since both LKJ and truncated normal prior densities are in terms of Omega, not L_Omega)
-  //                           Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
-  //                           for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i + 1) ) * stan::math::log(L_Omega_var[c](i, i));
-  //                           prior_densities_L_Omega  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
-  //                         } else if  ( (corr_prior_beta == false)   &&  (corr_prior_norm == true) ) {
-  //                           for (int i = 1; i < n_tests; i++) {
-  //                             for (int j = 0; j < i; j++) {
-  //                               prior_densities_L_Omega +=  stan::math::normal_lpdf(  Omega_var[c](i, j), prior_for_corr_a[c](i, j), prior_for_corr_b[c](i, j));
-  //                             }
-  //                           }
-  //                           Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
-  //                           for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i + 1) ) * stan::math::log(L_Omega_var[c](i, i));
-  //                           prior_densities_L_Omega  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
-  //                         }
-  //     
-  //                   }
-  //     
-  //                   target_AD += prior_densities_L_Omega;
-  //                   prior_densities_L_Omega_double += prior_densities_L_Omega.val();
-  //     
-  //           }
-  //     
-  //     
-  //           {
-  //               ///////////////////////
-  //               target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-  //               grad_Omega_raw_priors_and_log_det_J =  Omega_raw_vec_var.adj();    // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-  //               out_mat.segment(1 + n_us, n_corrs) =  grad_Omega_raw_priors_and_log_det_J ;   //// add grad constribution to output vec
-  //               stan::math::set_zero_all_adjoints();
-  //               ////////////////////////////////////////////////////////////
-  //           }
-  //     
-  //     
-  //         /////////////  prev stuff  ---- vars
-  //       {
-  //           if (n_class > 1) {  //// if latent class
-  //     
-  //             std::vector<stan::math::var> 	 u_prev_var_vec_var(n_class, 0.0);
-  //             std::vector<stan::math::var> 	 prev_var_vec_var(n_class, 0.0);
-  //             std::vector<stan::math::var> 	 tanh_u_prev_var(n_class, 0.0);
-  //             Eigen::Matrix<stan::math::var, -1, -1>	 prev_var = Eigen::Matrix<stan::math::var, -1, -1>::Zero(1, 2);
-  //             stan::math::var tanh_pu_deriv_var = 0.0;
-  //             stan::math::var deriv_p_wrt_pu_var = 0.0;
-  //             stan::math::var tanh_pu_second_deriv_var = 0.0;
-  //             stan::math::var log_jac_p_deriv_wrt_pu_var = 0.0;
-  //             stan::math::var log_det_J_prev_var = 0.0;
-  //             stan::math::var target_AD_prev = 0.0;
-  //     
-  //             u_prev_var_vec_var[1] =  stan::math::to_var(u_prev_diseased);
-  //             tanh_u_prev_var[1] =  stan::math::tanh(u_prev_var_vec_var[1]); /// ( stan::math::exp(2.0*u_prev_var_vec_var[1] ) - 1.0) / ( stan::math::exp(2*u_prev_var_vec_var[1] ) + 1.0) ;
-  //             u_prev_var_vec_var[0] =   0.5 *  stan::math::log( (1.0 + ( (1.0 - 0.5 * ( tanh_u_prev_var[1] + 1.0))*2.0 - 1.0) ) / (1.0 - ( (1.0 - 0.5 * ( tanh_u_prev_var[1] + 1.0))*2.0 - 1.0) ) )  ;
-  //             tanh_u_prev_var[0] =  stan::math::tanh(u_prev_var_vec_var[0]); ///  (stan::math::exp(2.0*u_prev_var_vec_var[0] ) - 1.0) / ( stan::math::exp(2*u_prev_var_vec_var[0] ) + 1.0) ;
-  //     
-  //             prev_var_vec_var[1] =  0.5 * ( tanh_u_prev_var[1] + 1.0);
-  //             prev_var_vec_var[0] =  0.5 * ( tanh_u_prev_var[0] + 1.0);
-  //             prev_var(0,1) =  prev_var_vec_var[1];
-  //             prev_var(0,0) =  prev_var_vec_var[0];
-  //     
-  //             tanh_pu_deriv_var = ( 1.0 - (tanh_u_prev_var[1] * tanh_u_prev_var[1])  );
-  //             deriv_p_wrt_pu_var = 0.5 *  tanh_pu_deriv_var;
-  //             tanh_pu_second_deriv_var  = -2.0 * tanh_u_prev_var[1]  * tanh_pu_deriv_var;
-  //             log_jac_p_deriv_wrt_pu_var  = ( 1.0 / deriv_p_wrt_pu_var) * 0.5 * tanh_pu_second_deriv_var; // for gradient of u's
-  //     
-  //             log_det_J_prev_var =    stan::math::log( deriv_p_wrt_pu_var );
-  //             log_det_J_prev_double =  log_det_J_prev_var.val() ;
-  //     
-  //             stan::math::var prior_densities_prev = beta_lpdf(prev_var(0, 1), prev_prior_a, prev_prior_b)  ;  // weakly informative prior - helps avoid boundaries with slight negative skew (for lower N)
-  //             prior_densities_prev_double = prior_densities_prev.val();
-  //     
-  //             //  target_AD_prev += log_det_J_prev_var ; /// done manually later
-  //             target_AD  +=  prior_densities_prev;
-  //     
-  //             ///////////////////////
-  //             prior_densities_prev.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-  //             grad_prev_raw_priors_and_log_det_J  =  u_prev_var_vec_var[1].adj() - u_prev_var_vec_var[0].adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-  //             out_mat(1 + n_us + n_corrs + n_covariates_total) = grad_prev_raw_priors_and_log_det_J; //// add grad constribution to output vec
-  //             stan::math::set_zero_all_adjoints();
-  //     
-  //           }
-  //       }
-  //     
-  //         ////////////////////////////////////////////////////////////
-  //         for (int c = 0; c < n_class; ++c) {
-  //           int cnt_1 = 0;
-  //           for (int k = 0; k < n_tests; k++) {
-  //             for (int l = 0; l < k + 1; l++) {
-  //               (  L_Omega_var[c](k, l)).grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-  //               int cnt_2 = 0;
-  //               for (int i = 1; i < n_tests; i++) {
-  //                 for (int j = 0; j < i; j++) {
-  //                   deriv_L_wrt_unc_full[c](cnt_1, cnt_2)  =   Omega_unconstrained_var[c](i, j).adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-  //                   cnt_2 += 1;
-  //                 }
-  //               }
-  //               stan::math::set_zero_all_adjoints();
-  //               cnt_1 += 1;
-  //             }
-  //           }
-  //         }
-  //     
-  //     
-  //         ///////////////// get cholesky factor's (lower-triangular) of corr matrices
-  //         // convert to 3d var array
-  //         for (int c = 0; c < n_class; ++c) {
-  //           for (int t2 = 0; t2 < n_tests; ++t2) { //// col-major storage
-  //             for (int t1 = 0; t1 < n_tests; ++t1) {
-  //               L_Omega_double[c](t1, t2) =   L_Omega_var[c](t1, t2).val()  ;
-  //               L_Omega_recip_double[c](t1, t2) =   1.0 / L_Omega_double[c](t1, t2) ;
-  //             }
-  //           }
-  //         }
-  //     
-  //         stan::math::recover_memory_nested();  //////////////////////////////////////////
-  // 
-  // }   //////////////////////////  end of local AD block
+  {     ////////////////////////// local AD block
+
+          stan::math::start_nested();  ////////////////////////
+
+          //// these need to be outside the AD block
+          Eigen::Matrix<stan::math::var, -1, 1  >  Omega_raw_vec_var =  stan::math::to_var(Omega_raw_vec_double) ;
+          std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_unconstrained_var = fn_convert_std_vec_of_corrs_to_3d_array_var(Eigen_vec_to_std_vec_var(Omega_raw_vec_var),  n_tests, n_class);
+          std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  L_Omega_var = vec_of_mats_var(n_tests, n_tests, n_class);
+          stan::math::var target_AD = 0.0;
+          std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_var   = vec_of_mats_var(n_tests, n_tests, n_class);
+
+          {
+
+                stan::math::var log_det_J_L_Omega = 0.0;
+
+                for (int c = 0; c < n_class; ++c) {
+
+                      Eigen::Matrix<stan::math::var, -1, -1>  ub = stan::math::to_var(ub_corr[c]);
+                      Eigen::Matrix<stan::math::var, -1, -1>  lb = stan::math::to_var(lb_corr[c]);
+                      Eigen::Matrix<stan::math::var, -1, -1>  Chol_Schur_outs =  Pinkney_LDL_bounds_opt(n_tests, lb, ub, Omega_unconstrained_var[c], known_values_indicator[c], known_values[c]) ;
+                      L_Omega_var[c]   =  Chol_Schur_outs.block(1, 0, n_tests, n_tests);
+                      Omega_var[c] =   L_Omega_var[c] * L_Omega_var[c].transpose() ;
+
+                      log_det_J_L_Omega +=   Chol_Schur_outs(0, 0); // now can set prior directly on Omega (as this is Jacobian adjustment)
+
+                }
+
+                log_det_J_L_Omega_double += log_det_J_L_Omega.val();
+                target_AD += log_det_J_L_Omega;
+
+           }
+
+          {
+
+                stan::math::var prior_densities_L_Omega = 0.0;
+
+                    for (int c = 0; c < n_class; ++c) {
+
+                          if ( (corr_prior_beta == false)   &&  (corr_prior_norm == false) ) {
+                            prior_densities_L_Omega +=  stan::math::lkj_corr_cholesky_lpdf(L_Omega_var[c], lkj_cholesky_eta(c)) ;
+                          } else if ( (corr_prior_beta == true)   &&  (corr_prior_norm == false) ) {
+                            for (int i = 1; i < n_tests; i++) {
+                              for (int j = 0; j < i; j++) {
+                                prior_densities_L_Omega +=  stan::math::beta_lpdf(  (Omega_var[c](i, j) + 1)/2, prior_for_corr_a[c](i, j), prior_for_corr_b[c](i, j));
+                              }
+                            }
+                            //  Jacobian for  Omega -> L_Omega transformation for prior log-densities (since both LKJ and truncated normal prior densities are in terms of Omega, not L_Omega)
+                            Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
+                            for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i + 1) ) * stan::math::log(L_Omega_var[c](i, i));
+                            prior_densities_L_Omega  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
+                          } else if  ( (corr_prior_beta == false)   &&  (corr_prior_norm == true) ) {
+                            for (int i = 1; i < n_tests; i++) {
+                              for (int j = 0; j < i; j++) {
+                                prior_densities_L_Omega +=  stan::math::normal_lpdf(  Omega_var[c](i, j), prior_for_corr_a[c](i, j), prior_for_corr_b[c](i, j));
+                              }
+                            }
+                            Eigen::Matrix<stan::math::var, -1, 1 >  jacobian_diag_elements(n_tests);
+                            for (int i = 0; i < n_tests; ++i)     jacobian_diag_elements(i) = ( n_tests + 1 - (i + 1) ) * stan::math::log(L_Omega_var[c](i, i));
+                            prior_densities_L_Omega  += + (n_tests * stan::math::log(2) + jacobian_diag_elements.sum());  //  L -> Omega
+                          }
+
+                    }
+
+                    target_AD += prior_densities_L_Omega;
+                    prior_densities_L_Omega_double += prior_densities_L_Omega.val();
+
+            }
+
+
+            {
+                ///////////////////////
+                target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+                grad_Omega_raw_priors_and_log_det_J =  Omega_raw_vec_var.adj();    // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+                out_mat.segment(1 + n_us, n_corrs) =  grad_Omega_raw_priors_and_log_det_J ;   //// add grad constribution to output vec
+                stan::math::set_zero_all_adjoints();
+                ////////////////////////////////////////////////////////////
+            }
+
+
+          /////////////  prev stuff  ---- vars
+        {
+            if (n_class > 1) {  //// if latent class
+
+              std::vector<stan::math::var> 	 u_prev_var_vec_var(n_class, 0.0);
+              std::vector<stan::math::var> 	 prev_var_vec_var(n_class, 0.0);
+              std::vector<stan::math::var> 	 tanh_u_prev_var(n_class, 0.0);
+              Eigen::Matrix<stan::math::var, -1, -1>	 prev_var = Eigen::Matrix<stan::math::var, -1, -1>::Zero(1, 2);
+              stan::math::var tanh_pu_deriv_var = 0.0;
+              stan::math::var deriv_p_wrt_pu_var = 0.0;
+              stan::math::var tanh_pu_second_deriv_var = 0.0;
+              stan::math::var log_jac_p_deriv_wrt_pu_var = 0.0;
+              stan::math::var log_det_J_prev_var = 0.0;
+              stan::math::var target_AD_prev = 0.0;
+
+              u_prev_var_vec_var[1] =  stan::math::to_var(u_prev_diseased);
+              tanh_u_prev_var[1] =  stan::math::tanh(u_prev_var_vec_var[1]); /// ( stan::math::exp(2.0*u_prev_var_vec_var[1] ) - 1.0) / ( stan::math::exp(2*u_prev_var_vec_var[1] ) + 1.0) ;
+              u_prev_var_vec_var[0] =   0.5 *  stan::math::log( (1.0 + ( (1.0 - 0.5 * ( tanh_u_prev_var[1] + 1.0))*2.0 - 1.0) ) / (1.0 - ( (1.0 - 0.5 * ( tanh_u_prev_var[1] + 1.0))*2.0 - 1.0) ) )  ;
+              tanh_u_prev_var[0] =  stan::math::tanh(u_prev_var_vec_var[0]); ///  (stan::math::exp(2.0*u_prev_var_vec_var[0] ) - 1.0) / ( stan::math::exp(2*u_prev_var_vec_var[0] ) + 1.0) ;
+
+              prev_var_vec_var[1] =  0.5 * ( tanh_u_prev_var[1] + 1.0);
+              prev_var_vec_var[0] =  0.5 * ( tanh_u_prev_var[0] + 1.0);
+              prev_var(0,1) =  prev_var_vec_var[1];
+              prev_var(0,0) =  prev_var_vec_var[0];
+
+              tanh_pu_deriv_var = ( 1.0 - (tanh_u_prev_var[1] * tanh_u_prev_var[1])  );
+              deriv_p_wrt_pu_var = 0.5 *  tanh_pu_deriv_var;
+              tanh_pu_second_deriv_var  = -2.0 * tanh_u_prev_var[1]  * tanh_pu_deriv_var;
+              log_jac_p_deriv_wrt_pu_var  = ( 1.0 / deriv_p_wrt_pu_var) * 0.5 * tanh_pu_second_deriv_var; // for gradient of u's
+
+              log_det_J_prev_var =    stan::math::log( deriv_p_wrt_pu_var );
+              log_det_J_prev_double =  log_det_J_prev_var.val() ;
+
+              stan::math::var prior_densities_prev = beta_lpdf(prev_var(0, 1), prev_prior_a, prev_prior_b)  ;  // weakly informative prior - helps avoid boundaries with slight negative skew (for lower N)
+              prior_densities_prev_double = prior_densities_prev.val();
+
+              //  target_AD_prev += log_det_J_prev_var ; /// done manually later
+              target_AD  +=  prior_densities_prev;
+
+              ///////////////////////
+              prior_densities_prev.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+              grad_prev_raw_priors_and_log_det_J  =  u_prev_var_vec_var[1].adj() - u_prev_var_vec_var[0].adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+              out_mat(1 + n_us + n_corrs + n_covariates_total) = grad_prev_raw_priors_and_log_det_J; //// add grad constribution to output vec
+              stan::math::set_zero_all_adjoints();
+
+            }
+        }
+
+          ////////////////////////////////////////////////////////////
+          for (int c = 0; c < n_class; ++c) {
+            int cnt_1 = 0;
+            for (int k = 0; k < n_tests; k++) {
+              for (int l = 0; l < k + 1; l++) {
+                (  L_Omega_var[c](k, l)).grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
+                int cnt_2 = 0;
+                for (int i = 1; i < n_tests; i++) {
+                  for (int j = 0; j < i; j++) {
+                    deriv_L_wrt_unc_full[c](cnt_1, cnt_2)  =   Omega_unconstrained_var[c](i, j).adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
+                    cnt_2 += 1;
+                  }
+                }
+                stan::math::set_zero_all_adjoints();
+                cnt_1 += 1;
+              }
+            }
+          }
+
+
+          ///////////////// get cholesky factor's (lower-triangular) of corr matrices
+          // convert to 3d var array
+          for (int c = 0; c < n_class; ++c) {
+            for (int t2 = 0; t2 < n_tests; ++t2) { //// col-major storage
+              for (int t1 = 0; t1 < n_tests; ++t1) {
+                L_Omega_double[c](t1, t2) =   L_Omega_var[c](t1, t2).val()  ;
+                L_Omega_recip_double[c](t1, t2) =   1.0 / L_Omega_double[c](t1, t2) ;
+              }
+            }
+          }
+
+          stan::math::recover_memory_nested();  //////////////////////////////////////////
+
+  }   //////////////////////////  end of local AD block
   
 
   /////////////  prev stuff
