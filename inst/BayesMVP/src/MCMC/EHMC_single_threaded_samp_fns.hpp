@@ -43,8 +43,9 @@ static std::mutex result_mutex_2; //// global mutex
 
 
 
-template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+//template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
 //template<typename T = std::mt19937>
+template<typename T = pcg64>
 ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(      HMC_output_single_chain &HMC_output_single_chain_i,
                                                                                     HMCResult &result_input,
                                                                                     const bool burnin_indicator,
@@ -83,14 +84,25 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                      if (burnin_indicator == false) {
                          current_iter = ii;
                          // seed_ii = seed;
-                         seed_ii = seed + 1000*(chain_id + 1) * 1000*(current_iter + n_iter + 1);
+                         //seed_ii = seed + 1000*(chain_id + 1) * 1000*(current_iter + n_iter + 1);
+                         rng.advance(1);
                      } else {  //// burnin 
                          //// leave "current_iter" as it is if burnin (current_iter will be given in via R)
-                         seed_ii = seed + 1000*(chain_id + 1) * 1000*(current_iter + 1);
+                        // seed_ii = seed + 1000*(chain_id + 1) * 1000*(current_iter + 1);
+                         rng.advance(current_iter);
                      }
                      
+                     //seed_ii = seed + 1000*(chain_id + 1) * 1000*(current_iter + n_iter + 1);
+                     // seed_ii = seed + 1000*(current_iter + n_iter + 1);
+                     
                      // rng.seed(seed_ii);  // change the seed
-                     auto rng_ii = rng->clone(seed + chain_id + ii + 1); // for xoshiro rng 
+                     
+                     // std::unique_ptr<random_64bit_generator> rng_ii = rng->clone(ii + 1); // for xoshiro rng 
+                     // auto rng_ii = dqrng::generator<dqrng::xoshiro256plusplus>(seed_ii);  // for xoshiro rng 
+                     // auto rng_ii = dqrng::generator<pcg64>(seed_ii, chain_id);
+                     
+                     // rng.advance(current_iter);
+                     
                      //const int stream_ii = (chain_id + 1) * current_iter + 1;
                      // std::unique_ptr<dqrng::random_64bit_generator> rng_ii;
                  
@@ -104,7 +116,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                              
                                              stan::math::start_nested();
                                              fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(    result_input,    
-                                                                                                            burnin,  rng_ii, seed_ii,
+                                                                                                            burnin,  rng, seed_ii,
                                                                                                             Model_type, 
                                                                                                             force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                                             y_Eigen_i,
@@ -125,7 +137,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                    
                                              stan::math::start_nested();
                                              fn_standard_HMC_main_only_single_iter_InPlace_process(      result_input,   
-                                                                                                         burnin,  rng_ii, seed_ii,
+                                                                                                         burnin,  rng, seed_ii,
                                                                                                          Model_type,  
                                                                                                          force_autodiff, force_PartialLog,  multi_attempts,
                                                                                                          y_Eigen_i,
@@ -146,7 +158,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                        
                                          stan::math::start_nested();
                                          fn_standard_HMC_dual_single_iter_InPlace_process(    result_input,    
-                                                                                              burnin,  rng_ii, seed_ii,
+                                                                                              burnin,  rng, seed_ii,
                                                                                               Model_type, 
                                                                                               force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                               y_Eigen_i,

@@ -48,8 +48,8 @@ using namespace Eigen;
   
 class RcppParallel_EHMC_burnin : public RcppParallel::Worker {
     
-private:
-  std::unique_ptr<dqrng::random_64bit_generator> global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
+//private:
+ // std::unique_ptr<dqrng::random_64bit_generator> global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
   
 public:
        void reset_Eigen() {
@@ -243,10 +243,16 @@ public:
              stan::math::ChainableStack ad_tape;
              stan::math::nested_rev_autodiff nested;
              
+             // dqrng::dqset_seed(seed);
+             
              // const int seed_i = seed + 1000*chain_id;
              // std::mt19937 rng(seed_i);
-             const int seed_i = seed + chain_id + 1; // for xoshiro rng
-             auto rng = global_rng->clone(seed_i); // for xoshiro rng
+             // auto rng = global_rng->clone(chain_id + 1); // for xoshiro rng
+             //const int seed_i = seed + chain_id + 1; // for xoshiro rng
+             //auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed_i);  // for xoshiro rng
+             // auto rng = dqrng::generator<pcg64>(seed, i);
+             
+             pcg64 rng(seed, i);
             
             ///////////////////////////////////////// perform iterations for adaptation interval
             HMC_inputs[i].main_theta_vec() = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
@@ -271,7 +277,7 @@ public:
                                                            burnin_indicator, 
                                                            chain_id, 
                                                            current_iter,
-                                                           seed + chain_id,
+                                                           seed,
                                                            rng,
                                                            n_iter,
                                                            partitioned_HMC,
@@ -293,7 +299,7 @@ public:
                                                            burnin_indicator, 
                                                            chain_id, 
                                                            current_iter,
-                                                           seed + chain_id, 
+                                                           seed, 
                                                            rng,
                                                            n_iter,
                                                            partitioned_HMC,
@@ -398,8 +404,8 @@ public:
  
 class RcppParallel_EHMC_sampling : public RcppParallel::Worker {
   
-private:
-  std::unique_ptr<dqrng::random_64bit_generator> global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed));  
+//private:
+//  std::unique_ptr<dqrng::random_64bit_generator> global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed));  
   
 public:
           void reset_Eigen() {
@@ -550,11 +556,14 @@ public:
       
       // const int seed_i = seed + 1000*chain_id;
       // std::mt19937 rng(seed_i);
-      const int seed_i = seed + chain_id + 1; // for xoshiro rng
-      auto rng = global_rng->clone(seed_i); // for xoshiro rng
+      // auto rng = global_rng->clone(chain_id + 1); // for xoshiro rng
+      // const int seed_i = seed + chain_id + 1; // for xoshiro rng
+      // auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed_i);  // for xoshiro rng
       // auto rng = dqrng::generator<pcg64>(seed, i);
       
       int current_iter = 0; // gets assigned later for post-burnin
+      
+      pcg64 rng(seed, i);
       
       // HMCResult result_input(n_params_main, n_us, N); // JUST putting this as thread_local doesnt fix the "lagging chain 0" issue. 
     
@@ -571,7 +580,7 @@ public:
  
                           Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                                         Model_args_as_cpp_struct_copies[i].json_file_path, 
-                                                                                                        seed_i);
+                                                                                                        seed + chain_id);
                     
                          //////////////////////////////// perform iterations for chain i
                          fn_sample_HMC_multi_iter_single_thread(   HMC_outputs[i] ,
@@ -579,7 +588,7 @@ public:
                                                                    burnin_indicator, 
                                                                    chain_id, 
                                                                    current_iter,
-                                                                   seed_i, 
+                                                                   seed, 
                                                                    rng,
                                                                    n_iter,
                                                                    partitioned_HMC,
@@ -607,7 +616,7 @@ public:
                                                                    burnin_indicator, 
                                                                    chain_id, 
                                                                    current_iter,
-                                                                   seed_i, 
+                                                                   seed, 
                                                                    rng,
                                                                    n_iter,
                                                                    partitioned_HMC,

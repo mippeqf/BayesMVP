@@ -107,7 +107,7 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
          HMC_inputs.emplace_back(HMCResult);
        } 
        
-       auto global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
+      // auto global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
        
        //// parallel for-loop
        #pragma omp parallel for shared(HMC_outputs, HMC_inputs)
@@ -129,8 +129,12 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
              
              // const int seed_i = seed + 1000*chain_id;
              // std::mt19937 rng(seed_i);
-             const int seed_i = seed + chain_id + 1; // for xoshiro rng
-             auto rng = global_rng->clone(seed_i); // for xoshiro rng
+             // auto rng = global_rng->clone(chain_id + 1); // for xoshiro rng
+             // const int seed_i = seed + chain_id + 1; // for xoshiro rng
+             // auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed_i);  // for xoshiro rng
+             // auto rng = dqrng::generator<pcg64>(seed, i);
+             
+             pcg64 rng(seed, i);
              
          {
            
@@ -153,14 +157,14 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                  
                      Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                                 Model_args_as_cpp_struct_copies[i].json_file_path, 
-                                                                                                seed_i);
+                                                                                                seed + chain_id);
                      
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 HMC_inputs[i], 
                                                                 burnin_indicator, 
                                                                 chain_id,  
                                                                 current_iter, 
-                                                                seed_i, 
+                                                                seed, 
                                                                 rng,
                                                                 n_iter,
                                                                 partitioned_HMC,
@@ -183,7 +187,7 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                                                                 burnin_indicator, 
                                                                 chain_id, 
                                                                 current_iter,
-                                                                seed_i, 
+                                                                seed, 
                                                                 rng,
                                                                 n_iter,
                                                                 partitioned_HMC,
@@ -337,7 +341,7 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
   omp_set_num_threads(n_threads);
   omp_set_dynamic(0);
   
-  auto global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
+ // auto global_rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
   
   //// parallel for-loop
   #pragma omp parallel for shared(HMC_outputs)
@@ -360,8 +364,12 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
         
         // const int seed_i = seed + 1000*chain_id;
         // std::mt19937 rng(seed_i);
-        const int seed_i = seed + chain_id + 1; // for xoshiro rng
-        auto rng = global_rng->clone(seed_i); // for xoshiro rng
+        // auto rng = global_rng->clone(chain_id + 1); // for xoshiro rng
+        // const int seed_i = seed + chain_id + 1; // for xoshiro rng
+        // auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed_i);  // for xoshiro rng
+        // auto rng = dqrng::generator<pcg64>(seed, i);
+        
+        pcg64 rng(seed, i);
         
         int current_iter = 0; // gets assigned later for post-burnin
         
@@ -379,14 +387,14 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
             
                 Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                            Model_args_as_cpp_struct_copies[i].json_file_path, 
-                                                                                           seed_i);
+                                                                                           seed + chain_id);
                 
                 fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                            HMC_inputs[i], 
                                                            burnin_indicator, 
                                                            chain_id, 
                                                            current_iter,
-                                                           seed_i, 
+                                                           seed, 
                                                            rng,
                                                            n_iter,
                                                            partitioned_HMC,
@@ -409,7 +417,7 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
                                                          burnin_indicator, 
                                                          chain_id, 
                                                          current_iter,
-                                                         seed_i, 
+                                                         seed, 
                                                          rng,
                                                          n_iter,
                                                          partitioned_HMC,
