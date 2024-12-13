@@ -108,8 +108,10 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
        } 
        
        //// parallel for-loop
-       #pragma omp parallel for shared(HMC_outputs)
+       #pragma omp parallel for shared(HMC_outputs, HMC_inputs)
        for (int i = 0; i < n_threads; i++) {  
+         
+             const int chain_id = i;
             
              // auto rng = dqrng::generator<pcg64>(seed + current_iter, i + current_iter * n_threads);
          
@@ -123,8 +125,9 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
              stan::math::ChainableStack ad_tape;
              stan::math::nested_rev_autodiff nested;
              
-             const int chain_id = i;
-         
+             const int seed_i = seed + 1000*chain_id;
+             std::mt19937 rng(seed_i);
+             
          {
            
            {
@@ -146,14 +149,15 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                  
                      Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                                 Model_args_as_cpp_struct_copies[i].json_file_path, 
-                                                                                                seed);
+                                                                                                seed_i);
                      
                      fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                                 HMC_inputs[i], 
                                                                 burnin_indicator, 
                                                                 chain_id,  
                                                                 current_iter, 
-                                                                seed, 
+                                                                seed_i, 
+                                                                rng,
                                                                 n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
@@ -175,7 +179,8 @@ void EHMC_burnin_OpenMP(    const int  n_threads,
                                                                 burnin_indicator, 
                                                                 chain_id, 
                                                                 current_iter,
-                                                                seed, 
+                                                                seed_i, 
+                                                                rng,
                                                                 n_iter,
                                                                 partitioned_HMC,
                                                                 Model_type, sample_nuisance,
@@ -331,6 +336,8 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
   //// parallel for-loop
   #pragma omp parallel for shared(HMC_outputs)
   for (int i = 0; i < n_threads; i++) {  
+    
+        const int chain_id = i;
         
         // auto rng = dqrng::generator<pcg64>(seed, i);
     
@@ -342,14 +349,15 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
         const bool burnin_indicator = false;
         const int n_nuisance_to_track = 1;
         
-        static thread_local stan::math::ChainableStack ad_tape;
-        static thread_local stan::math::nested_rev_autodiff nested;
+        thread_local stan::math::ChainableStack ad_tape;
+        thread_local stan::math::nested_rev_autodiff nested;
         
-        const int chain_id = i;
+        const int seed_i = seed + 1000*chain_id;
+        std::mt19937 rng(seed_i);
+        
         int current_iter = 0; // gets assigned later for post-burnin
         
         ///////////////////////////////////////// perform iterations for adaptation interval
-        // HMCResult result_input(n_params_main, n_us, N);
         HMC_inputs[i].main_theta_vec() = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
         HMC_inputs[i].main_theta_vec_0() = theta_main_vectors_all_chains_input_from_R_RcppPar.col(i);
         
@@ -363,14 +371,15 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
             
                 Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                            Model_args_as_cpp_struct_copies[i].json_file_path, 
-                                                                                           seed);
+                                                                                           seed_i);
                 
                 fn_sample_HMC_multi_iter_single_thread(    HMC_outputs[i],
                                                            HMC_inputs[i], 
                                                            burnin_indicator, 
                                                            chain_id, 
                                                            current_iter,
-                                                           seed, 
+                                                           seed_i, 
+                                                           rng,
                                                            n_iter,
                                                            partitioned_HMC,
                                                            Model_type, sample_nuisance,
@@ -392,7 +401,8 @@ void EHMC_sampling_OpenMP(    const int  n_threads,
                                                          burnin_indicator, 
                                                          chain_id, 
                                                          current_iter,
-                                                         seed, 
+                                                         seed_i, 
+                                                         rng,
                                                          n_iter,
                                                          partitioned_HMC,
                                                          Model_type, sample_nuisance,

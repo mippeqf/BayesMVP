@@ -35,15 +35,7 @@ using namespace Eigen;
 // HMC sampler functions   ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
- 
-ALWAYS_INLINE   void generate_random_std_norm_vec_zigg(  Eigen::Matrix<double, -1, 1> &std_norm_vec,
-                                                         int n_params) {
-   
-   for (int d = 0; d < n_params; d++) {
-     std_norm_vec(d) =  zigg.norm();
-   } 
-   
- }
+
  
  
  
@@ -58,10 +50,11 @@ ALWAYS_INLINE   void generate_random_std_norm_vec_R(  Eigen::Matrix<double, -1, 
  
  
  
+ 
 template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
-ALWAYS_INLINE   void generate_random_std_norm_vec(   Eigen::Matrix<double, -1, 1> &std_norm_vec,
-                                                     int n_params, 
-                                                     T &rng) {
+ALWAYS_INLINE   void generate_random_std_norm_vec_dqrng(   Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                                           int n_params, 
+                                                           T &rng) {
    
   dqrng::normal_distribution dist(0.0, 1.0); 
   
@@ -73,28 +66,24 @@ ALWAYS_INLINE   void generate_random_std_norm_vec(   Eigen::Matrix<double, -1, 1
 }
  
  
+template<typename T = std::mt19937>
+ALWAYS_INLINE   void generate_random_std_norm_vec(   Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                                     int n_params, 
+                                                     T &rng) {
  
-ALWAYS_INLINE  double runif_zigg(  double lower,
-                                   double upper) { 
-  
-  double rnorm_zigg = zigg.norm();
-  double runif_std_zigg = stan::math::Phi(rnorm_zigg);
-  double runif_zigg = lower + (upper - lower)*runif_std_zigg;
-  return runif_zigg;
-  
-  
-}
+ std::normal_distribution<double> dist(0.0, 1.0);
  
- 
- 
-ALWAYS_INLINE  void generate_random_tau_ii_zigg(    double tau, 
-                                     double &tau_ii  // ref because assigning
- ) {
-   
-   tau_ii = runif_zigg(0.0, 2.0 * tau);
-   
+ for (int d = 0; d < n_params; d++) {
+   double norm_draw = dist(rng);
+   std_norm_vec(d) = norm_draw;
  }
  
+}
+
+
+ 
+ 
+
  
  
 ALWAYS_INLINE  void generate_random_tau_ii_R(   double tau, 
@@ -108,9 +97,9 @@ ALWAYS_INLINE  void generate_random_tau_ii_R(   double tau,
 
  
 template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
-ALWAYS_INLINE  void generate_random_tau_ii(  double tau, 
-                                             double &tau_ii,  // ref because assigning
-                                             T &rng) {
+ALWAYS_INLINE  void generate_random_tau_ii_dqrng(  double tau, 
+                                                   double &tau_ii,  // ref because assigning
+                                                   T &rng) {
   
   dqrng::uniform_distribution dist(0.0, 2.0 * tau); 
   tau_ii = dist(*rng);
@@ -118,7 +107,16 @@ ALWAYS_INLINE  void generate_random_tau_ii(  double tau,
 }
 
 
- 
+
+template<typename T = std::mt19937>
+ALWAYS_INLINE  void generate_random_tau_ii(  double tau, 
+                                             double &tau_ii,  // ref because assigning
+                                             T &rng) {
+  
+  std::uniform_real_distribution <double> dist(0.0, 2.0 * tau);
+  tau_ii = dist(rng);
+  
+} 
 
 
  
@@ -373,7 +371,8 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       
 
 
 
-template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+//template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+template<typename T = std::mt19937>
 ALWAYS_INLINE  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(   HMCResult &result_input,
                                                                                                      const bool  burnin, 
                                                                                                      T &rng,
@@ -525,9 +524,10 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                           result_input.main_div() = 0;
                           result_input.main_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                           
-                        dqrng::uniform_distribution unif(0.0, 1.0); 
+                        std::uniform_real_distribution<double> unif(0.0, 1.0);
+                        //  dqrng::uniform_distribution unif(0.0, 1.0); 
                           
-                     if  (unif(*rng) > result_input.main_p_jump())   {  // # reject proposal
+                     if  (unif(rng) > result_input.main_p_jump())   {  // # reject proposal
                    //   if  (R::runif(0, 1) > result_input.main_p_jump())   {  // # reject proposal
                              result_input.reject_proposal_main();  // # reject proposal
                       } else {   

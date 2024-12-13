@@ -158,7 +158,7 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  
 
 
 
-template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+template<typename T = std::mt19937>
 ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        HMCResult &result_input,
                                                                                                const bool burnin,
                                                                                                T &rng,
@@ -305,7 +305,6 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
     
             }
             
-          
           if (  (check_divergence_Eigen(result_input, 
                                       result_input.lp_and_grad_outs(),
                                       energy_old, energy_new) == true) || (proposal_div(log_ratio, energy_old, energy_new) == true) )     {
@@ -320,11 +319,10 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
                     result_input.us_div() = 0;
                     result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                     
-                   // trng::uniform_dist<> unif(0.0, 1.0);
-                   dqrng::uniform_distribution unif(0.0, 1.0); 
+                    std::uniform_real_distribution<double> unif(0.0, 1.0);
+                   //  dqrng::uniform_distribution unif(0.0, 1.0); 
                     
-                   //  if  (stan::math::uniform_rng(0.0, 1.0, rng) > result_input.us_p_jump())   {  // # reject proposal
-                   if  (unif(*rng) > result_input.us_p_jump())   {  // # reject proposal
+                   if  (unif(rng) > result_input.us_p_jump())   {  // # reject proposal
                  //   if  (R::runif(0, 1) > result_input.us_p_jump())   {  // # reject proposal
                        result_input.reject_proposal_us();  // # reject proposal
                     } else {   // # accept proposal

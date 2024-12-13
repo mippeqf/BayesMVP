@@ -44,13 +44,14 @@ static std::mutex result_mutex_2; //// global mutex
 
 
 //template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+template<typename T = std::mt19937>
 ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(      HMC_output_single_chain &HMC_output_single_chain_i,
                                                                                     HMCResult &result_input,
                                                                                     const bool burnin_indicator,
                                                                                     const int chain_id,
                                                                                     int current_iter,
                                                                                     const int seed,
-                                                                                    //T &rng,
+                                                                                    T &rng,
                                                                                     const int n_iter,
                                                                                     const bool partitioned_HMC,
                                                                                     const std::string &Model_type,
@@ -77,62 +78,74 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
          ////// main iteration loop
          for (int ii = 0; ii < n_iter; ++ii) {
            
+                     int seed_ii;
+           
                      if (burnin_indicator == false) {
                          current_iter = ii;
-                     } else { 
-                         //// leave as it is if burnin (current_iter will be given in via R)
+                         // seed_ii = seed;
+                         seed_ii = seed + 1000*(chain_id + 1) * 1000*(current_iter + n_iter + 1);
+                     } else {  //// burnin 
+                         //// leave "current_iter" as it is if burnin (current_iter will be given in via R)
+                         seed_ii = seed + 1000*(chain_id + 1) * 1000*(current_iter + 1);
                      }
                      
-                     const int seed_ii = seed + (chain_id + 1) * current_iter + 1;
+                     rng.seed(seed_ii);  // change the seed
                      //const int stream_ii = (chain_id + 1) * current_iter + 1;
-                     auto rng_ii = dqrng::generator<pcg64_unique>(seed_ii); 
+                     // std::unique_ptr<dqrng::random_64bit_generator> rng_ii;
                  
                      if (partitioned_HMC == true) {
-                       
-                               stan::math::start_nested();
                    
                                //////////////////////////////////////// sample nuisance (GIVEN main)
                                if (sample_nuisance == true)   {
-                                     
-                                            fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(   result_input,    
-                                                                                                          burnin,  rng_ii, seed,
-                                                                                                          Model_type, 
-                                                                                                          force_autodiff, force_PartialLog,  multi_attempts, 
-                                                                                                          y_Eigen_i,
-                                                                                                          Model_args_as_cpp_struct,  
-                                                                                                          EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
-                                                                                                          Stan_model_as_cpp_struct);
-                                        
-                                         
+                                 
+                                             // auto rng_ii = dqrng::generator<pcg64_unique>(seed_ii);
+                                             // std::mt19937 rng_ii(seed_ii); 
+                                             
+                                             stan::math::start_nested();
+                                             fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(    result_input,    
+                                                                                                            burnin,  rng, seed_ii,
+                                                                                                            Model_type, 
+                                                                                                            force_autodiff, force_PartialLog,  multi_attempts, 
+                                                                                                            y_Eigen_i,
+                                                                                                            Model_args_as_cpp_struct,  
+                                                                                                            EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
+                                                                                                            Stan_model_as_cpp_struct);
+                                             stan::math::recover_memory_nested(); 
+                                            
                                              HMC_output_single_chain_i.diagnostics_p_jump_us()(ii) =  result_input.us_p_jump();
                                              HMC_output_single_chain_i.diagnostics_div_us()(ii) =  result_input.us_div();
                                    
                                  } /// end of nuisance-part of iteration
                                  
                                  { /// sample main GIVEN u's
-                                     
-                                         fn_standard_HMC_main_only_single_iter_InPlace_process(      result_input,   
-                                                                                                     burnin,  rng_ii, seed,
-                                                                                                     Model_type,  
-                                                                                                     force_autodiff, force_PartialLog,  multi_attempts,
-                                                                                                     y_Eigen_i,
-                                                                                                     Model_args_as_cpp_struct, 
-                                                                                                     EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
-                                                                                                     Stan_model_as_cpp_struct);
-                                
-                                       
-                                         HMC_output_single_chain_i.diagnostics_p_jump_main()(ii) =  result_input.main_p_jump();
-                                         HMC_output_single_chain_i.diagnostics_div_main()(ii) =  result_input.main_div();
+                                   
+                                             // auto rng_ii = dqrng::generator<pcg64_unique>(seed_ii);
+                                             // std::mt19937 rng_ii(seed_ii); 
+                                   
+                                             stan::math::start_nested();
+                                             fn_standard_HMC_main_only_single_iter_InPlace_process(      result_input,   
+                                                                                                         burnin,  rng, seed_ii,
+                                                                                                         Model_type,  
+                                                                                                         force_autodiff, force_PartialLog,  multi_attempts,
+                                                                                                         y_Eigen_i,
+                                                                                                         Model_args_as_cpp_struct, 
+                                                                                                         EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
+                                                                                                         Stan_model_as_cpp_struct);
+                                             stan::math::recover_memory_nested(); 
+                                             
+                                             HMC_output_single_chain_i.diagnostics_p_jump_main()(ii) =  result_input.main_p_jump();
+                                             HMC_output_single_chain_i.diagnostics_div_main()(ii) =  result_input.main_div();
                                    
                                  } /// end of main_params part of iteration
-                               
-                                 stan::math::recover_memory_nested(); 
                      
                      } else {  //// sample all params at once 
                        
+                                         // auto rng_ii = dqrng::generator<pcg64_unique>(seed_ii);
+                                         // std::mt19937 rng_ii(seed_ii); 
+                       
                                          stan::math::start_nested();
                                          fn_standard_HMC_dual_single_iter_InPlace_process(    result_input,    
-                                                                                              burnin,  rng_ii, seed,
+                                                                                              burnin,  rng, seed_ii,
                                                                                               Model_type, 
                                                                                               force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                               y_Eigen_i,
@@ -154,7 +167,6 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                          std::lock_guard<std::mutex> lock(result_mutex_1);  
                          
                          // HMC_output_single_chain_i.store_iteration(ii, sample_nuisance);
-                         
                          HMC_output_single_chain_i.trace_main().col(ii) = result_input.main_theta_vec(); 
   
                          if (sample_nuisance == true) {

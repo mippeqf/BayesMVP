@@ -22,7 +22,7 @@ using namespace Eigen;
  
  
 std::vector<double>                                   fn_find_initial_eps_main_and_us(      HMCResult &result_input,
-                                                                                            const double seed,
+                                                                                            const int seed,
                                                                                             const bool  burnin, 
                                                                                             const std::string &Model_type,
                                                                                             const bool  force_autodiff,
@@ -37,7 +37,7 @@ std::vector<double>                                   fn_find_initial_eps_main_a
    stan::math::ChainableStack ad_tape;
    stan::math::nested_rev_autodiff nested;
    
-   auto rng = dqrng::generator<dqrng::xoshiro256plusplus>(seed);
+   std::mt19937 rng(seed); 
    
    const int N = Model_args_as_cpp_struct.N;
    const int n_nuisance =  Model_args_as_cpp_struct.n_nuisance;
