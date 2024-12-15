@@ -45,9 +45,7 @@ ALWAYS_INLINE   void generate_random_std_norm_vec_R(  Eigen::Matrix<double, -1, 
  }
  
  
- 
- 
-// template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+
 template<typename T = pcg64>
 ALWAYS_INLINE   void generate_random_std_norm_vec_dqrng(   Eigen::Matrix<double, -1, 1> &std_norm_vec,
                                                            int n_params, 
@@ -92,8 +90,7 @@ ALWAYS_INLINE  void generate_random_tau_ii_R(   double tau,
 }
  
 
- 
-//template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
+
 template<typename T = pcg64>
 ALWAYS_INLINE  void generate_random_tau_ii_dqrng(  double tau, 
                                                    double &tau_ii,  // ref because assigning
@@ -524,7 +521,6 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                           std::uniform_real_distribution<double> unif(0.0, 1.0);
                           
                      if  (unif(rng) > result_input.main_p_jump())   {  // # reject proposal
-                   //   if  (R::runif(0, 1) > result_input.main_p_jump())   {  // # reject proposal
                              result_input.reject_proposal_main();  // # reject proposal
                       } else {   
                              result_input.accept_proposal_main(); // # accept proposal

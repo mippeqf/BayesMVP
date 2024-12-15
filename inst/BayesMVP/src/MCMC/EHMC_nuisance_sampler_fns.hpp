@@ -55,12 +55,10 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  E
 ) {
 
       const int n_nuisance = velocity_us_vec_proposed_ref.size();
-      //Eigen::Matrix<double, -1, 1> grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
 
       for (int l = 0; l < L_ii; l++) {
 
               // Update velocity (first half step)
-              //Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
               velocity_us_vec_proposed_ref.array() += 0.5 * eps * lp_and_grad_outs.segment(1, n_nuisance).array()  * M_inv_us_vec.array();
 
               //// updae params by full step
@@ -74,7 +72,6 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(  E
               //grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
 
               // Update velocity (second half step)
-              //Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
               velocity_us_vec_proposed_ref.array() += 0.5 * eps * lp_and_grad_outs.segment(1, n_nuisance).array()  * M_inv_us_vec.array();
 
       } // End of leapfrog steps
@@ -124,7 +121,6 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  
   for (int l = 0; l < L_ii; l++) {
 
           // Update velocity (first half step)
-          //Eigen::Matrix<double, -1, 1> temp_1 = grad_us.array()  * M_inv_us_vec.array();
           velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * grad_us.array()  * M_inv_us_vec.array();
 
           // Full step for position + update velocity again (only for Gaussian)
@@ -141,7 +137,6 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  
           grad_us =  lp_and_grad_outs.segment(1, n_nuisance);
           
           // Update velocity (second half step)
-          //Eigen::Matrix<double, -1, 1> temp_2 = grad_us.array()  * M_inv_us_vec.array();
           velocity_us_vec_proposed_ref.array() += 0.5 * eps_1 * grad_us.array()  * M_inv_us_vec.array();
 
   } // End of leapfrog steps
@@ -321,7 +316,6 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
                      std::uniform_real_distribution<double> unif(0.0, 1.0);
                     
                    if  (unif(rng) > result_input.us_p_jump())   {  // # reject proposal
-                 //   if  (R::runif(0, 1) > result_input.us_p_jump())   {  // # reject proposal
                        result_input.reject_proposal_us();  // # reject proposal
                     } else {   // # accept proposal
                        result_input.accept_proposal_us(); // # accept proposal

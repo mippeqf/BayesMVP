@@ -39,12 +39,15 @@ static std::mutex result_mutex_1; //// global mutex
 static std::mutex result_mutex_2; //// global mutex 
 
 
+ 
+ 
+ 
+ 
 
-
-
-
-//template<typename T = std::unique_ptr<dqrng::random_64bit_generator>>
-//template<typename T = std::mt19937>
+ 
+ 
+ 
+ 
 template<typename T = pcg64>
 ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(      HMC_output_single_chain &HMC_output_single_chain_i,
                                                                                     HMCResult &result_input,

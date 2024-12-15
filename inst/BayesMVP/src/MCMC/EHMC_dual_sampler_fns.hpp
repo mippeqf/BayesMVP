@@ -198,7 +198,7 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
           Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
           generate_random_std_norm_vec_dqrng(std_norm_vec_main, n_params_main, rng);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
-        ///  if (metric_shape_main == "diag")  result_input.main_velocity_0_vec.array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
+          if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
       { /// draw velocity for nuisance
           Eigen::Matrix<double, -1, 1> std_norm_vec_us(n_nuisance); // testing if static thread_local makes more efficient
@@ -332,7 +332,6 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
                      std::uniform_real_distribution <double> unif(0.0, 1.0);
 
                 if  (unif(rng) > result_input.main_p_jump())   {  // # reject proposal
-             //  if  (R::runif(0, 1) > result_input.main_p_jump())   {  // # reject proposal
                       result_input.reject_proposal_main();  // # reject proposal
                       result_input.reject_proposal_us();  // # reject proposal
                 } else {   // # accept proposal
