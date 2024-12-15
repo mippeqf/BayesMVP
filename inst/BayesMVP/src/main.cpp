@@ -116,6 +116,9 @@ static Ziggurat::Ziggurat::Ziggurat zigg;
     #include "omp.h"
 #endif
     
+    
+#include <RcppParallel.h>
+    /// #include <RcppEigen.h>
 
 ///// General functions (e.g. fast exp() and log() approximations). Most of these are not model-specific.
 #include "general_functions/var_fns.hpp"
@@ -171,24 +174,27 @@ static Ziggurat::Ziggurat::Ziggurat zigg;
 #endif
 
     
-
+    
+#include "bridgestan.h" 
+#include "version.hpp"
+#include "model_rng.hpp" 
     
     
-    
-////// general lp_grad fn / manual/Stan model selector
-#if __has_include("bridgestan.h")
-    #define HAS_BRIDGESTAN_H 1
-    #include "bridgestan.h"
-    #include "version.hpp"
-    #include "model_rng.hpp"
-#else
-    #define HAS_BRIDGESTAN_H 0
-#endif
+// ////// general lp_grad fn / manual/Stan model selector
+// #if __has_include("bridgestan.h")
+//     #define HAS_BRIDGESTAN_H 1
+//     #include "bridgestan.h"
+//     #include "version.hpp"
+//     #include "model_rng.hpp"
+// #else
+//     #define HAS_BRIDGESTAN_H 0
+// #endif
 
 
-#if HAS_BRIDGESTAN_H
+//#if HAS_BRIDGESTAN_H
     #include "general_functions/Stan_model_helper_fns.hpp"
-#endif
+    #include "general_functions/Stan_model_helper_fns_parallel.hpp"
+//#endif
 
 
 
@@ -218,8 +224,6 @@ static Ziggurat::Ziggurat::Ziggurat zigg;
 
 
 
-#include <RcppParallel.h>
-/// #include <RcppEigen.h>
 
 
 
@@ -1450,9 +1454,6 @@ Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int
   
   HMC_output_single_chain  HMC_output_single_chain_i(n_iter, n_nuisance_to_track, n_params_main, n_us, N);
 
-  // std::mt19937 rng(seed);
-  // auto rng = std::unique_ptr<dqrng::random_64bit_generator>(dqrng::generator<dqrng::xoshiro256plusplus>(seed)); 
-  //auto rng = dqrng::generator<pcg64>(seed, 0);
   pcg64 rng(seed, 0);
   
      fn_sample_HMC_multi_iter_single_thread(    HMC_output_single_chain_i,
@@ -1499,18 +1500,16 @@ Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int
 
 
 
-
 // [[Rcpp::export]]
-Rcpp::List    fn_compute_param_constrain_from_trace_parallel(   const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_main,
-                                                                const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_nuisance,
-                                                                const Eigen::VectorXi &pars_indicies_to_track,
-                                                                const int &n_params_full,
-                                                                const int &n_nuisance,
-                                                                const int &n_params_main,
-                                                                const bool &include_nuisance,
-                                                                const std::string &model_so_file,
-                                                                const std::string &json_file_path) {
-
+Rcpp::List    fn_compute_param_constrain_from_trace_parallel(   const std::vector<Eigen::Matrix<double, -1, -1>> unc_params_trace_input_main,
+                                                                const std::vector<Eigen::Matrix<double, -1, -1>> unc_params_trace_input_nuisance,
+                                                                const std::vector<int> pars_indicies_to_track,
+                                                                const int n_params_full,
+                                                                const int n_nuisance,
+                                                                const int n_params_main,
+                                                                const bool include_nuisance,
+                                                                const std::string model_so_file,
+                                                                const std::string json_file_path) {
 
   const int n_chains = unc_params_trace_input_main.size();
   const int n_iter = unc_params_trace_input_main[0].cols();
@@ -1518,36 +1517,30 @@ Rcpp::List    fn_compute_param_constrain_from_trace_parallel(   const std::vecto
 
   std::vector<Rcpp::NumericMatrix> all_param_outs_trace_std_vec = vec_of_mats_Rcpp(n_params_to_track, n_iter, n_chains);
 
+  //// Create worker
+  ParamConstrainWorker worker(  n_chains,
+                                unc_params_trace_input_main,
+                                unc_params_trace_input_nuisance,
+                                pars_indicies_to_track,
+                                n_params_full,
+                                n_nuisance,
+                                n_params_main,
+                                include_nuisance,
+                                model_so_file,
+                                json_file_path,
+                                all_param_outs_trace_std_vec);
 
-#if HAS_BRIDGESTAN_H
-
-  // Create worker
-  ParamConstrainWorker worker(
-      unc_params_trace_input_main,
-      unc_params_trace_input_nuisance,
-      pars_indicies_to_track,
-      n_params_full,
-      n_nuisance,
-      n_params_main,
-      include_nuisance,
-      model_so_file,
-      json_file_path,
-      all_param_outs_trace_std_vec);
-
-  // Run parallel chains
+  //// Run parallel chains
   RcppParallel::parallelFor(0, n_chains, worker);
+  
+  //// copy results to output 
+  worker.copy_results_to_output();
 
-
-#endif
-
-
-
- Rcpp::List out(n_chains);
- for (int i = 0; i < n_chains; ++i) {
-    out(i) = all_param_outs_trace_std_vec[i];
- }
-
-
+  Rcpp::List out(n_chains);
+  for (int i = 0; i < n_chains; ++i) {
+     Rcpp::NumericMatrix mat = (all_param_outs_trace_std_vec[i]);
+     out(i) = mat;
+  }
 
   return out;
 
@@ -1560,104 +1553,9 @@ Rcpp::List    fn_compute_param_constrain_from_trace_parallel(   const std::vecto
 
 
 
-// 
-// 
-//  
-// Rcpp::List     fn_compute_param_constrain_from_trace(     const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_main,
-//                                                           const std::vector<Eigen::Matrix<double, -1, -1>> &unc_params_trace_input_nuisance,
-//                                                           const Eigen::VectorXi &pars_indicies_to_track,
-//                                                           const int &n_params_full,
-//                                                           const int &n_nuisance,
-//                                                           const int &n_params_main,
-//                                                           const bool  &include_nuisance,
-//                                                           const std::string &model_so_file,
-//                                                           const std::string &json_file_path) {
-// 
-// 
-// 
-// #if HAS_BRIDGESTAN_H
-// 
-//   char* error_msg = nullptr;
-//   unsigned int seed = 123;
-// 
-//   bs_rng* bs_rng_object = bs_rng_construct(seed, &error_msg); /// bs rng object
-// 
-//   // //// For Stan models:  Initialize bs_model* pointer and void* handle
-//   Stan_model_struct Stan_model_as_cpp_struct;
-// 
-//   // Initialize model
-//   Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(model_so_file,
-//                                                          json_file_path,
-//                                                          seed);
-// 
-// #endif
-// 
-// 
-// 
-//   /// trace to store output
-//   const int n_chains = unc_params_trace_input_main.size();
-//   const int n_iter = unc_params_trace_input_main[0].cols();
-//   const int n_params_to_track = pars_indicies_to_track.size();
-//   const int n_params = n_nuisance + n_params_main;
-// 
-//   std::vector<Eigen::Matrix<double, -1, -1>> all_param_outs_trace = vec_of_mats(n_params_to_track, n_iter, n_chains);
-// 
-// #if HAS_BRIDGESTAN_H
-// 
-//   /// make storage containers
-//   Eigen::Matrix<double, -1, 1> theta_unc_full_input(n_params);
-//   Eigen::Matrix<double, -1, 1> theta_constrain_full_output(n_params_full);
-// 
-// 
-//   for (int kk = 0; kk <  n_chains; kk += 1) {
-//     for (int ii = 0; ii <  n_iter; ii += 1) {
-// 
-//       theta_unc_full_input.tail(n_params_main) =   unc_params_trace_input_main[kk].col(ii);
-// 
-//        if (include_nuisance == true) {
-//           theta_unc_full_input.head(n_nuisance) =      unc_params_trace_input_nuisance[kk].col(ii);
-//        } else {
-//          theta_unc_full_input.head(n_nuisance).array() = 0.0; // set to zero if ignoring nuisance
-//        }
-// 
-// 
-//           int result = Stan_model_as_cpp_struct.bs_param_constrain(   Stan_model_as_cpp_struct.bs_model_ptr,
-//                                                                       true,
-//                                                                       true,
-//                                                                       theta_unc_full_input.data(),
-//                                                                       theta_constrain_full_output.data(), //  all_param_outs_trace[kk].col(ii).data(),
-//                                                                       bs_rng_object,
-//                                                                       &error_msg);
-// 
-// 
-//        all_param_outs_trace[kk].col(ii) = theta_constrain_full_output(pars_indicies_to_track);
-// 
-//           if (result != 0) {
-//             throw std::runtime_error("computation failed: " +
-//                                      std::string(error_msg ? error_msg : "Unknown error"));
-//           }
-// 
-//     }
-//   }
-// 
-//   // destroy Stan model object
-//   if (model_so_file != "none" && Stan_model_as_cpp_struct.bs_model_ptr != nullptr) {
-//     fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
-//   }
-// 
-// #endif
-// 
-// 
-//   Rcpp::List out(n_chains);
-//   for (int i = 0; i < n_chains; ++i) {
-//     out(i) = fn_convert_EigenMat_to_RcppMat_dbl(all_param_outs_trace[i]);
-//   }
-// 
-// 
-//   return out;
-// 
-// }
-// 
+
+
+ 
 
 
 
