@@ -227,12 +227,12 @@ create_summary_and_traces <- function(    model_results,
   
   index_lp  <- grep("^lp__", pars_names, invert = FALSE)
   
-  if (index_lp == 1) {  # if Stan model generates __lp variable (not all models will)
-      pars_names <- pars_names[-c(1)]
-  } else { 
-      pars_names <- pars_names
-  }
-  
+  # if (index_lp == 1) {  # if Stan model generates __lp variable (not all models will)
+  #     pars_names <- pars_names[-c(1)]
+  # } else { 
+  #     pars_names <- pars_names
+  # }
+  # 
   
   if (Model_type == "Stan") {
       json_file_path <- init_object$json_file_path
