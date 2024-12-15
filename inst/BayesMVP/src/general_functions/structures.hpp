@@ -47,17 +47,17 @@
   
   
   
-#if __has_include("bridgestan.h")
-    #define HAS_BRIDGESTAN_H 1
-    #include "bridgestan.h" 
-    #include "version.hpp"
-    #include "model_rng.hpp" 
-#else 
-    #define HAS_BRIDGESTAN_H 0
-#endif
-  
-  
-  
+// #if __has_include("bridgestan.h")
+//     #define HAS_BRIDGESTAN_H 1
+//     #include "bridgestan.h" 
+//     #include "version.hpp"
+//     #include "model_rng.hpp" 
+// #else 
+//     #define HAS_BRIDGESTAN_H 0
+// #endif
+//   
+//   
+//   
   
   
  
