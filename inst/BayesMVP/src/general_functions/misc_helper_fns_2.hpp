@@ -189,7 +189,7 @@ ALWAYS_INLINE void copy_to_global_tbb(int chain_index,
  
 template <typename T> 
 ALWAYS_INLINE tbb::concurrent_vector<T>    convert_std_vec_to_concurrent_vector(const std::vector<T> &inputs, 
-                                                                         tbb::concurrent_vector<T> &result) {
+                                                                                tbb::concurrent_vector<T> &result) {
    
    const int dim = inputs.size();
   
