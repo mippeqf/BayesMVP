@@ -243,9 +243,8 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
               {
                  //  std::lock_guard<std::mutex> lock(copy_mutex);
                 
-                  // all_param_outs_trace[kk].setZero();   
                   for (int ii = 0; ii < n_iter; ii++) {
-                    for (int param = 0; param < all_param_outs_trace.nrow(); ++param) {
+                    for (int param = 0; param < all_param_outs_trace[0].nrow(); ++param) {
                         all_param_outs_trace_concurrent[kk](param, ii) = chain_output(param, ii);
                     }
                   }
