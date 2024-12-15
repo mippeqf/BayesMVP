@@ -28,28 +28,6 @@ generate_summary_tibble <- function(n_threads = NULL,
                                             n_Rhat = NA,
                                             check.names = FALSE)
               
-              # #### Posterior means
-              # means_per_chain <- apply(trace[1:n_to_compute, , ], FUN = mean, c(1, 2))
-              # means_between_chains <- rowMeans(means_per_chain)
-              # 
-              # #### Posterior SDs
-              # SDs_per_chain <- apply(trace[1:n_to_compute, , ], FUN = sd, c(1, 2))
-              # SDs_between_chains <- rowMeans(SDs_per_chain)
-              # 
-              # #### Quantiles
-              # quantiles_per_chain <- apply(trace[1:n_to_compute, , ], FUN = quantile, c(1, 2), probs = c(0.025, 0.5, 0.975), na.rm = TRUE)
-              # quantiles_between_chains <- apply(quantiles_per_chain, FUN = mean, c(1, 2))
- 
-
-              # #### Effective Sample Size (ESS) and Rhat
-              # ess_vec <- numeric(n_to_compute)
-              # rhat_vec <- numeric(n_to_compute)
-              # for (i in seq_len(n_to_compute)) {
-              #       ess_vec[i] <- rstan::ess_bulk(trace[i, , ])
-              #       rhat_vec[i] <- rstan::Rhat(trace[i, , ])
-              # }
-              
-              
               # # Effective Sample Size (ESS) and Rhat - using the fast custom RcppParallel fn "BayesMVP::Rcpp_compute_MCMC_diagnostics()"
               posterior_draws_as_std_vec_of_mats <- list()
               mat <- matrix(nrow = n_iter, ncol = n_chains)
@@ -244,6 +222,9 @@ create_summary_and_traces <- function(    model_results,
   }
   
   pars_names <- init_object$param_names
+  comment(print(paste("pars_names - head = ", head(pars_names))))
+  comment(print(paste("pars_names - tail = ", tail(pars_names))))
+  
   index_lp  <- grep("^lp__", pars_names, invert = FALSE)
   
   if (index_lp == 1) {  # if Stan model generates __lp variable (not all models will)
@@ -257,11 +238,10 @@ create_summary_and_traces <- function(    model_results,
       json_file_path <- init_object$json_file_path
       model_so_file <- init_object$model_so_file
   } else { 
-    json_file_path <- init_object$dummy_json_file_path
-    model_so_file <- init_object$dummy_model_so_file
+      json_file_path <- init_object$dummy_json_file_path
+      model_so_file <- init_object$dummy_model_so_file
   }
   
- 
  #  pars_names <- bs_model$param_names(  include_tp = TRUE, include_gq = TRUE)
  #   pars_names <- init_object$init_vals_object$param_names
   n_par_inc_tp_and_gq <- length(pars_names) 
@@ -283,18 +263,14 @@ create_summary_and_traces <- function(    model_results,
   # Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))  ### TEMP
   Stan_model_file_path <- init_object$Stan_model_file_path
   
-  #    Stan_model_file_path <- system.file("stan_models", "PO_LC_MVP_bin.stan", package = "BayesMVP")
-  # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-  # r_data_JSON <- tempfile(fileext = ".json")
-  # Stan_data_list <- init_object$init_vals_object$Stan_data_list
-  # cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-  # json_file_path <- r_data_JSON
-  ## Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-  
   Sys.setenv(STAN_THREADS = "true")
   bs_model <- StanModel$new(Stan_model_file_path, data = json_file_path, 1234) # creates .so file
   
   bs_names  <-  (bs_model$param_names())
+  
+  comment(print(paste("bs_names - head = ", head(bs_names))))
+  comment(print(paste("bs_names - tail = ", tail(bs_names))))
+  
   bs_names_inc_tp <-  (bs_model$param_names(include_tp = TRUE))
   bs_names_inc_tp_and_gq <-  (bs_model$param_names(include_tp = TRUE, include_gq = TRUE))
   
@@ -387,6 +363,8 @@ create_summary_and_traces <- function(    model_results,
    } else { 
      offset <- 0
    }
+   
+   comment(print(paste("offset = ", offset)))
   
    if (compute_main_params == TRUE) {
       for (kk in 1:n_chains) {
