@@ -36,7 +36,7 @@
  
 
  
- 
+
  
   
   
@@ -59,7 +59,7 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
     const std::string json_file_path;
     
     //// local storage output using tbb container
-    tbb::concurrent_vector<Eigen::Matrix<double, -1, -1>> all_param_outs_trace_concurrent;  
+    tbb::concurrent_vector<Rcpp::NumericMatrix> all_param_outs_trace_concurrent;  
     
     //// output
     std::vector<Rcpp::NumericMatrix> &all_param_outs_trace;
@@ -238,9 +238,9 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
                 
               }
               
-              // Store completed chain
-              std::cout << "chain_output size: " << chain_output.rows() << "x" << chain_output.cols() << std::endl;
-              std::cout << "all_param_outs_trace_concurrent[kk] size: " << all_param_outs_trace_concurrent[kk].nrow() << "x" << all_param_outs_trace_concurrent[kk].ncol() << std::endl;
+             // // Store completed chain
+             //  std::cout << "chain_output size: " << chain_output.rows() << "x" << chain_output.cols() << std::endl;
+             // std::cout << "all_param_outs_trace_concurrent[kk] size: " << all_param_outs_trace_concurrent[kk].nrow() << "x" << all_param_outs_trace_concurrent[kk].ncol() << std::endl;
               
               {
                  //  std::lock_guard<std::mutex> lock(copy_mutex);
