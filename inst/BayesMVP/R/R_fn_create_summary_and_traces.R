@@ -226,8 +226,6 @@ create_summary_and_traces <- function(    model_results,
   
   n_chains <- length(main_trace)
   
-
-  
   if (is.null(compute_nested_rhat)) {
     if (n_chains > 15) {
       compute_nested_rhat <- TRUE
@@ -354,9 +352,7 @@ create_summary_and_traces <- function(    model_results,
   #   warning("NOTE: can only compute log_lik a posteriori if ALL nuisance are tracked. \n Note it's also possible to compute log_lik during sampling by specifying: save_log_lik_trace = TRUE")
   # }
   
-  message(print(paste(model_so_file)))
-  message(print(paste(json_file_path)))
-  
+   
   ## print(n_params_main)
    pars_indicies_to_track <- 1:n_par_inc_tp_and_gq
    n_params_full <- n_par_inc_tp_and_gq
@@ -381,6 +377,10 @@ create_summary_and_traces <- function(    model_results,
   ##  subset_out_trace <- array(dim = c(n_params_wo_nuisance_and_log_lik, n_iter, n_chains))
 
   ### str(all_param_outs_trace[[1]])
+   
+   comment(print(paste("index_params_main = ", index_params_main)))
+   comment(print(paste("index_tp (head) = ", head(index_tp))))
+   comment(print(paste("index_gq (head) = ", head(index_gq))))
    
    if (index_lp == 1) { 
      offset <- 1
@@ -769,7 +769,8 @@ create_summary_and_traces <- function(    model_results,
     
     
     output_list <- list(  summaries = summaries, ### summary info (incl. efficiency info + divergences)
-                          traces = traces       ### trace arrays + trace tibbles
+                          traces = traces,       ### trace arrays + trace tibbles
+                          all_param_outs_trace = all_param_outs_trace
     )
     
     # ### store output (optional)

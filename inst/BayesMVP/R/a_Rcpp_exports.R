@@ -333,7 +333,7 @@ Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread <- function(chain_id,
                                                                 EHMC_args_as_Rcpp_List,
                                                                 EHMC_Metric_as_Rcpp_List) {
   
-  .Call(`_BayesMVP_fn_compute_param_constrain_from_trace_parallel`,
+  .Call(`_BayesMVP_Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread`,
         chain_id, 
         seed, 
         n_iter, 
@@ -368,9 +368,16 @@ fn_compute_param_constrain_from_trace_parallel <- function(unc_params_trace_inpu
                                                            model_so_file, 
                                                            json_file_path) {
   
-  .Call(`_BayesMVP_fn_compute_param_constrain_from_trace_parallel`, unc_params_trace_input_main, 
-        unc_params_trace_input_nuisance, pars_indicies_to_track, n_params_full, 
-        n_nuisance, n_params_main, include_nuisance, model_so_file, json_file_path)
+  .Call(`_BayesMVP_fn_compute_param_constrain_from_trace_parallel`, 
+        unc_params_trace_input_main, 
+        unc_params_trace_input_nuisance,
+        pars_indicies_to_track, 
+        n_params_full, 
+        n_nuisance, 
+        n_params_main,
+        include_nuisance, 
+        model_so_file, 
+        json_file_path)
   
 }
 
