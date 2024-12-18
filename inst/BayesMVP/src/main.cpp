@@ -5,7 +5,6 @@
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppEigen)]]
 
-// [[Rcpp::depends(RcppZiggurat)]]
 // [[Rcpp::depends(dqrng)]]
 
 // [[Rcpp::plugins(cpp17)]]
@@ -100,11 +99,6 @@
 #include <stan/io/json/json_data_handler.hpp>
 #include <stan/io/json/json_error.hpp>
 #include <stan/io/json/rapidjson_parser.hpp>   
-   
- 
-#include <Ziggurat.h>
-static Ziggurat::Ziggurat::Ziggurat zigg;
- 
 
 #include <dqrng_distribution.h>
 #include <dqrng_generator.h>
