@@ -596,7 +596,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
       Eigen::Matrix<double, -1, -1>    lp_array  =  Eigen::Matrix<double, -1, -1>::Constant(chunk_size, n_class, -700.0); 
       const Eigen::Matrix<double, -1, -1>    signs_Ones = Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_class);
 
-    for (int nc = 0; nc < n_total_chunks; nc++) { // Note: if remainder, then n_total_chunks =  n_full_chunks + 1 and then nc goes from 0 -> n_total_chunks - 1 = n_full_chunks
+   for (int nc = 0; nc < n_total_chunks; nc++) { // Note: if remainder, then n_total_chunks =  n_full_chunks + 1 and then nc goes from 0 -> n_total_chunks - 1 = n_full_chunks
 
         int chunk_counter = nc;
         
@@ -604,7 +604,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           
                   chunk_size = last_chunk_size;  //// update chunk_size 
         
-                          /// use either Loop (i.e. double fn's) or Stan's vectorisation for the remainder (i.e. last) chunk, regardless of input
+                          //// use either Loop (i.e. double fn's) or Stan's vectorisation for the remainder (i.e. last) chunk, regardless of input
                           vect_type = "Stan";
                           vect_type_exp = "Stan";
                           vect_type_log = "Stan";
@@ -615,7 +615,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                           vect_type_inv_Phi = "Stan";
                           vect_type_inv_Phi_approx_from_logit_prob = "Stan";
 
-                          // vectors
+                          //// vectors
                           inc_array.resize(last_chunk_size);
                           log_sum_result.resize(last_chunk_size);
                           log_sum_abs_result.resize(last_chunk_size);
@@ -649,7 +649,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                           underflow_mask.resize(last_chunk_size);
                           OK_mask.resize(last_chunk_size);
                           
-                          // matrices
+                          //// matrices
                           u_grad_array_CM_chunk.resize(last_chunk_size, n_tests); u_grad_array_CM_chunk.setZero();
                           log_abs_u_grad_array_CM_chunk.resize(last_chunk_size, n_tests); log_abs_u_grad_array_CM_chunk.setZero();
                           lp_array.resize(last_chunk_size, n_class); lp_array.setZero();
@@ -952,8 +952,13 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
 
       if (grad_option != "none") {   
         
-            const Eigen::Matrix<double, -1, -1>   &log_abs_L_Omega_recip_double = stan::math::log(stan::math::abs(L_Omega_recip_double[c]));
-            const Eigen::Matrix<double, -1, -1>   &sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);
+            #ifdef _WIN32
+              Eigen::Matrix<double, -1, -1>   log_abs_L_Omega_recip_double = stan::math::log(stan::math::abs(L_Omega_recip_double[c]));
+              Eigen::Matrix<double, -1, -1>   sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);
+            #else 
+              const Eigen::Matrix<double, -1, -1>   &log_abs_L_Omega_recip_double = stan::math::log(stan::math::abs(L_Omega_recip_double[c]));
+              const Eigen::Matrix<double, -1, -1>   &sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);
+            #endif
            
             fn_MVP_grad_prep_log_scale(       log_prob_rowwise_prod_temp,
                                               log_prob_recip_rowwise_prod_temp,
@@ -978,12 +983,21 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           }
     
           //// these should all be OK on windows  (not dangling reference)
-          const Eigen::Matrix<double, -1, -1> &common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
-          const Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = fn_EIGEN_double(log_prob_rowwise_prod_temp, "exp", vect_type_exp);  
-          const Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip  =  fn_EIGEN_double(log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, "exp", vect_type_exp).array() *
-                                                                                                       sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array();
-          const Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = fn_EIGEN_double(log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, "exp", vect_type_exp).array() * 
-                                                                                                                            sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array(); 
+          #ifdef _WIN32
+            Eigen::Matrix<double, -1, -1> common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
+            Eigen::Matrix<double, -1, -1> prob_rowwise_prod_temp = fn_EIGEN_double(log_prob_rowwise_prod_temp, "exp", vect_type_exp);  
+            Eigen::Matrix<double, -1, -1> y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip  =  fn_EIGEN_double(log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, "exp", vect_type_exp).array() *
+                                                                                                  sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array();
+            Eigen::Matrix<double, -1, -1> y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = fn_EIGEN_double(log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, "exp", vect_type_exp).array() * 
+                                                                                                                       sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array(); 
+          #else 
+            const Eigen::Matrix<double, -1, -1> &common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
+            const Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = fn_EIGEN_double(log_prob_rowwise_prod_temp, "exp", vect_type_exp);  
+            const Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip  =  fn_EIGEN_double(log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, "exp", vect_type_exp).array() *
+                                                                                                         sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array(); 
+            const Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = fn_EIGEN_double(log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, "exp", vect_type_exp).array() * 
+                                                                                                                              sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array();   
+          #endif
       
           ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
           if ( (grad_option == "us_only") || (grad_option == "all") ) {
