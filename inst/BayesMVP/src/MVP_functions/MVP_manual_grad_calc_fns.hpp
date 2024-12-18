@@ -28,18 +28,18 @@ using namespace Eigen;
  
  
  
- 
+
 /// fn that computes important quantities needed for the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-ALWAYS_INLINE void fn_MVP_compute_lp_GHK_cols(   const int t,
-                                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
-                                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
-                                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
-                                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
-                                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
-                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
-                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  y_chunk,
-                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
-                                                                          const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE void fn_MVP_compute_lp_GHK_cols(    const int t,
+                                                  Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
+                                                  Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
+                                                  Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
+                                                  Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
+                                                  Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
+                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
+                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  y_chunk,
+                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
+                                                  const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
       
        const std::string &vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
@@ -49,7 +49,7 @@ ALWAYS_INLINE void fn_MVP_compute_lp_GHK_cols(   const int t,
        const std::string &vect_type_inv_Phi = Model_args_as_cpp_struct.Model_args_strings(9);
        
        ////// Compute on NON-log-scale for all observations using ".col(t)". 
-       Bound_U_Phi_Bound_Z.col(t) =   fn_EIGEN_double( Bound_Z.col(t), Phi_type, vect_type_Phi);   
+       Bound_U_Phi_Bound_Z.col(t) =   fn_EIGEN_double( Bound_Z.col(t), Phi_type, vect_type_Phi );   
        Phi_Z.col(t) = y_chunk.col(t).array() * Bound_U_Phi_Bound_Z.col(t).array() +   (y_chunk.col(t).array() -  Bound_U_Phi_Bound_Z.col(t).array()) *   
                       ((y_chunk.col(t).array()  + (y_chunk.col(t).array()  - 1.0)) * u_array.col(t).array());
        Z_std_norm.col(t) =   fn_EIGEN_double( Phi_Z.col(t),   inv_Phi_type, vect_type_inv_Phi);      
@@ -70,11 +70,11 @@ ALWAYS_INLINE void fn_MVP_compute_lp_GHK_cols(   const int t,
  
  
 /// fn that computes phi_Bound_Z needed for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-ALWAYS_INLINE void fn_MVP_compute_phi_Bound_Z_cols(     const int t,
-                                                                         Eigen::Matrix<double, -1, -1> &phi_Bound_Z, //// updating this
-                                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_U_Phi_Bound_Z,
-                                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
-                                                                         const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE void fn_MVP_compute_phi_Bound_Z_cols(      const int t,
+                                                         Eigen::Matrix<double, -1, -1> &phi_Bound_Z, //// updating this
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_U_Phi_Bound_Z,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
+                                                         const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
    
    
