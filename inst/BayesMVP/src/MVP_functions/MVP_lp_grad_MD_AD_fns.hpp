@@ -602,6 +602,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
     Eigen::Matrix<double, -1, 1> log_sum_result     =    Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
     Eigen::Matrix<double, -1, 1> container_max_logs =    Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
     ///////////////////////////////////////////////
+    #ifdef _WIN32
+        Eigen::Matrix<double, -1, 1>  rowwise_log_sum = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+        Eigen::Matrix<double, -1, 1>  rowwise_prod =    Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+    #endif
+    ///////////////////////////////////////////////
 
     { // start of big local block
        
@@ -670,6 +675,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                         prob_n_recip.resize(last_chunk_size);
                         log_sum_result.resize(last_chunk_size);
                         container_max_logs.resize(last_chunk_size);
+                        ///////////////////////////////////////////////
+                        #ifdef _WIN32
+                          rowwise_log_sum.resize(last_chunk_size);
+                          rowwise_prod.resize(last_chunk_size);
+                        #endif
                         ///////////////////////////////////////////////
 
         }
@@ -756,8 +766,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
         /////////////////  ------------------------- compute grad  ---------------------------------------------------------------------------------
         for (int c = 0; c < n_class; c++) {
           
-           const Eigen::Matrix<double, -1, -1> &prob_recip = 1.0 / prob[c].array(); // this should be fine since prob[c] isn't a temporary
-          //  Eigen::Matrix<double, -1, -1> prob_recip = 1.0 / prob[c].array(); 
+          const Eigen::Matrix<double, -1, -1> &prob_recip = 1.0 / prob[c].array(); // this should be fine since prob[c] isn't a temporary
           
           //// compute/update important log-lik quantities for GHK-MVP
           for (int t = 0; t < n_tests; t++) {
@@ -850,7 +859,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                                      derivs_chain_container_vec,
                                                      true,  ///   compute_final_scalar_grad,
                                                      Model_args_as_cpp_struct);
-
+            
           }
           
           /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of L_Omega ('s)
@@ -873,37 +882,26 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                                  true,  ///   compute_final_scalar_grad,
                                                  Model_args_as_cpp_struct);
 
-
           }
           
           if (n_class > 1) { /// prevelance only estimated for latent class models
 
             if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "prev_only" ) ) {
               
-                  // // Eigen::Matrix<double, -1, -1> abs_vals(prob[c].rows(), prob[c].cols());
-                  // // Eigen::Matrix<double, -1, -1> log_vals(prob[c].rows(), prob[c].cols());
-                  // // Eigen::Matrix<double, -1, 1> log_prod_prob(prob[c].rows());
-                  // // Eigen::Matrix<double, -1, 1> log_prev_grad_n(prob[c].rows());
-                  // // Eigen::Matrix<double, -1, 1> prev_grad_n(prob[c].rows());
-                  // const double eps = 0.0;// 1e-10;
-                  // 
-                  // Eigen::Matrix<double, -1, -1> abs_vals  = (prob[c].array().abs() + eps);
-                  // Eigen::Matrix<double, -1, -1> log_vals = fn_EIGEN_double(abs_vals, "log",  vect_type_log);
-                  // Eigen::Matrix<double, -1, 1> log_prod_prob = log_vals.rowwise().sum();
-                  // Eigen::Matrix<double, -1, 1> log_prev_grad_n = prob_n_recip + log_prod_prob;
-                  // Eigen::Matrix<double, -1, 1> prev_grad_n =   fn_EIGEN_double(log_prev_grad_n, "exp",  vect_type_exp);
-                  // prev_grad_vec(c)  +=  prev_grad_n.sum();
-                  // 
-                  //  //     Eigen::Matrix<double, -1, 1> log_prod_prob = prob[c].array().abs().log().rowwise().sum();
-                  //   //  Eigen::Matrix<double, -1, 1> log_prev_grad_n = prob_n_recip + log_prod_prob;
-                  //   //  Eigen::Matrix<double, -1, 1> prev_grad_n =   fn_EIGEN_double(log_prev_grad_n, "exp",  vect_type_exp);
-                  //   //  prev_grad_vec(c)  +=  prev_grad_n.sum()  ;
-                    
-                    Eigen::Matrix<double, -1, -1> log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
-                    Eigen::Matrix<double, -1, 1>  rowwise_log_sum =  log_prob.rowwise().sum();
-                    Eigen::Matrix<double, -1, 1>  rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
-                    double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum();
-                    prev_grad_vec(c)  +=  prev_grad ;
+                #ifdef _WIN32
+                      // Eigen::Matrix<double, -1, -1> log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
+                      // Eigen::Matrix<double, -1, 1>  rowwise_log_sum =  log_prob.rowwise().sum();
+                      // Eigen::Matrix<double, -1, 1>  rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
+                      // double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum();
+                      // prev_grad_vec(c)  +=  prev_grad ;
+                      const Eigen::Matrix<double, -1, -1> &log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
+                      rowwise_log_sum =  log_prob.rowwise().sum();
+                      rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
+                      double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum();
+                      prev_grad_vec(c)  +=  prev_grad;
+                #else
+                      prev_grad_vec(c)  +=  (  prob_n_recip.array()  *  fn_EIGEN_double( fn_EIGEN_double(prob[c] , "log",  vect_type_log).rowwise().sum(), "exp",  vect_type_exp).array() ).sum();
+                #endif
 
             }
 
