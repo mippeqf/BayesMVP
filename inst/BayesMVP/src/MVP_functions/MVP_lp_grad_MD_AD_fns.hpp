@@ -886,7 +886,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                 
                 Eigen::Matrix<double, -1, 1> rowwise_log_sum =  prob[c].rowwise().array().log().matrix().sum();
                 Eigen::Matrix<double, -1, 1> rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
-                double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum() 
+                double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum();
                 prev_grad_vec(c)  +=  prev_grad ;
 
             }
