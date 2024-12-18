@@ -1,8 +1,8 @@
 #pragma once 
 
 
-#ifndef FN_WRAPPERS_LOG_SUM_EXP_DBL
-#define FN_WRAPPERS_LOG_SUM_EXP_DBL
+#ifndef FN_WRAPPERS_LOG_SUM_EXP_DBL_HPP
+#define FN_WRAPPERS_LOG_SUM_EXP_DBL_HPP
 
  
   
@@ -55,11 +55,11 @@ using namespace Eigen;
 
 
 
-ALWAYS_INLINE  void log_sum_exp_general(     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_vals,  
-                                     const std::string &vect_type_exp,
-                                     const std::string &vect_type_log,
-                                     Eigen::Ref<Eigen::Matrix<double, -1, 1>> log_sum_result,
-                                     Eigen::Ref<Eigen::Matrix<double, -1, 1>> container_max_logs) {
+ALWAYS_INLINE void log_sum_exp_general(      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_vals,  
+                                             const std::string &vect_type_exp,
+                                             const std::string &vect_type_log,
+                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>> log_sum_result,
+                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>> container_max_logs) {
   
   // find max for each row across all columns
   container_max_logs = log_vals.rowwise().maxCoeff();
@@ -76,7 +76,7 @@ ALWAYS_INLINE  void log_sum_exp_general(     const Eigen::Ref<const Eigen::Matri
  
 
 
-struct  LogSumVecSingedResult { 
+struct LogSumVecSingedResult { 
   
      double log_sum;
      double sign;
@@ -87,7 +87,7 @@ struct  LogSumVecSingedResult {
  
  
  
-ALWAYS_INLINE  LogSumVecSingedResult log_sum_vec_signed_v1(   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vec,
+ ALWAYS_INLINE LogSumVecSingedResult log_sum_vec_signed_v1(   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vec,
                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> signs,
                                                        const std::string &vect_type) {
    
@@ -125,7 +125,7 @@ ALWAYS_INLINE  LogSumVecSingedResult log_sum_vec_signed_v1(   const Eigen::Ref<c
  
  
 //// with optional additional underflow protection (can be commented out easily)
-ALWAYS_INLINE  void log_abs_sum_exp_general_v2(  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_vals,
+ALWAYS_INLINE void log_abs_sum_exp_general_v2(  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_vals,
                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> signs,
                                          const std::string &vect_type_exp,
                                          const std::string &vect_type_log,
@@ -236,7 +236,7 @@ ALWAYS_INLINE  void log_abs_sum_exp_general_v2(  const Eigen::Ref<const Eigen::M
  
  
  
-ALWAYS_INLINE  void log_abs_matrix_vector_mult_v2(   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_matrix,
+ ALWAYS_INLINE void log_abs_matrix_vector_mult_v2(   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_matrix,
                                              const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_matrix,
                                              const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vector,
                                              const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> sign_vector,
@@ -277,69 +277,78 @@ ALWAYS_INLINE  void log_abs_matrix_vector_mult_v2(   const Eigen::Ref<const Eige
  
  
  
-ALWAYS_INLINE  Eigen::Matrix<double, -1, 1  >   log_sum_exp_2d_Eigen_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
-   
-   int N = x.rows();
-   Eigen::Matrix<double, -1, -1> rowwise_maxes_2d_array(N, 2);
-   rowwise_maxes_2d_array.col(0) = x.array().rowwise().maxCoeff().matrix();
-   rowwise_maxes_2d_array.col(1) = rowwise_maxes_2d_array.col(0);
-   
-   /// Eigen::Matrix<double, -1, 1>  rowwise_maxes_1d_vec = rowwise_maxes_2d_array.col(0);
-   Eigen::Matrix<double, -1, 1>  sum_exp_vec =  (  (x.array()  -  rowwise_maxes_2d_array.array()).matrix() ).array().exp().matrix().rowwise().sum() ;
-   
-   return     ( rowwise_maxes_2d_array.col(0).array()    +    sum_exp_vec.array().log() ).matrix() ;
-   
-   
-}
+ // ALWAYS_INLINE Eigen::Matrix<double, -1, 1  >   log_sum_exp_2d_Eigen_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
+ //   
+ //   int N = x.rows();
+ //   Eigen::Matrix<double, -1, -1> rowwise_maxes_2d_array(N, 2);
+ //   rowwise_maxes_2d_array.col(0) = x.array().rowwise().maxCoeff().matrix();
+ //   rowwise_maxes_2d_array.col(1) = rowwise_maxes_2d_array.col(0);
+ //   
+ //   /// Eigen::Matrix<double, -1, 1>  rowwise_maxes_1d_vec = rowwise_maxes_2d_array.col(0);
+ //   Eigen::Matrix<double, -1, 1>  sum_exp_vec =  (  (x.array()  -  rowwise_maxes_2d_array.array()).matrix() ).array().exp().matrix().rowwise().sum() ;
+ //   
+ //   std::string eigen_string = "Eigen";
+ //   
+ //   log_sum_exp_general(lp_array,
+ //                       vect_type_exp,
+ //                       vect_type_log,
+ //                       log_sum_result,
+ //                       container_max_logs);
+ //   
+ //   return     ( rowwise_maxes_2d_array.col(0).array()    +    sum_exp_vec.array().log() ).matrix() ;
+ //   
+ //   
+ // }
 
 
 
+ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   log_sum_exp_2d_Eigen_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
+   
+       int N = x.rows();
+       
+       std::string std_string = "Stan";
+       
+       Eigen::Matrix<double, -1, 1>  log_sum_result = Eigen::Matrix<double, -1, 1>::Zero(N);
+       Eigen::Matrix<double, -1, 1>  container_max_logs = Eigen::Matrix<double, -1, 1>::Zero(N);
+       
+       log_sum_exp_general(x,
+                           std_string,
+                           std_string,
+                           log_sum_result,
+                           container_max_logs);
+       
+       return   log_sum_result;//   ( rowwise_maxes_2d_array.col(0).array()    +    sum_exp_vec.array().log() ).matrix() ;
+   
+} 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   log_sum_exp_2d_Stan_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
+   
+       int N = x.rows();
+       
+       std::string std_string = "Stan";
+       
+       Eigen::Matrix<double, -1, 1>  log_sum_result = Eigen::Matrix<double, -1, 1>::Zero(N);
+       Eigen::Matrix<double, -1, 1>  container_max_logs = Eigen::Matrix<double, -1, 1>::Zero(N);
+       
+       log_sum_exp_general(x,
+                           std_string,
+                           std_string,
+                           log_sum_result,
+                           container_max_logs);
+       
+       return     log_sum_result;//  ( rowwise_maxes_2d_array.col(0).array()    +    sum_exp_vec.array().log() ).matrix() ;
+   
+} 
 
  
 
- 
 
- 
- ALWAYS_INLINE  Eigen::Matrix<double, -1, 1>   log_sum_exp_2d_Stan_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>> x) {
-   
-   const int N = x.rows();
-   const std::string vect_type_exp = "Stan";
-   const std::string vect_type_log = "Stan";
-   
-   Eigen::Matrix<double, -1, 1> log_sum_abs_result(N);
-   Eigen::Matrix<double, -1, 1> container_max_logs(N);
-   
-   log_sum_exp_general(x, 
-                       vect_type_exp,
-                       vect_type_log,
-                       log_sum_abs_result,
-                       container_max_logs);
-   
-   return log_sum_abs_result;
-   
- }
-
-
-
-
- 
-// ALWAYS_INLINE  Eigen::Matrix<double, -1, 1  >   log_sum_exp_2d_Stan_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
-//   
-//   using namespace stan::math;
-//   
-//   int N = x.rows();
-//   Eigen::Matrix<double, -1, -1>   rowwise_maxes_2d_array(N, 2);
-//   rowwise_maxes_2d_array.col(0) = x.array().rowwise().maxCoeff().matrix(); 
-//   rowwise_maxes_2d_array.col(1) = rowwise_maxes_2d_array.col(0);
-//   
-//   Eigen::Matrix<double, -1, 1>  sum_exp_vec =  stan::math::exp(  (x.array()  -  rowwise_maxes_2d_array.array()).matrix() ).rowwise().sum() ;
-//   
-//   return     ( rowwise_maxes_2d_array.col(0).array()    +   stan::math::log(sum_exp_vec).array() ).matrix() ;
-//   
-// }
- 
-
- 
  
  
  
