@@ -912,7 +912,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
         prev_unconstrained_grad_vec(c)  =   prev_grad_vec(c)   * deriv_p_wrt_pu_double ;
       }
       prev_unconstrained_grad_vec(0) = prev_unconstrained_grad_vec(1) - prev_unconstrained_grad_vec(0) - 2 * tanh_u_prev[1];
-      prev_unconstrained_grad_vec_out(0) = prev_unconstrained_grad_vec(0);
+      prev_unconstrained_grad_vec_out(0, 0) = prev_unconstrained_grad_vec(0);
     }
 
     log_prob_out +=  out_mat.tail(N).sum();       //  log_lik
@@ -972,7 +972,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
     out_mat(0) =  log_prob;
     out_mat.segment(1 + n_us, n_corrs) += U_Omega_grad_vec ;
     out_mat.segment(1 + n_us + n_corrs, n_covariates_total) += beta_grad_vec ;  /// no Jacobian needed
-    out_mat(1 + n_us + n_corrs + n_covariates_total) += prev_unconstrained_grad_vec_out(0) ; //  ((grad_prev_AD +  prev_unconstrained_grad_vec_out(0)));
+    out_mat(1 + n_us + n_corrs + n_covariates_total) += prev_unconstrained_grad_vec_out(0, 0) ;  
   }
 
   
