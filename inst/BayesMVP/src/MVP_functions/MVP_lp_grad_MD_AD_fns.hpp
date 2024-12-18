@@ -560,7 +560,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   Eigen::Matrix<double, -1, 1> U_Omega_grad_vec(n_corrs);
   Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(n_class); //
   Eigen::Matrix<double, -1, 1>  prev_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(n_class); //
-  Eigen::Matrix<double,  -1, -1>  prev_unconstrained_grad_vec_out =   Eigen::Matrix<double, -1, -1>::Zero(2 - 1); //
+  Eigen::Matrix<double,  -1, -1>  prev_unconstrained_grad_vec_out =   Eigen::Matrix<double, -1, -1>::Zero(n_class - 1, 1); //
   ////////////////////////////////////////////////
    
   {
@@ -889,7 +889,21 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
 
             if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "prev_only" ) ) {
               
-                  Eigen::Matrix<double, -1, 1> log_prod_prob = prob[c].array().abs().log().rowwise().sum();
+              Eigen::Matrix<double, -1, -1> abs_vals(prob[c].rows(), prob[c].cols());
+              Eigen::Matrix<double, -1, -1> log_vals(prob[c].rows(), prob[c].cols());
+              Eigen::Matrix<double, -1, 1> log_prod_prob(prob[c].rows());
+              Eigen::Matrix<double, -1, 1> log_prev_grad_n(prob[c].rows());
+              Eigen::Matrix<double, -1, 1> prev_grad_n(prob[c].rows());
+              const double eps = 1e-10;
+              
+              abs_vals  = (prob[c].array().abs() + eps);
+              log_vals = abs_vals.log();
+              log_prod_prob = log_vals.rowwise().sum();
+              log_prev_grad_n = prob_n_recip + log_prod_prob;
+              prev_grad_n =   fn_EIGEN_double(log_prev_grad_n, "exp",  vect_type_exp);
+              prev_grad_vec(c)  +=  prev_grad_n.sum();
+              
+               //     Eigen::Matrix<double, -1, 1> log_prod_prob = prob[c].array().abs().log().rowwise().sum();
                 //  Eigen::Matrix<double, -1, 1> log_prev_grad_n = prob_n_recip + log_prod_prob;
                 //  Eigen::Matrix<double, -1, 1> prev_grad_n =   fn_EIGEN_double(log_prev_grad_n, "exp",  vect_type_exp);
                 //  prev_grad_vec(c)  +=  prev_grad_n.sum()  ;
