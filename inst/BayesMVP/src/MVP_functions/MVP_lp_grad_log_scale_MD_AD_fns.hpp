@@ -800,7 +800,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                      
                    }
                    
-                   /// fill the index arrays
+                   //// fill the index arrays
                    n_problem_array[c][t] = n_problem;
                    problem_index_array[c][t].resize(n_problem);  
                    problem_index_array[c][t] = problem_index;
@@ -817,7 +817,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                               u_array,
                                               Model_args_as_cpp_struct);   
               
-                   ////// compute/update important grad quantities for GHK-MVP
+                   //// compute/update important grad quantities for GHK-MVP
                    fn_MVP_compute_phi_Z_recip_cols(    t,
                                                        phi_Z_recip[c], // computing this
                                                        Phi_Z[c],
@@ -830,12 +830,12 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                                         Bound_Z[c], 
                                                         Model_args_as_cpp_struct);
                                 
-                   /// compute log-scale quantities (for grad)
+                   //// compute log-scale quantities (for grad)
                    log_phi_Bound_Z[c].col(t).array() =   (fn_EIGEN_double(  phi_Bound_Z[c].col(t).array().abs(),  "log", vect_type_log));
                    log_phi_Z_recip[c].col(t).array() =   (fn_EIGEN_double(  phi_Z_recip[c].col(t).array().abs(),  "log", vect_type_log));
                    log_Z_std_norm[c].col(t).array()  =   (fn_EIGEN_double(  Z_std_norm[c].col(t).array().abs(),   "log", vect_type_log));
               
-            if   (n_OK == chunk_size)  { // carry on as normal as (likely) no * problematic * overflows/underflows
+            if (n_OK == chunk_size)  { // carry on as normal as (likely) no * problematic * overflows/underflows
                    
             }  else if (n_OK < chunk_size)  {
                               
@@ -946,9 +946,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
         log_abs_Omega_grad_array_for_each_n[i].setConstant(-700.0);  
       } 
       
-      const Eigen::Matrix<double, -1, -1> &y1_log_prob_recip = - y1_log_prob[c].array();
-      const Eigen::Matrix<double, -1, -1> &sign_Z_std_norm =  Z_std_norm[c].array().sign();
-      const Eigen::Matrix<double, -1, -1> &prob_recip = 1.0 / prob[c].array();
+      const Eigen::Matrix<double, -1, -1> &y1_log_prob_recip = - y1_log_prob[c].array();  //// should be OK on windows (not dangling reference)
+      const Eigen::Matrix<double, -1, -1> &sign_Z_std_norm =  Z_std_norm[c].array().sign();  //// should be OK on windows  (not dangling reference)
+      const Eigen::Matrix<double, -1, -1> &prob_recip = 1.0 / prob[c].array(); //// should be OK on windows  (not dangling reference)
 
       if (grad_option != "none") {   
         
@@ -976,13 +976,14 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                               Model_args_as_cpp_struct);
 
           }
-
-      const Eigen::Matrix<double, -1, -1> &common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
-      const Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = fn_EIGEN_double(log_prob_rowwise_prod_temp, "exp", vect_type_exp);  
-      const Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip  =  fn_EIGEN_double(log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, "exp", vect_type_exp).array() *
-                                                                                                   sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array();
-      const Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = fn_EIGEN_double(log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, "exp", vect_type_exp).array() * 
-                                                                                                                        sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array(); 
+    
+          //// these should all be OK on windows  (not dangling reference)
+          const Eigen::Matrix<double, -1, -1> &common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
+          const Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = fn_EIGEN_double(log_prob_rowwise_prod_temp, "exp", vect_type_exp);  
+          const Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip  =  fn_EIGEN_double(log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, "exp", vect_type_exp).array() *
+                                                                                                       sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array();
+          const Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = fn_EIGEN_double(log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, "exp", vect_type_exp).array() * 
+                                                                                                                            sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array(); 
       
           ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
           if ( (grad_option == "us_only") || (grad_option == "all") ) {
@@ -1047,7 +1048,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
            
               //// update u_grad_array_CM_chunk once standard-scale and log-scale grad computations are done 
               u_grad_array_CM_chunk.array() += u_grad_array_CM_chunk_block.array() ;
-           
               
               if (c == n_class - 1) {
                 
@@ -1070,7 +1070,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
 
           }
           
-          
           sign_z_grad_term.setOnes();
           sign_grad_prob.setOnes();
           sign_prod_container_or_inc_array.setOnes();
@@ -1089,7 +1088,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           container_max_logs.setConstant(-700.0);
           
           ///////////////////////////////////////////////////////////////////////////// Grad of intercepts / coefficients (beta's)
-          if ( (grad_option == "main_only") || (grad_option == "all") ) {
+          if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "coeff_only") ) {
              
             if (n_covariates_max > 1) {  /// log-scale grad for coefficients not (yet) implemented for > 1 covariate (e.g., standard-MVP)
               
@@ -1112,9 +1111,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                                          true, /// compute_final_scalar_grad
                                                          Model_args_as_cpp_struct);
               
-              
             } else { 
-              
            
             {   // compute (some or all) of grads on log-scale
 
@@ -1206,7 +1203,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
 
             }
             
-            
             sign_z_grad_term.setOnes();
             sign_grad_prob.setOnes();
             sign_prod_container_or_inc_array.setOnes();
@@ -1229,14 +1225,14 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           }
 
           ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of L_Omega ('s)
-          if ( (grad_option == "main_only") || (grad_option == "all") ) {
+          if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "corr_only") ) {
             
                 { /// first compute gradients on the standard (non-log) scale. 
-                  
-                  log_abs_z_grad_term.setZero();
-                  log_abs_grad_prob.setZero();
-                  log_abs_prod_container_or_inc_array.setZero();
-                  sign_prod_container_or_inc_array.setZero();
+                          
+                          log_abs_z_grad_term.setZero();
+                          log_abs_grad_prob.setZero();
+                          log_abs_prod_container_or_inc_array.setZero();
+                          sign_prod_container_or_inc_array.setZero();
                   
                           fn_MVP_compute_L_Omega_grad_v2(       U_Omega_grad_array[c],
                                                                 Omega_grad_array_for_each_n,
@@ -1260,15 +1256,15 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
  
                  { // then compute gradients on the LOG-scale, but ONLY where we have underflow or overflow.
                    
-                   //// extract previous signs and log_abs values 
-                   for (int t1 = 0; t1 < n_tests  ; t1++ ) {
-                     sign_Omega_grad_array_for_each_n[t1].array() =  Omega_grad_array_for_each_n[t1].array().sign();
-                     log_abs_Omega_grad_array_for_each_n[t1].array() = fn_EIGEN_double(Omega_grad_array_for_each_n[t1].array().abs(), "log", vect_type_log);
-                     for (int t2 = 0; t2 <  t1 + 1; t2++ ) {
-                       sign_Omega_grad_array_for_each_n[t1].col(t2)(problem_index_array[c][t1]).setOnes();
-                       log_abs_Omega_grad_array_for_each_n[t1].col(t2)(problem_index_array[c][t1]).setConstant(-700.0);
-                     }
-                   }
+                      //// extract previous signs and log_abs values 
+                      for (int t1 = 0; t1 < n_tests  ; t1++ ) {
+                        sign_Omega_grad_array_for_each_n[t1].array() =  Omega_grad_array_for_each_n[t1].array().sign();
+                        log_abs_Omega_grad_array_for_each_n[t1].array() = fn_EIGEN_double(Omega_grad_array_for_each_n[t1].array().abs(), "log", vect_type_log);
+                        for (int t2 = 0; t2 <  t1 + 1; t2++ ) {
+                          sign_Omega_grad_array_for_each_n[t1].col(t2)(problem_index_array[c][t1]).setOnes();
+                          log_abs_Omega_grad_array_for_each_n[t1].col(t2)(problem_index_array[c][t1]).setConstant(-700.0);
+                        }
+                      }
                    
                       fn_MVP_compute_L_Omega_grad_log_scale(      n_problem_array[c],
                                                                   problem_index_array[c],
@@ -1348,22 +1344,34 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
 
           if (n_class > 1) { /// prevelance only estimated for latent class models
             
-              if ( (grad_option == "main_only") || (grad_option == "all") ) {
+              if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "prev_only" ) ) {
+                
+                           #ifdef _WIN32
+                               {
+                                 Eigen::Matrix<double, -1, 1> rowwise_log_sum = y1_log_prob[c].rowwise().sum();
+                                 log_abs_prev_grad_array_col_for_each_n   =    log_prob_n_recip.array() + rowwise_log_sum.array() ;
+                                 sign_prev_grad_array_col_for_each_n.setOnes(); //// just a vector of +1's since probs are always positive
     
-                           {
-
-                              log_abs_prev_grad_array_col_for_each_n   =    log_prob_n_recip.array() + y1_log_prob[c].rowwise().sum().array() ;
-                              sign_prev_grad_array_col_for_each_n.setOnes(); //// just a vector of +1's since probs are always positive
-
-                              // final scalar grad using log-sum-exp
-                              LogSumVecSingedResult log_sum_vec_signed_struct = log_sum_vec_signed_v1(log_abs_prev_grad_array_col_for_each_n,
-                                                                                                      sign_prev_grad_array_col_for_each_n,
-                                                                                                      vect_type);
-                              
-                              prev_grad_vec(c)  +=   stan::math::exp(log_sum_vec_signed_struct.log_sum) * log_sum_vec_signed_struct.sign;
-
-                           }
-    
+                                 // final scalar grad using log-sum-exp
+                                 LogSumVecSingedResult log_sum_vec_signed_struct = log_sum_vec_signed_v1(log_abs_prev_grad_array_col_for_each_n,
+                                                                                                          sign_prev_grad_array_col_for_each_n,
+                                                                                                          vect_type);
+                                  
+                                 prev_grad_vec(c)  +=   stan::math::exp(log_sum_vec_signed_struct.log_sum) * log_sum_vec_signed_struct.sign;
+                               }
+                           #else 
+                               {
+                                 log_abs_prev_grad_array_col_for_each_n   =    log_prob_n_recip.array() + y1_log_prob[c].rowwise().sum().array() ;
+                                 sign_prev_grad_array_col_for_each_n.setOnes(); //// just a vector of +1's since probs are always positive
+                                 
+                                 // final scalar grad using log-sum-exp
+                                 LogSumVecSingedResult log_sum_vec_signed_struct = log_sum_vec_signed_v1(log_abs_prev_grad_array_col_for_each_n,
+                                                                                                         sign_prev_grad_array_col_for_each_n,
+                                                                                                         vect_type);
+                                 
+                                 prev_grad_vec(c)  +=   stan::math::exp(log_sum_vec_signed_struct.log_sum) * log_sum_vec_signed_struct.sign;
+                               }
+                           #endif
               }
               
           }
