@@ -27,21 +27,13 @@ using namespace Eigen;
 
  
 
- 
- 
- 
- 
-  
- 
-
- 
   
   
   
   
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
   
-  inline Eigen::Matrix<double, -1, 1  >   fast_log_sum_exp_2d_AVX2_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>>   x) {
+  ALWAYS_INLINE Eigen::Matrix<double, -1, 1  >   fast_log_sum_exp_2d_AVX2_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>>   x) {
     
     const int N = x.rows();
     const std::string vect_type_exp = "AVX2";
@@ -70,7 +62,7 @@ using namespace Eigen;
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
   
-  inline Eigen::Matrix<double, -1, 1  >   fast_log_sum_exp_2d_AVX512_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>> x) {
+  ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   fast_log_sum_exp_2d_AVX512_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>> x) {
     
     const int N = x.rows();
     const std::string vect_type_exp = "AVX512";
@@ -96,7 +88,7 @@ using namespace Eigen;
   
   
   
-  inline Eigen::Matrix<double, -1, 1  > fn_log_sum_exp_2d_double(     Eigen::Ref<Eigen::Matrix<double, -1, -1>>  x,    // Eigen::Matrix<double, -1, 2> &x,
+ALWAYS_INLINE   Eigen::Matrix<double, -1, 1  > fn_log_sum_exp_2d_double(     Eigen::Ref<Eigen::Matrix<double, -1, -1>>  x,    // Eigen::Matrix<double, -1, 2> &x,
                                                                       const std::string &vect_type = "Stan",
                                                                       const bool &skip_checks = false) {
     

@@ -71,7 +71,7 @@ inline double mvp_std_log_inv_logit(double x) {
 
   
 template <typename T>
-inline      void          fn_void_Ref_double_Stan(    Eigen::Ref<T> x,
+ALWAYS_INLINE      void          fn_void_Ref_double_Stan(    Eigen::Ref<T> x,
                                                       const std::string &fn,
                                                       const bool &skip_checks) {
 
@@ -100,27 +100,6 @@ inline      void          fn_void_Ref_double_Stan(    Eigen::Ref<T> x,
   
   
   
-   
-
-
-
-inline Eigen::Matrix<double, -1, 1  >   log_sum_exp_2d_Stan_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
-  
-  using namespace stan::math;
-  
-  int N = x.rows();
-  Eigen::Matrix<double, -1, -1>   rowwise_maxes_2d_array(N, 2);
-  rowwise_maxes_2d_array.col(0) = x.array().rowwise().maxCoeff().matrix(); 
-  rowwise_maxes_2d_array.col(1) = rowwise_maxes_2d_array.col(0);
-  
-  //// Eigen::Matrix<double, -1, 1>  rowwise_maxes_1d_vec = rowwise_maxes_2d_array.col(0);
-  Eigen::Matrix<double, -1, 1>  sum_exp_vec =  stan::math::exp(  (x.array()  -  rowwise_maxes_2d_array.array()).matrix() ).rowwise().sum() ;
-  
-  return     ( rowwise_maxes_2d_array.col(0).array()    +   stan::math::log(sum_exp_vec).array() ).matrix() ;
-  
-}
-
-
 
  
 
