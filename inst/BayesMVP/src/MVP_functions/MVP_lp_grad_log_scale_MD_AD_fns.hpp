@@ -770,34 +770,30 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                     int counter_under  = 0;
                     
                    for (int n = 0; n < chunk_size; ++n) {
-                     
-                           if  (overflow_mask(n) == 1) {
-                                 over_index[counter_over] = n;
-                                 counter_over += 1;
-                           } else if  (underflow_mask(n) == 1)   {
-                                 under_index[counter_under] = n;
-                                 counter_under += 1;
-                           } else { 
-                                 // OK_index[counter_ok] = n;
-                                 // counter_ok += 1;
-                           }
-                     
+                             if  (overflow_mask(n) == 1) {
+                                   over_index[counter_over] = n;
+                                   counter_over += 1;
+                             } else if  (underflow_mask(n) == 1)   {
+                                   under_index[counter_under] = n;
+                                   counter_under += 1;
+                             } else { 
+                                   // OK_index[counter_ok] = n;
+                                   // counter_ok += 1;
+                             }
                    }
                    
                    {
-                     
-                       int counter = 0;
-                       
-                       for (int i = 0; i < n_overflows; ++i) {
-                           problem_index[counter] = over_index[i];
-                           counter += 1;
-                       }
-                       
-                       for (int i = 0; i < n_underflows; ++i) {
-                           problem_index[counter] = under_index[i];
-                           counter += 1;
-                       }
-                     
+                             int counter = 0;
+                             
+                             for (int i = 0; i < n_overflows; ++i) {
+                                 problem_index[counter] = over_index[i];
+                                 counter += 1;
+                             }
+                             
+                             for (int i = 0; i < n_underflows; ++i) {
+                                 problem_index[counter] = under_index[i];
+                                 counter += 1;
+                             }
                    }
                    
                    //// fill the index arrays
@@ -835,8 +831,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                    log_phi_Z_recip[c].col(t).array() =   (fn_EIGEN_double(  phi_Z_recip[c].col(t).array().abs(),  "log", vect_type_log));
                    log_Z_std_norm[c].col(t).array()  =   (fn_EIGEN_double(  Z_std_norm[c].col(t).array().abs(),   "log", vect_type_log));
               
-            if (n_OK == chunk_size)  { // carry on as normal as (likely) no * problematic * overflows/underflows
-                   
+            if (n_OK == chunk_size)  { 
+                        //// carry on as normal as (likely) no * problematic * overflows/underflows
             }  else if (n_OK < chunk_size)  {
                               
                         if (n_underflows > 0) { //// underflow (w/ y == 0)
@@ -862,7 +858,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                     phi_Z_recip[c](index, t).array() =  fn_EIGEN_double(  log_phi_Z_recip[c](index, t),  "exp", vect_type_exp); // not needed if comp. grad on log-scale
                                      
                          }
-                
                         
                         if (n_overflows > 0) { //// overflow (w/ y == 1)
 
@@ -1177,7 +1172,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                                          sign_grad_prob,
                                                          log_abs_prod_container_or_inc_array,
                                                          sign_prod_container_or_inc_array,
-                                                         true, /// compute_final_scalar_grad
+                                                         false, /// compute_final_scalar_grad
                                                          Model_args_as_cpp_struct);
 
                }
@@ -1287,7 +1282,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                                                 log_abs_grad_prob,
                                                                 log_abs_prod_container_or_inc_array,
                                                                 sign_prod_container_or_inc_array,
-                                                                true, /// compute_final_scalar_grad
+                                                                false, /// compute_final_scalar_grad
                                                                 Model_args_as_cpp_struct);
 
                  }
