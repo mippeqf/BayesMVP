@@ -354,13 +354,13 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
          const std::string vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
          const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
          
-// #ifdef _WIN32
+#ifdef _WIN32
        {
   
            for (int i = 0; i < n_tests; i++) {
 
                    int t = n_tests - (i + 1);
-                 
+                   
                    Eigen::Matrix<double, -1, -1> y1_log_prob_block(chunk_size, i + 1);
                    Eigen::Matrix<double, -1, 1> y1_log_prob_rowwise_sum(chunk_size);
                    Eigen::Matrix<double, -1, -1> y1_log_prob_recip_block(chunk_size, i + 1);
@@ -378,7 +378,7 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
 
              log_prob_rowwise_prod_temp_all  =   y1_log_prob.rowwise().sum();
 
-           if (n_class > 1) { ///// i.e. if latent class
+           if (n_class > 1) { //// i.e. if latent class
 
                  for (int i = 0; i < n_tests; i++) {
 
@@ -430,47 +430,45 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
            }
 
        }
-// #else
-//        {
-//            for (int i = 0; i < n_tests; i++) {
-//                int t = n_tests - (i + 1);
-//                log_prob_rowwise_prod_temp.col(t)     =               (y1_log_prob.block(0, t + 0, chunk_size, i + 1).rowwise().sum());
-//                log_prob_recip_rowwise_prod_temp.col(t).array()  =    (y1_log_prob_recip.block(0, t + 0, chunk_size, i + 1).rowwise().sum()); //.array();
-//            }
-//            
-//            log_prob_rowwise_prod_temp_all  =   (y1_log_prob.rowwise().sum());
-//            
-//            if (n_class > 1) { ///// i.e. if latent class
-//              
-//                  for (int i = 0; i < n_tests; i++) {
-//                    int t = n_tests - (i + 1) ;
-//                    log_common_grad_term_1.col(t) =    ( (  log_prev + log_prob_n_recip.array() ).matrix() + y1_log_prob.rowwise().sum()  +    log_prob_recip_rowwise_prod_temp.col(t) )  ;
-//                  }
-//              
-//            } else {
-//              
-//                  log_common_grad_term_1.setConstant(-700);
-//              
-//            }
-//            
-//            for (int t = 0; t < n_tests; t++) {
-//                  
-//                  log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   =   log_phi_Bound_Z.col(t).array() + ((log_abs_L_Omega_recip_double(t, t))) ;
-//                  
-//                  log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() = fn_EIGEN_double( y_m_y_sign_x_u.col(t).array().abs().matrix(), "log",  vect_type_log).array()
-//                                                                                                                      + log_phi_Z_recip.col(t).array()  + log_phi_Bound_Z.col(t).array()  +  ((log_abs_L_Omega_recip_double(t, t)));
-//                  
-//                  //// note that densities and probs are always positive so signs = +1
-//                  sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  = y_sign_chunk.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
-//                  sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()  = y_m_y_sign_x_u.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
-//              
-//            }
-//            
-//           // log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array() = log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array().min(700.0).max(-700.0);     
-//          //  log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array() = log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array().min(700.0).max(-700.0);
-//        }
-//          
-// #endif
+#else
+       {
+           for (int i = 0; i < n_tests; i++) {
+               int t = n_tests - (i + 1);
+               log_prob_rowwise_prod_temp.col(t)     =               (y1_log_prob.block(0, t + 0, chunk_size, i + 1).rowwise().sum());
+               log_prob_recip_rowwise_prod_temp.col(t).array()  =    (y1_log_prob_recip.block(0, t + 0, chunk_size, i + 1).rowwise().sum()); //.array();
+           }
+
+           log_prob_rowwise_prod_temp_all  =   (y1_log_prob.rowwise().sum());
+
+           if (n_class > 1) { ///// i.e. if latent class
+
+                 for (int i = 0; i < n_tests; i++) {
+                   int t = n_tests - (i + 1) ;
+                   log_common_grad_term_1.col(t) =    ( (  log_prev + log_prob_n_recip.array() ).matrix() + y1_log_prob.rowwise().sum()  +    log_prob_recip_rowwise_prod_temp.col(t) )  ;
+                 }
+
+           } else {
+
+                 log_common_grad_term_1.setConstant(-700);
+
+           }
+
+           for (int t = 0; t < n_tests; t++) {
+
+                 log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   =   log_phi_Bound_Z.col(t).array() + ((log_abs_L_Omega_recip_double(t, t))) ;
+
+                 log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() = fn_EIGEN_double( y_m_y_sign_x_u.col(t).array().abs().matrix(), "log",  vect_type_log).array()
+                                                                                                                     + log_phi_Z_recip.col(t).array()  + log_phi_Bound_Z.col(t).array()  +  ((log_abs_L_Omega_recip_double(t, t)));
+
+                 //// note that densities and probs are always positive so signs = +1
+                 sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  = y_sign_chunk.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
+                 sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()  = y_m_y_sign_x_u.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
+
+           }
+
+       }
+
+#endif
      
 }
 
