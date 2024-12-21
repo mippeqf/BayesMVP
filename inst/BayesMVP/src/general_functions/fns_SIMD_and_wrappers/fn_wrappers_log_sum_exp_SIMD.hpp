@@ -1,8 +1,8 @@
 #pragma once 
 
 
-#ifndef FN_WRAPPERS_LOG_SUM_EXP_SIMD
-#define FN_WRAPPERS_LOG_SUM_EXP_SIMD
+#ifndef FN_WRAPPERS_LOG_SUM_EXP_SIMD_HPP
+#define FN_WRAPPERS_LOG_SUM_EXP_SIMD_HPP
 
  
   
@@ -27,6 +27,14 @@ using namespace Eigen;
 
  
 
+ 
+ 
+ 
+ 
+  
+ 
+
+ 
   
   
   
@@ -62,7 +70,7 @@ using namespace Eigen;
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
   
-  ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   fast_log_sum_exp_2d_AVX512_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>> x) {
+  ALWAYS_INLINE Eigen::Matrix<double, -1, 1  >   fast_log_sum_exp_2d_AVX512_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>> x) {
     
     const int N = x.rows();
     const std::string vect_type_exp = "AVX512";
@@ -88,9 +96,9 @@ using namespace Eigen;
   
   
   
-ALWAYS_INLINE   Eigen::Matrix<double, -1, 1  > fn_log_sum_exp_2d_double(     Eigen::Ref<Eigen::Matrix<double, -1, -1>>  x,    // Eigen::Matrix<double, -1, 2> &x,
-                                                                      const std::string &vect_type = "Stan",
-                                                                      const bool &skip_checks = false) {
+ALWAYS_INLINE Eigen::Matrix<double, -1, 1> fn_log_sum_exp_2d_double(      Eigen::Ref<Eigen::Matrix<double, -1, -1>>  x,    // Eigen::Matrix<double, -1, 2> &x,
+                                                                          const std::string &vect_type = "Stan",
+                                                                          const bool &skip_checks = false) {
     
     {
       if (vect_type == "Eigen") {

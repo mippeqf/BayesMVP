@@ -1,8 +1,8 @@
 #pragma once 
 
 
-#ifndef FN_WRAPPERS_OVERALL
-#define FN_WRAPPERS_OVERALL
+#ifndef FN_WRAPPERS_OVERALL_HPP
+#define FN_WRAPPERS_OVERALL_HPP
 
  
  
@@ -43,7 +43,7 @@ using namespace Eigen;
 
 
 template <typename T>
-inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
+ALWAYS_INLINE  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
                                                         const std::string &fn,
                                                         const std::string &vect_type,
                                                         const bool &skip_checks) {
@@ -105,7 +105,7 @@ inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
  
  //// R-value
  template <typename T>
- inline  auto          fn_EIGEN_double(              T  &&x_R_val,
+ ALWAYS_INLINE  auto          fn_EIGEN_double(              T  &&x_R_val,
                                                      const std::string &fn,
                                                      const std::string &vect_type = "Stan",
                                                      const bool &skip_checks = false) {
@@ -119,7 +119,7 @@ inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
  
  //// Eigen Ref (this will also accept L_value [&T] as well as other types)
  template <typename T>
- inline  auto          fn_EIGEN_double(  Eigen::Ref<T> x_L_val,
+ ALWAYS_INLINE  auto          fn_EIGEN_double(  Eigen::Ref<T> x_L_val,
                                          const std::string &fn,
                                          const std::string &vect_type = "Stan",
                                          const bool &skip_checks = false) {
@@ -131,7 +131,7 @@ inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
  
  //// const Eigen Ref (this will also accept L_value [&T] as well as other types)
  template <typename T>
- inline  auto          fn_EIGEN_double(  const Eigen::Ref<const T> x_L_val,
+ ALWAYS_INLINE  auto          fn_EIGEN_double(  const Eigen::Ref<const T> x_L_val,
                                          const std::string &fn,
                                          const std::string &vect_type = "Stan",
                                          const bool &skip_checks = false) {
@@ -145,7 +145,7 @@ inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
  
  //// blocks
  template <typename T, int n_rows = Eigen::Dynamic, int n_cols = Eigen::Dynamic>
- inline auto  fn_EIGEN_double(                       Eigen::Ref<Eigen::Block<T, n_rows, n_cols>> x_Ref,
+ ALWAYS_INLINE auto  fn_EIGEN_double(                       Eigen::Ref<Eigen::Block<T, n_rows, n_cols>> x_Ref,
                                                      const std::string &fn,
                                                      const std::string &vect_type = "Stan",
                                                      const bool &skip_checks = false) {
@@ -160,7 +160,7 @@ inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
  
  //// arrays
  template <int n_rows = Eigen::Dynamic, int n_cols = Eigen::Dynamic>
- inline auto  fn_EIGEN_double(               const Eigen::Array<double, n_rows, n_cols> &x,
+ ALWAYS_INLINE auto  fn_EIGEN_double(               const Eigen::Array<double, n_rows, n_cols> &x,
                                              const std::string &fn, 
                                              const std::string &vect_type = "Stan",
                                              const bool &skip_checks = false) {
@@ -176,7 +176,7 @@ inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
  
  // New overload for general expressions
  template <typename Derived>
- inline auto fn_EIGEN_double(const Eigen::EigenBase<Derived> &x,
+ ALWAYS_INLINE auto fn_EIGEN_double(const Eigen::EigenBase<Derived> &x,
                              const std::string &fn,
                              const std::string &vect_type = "Stan",
                              const bool &skip_checks = false) {
@@ -193,7 +193,7 @@ inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
  
  // Additional Matrix expression overload
  template <typename Derived>
- inline auto fn_EIGEN_double(const Eigen::MatrixBase<Derived> &x,
+ ALWAYS_INLINE auto fn_EIGEN_double(const Eigen::MatrixBase<Derived> &x,
                              const std::string &fn,
                              const std::string &vect_type = "Stan",
                              const bool &skip_checks = false) {
@@ -210,7 +210,7 @@ inline  void               fn_EIGEN_Ref_double(         Eigen::Ref<T> x,
  
  // Additional overload for array expressions
  template <typename Derived>
- inline auto fn_EIGEN_double(const Eigen::ArrayBase<Derived> &x,
+ ALWAYS_INLINE auto fn_EIGEN_double(const Eigen::ArrayBase<Derived> &x,
                              const std::string &fn,
                              const std::string &vect_type = "Stan", 
                              const bool &skip_checks = false) {
