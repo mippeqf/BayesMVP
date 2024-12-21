@@ -173,8 +173,7 @@ auto bound_log(const Eigen::ArrayBase<Derived> &log_x) {
  
  
  
- 
-inline void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
+inline  void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(      const int t,
                                                                   const std::vector<int> &index,
                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
@@ -197,43 +196,43 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
          const bool debug = Model_args_as_cpp_struct.Model_args_bools(14);
          const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
          
-         const std::string &vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
-         const std::string &vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
-         const std::string &vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
-         const std::string &vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
+         const std::string vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
+         const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
+         const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
+         const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
 
          Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z =   fn_EIGEN_double(   Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi) ;
-         log_Bound_U_Phi_Bound_Z =  (log_Bound_U_Phi_Bound_Z);   //// add bounds checking
+         log_Bound_U_Phi_Bound_Z =  (log_Bound_U_Phi_Bound_Z);  
          Bound_U_Phi_Bound_Z(index, t)    =    fn_EIGEN_double( log_Bound_U_Phi_Bound_Z, "exp", vect_type_exp); /// same as Stan (should work well??)
 
          Eigen::Matrix<double, -1, 1>  u_log =  fn_EIGEN_double(u_array(index, t), "log",  vect_type_log).array();
          Eigen::Matrix<double, -1, 1>  log_Phi_Z =   u_log.array() +  log_Bound_U_Phi_Bound_Z.array() ; /// log(u * Phi_Bound_Z); /// same as Stan (should work well)
-         log_Phi_Z =   (log_Phi_Z);   //// add bounds checking
+         log_Phi_Z =   (log_Phi_Z);  
          Phi_Z(index, t).array() =   fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp).array();  //// computed but not actually used
 
          //// Eigen::Matrix<double, -1, 1> log_1m_Phi_Z =   stan::math::log1m_exp( u_log + log_Bound_U_Phi_Bound_Z );
          Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = fn_EIGEN_double(  (  Bound_U_Phi_Bound_Z(index, t).array()  * u_array(index, t).array() ).matrix() , "log1m",  vect_type_log);   /// same as Stan (should work well)
-         log_1m_Phi_Z =   (log_1m_Phi_Z);   //// add bounds checking
+         log_1m_Phi_Z =   (log_1m_Phi_Z);  
          Eigen::Matrix<double, -1, 1> logit_Phi_Z =   log_Phi_Z - log_1m_Phi_Z; /// same as Stan (should work well)
          Z_std_norm(index, t).array()    =  fn_EIGEN_double(  logit_Phi_Z, "inv_Phi_approx_from_logit_prob",  vect_type_inv_Phi_approx_from_logit_prob); /// same as Stan (should work well)
 
          log_Z_std_norm(index, t)    = fn_EIGEN_double(Z_std_norm(index, t).array().abs().matrix(), "log", vect_type_log);
-         log_Z_std_norm(index, t) =   (log_Z_std_norm(index, t));   //// add bounds checking
+         log_Z_std_norm(index, t) =   (log_Z_std_norm(index, t));  
 
          y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z ; /// same as Stan (should work well)
-         y1_log_prob(index, t) =   (y1_log_prob(index, t));   //// add bounds checking
+         y1_log_prob(index, t) =   (y1_log_prob(index, t));  
 
          prob(index, t) =        Bound_U_Phi_Bound_Z(index, t) ; //// computed but not actually used
 
          //// Eigen::Matrix<double, -1, 1>  log_Bound_U_Phi_Bound_Z_1m =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z); //// use log1m_exp for stability!
          Eigen::Matrix<double, -1, 1>  log_Bound_U_Phi_Bound_Z_1m = fn_EIGEN_double(  Bound_U_Phi_Bound_Z(index, t), "log1m",  vect_type_log);
-         log_Bound_U_Phi_Bound_Z_1m =   (log_Bound_U_Phi_Bound_Z_1m);   //// add bounds checking
+         log_Bound_U_Phi_Bound_Z_1m =   (log_Bound_U_Phi_Bound_Z_1m);  
 
          log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
-         log_phi_Bound_Z(index, t) =   (log_phi_Bound_Z(index, t));   //// add bounds checking
+         log_phi_Bound_Z(index, t) =   (log_phi_Bound_Z(index, t));  
 
          log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array() ;
-         log_phi_Z_recip(index, t) =   (log_phi_Z_recip(index, t));   //// add bounds checking
+         log_phi_Z_recip(index, t) =   (log_phi_Z_recip(index, t));  
  
 
 }
@@ -248,21 +247,20 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
 
 
  
- 
-inline void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(         const int t,
-                                                                   const int num_overflows,
-                                                                   const std::vector<int> &index,
-                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
-                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
-                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
-                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_Z_std_norm,
-                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
-                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
-                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
-                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
-                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
-                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
-                                                                   const Model_fn_args_struct &Model_args_as_cpp_struct
+inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(         const int t,
+                                                                     const int num_overflows,
+                                                                     const std::vector<int> &index,
+                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
+                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
+                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
+                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_Z_std_norm,
+                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
+                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
+                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
+                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
+                                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
+                                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
+                                                                     const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
   
        const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);
@@ -270,11 +268,11 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(         const int t,
        const double b = 1.5976;
        const double a_times_3 = 3.0 * a;
        
-       const std::string &vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
-       const std::string &vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
-       const std::string &vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
-       const std::string &vect_type_lse = Model_args_as_cpp_struct.Model_args_strings(5);
-       const std::string &vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
+       const std::string vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
+       const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
+       const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
+       const std::string vect_type_lse = Model_args_as_cpp_struct.Model_args_strings(5);
+       const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
        
        Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m =  ( fn_EIGEN_double( - Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi) ); /// TEMP
        log_Bound_U_Phi_Bound_Z_1m =  (log_Bound_U_Phi_Bound_Z_1m);   //// add bounds checking
@@ -289,7 +287,7 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(         const int t,
        Bound_U_Phi_Bound_Z(index, t).array() =   1.0 - Bound_U_Phi_Bound_Z_1m.array(); //// this is computed but not actually used?
        
        Eigen::Matrix<double, -1, -1>  tmp_array_2d_to_lse(num_overflows, 2);
-       tmp_array_2d_to_lse.col(0)   =  (log_Bound_U_Phi_Bound_Z_1m + fn_EIGEN_double(u_array(index, t), "log",  vect_type_log)).matrix() ;
+       tmp_array_2d_to_lse.col(0)   =  (log_Bound_U_Phi_Bound_Z_1m + fn_EIGEN_double(u_array(index, t), "log",  vect_type_log)).matrix();
        tmp_array_2d_to_lse.col(1)  =    log_Bound_U_Phi_Bound_Z;
        tmp_array_2d_to_lse =  (tmp_array_2d_to_lse);   //// add bounds checking  
        
@@ -327,76 +325,152 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(         const int t,
 
 
 
-
-
-
-
-inline void fn_MVP_grad_prep_log_scale(      Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_prob_recip_rowwise_prod_temp,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>>  log_prob_rowwise_prod_temp_all,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob_recip,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>  log_prob_n_recip,
-                                             const double log_prev,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_recip_double,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_L_Omega_recip_double,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_sign_chunk,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_m_y_sign_x_u,
-                                             const Model_fn_args_struct &Model_args_as_cpp_struct
-                                               
+inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,
+                                                         Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_prob_recip_rowwise_prod_temp,
+                                                         Eigen::Ref<Eigen::Matrix<double, -1, 1>>  log_prob_rowwise_prod_temp_all,
+                                                         Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,
+                                                         Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                         Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                         Eigen::Ref<Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                         Eigen::Ref<Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob_recip,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, 1>>  log_prob_n_recip,
+                                                         const double log_prev,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_recip_double,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_L_Omega_recip_double,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_sign_chunk,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_m_y_sign_x_u,
+                                                         const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
      
-     const int n_tests = y1_log_prob.cols();
-     const int chunk_size = y1_log_prob.rows();
-     
-     const bool debug = Model_args_as_cpp_struct.Model_args_bools(14); 
-     const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
-     const std::string &vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
-     const std::string &vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
-     
-     for (int i = 0; i < n_tests; i++) {
-       int t = n_tests - (i + 1) ;
-       log_prob_rowwise_prod_temp.col(t)     =               bound_log(y1_log_prob.block(0, t + 0, chunk_size, i + 1).rowwise().sum());
-       log_prob_recip_rowwise_prod_temp.col(t).array()  =    bound_log(y1_log_prob_recip.block(0, t + 0, chunk_size, i + 1).rowwise().sum()); //.array();
-     }
-     
-     log_prob_rowwise_prod_temp_all  =   bound_log(y1_log_prob.rowwise().sum());
-     
-     if (n_class > 1) { ///// i.e. if latent class
-       
-       for (int i = 0; i < n_tests; i++) {
-         int t = n_tests - (i + 1) ;
-         log_common_grad_term_1.col(t) =    bound_log( (  log_prev + log_prob_n_recip.array() ).matrix() + y1_log_prob.rowwise().sum()  +    log_prob_recip_rowwise_prod_temp.col(t) )  ;
+         const int n_tests = y1_log_prob.cols();
+         const int chunk_size = y1_log_prob.rows();
+         
+         const bool debug = Model_args_as_cpp_struct.Model_args_bools(14); 
+         const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
+         const std::string vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
+         const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
+         
+#ifdef _WIN32
+       {
+  
+           for (int i = 0; i < n_tests; i++) {
+
+                   int t = n_tests - (i + 1);
+                 
+                   Eigen::Matrix<double, -1, -1> y1_log_prob_block(chunk_size, i + 1);
+                   Eigen::Matrix<double, -1, 1> y1_log_prob_rowwise_sum(chunk_size);
+                   Eigen::Matrix<double, -1, -1> y1_log_prob_recip_block(chunk_size, i + 1);
+                   Eigen::Matrix<double, -1, 1> y1_log_prob_recip_rowwise_sum(chunk_size);
+                   
+                   y1_log_prob_block = y1_log_prob.block(0, t + 0, chunk_size, i + 1);
+                   y1_log_prob_rowwise_sum =  y1_log_prob_block.rowwise().sum();
+                   log_prob_rowwise_prod_temp.col(t)  =  y1_log_prob_rowwise_sum;
+
+                   y1_log_prob_recip_block = y1_log_prob_recip.block(0, t + 0, chunk_size, i + 1);
+                   y1_log_prob_recip_rowwise_sum =  y1_log_prob_recip_block.rowwise().sum();
+                   log_prob_recip_rowwise_prod_temp.col(t)  =    y1_log_prob_recip_rowwise_sum;
+
+           }
+
+             log_prob_rowwise_prod_temp_all  =   y1_log_prob.rowwise().sum();
+
+           if (n_class > 1) { ///// i.e. if latent class
+
+                 for (int i = 0; i < n_tests; i++) {
+
+                       int t = n_tests - (i + 1) ;
+
+                       Eigen::Matrix<double, -1, 1> y1_log_prob_rowwise_sum(chunk_size);
+                       Eigen::Matrix<double, -1, 1> log_prob_recip_rowwise_prod_temp_col_t(chunk_size);
+                       Eigen::Matrix<double, -1, 1> log_prev_p_log_prob_n_recip(chunk_size);
+
+                       y1_log_prob_rowwise_sum =  y1_log_prob.rowwise().sum();
+                       log_prob_recip_rowwise_prod_temp_col_t =  log_prob_recip_rowwise_prod_temp.col(t);
+                       log_prev_p_log_prob_n_recip =  log_prev + log_prob_n_recip.array();
+
+                       Eigen::Matrix<double, -1, 1> res(chunk_size);
+                       res = log_prev_p_log_prob_n_recip + y1_log_prob_rowwise_sum  +  log_prob_recip_rowwise_prod_temp_col_t;
+                       log_common_grad_term_1.col(t) = res;
+
+                 }
+
+           } else {
+
+                 log_common_grad_term_1.setConstant(-700);
+
+           }
+
+           for (int t = 0; t < n_tests; t++) {
+
+                 double L_Omega_diag_log_abs = log_abs_L_Omega_recip_double(t, t);
+                 double L_Omega_diag_sign = sign_L_Omega_recip_double(t, t);
+
+                 Eigen::Matrix<double, -1, 1> log_abs_res_1(chunk_size);
+                 log_abs_res_1   =  (log_phi_Bound_Z.col(t).array() + L_Omega_diag_log_abs).matrix() ;
+                 log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t) = log_abs_res_1;
+
+                 Eigen::Matrix<double, -1, 1> log_abs_res_2(chunk_size);
+                 log_abs_res_2  = ( fn_EIGEN_double( y_m_y_sign_x_u.col(t).array().abs(), "log",  vect_type_log).array() + log_phi_Z_recip.col(t).array() +
+                                  log_phi_Bound_Z.col(t).array()  +  L_Omega_diag_log_abs ).matrix();
+                 log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t) = log_abs_res_2;
+
+                 //// note that densities and probs are always positive so signs = +1
+                 Eigen::Matrix<double, -1, 1> sign_res_1(chunk_size);
+                 sign_res_1  = (y_sign_chunk.col(t).array().sign() *  L_Omega_diag_sign).matrix() ;
+                 sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t) = sign_res_1;
+
+                 Eigen::Matrix<double, -1, 1> sign_res_2(chunk_size);
+                 sign_res_2  = (y_m_y_sign_x_u.col(t).array().sign() *  L_Omega_diag_sign).matrix() ;
+                 sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t) = sign_res_2;
+
+           }
+
        }
-       
-     } else {
-       
-       log_common_grad_term_1.setConstant(-700);
-       
-     }
-     
-     for (int t = 0; t < n_tests; t++) {
-       
-       log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   =   log_phi_Bound_Z.col(t).array() + ((log_abs_L_Omega_recip_double(t, t))) ;
-       
-       log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() = fn_EIGEN_double( y_m_y_sign_x_u.col(t).array().abs().matrix(), "log",  vect_type_log).array()
-         + log_phi_Z_recip.col(t).array()  + log_phi_Bound_Z.col(t).array()  +  ((log_abs_L_Omega_recip_double(t, t)));
-       
-       //// note that densities and probs are always positive so signs = +1
-       sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  = y_sign_chunk.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
-       sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()  = y_m_y_sign_x_u.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
-       
-     }
-     
-     log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array() = log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array().min(700.0).max(-700.0);     /// add bounds checking
-     log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array() = log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array().min(700.0).max(-700.0);     /// add bounds checking
+#else
+       {
+           for (int i = 0; i < n_tests; i++) {
+               int t = n_tests - (i + 1);
+               log_prob_rowwise_prod_temp.col(t)     =               bound_log(y1_log_prob.block(0, t + 0, chunk_size, i + 1).rowwise().sum());
+               log_prob_recip_rowwise_prod_temp.col(t).array()  =    bound_log(y1_log_prob_recip.block(0, t + 0, chunk_size, i + 1).rowwise().sum()); //.array();
+           }
+           
+           log_prob_rowwise_prod_temp_all  =   bound_log(y1_log_prob.rowwise().sum());
+           
+           if (n_class > 1) { ///// i.e. if latent class
+             
+                 for (int i = 0; i < n_tests; i++) {
+                   int t = n_tests - (i + 1) ;
+                   log_common_grad_term_1.col(t) =    bound_log( (  log_prev + log_prob_n_recip.array() ).matrix() + y1_log_prob.rowwise().sum()  +    log_prob_recip_rowwise_prod_temp.col(t) )  ;
+                 }
+             
+           } else {
+             
+                 log_common_grad_term_1.setConstant(-700);
+             
+           }
+           
+           for (int t = 0; t < n_tests; t++) {
+                 
+                 log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   =   log_phi_Bound_Z.col(t).array() + ((log_abs_L_Omega_recip_double(t, t))) ;
+                 
+                 log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() = fn_EIGEN_double( y_m_y_sign_x_u.col(t).array().abs().matrix(), "log",  vect_type_log).array()
+                                                                                                                     + log_phi_Z_recip.col(t).array()  + log_phi_Bound_Z.col(t).array()  +  ((log_abs_L_Omega_recip_double(t, t)));
+                 
+                 //// note that densities and probs are always positive so signs = +1
+                 sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  = y_sign_chunk.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
+                 sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()  = y_m_y_sign_x_u.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
+             
+           }
+           
+          // log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array() = log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array().min(700.0).max(-700.0);     
+         //  log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array() = log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array().min(700.0).max(-700.0);
+       }
+         
+#endif
      
 }
 
@@ -412,7 +486,7 @@ inline void fn_MVP_grad_prep_log_scale(      Eigen::Ref<Eigen::Matrix<double, -1
  
  
 
-inline void fn_MVP_compute_nuisance_grad_log_scale(     const std::vector<int> &n_problem_array,
+ inline  void fn_MVP_compute_nuisance_grad_log_scale(     const std::vector<int> &n_problem_array,
                                                         const std::vector<std::vector<int>> &problem_index_array,
                                                         Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_u_grad_array_CM_chunk,  // indexed
                                                         Eigen::Ref<Eigen::Matrix<double, -1, -1>> u_grad_array_CM_chunk,  // indexed
@@ -450,7 +524,7 @@ inline void fn_MVP_compute_nuisance_grad_log_scale(     const std::vector<int> &
   const bool debug = Model_args_as_cpp_struct.Model_args_bools(14);
   const int  n_class = Model_args_as_cpp_struct.Model_args_ints(1);
   
-  const std::string &vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
+  const std::string vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
   
   const int chunk_size = u_grad_array_CM_chunk.rows();
   const int n_tests = u_grad_array_CM_chunk.cols();
@@ -775,8 +849,7 @@ inline void fn_MVP_compute_nuisance_grad_log_scale(     const std::vector<int> &
   
   
 
-
-inline void      fn_MVP_compute_coefficients_grad_log_scale(    const std::vector<int> &n_problem_array,
+  inline  void      fn_MVP_compute_coefficients_grad_log_scale(    const std::vector<int> &n_problem_array,
                                                                 const std::vector<std::vector<int>> &problem_index_array,
                                                                 Eigen::Matrix<double, -1, -1> &beta_grad_array,
                                                                 std::vector<Eigen::Matrix<double, -1, -1>> &sign_beta_grad_array_for_each_n, 
@@ -1001,8 +1074,7 @@ inline void      fn_MVP_compute_coefficients_grad_log_scale(    const std::vecto
 
 
 
-
-inline void fn_MVP_compute_L_Omega_grad_log_scale(    const std::vector<int> &n_problem_array,
+inline  void fn_MVP_compute_L_Omega_grad_log_scale(    const std::vector<int> &n_problem_array,
                                                       const std::vector<std::vector<int>> &problem_index_array,
                                                       Eigen::Ref<Eigen::Matrix<double, -1, -1>> L_Omega_grad_array,
                                                       std::vector<Eigen::Matrix<double, -1, -1>>  &sign_L_Omega_grad_array_col_for_each_n,
