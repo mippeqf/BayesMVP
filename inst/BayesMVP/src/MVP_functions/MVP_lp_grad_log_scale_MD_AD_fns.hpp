@@ -580,6 +580,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
     std::vector<Eigen::Matrix<double, -1, -1>>   sign_beta_grad_array_for_each_n =      beta_grad_array_for_each_n;
     std::vector<Eigen::Matrix<double, -1, -1>>   log_abs_beta_grad_array_for_each_n =   beta_grad_array_for_each_n;
     ///////////////////////////////////////////////
+    // #ifdef _WIN32
+        Eigen::Matrix<double, -1, 1>  rowwise_log_sum = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+        Eigen::Matrix<double, -1, 1>  rowwise_prod =    Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+    // #endif
+    ///////////////////////////////////////////////
     
     { // start of big local block
       
@@ -695,6 +700,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                             sign_beta_grad_array_for_each_n[i].resize(last_chunk_size, n_tests);
                             log_abs_beta_grad_array_for_each_n[i].resize(last_chunk_size, n_tests);
                           } 
+                          
+                          // #ifdef _WIN32
+                            rowwise_log_sum.resize(last_chunk_size);
+                            rowwise_prod.resize(last_chunk_size);
+                          // #endif
                           
         }
 
@@ -915,72 +925,67 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           
         }
         
-        #ifdef _WIN32
+        // #ifdef _WIN32
                 Eigen::Matrix<double, -1, 1> prob_n  =  fn_EIGEN_double(out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size), "exp",  vect_type_exp);
                 Eigen::Matrix<double, -1, 1> prob_n_recip  = 1.0 / prob_n.array();
                 Eigen::Matrix<double, -1, 1> log_prob_n_recip = fn_EIGEN_double(1.0 / prob_n.array(), "log", vect_type_log); 
-        #else
-                const Eigen::Matrix<double, -1, 1> &prob_n  =  fn_EIGEN_double(out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size), "exp",  vect_type_exp);
-                const Eigen::Matrix<double, -1, 1> &prob_n_recip  = 1.0 / prob_n.array();
-                const Eigen::Matrix<double, -1, 1> &log_prob_n_recip = fn_EIGEN_double(1.0 / prob_n.array(), "log", vect_type_log); 
-        #endif
+        // #else
+        //         const Eigen::Matrix<double, -1, 1> &prob_n  =  fn_EIGEN_double(out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size), "exp",  vect_type_exp);
+        //         const Eigen::Matrix<double, -1, 1> &prob_n_recip  = 1.0 / prob_n.array();
+        //         const Eigen::Matrix<double, -1, 1> &log_prob_n_recip = fn_EIGEN_double(1.0 / prob_n.array(), "log", vect_type_log); 
+        // #endif
         
         const bool compute_final_scalar_grad = false;
  
- /////////////////////////////////////////////////
- /////////////////  ------------------------- compute grad  --------------------------------------------------------------------------------------------------------------------------------------------------
+  /////////////////////////////////////////////////
+  /////////////////  ------------------------- compute grad  --------------------------------------------------------------------------------------------------------------------------------------------------
   for (int c = 0; c < n_class; c++) {
     
-      for (int i = 0; i <  beta_grad_array_for_each_n.size();  i++) {
-        beta_grad_array_for_each_n[i].setZero();
-        sign_beta_grad_array_for_each_n[i].setOnes();
-        log_abs_beta_grad_array_for_each_n[i].setConstant(-700.0);  
-      }
-      for (int i = 0; i <  Omega_grad_array_for_each_n.size();  i++) {
-        Omega_grad_array_for_each_n[i].setZero();
-        sign_Omega_grad_array_for_each_n[i].setOnes();
-        log_abs_Omega_grad_array_for_each_n[i].setConstant(-700.0);  
-      } 
-      
-      #ifdef _WIN32
-            Eigen::Matrix<double, -1, -1> y1_log_prob_recip = - y1_log_prob[c].array();   
-            Eigen::Matrix<double, -1, -1> sign_Z_std_norm =  Z_std_norm[c].array().sign();   
-            Eigen::Matrix<double, -1, -1> prob_recip = 1.0 / prob[c].array();  
-      #else
-            const Eigen::Matrix<double, -1, -1> &y1_log_prob_recip = - y1_log_prob[c].array();  //// should be OK on windows (not dangling reference)
-            const Eigen::Matrix<double, -1, -1> &sign_Z_std_norm =  Z_std_norm[c].array().sign();  //// should be OK on windows  (not dangling reference)
-            const Eigen::Matrix<double, -1, -1> &prob_recip = 1.0 / prob[c].array(); //// should be OK on windows  (not dangling reference)
-      #endif
+          for (int i = 0; i <  beta_grad_array_for_each_n.size();  i++) {
+            beta_grad_array_for_each_n[i].setZero();
+            sign_beta_grad_array_for_each_n[i].setOnes();
+            log_abs_beta_grad_array_for_each_n[i].setConstant(-700.0);  
+          }
+          for (int i = 0; i <  Omega_grad_array_for_each_n.size();  i++) {
+            Omega_grad_array_for_each_n[i].setZero();
+            sign_Omega_grad_array_for_each_n[i].setOnes();
+            log_abs_Omega_grad_array_for_each_n[i].setConstant(-700.0);  
+          } 
+          
+          // #ifdef _WIN32
+                Eigen::Matrix<double, -1, -1> y1_log_prob_recip = - y1_log_prob[c].array();   
+                Eigen::Matrix<double, -1, -1> sign_Z_std_norm =  Z_std_norm[c].array().sign();   
+                Eigen::Matrix<double, -1, -1> prob_recip = 1.0 / prob[c].array();  
+          // #else
+          //       const Eigen::Matrix<double, -1, -1> &y1_log_prob_recip = - y1_log_prob[c].array();  //// should be OK on windows (not dangling reference)
+          //       const Eigen::Matrix<double, -1, -1> &sign_Z_std_norm =  Z_std_norm[c].array().sign();  //// should be OK on windows  (not dangling reference)
+          //       const Eigen::Matrix<double, -1, -1> &prob_recip = 1.0 / prob[c].array(); //// should be OK on windows  (not dangling reference)
+          // #endif
      
       if (  (grad_option != "none") || (grad_option == "test") ) {
         
-                const double eps = 1e-10;
-
-                #ifdef _WIN32
+                // #ifdef _WIN32
+                    const double eps = 1e-10;
                     Eigen::Matrix<double, -1, -1> abs_L_Omega_recip_double(n_tests, n_tests);
                     Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double(n_tests, n_tests);
                     Eigen::Matrix<double, -1, -1> sign_L_Omega_recip_double(n_tests, n_tests);
-                    
                     //std::cout << "After allocation" << std::endl;
                     //std::cout << "Dimensions: " << L_Omega_recip_double[c].rows() << " x " << L_Omega_recip_double[c].cols() << std::endl;
-                    
                     
                     ///////// UP TO HERE OK  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                     
                     ///// do operations one at a time
-                     abs_L_Omega_recip_double.array() = L_Omega_recip_double[c].array().abs();     //std::cout << "After abs" << std::endl;
+                     abs_L_Omega_recip_double = stan::math::fabs(L_Omega_recip_double[c]);     //std::cout << "After abs" << std::endl;
                      abs_L_Omega_recip_double.array() += eps;  //std::cout << "After adding eps" << std::endl; /// gets up to here w/o abort/errors 
                      // log_abs_L_Omega_recip_double.array() = abs_L_Omega_recip_double.array().log(); /// aborts here //std::cout << "After log" << std::endl;
                      for (int t = 0; t < n_tests; t++) {
                         log_abs_L_Omega_recip_double(t, t) = stan::math::log(abs_L_Omega_recip_double(t, t));
                      }
-                     sign_L_Omega_recip_double.array() = L_Omega_recip_double[c].array().sign();
-                     // std::cout << "After sign" << std::endl;
-                    
-                #else
-                    const Eigen::Matrix<double, -1, -1>   &log_abs_L_Omega_recip_double = stan::math::log(eps + stan::math::fabs(L_Omega_recip_double[c]));
-                    const Eigen::Matrix<double, -1, -1>   &sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);
-                #endif
+                     sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);   // std::cout << "After sign" << std::endl;
+                // #else
+                //      const Eigen::Matrix<double, -1, -1>   &log_abs_L_Omega_recip_double = stan::math::log(eps + stan::math::fabs(L_Omega_recip_double[c]));
+                //      const Eigen::Matrix<double, -1, -1>   &sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);
+                // #endif
                     
                 fn_MVP_grad_prep_log_scale(       log_prob_rowwise_prod_temp,
                                                   log_prob_recip_rowwise_prod_temp,
@@ -1005,21 +1010,21 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           }
     
           //// these should all be OK on windows  (not dangling reference)
-          #ifdef _WIN32
+          // #ifdef _WIN32
             Eigen::Matrix<double, -1, -1> common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
             Eigen::Matrix<double, -1, -1> prob_rowwise_prod_temp = fn_EIGEN_double(log_prob_rowwise_prod_temp, "exp", vect_type_exp);  
             Eigen::Matrix<double, -1, -1> y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip  =  fn_EIGEN_double(log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, "exp", vect_type_exp).array() *
                                                                                                   sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array();
             Eigen::Matrix<double, -1, -1> y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = fn_EIGEN_double(log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, "exp", vect_type_exp).array() * 
                                                                                                                        sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array(); 
-          #else 
-            const Eigen::Matrix<double, -1, -1> &common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
-            const Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = fn_EIGEN_double(log_prob_rowwise_prod_temp, "exp", vect_type_exp);  
-            const Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip  =  fn_EIGEN_double(log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, "exp", vect_type_exp).array() *
-                                                                                                         sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array(); 
-            const Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = fn_EIGEN_double(log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, "exp", vect_type_exp).array() * 
-                                                                                                                              sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array();   
-          #endif
+          // #else 
+          //   const Eigen::Matrix<double, -1, -1> &common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
+          //   const Eigen::Matrix<double, -1, -1> &prob_rowwise_prod_temp = fn_EIGEN_double(log_prob_rowwise_prod_temp, "exp", vect_type_exp);  
+          //   const Eigen::Matrix<double, -1, -1> &y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip  =  fn_EIGEN_double(log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip, "exp", vect_type_exp).array() *
+          //                                                                                                sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.array(); 
+          //   const Eigen::Matrix<double, -1, -1> &y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip = fn_EIGEN_double(log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip, "exp", vect_type_exp).array() * 
+          //                                                                                                                     sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.array();   
+          // #endif
       
           ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
           if ( (grad_option == "us_only") || (grad_option == "all") ) {
@@ -1379,9 +1384,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
             
               if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "prev_only" ) ) {
                 
-                           #ifdef _WIN32
+                           // #ifdef _WIN32
                                {
-                                 Eigen::Matrix<double, -1, 1> rowwise_log_sum = y1_log_prob[c].rowwise().sum();
+                                 rowwise_log_sum = y1_log_prob[c].rowwise().sum();
                                  log_abs_prev_grad_array_col_for_each_n   =    log_prob_n_recip.array() + rowwise_log_sum.array() ;
                                  sign_prev_grad_array_col_for_each_n.setOnes(); //// just a vector of +1's since probs are always positive
     
@@ -1392,19 +1397,19 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                   
                                  prev_grad_vec(c)  +=   stan::math::exp(log_sum_vec_signed_struct.log_sum) * log_sum_vec_signed_struct.sign;
                                }
-                           #else 
-                               {
-                                 log_abs_prev_grad_array_col_for_each_n   =    log_prob_n_recip.array() + y1_log_prob[c].rowwise().sum().array() ;
-                                 sign_prev_grad_array_col_for_each_n.setOnes(); //// just a vector of +1's since probs are always positive
-                                 
-                                 // final scalar grad using log-sum-exp
-                                 LogSumVecSingedResult log_sum_vec_signed_struct = log_sum_vec_signed_v1(log_abs_prev_grad_array_col_for_each_n,
-                                                                                                         sign_prev_grad_array_col_for_each_n,
-                                                                                                         vect_type);
-                                 
-                                 prev_grad_vec(c)  +=   stan::math::exp(log_sum_vec_signed_struct.log_sum) * log_sum_vec_signed_struct.sign;
-                               }
-                           #endif
+                           // #else 
+                           //     {
+                           //       log_abs_prev_grad_array_col_for_each_n   =    log_prob_n_recip.array() + y1_log_prob[c].rowwise().sum().array() ;
+                           //       sign_prev_grad_array_col_for_each_n.setOnes(); //// just a vector of +1's since probs are always positive
+                           //       
+                           //       // final scalar grad using log-sum-exp
+                           //       LogSumVecSingedResult log_sum_vec_signed_struct = log_sum_vec_signed_v1(log_abs_prev_grad_array_col_for_each_n,
+                           //                                                                               sign_prev_grad_array_col_for_each_n,
+                           //                                                                               vect_type);
+                           //       
+                           //       prev_grad_vec(c)  +=   stan::math::exp(log_sum_vec_signed_struct.log_sum) * log_sum_vec_signed_struct.sign;
+                           //     }
+                           // #endif
               }
               
           }
