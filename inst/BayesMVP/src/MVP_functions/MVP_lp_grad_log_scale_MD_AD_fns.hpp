@@ -886,14 +886,15 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
 
               }  ///// end of "if overflow or underflow" block
             
-                  if (t < n_tests - 1)   inc_array.array()  =   ( Z_std_norm[c].leftCols(t + 1)  *   ( L_Omega_double[c].row(t+1).head(t+1).transpose()  ) ) ;
+                  if (t < n_tests - 1)   inc_array  =     Z_std_norm[c].leftCols(t + 1)  *  L_Omega_double[c].row(t + 1).head(t + 1).transpose()   ;
               
             }      //// end of t loop
                   
                 if (n_class > 1) {  /// if latent class 
-                  lp_array.col(c).array() =     y1_log_prob[c].rowwise().sum().array() + log_prev(0, c) ;
+                  Eigen::Matrix<double, -1, 1> rowwise_sum = y1_log_prob[c].rowwise().sum();
+                  lp_array.col(c).array() =     rowwise_sum.array() + log_prev(0, c) ;
                 } else {
-                  lp_array.col(0).array() =     y1_log_prob[0].rowwise().sum().array();
+                  lp_array.col(0) =     y1_log_prob[0].rowwise().sum();
                 }
             
           }   //// end of c loop
@@ -903,14 +904,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
   
         if (n_class > 1) {  /// if latent class 
           
-              log_abs_sum_exp_general_v2(lp_array,
-                                         signs_Ones,
-                                         vect_type_exp,
-                                         vect_type_log,
-                                         log_sum_result,
-                                         sign_result,
-                                         container_max_logs,
-                                         container_sum_exp_signed);
+              log_sum_exp_general(   lp_array,
+                                     vect_type_exp,
+                                     vect_type_log,
+                                     log_sum_result,
+                                     container_max_logs);
 
               out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size) = log_sum_result;
           
@@ -948,9 +946,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           } 
           
           #ifdef _WIN32
-                Eigen::Matrix<double, -1, -1> y1_log_prob_recip = - y1_log_prob[c].array();   
-                Eigen::Matrix<double, -1, -1> sign_Z_std_norm =  Z_std_norm[c].array().sign();   
-                Eigen::Matrix<double, -1, -1> prob_recip = 1.0 / prob[c].array();  
+                Eigen::Matrix<double, -1, -1> y1_log_prob_recip = (- y1_log_prob[c].array()).matrix();   
+                Eigen::Matrix<double, -1, -1> sign_Z_std_norm =  Z_std_norm[c].array().sign().matrix();   
+                Eigen::Matrix<double, -1, -1> prob_recip = (1.0 / prob[c].array()).matrix();  
           #else
                 const Eigen::Matrix<double, -1, -1> &y1_log_prob_recip = - y1_log_prob[c].array();  //// should be OK on windows (not dangling reference)
                 const Eigen::Matrix<double, -1, -1> &sign_Z_std_norm =  Z_std_norm[c].array().sign();  //// should be OK on windows  (not dangling reference)
@@ -961,9 +959,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
         
                #ifdef _WIN32
                     const double eps = 1e-10;
-                    Eigen::Matrix<double, -1, -1> abs_L_Omega_recip_double(n_tests, n_tests);
-                    Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double(n_tests, n_tests);
-                    Eigen::Matrix<double, -1, -1> sign_L_Omega_recip_double(n_tests, n_tests);
+                    Eigen::Matrix<double, -1, -1> abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
+                    Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Constant(n_tests, n_tests, -700.0);
+                    Eigen::Matrix<double, -1, -1> sign_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Ones(n_tests, n_tests);
                     //std::cout << "After allocation" << std::endl;
                     //std::cout << "Dimensions: " << L_Omega_recip_double[c].rows() << " x " << L_Omega_recip_double[c].cols() << std::endl;
                     
@@ -971,7 +969,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                     
                     ///// do operations one at a time
                      abs_L_Omega_recip_double = stan::math::fabs(L_Omega_recip_double[c]);     //std::cout << "After abs" << std::endl;
-                     abs_L_Omega_recip_double.array() += eps;  //std::cout << "After adding eps" << std::endl; /// gets up to here w/o abort/errors 
+                     // abs_L_Omega_recip_double.array() += eps;  //std::cout << "After adding eps" << std::endl; /// gets up to here w/o abort/errors 
                      // log_abs_L_Omega_recip_double.array() = abs_L_Omega_recip_double.array().log(); /// aborts here //std::cout << "After log" << std::endl;
                      for (int t = 0; t < n_tests; t++) {
                         log_abs_L_Omega_recip_double(t, t) = stan::math::log(abs_L_Omega_recip_double(t, t));

@@ -29,7 +29,7 @@ using namespace Eigen;
  
  
 
-/// fn that computes important quantities needed for the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
+//// fn that computes important quantities needed for the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
 ALWAYS_INLINE  void fn_MVP_compute_lp_GHK_cols(    const int t,
                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
