@@ -287,7 +287,7 @@ inline  void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(      const int t,
 
 
  
-inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(         const int t,
+inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t,
                                                                      const int num_overflows,
                                                                      const std::vector<int> &index,
                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
@@ -326,91 +326,92 @@ inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(         const int t,
        Eigen::Matrix<double, -1, 1> log_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
        Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
        Eigen::Matrix<double, -1, 1> logit_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+       ////
        Eigen::Matrix<double, -1, -1> tmp_array_2d_to_lse = Eigen::Matrix<double, -1, -1>::Zero(num_overflows, 2);
        Eigen::Matrix<double, -1, 1> container_max_logs = Eigen::Matrix<double, -1, 1>::Constant(dim, -700.0);
        
        {
-        log_Bound_U_Phi_Bound_Z_1m =  ( fn_EIGEN_double( - Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi) ); /// TEMP
-        Bound_U_Phi_Bound_Z_1m =     fn_EIGEN_double( log_Bound_U_Phi_Bound_Z_1m, "exp",  vect_type_exp);
-        log_Bound_U_Phi_Bound_Z     =  fn_EIGEN_double(Bound_U_Phi_Bound_Z_1m, "log1m",  vect_type_log);
+         auto temp_array = Bound_Z(index, t).array();
+         auto m_temp_array = - temp_array;
+         res = m_temp_array.matrix();
+         log_Bound_U_Phi_Bound_Z_1m =   fn_EIGEN_double( res, "log_Phi_approx",  vect_type_log_Phi);
+         Bound_U_Phi_Bound_Z_1m =     fn_EIGEN_double( log_Bound_U_Phi_Bound_Z_1m, "exp",  vect_type_exp);
+         log_Bound_U_Phi_Bound_Z     =  fn_EIGEN_double( Bound_U_Phi_Bound_Z_1m, "log1m",  vect_type_log);
+         // log_Bound_U_Phi_Bound_Z =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z_1m); //// use log1m_exp for stability!
+         // log_Bound_U_Phi_Bound_Z = log_Bound_U_Phi_Bound_Z.array().min(700.0).max(-700.0); //// add bounds checking
+       }
+ 
+       {
+         auto temp_array = Bound_U_Phi_Bound_Z_1m.array();
+         auto one_temp_array = 1.0 - temp_array;
+         res = one_temp_array.matrix();
+         Bound_U_Phi_Bound_Z(index, t) = res; //// this is computed but not actually used?
        }
        
        {
-         // log_Bound_U_Phi_Bound_Z =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z_1m); //// use log1m_exp for stability!
-         // log_Bound_U_Phi_Bound_Z = log_Bound_U_Phi_Bound_Z.array().min(700.0).max(-700.0); //// add bounds checking
-         
-         {
-           auto temp_array = Bound_U_Phi_Bound_Z_1m.array()
-           auto 1m_temp_array = 1.0 - temp_array;
-           res = 1m_temp_array.matrix();
-           Bound_U_Phi_Bound_Z(index, t) = res; //// this is computed but not actually used?
-         }
-         
-         {
-           temp = fn_EIGEN_double(u_array(index, t), "log",  vect_type_log);
-           temp_2 = log_Bound_U_Phi_Bound_Z_1m + temp;
-           tmp_array_2d_to_lse.col(0)   =  temp_2;
-           tmp_array_2d_to_lse.col(1)   =  log_Bound_U_Phi_Bound_Z;
-         }
-         
-         {
-           log_sum_exp_general(tmp_array_2d_to_lse, 
-                               vect_type_exp, 
-                               vect_type_log, 
-                               log_Phi_Z, 
-                               container_max_logs);
-           // log_Phi_Z  =   fn_log_sum_exp_2d_double(tmp_array_2d_to_lse, vect_type_lse);
-           
-           res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
-           Phi_Z(index, t)  =   res;
-           
-           temp = u_array(index, t), "log1m",  vect_type_log);
-           temp_2 = temp + log_Bound_U_Phi_Bound_Z_1m;
-           log_1m_Phi_Z  = temp_2;
-         }
-         
-         {
-           logit_Phi_Z = log_Phi_Z - log_1m_Phi_Z;
-           res = fn_EIGEN_double(logit_Phi_Z, "inv_Phi_approx_from_logit_prob", vect_type_inv_Phi_approx_from_logit_prob)
-           Z_std_norm(index, t).array()    =  res;
-         }
-         
-         {
-           auto temp_array = Z_std_norm(index, t).array();
-           auto temp_array_2 = temp_array.abs();
-           temp = temp_array_2.matrix();
-           res = fn_EIGEN_double(temp, "log", vect_type_log);
-           log_Z_std_norm(index, t)  = res;
-           y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z_1m;
-           prob(index, t)   =     Bound_U_Phi_Bound_Z_1m;  //// this is computed but not actually used?
-         }
-         
-         {
-           auto temp_array = Bound_Z(index, t).array();
-           auto temp_array_sq = temp_array.square();
-           auto temp_array_2 = a_times_3 * temp_array_sq + b;
-           temp = temp_array_2.matrix();
-           res = fn_EIGEN_double(temp, "log", vect_type_log);
-           res = res + log_Bound_U_Phi_Bound_Z_1m;
-           log_phi_Bound_Z(index, t)  = res;//  fn_EIGEN_double(temp, "log", vect_type_log) + log_Bound_U_Phi_Bound_Z_1m;
-           //// log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
-         }
-         
-         {
-           auto temp_array = Z_std_norm(index, t).array();
-           auto temp_array_sq = temp_array.square();
-           auto temp_array_2 = a_times_3 * temp_array_sq + b;
-           temp = temp_array_2.matrix();
-           temp_2 = fn_EIGEN_double( temp, "log", vect_type_log);
-           res = temp_2 + log_Phi_Z + log_1m_Phi_Z;
-           auto res_array = res.array();
-           auto res_array_2 = - res_array;
-           res = res_array_2.matrix();
-           log_phi_Z_recip(index, t).array()  = res; // - (temp_2 + log_Phi_Z + log_1m_Phi_Z).array();
-           //// log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array();
-         }
-         
+         temp = fn_EIGEN_double(u_array(index, t), "log",  vect_type_log);
+         temp_2 = log_Bound_U_Phi_Bound_Z_1m + temp;
+         tmp_array_2d_to_lse.col(0)   =  temp_2;
+         tmp_array_2d_to_lse.col(1)   =  log_Bound_U_Phi_Bound_Z;
        }
+       
+       {
+         log_sum_exp_general(tmp_array_2d_to_lse, 
+                             vect_type_exp, 
+                             vect_type_log, 
+                             log_Phi_Z, 
+                             container_max_logs);
+         // log_Phi_Z  =   fn_log_sum_exp_2d_double(tmp_array_2d_to_lse, vect_type_lse);
+         
+         res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
+         Phi_Z(index, t)  =  res;
+         
+         temp = fn_EIGEN_double(u_array(index, t), "log1m",  vect_type_log);
+         temp_2 = temp + log_Bound_U_Phi_Bound_Z_1m;
+         log_1m_Phi_Z  = temp_2;
+       }
+       
+       {
+         logit_Phi_Z = log_Phi_Z - log_1m_Phi_Z;
+         res = fn_EIGEN_double(logit_Phi_Z, "inv_Phi_approx_from_logit_prob", vect_type_inv_Phi_approx_from_logit_prob);
+         Z_std_norm(index, t) =  res;
+       }
+       
+       {
+         auto temp_array = Z_std_norm(index, t).array();
+         auto temp_array_2 = temp_array.abs();
+         temp = temp_array_2.matrix();
+         res = fn_EIGEN_double(temp, "log", vect_type_log);
+         log_Z_std_norm(index, t)  = res;
+         y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z_1m;
+         prob(index, t)   =     Bound_U_Phi_Bound_Z_1m;  //// this is computed but not actually used?
+       }
+       
+       {
+         auto temp_array = Bound_Z(index, t).array();
+         auto temp_array_sq = temp_array.square();
+         auto temp_array_2 = a_times_3 * temp_array_sq + b;
+         temp = temp_array_2.matrix();
+         res = fn_EIGEN_double(temp, "log", vect_type_log);
+         res = res + log_Bound_U_Phi_Bound_Z_1m;
+         log_phi_Bound_Z(index, t)  = res;//  fn_EIGEN_double(temp, "log", vect_type_log) + log_Bound_U_Phi_Bound_Z_1m;
+         //// log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
+       }
+       
+       {
+         auto temp_array = Z_std_norm(index, t).array();
+         auto temp_array_sq = temp_array.square();
+         auto temp_array_2 = a_times_3 * temp_array_sq + b;
+         temp = temp_array_2.matrix();
+         temp_2 = fn_EIGEN_double( temp, "log", vect_type_log);
+         res = temp_2 + log_Phi_Z + log_1m_Phi_Z;
+         auto res_array = res.array();
+         auto res_array_2 = - res_array;
+         res = res_array_2.matrix();
+         log_phi_Z_recip(index, t).array()  = res; // - (temp_2 + log_Phi_Z + log_1m_Phi_Z).array();
+         //// log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array();
+       }
+
    
 }
 
