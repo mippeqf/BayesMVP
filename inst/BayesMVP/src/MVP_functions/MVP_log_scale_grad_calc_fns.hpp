@@ -213,21 +213,26 @@ inline  void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(      const int t,
          Eigen::Matrix<double, -1, 1> logit_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
          Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m = Eigen::Matrix<double, -1, 1>::Zero(dim);
 
-         res = fn_EIGEN_double(Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi);
-         log_Bound_U_Phi_Bound_Z =   res;
-         
-         res = fn_EIGEN_double(log_Bound_U_Phi_Bound_Z, "exp", vect_type_exp);
-         Bound_U_Phi_Bound_Z(index, t)    =   res;  
-
-         u_log =  fn_EIGEN_double(u_array(index, t), "log",  vect_type_log);
-         log_Phi_Z =   u_log +  log_Bound_U_Phi_Bound_Z ; /// log(u * Phi_Bound_Z); 
-         
-         res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
-         Phi_Z(index, t) =   res;  //// computed but not actually used
+         {
+           res = fn_EIGEN_double(Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi);
+           log_Bound_U_Phi_Bound_Z =   res;
+           
+           res = fn_EIGEN_double(log_Bound_U_Phi_Bound_Z, "exp", vect_type_exp);
+           Bound_U_Phi_Bound_Z(index, t)    =   res;  
+           
+           temp = u_array(index, t);
+           u_log =  fn_EIGEN_double(temp, "log",  vect_type_log);
+           log_Phi_Z =   u_log +  log_Bound_U_Phi_Bound_Z ; /// log(u * Phi_Bound_Z); 
+           
+           res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
+           Phi_Z(index, t) =   res;  //// computed but not actually used
+         }
 
          //// log_1m_Phi_Z =   stan::math::log1m_exp( u_log + log_Bound_U_Phi_Bound_Z );
          {
-           auto temp_array = Bound_U_Phi_Bound_Z(index, t).array()  * u_array(index, t).array();
+           auto temp_array_1 = Bound_U_Phi_Bound_Z(index, t).array();
+           auto temp_array_2 = u_array(index, t).array();
+           auto temp_array = temp_array_1 * temp_array_2;
            temp = temp_array.matrix();
            log_1m_Phi_Z = fn_EIGEN_double(temp , "log1m",  vect_type_log);   
            logit_Phi_Z =   log_Phi_Z - log_1m_Phi_Z; 
@@ -268,8 +273,8 @@ inline  void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(      const int t,
            temp_2 = fn_EIGEN_double( temp, "log", vect_type_log);
            res = temp_2 + log_Phi_Z + log_1m_Phi_Z;
            auto res_array = res.array();
-           auto res_array_2 = - res_array;
-           res = res_array_2.matrix();
+           auto m_res_array = - res_array;
+           res = m_res_array.matrix();
            log_phi_Z_recip(index, t).array()  = res; // - (temp_2 + log_Phi_Z + log_1m_Phi_Z).array();
            // log_phi_Z_recip(index, t).array()  = - (stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  + log_Phi_Z.array() + log_1m_Phi_Z.array()).array() ;
          }
@@ -329,6 +334,7 @@ inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t
        ////
        Eigen::Matrix<double, -1, -1> tmp_array_2d_to_lse = Eigen::Matrix<double, -1, -1>::Zero(num_overflows, 2);
        Eigen::Matrix<double, -1, 1> container_max_logs = Eigen::Matrix<double, -1, 1>::Constant(dim, -700.0);
+       ////
        
        {
          auto temp_array = Bound_Z(index, t).array();
@@ -349,7 +355,7 @@ inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t
        }
        
        {
-         temp = fn_EIGEN_double(u_array(index, t), "log",  vect_type_log);
+         temp = fn_EIGEN_double( u_array(index, t), "log",  vect_type_log);
          temp_2 = log_Bound_U_Phi_Bound_Z_1m + temp;
          tmp_array_2d_to_lse.col(0)   =  temp_2;
          tmp_array_2d_to_lse.col(1)   =  log_Bound_U_Phi_Bound_Z;
@@ -361,10 +367,10 @@ inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t
                              vect_type_log, 
                              log_Phi_Z, 
                              container_max_logs);
-         // log_Phi_Z  =   fn_log_sum_exp_2d_double(tmp_array_2d_to_lse, vect_type_lse);
+         //// log_Phi_Z  =   fn_log_sum_exp_2d_double(tmp_array_2d_to_lse, vect_type_lse);
          
          res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
-         Phi_Z(index, t)  =  res;
+         Phi_Z(index, t) = res;
          
          temp = fn_EIGEN_double(u_array(index, t), "log1m",  vect_type_log);
          temp_2 = temp + log_Bound_U_Phi_Bound_Z_1m;
@@ -452,7 +458,7 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
          const std::string vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
          const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
          
-#ifdef _WIN32
+// #ifdef _WIN32
        {
   
            for (int i = 0; i < n_tests; i++) {
@@ -528,45 +534,45 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
            }
 
        }
-#else
-       {
-           for (int i = 0; i < n_tests; i++) {
-               int t = n_tests - (i + 1);
-               log_prob_rowwise_prod_temp.col(t)     =               (y1_log_prob.block(0, t + 0, chunk_size, i + 1).rowwise().sum());
-               log_prob_recip_rowwise_prod_temp.col(t).array()  =    (y1_log_prob_recip.block(0, t + 0, chunk_size, i + 1).rowwise().sum()); //.array();
-           }
-
-           log_prob_rowwise_prod_temp_all  =   (y1_log_prob.rowwise().sum());
-
-           if (n_class > 1) { ///// i.e. if latent class
-
-                 for (int i = 0; i < n_tests; i++) {
-                   int t = n_tests - (i + 1) ;
-                   log_common_grad_term_1.col(t) =    ( (  log_prev + log_prob_n_recip.array() ).matrix() + y1_log_prob.rowwise().sum()  +    log_prob_recip_rowwise_prod_temp.col(t) )  ;
-                 }
-
-           } else {
-
-                 log_common_grad_term_1.setConstant(-700);
-
-           }
-
-           for (int t = 0; t < n_tests; t++) {
-
-                 log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   =   log_phi_Bound_Z.col(t).array() + ((log_abs_L_Omega_recip_double(t, t))) ;
-
-                 log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() = fn_EIGEN_double( y_m_y_sign_x_u.col(t).array().abs().matrix(), "log",  vect_type_log).array()
-                                                                                                                     + log_phi_Z_recip.col(t).array()  + log_phi_Bound_Z.col(t).array()  +  ((log_abs_L_Omega_recip_double(t, t)));
-
-                 //// note that densities and probs are always positive so signs = +1
-                 sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  = y_sign_chunk.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
-                 sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()  = y_m_y_sign_x_u.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
-
-           }
-
-       }
-
-#endif
+// #else
+//        {
+//            for (int i = 0; i < n_tests; i++) {
+//                int t = n_tests - (i + 1);
+//                log_prob_rowwise_prod_temp.col(t)     =               (y1_log_prob.block(0, t + 0, chunk_size, i + 1).rowwise().sum());
+//                log_prob_recip_rowwise_prod_temp.col(t).array()  =    (y1_log_prob_recip.block(0, t + 0, chunk_size, i + 1).rowwise().sum()); //.array();
+//            }
+// 
+//            log_prob_rowwise_prod_temp_all  =   (y1_log_prob.rowwise().sum());
+// 
+//            if (n_class > 1) { ///// i.e. if latent class
+// 
+//                  for (int i = 0; i < n_tests; i++) {
+//                    int t = n_tests - (i + 1) ;
+//                    log_common_grad_term_1.col(t) =    ( (  log_prev + log_prob_n_recip.array() ).matrix() + y1_log_prob.rowwise().sum()  +    log_prob_recip_rowwise_prod_temp.col(t) )  ;
+//                  }
+// 
+//            } else {
+// 
+//                  log_common_grad_term_1.setConstant(-700);
+// 
+//            }
+// 
+//            for (int t = 0; t < n_tests; t++) {
+// 
+//                  log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()   =   log_phi_Bound_Z.col(t).array() + ((log_abs_L_Omega_recip_double(t, t))) ;
+// 
+//                  log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array() = fn_EIGEN_double( y_m_y_sign_x_u.col(t).array().abs().matrix(), "log",  vect_type_log).array()
+//                                                                                                                      + log_phi_Z_recip.col(t).array()  + log_phi_Bound_Z.col(t).array()  +  ((log_abs_L_Omega_recip_double(t, t)));
+// 
+//                  //// note that densities and probs are always positive so signs = +1
+//                  sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t).array()  = y_sign_chunk.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
+//                  sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t).array()  = y_m_y_sign_x_u.col(t).array().sign() *  (sign_L_Omega_recip_double(t, t)) ;
+// 
+//            }
+// 
+//        }
+// 
+// #endif
      
 }
 
