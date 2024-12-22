@@ -33,26 +33,7 @@ using namespace Eigen;
  
   
 
-
-// 
-// void log_sum_exp_pair(const Eigen::Matrix<double, -1, 1>  &log_a,
-//                       const Eigen::Matrix<double, -1, 1>  &log_b,
-//                       const std::string &vect_type_exp,
-//                       const std::string &vect_type_log,
-//                       Eigen::Matrix<double, -1, 1> &log_sum_abs_result) {       // output parameter
-//   
-//   // for each element i, find max(log_a[i], log_b[i])
-//   Eigen::Matrix<double, -1, 1> max_logs = log_a.array().max(log_b.array());
-//   // for each element i, compute sign_a[i]*exp_a[i] + sign_b[i]*exp_b[i]
-//   Eigen::Matrix<double, -1, 1> combined = (fn_EIGEN_double(log_a - max_logs, "exp", vect_type_exp).array()  + 
-//     fn_EIGEN_double(log_b - max_logs, "exp", vect_type_exp).array()).matrix(); 
-//   // fill both output vectors
-//   log_sum_abs_result = max_logs + fn_EIGEN_double(combined.array().abs().matrix(), "log", vect_type_log);
-//   
-// }
-//  
-
-
+ 
 
 
 ALWAYS_INLINE void log_sum_exp_general(      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_vals,  
@@ -87,7 +68,7 @@ struct LogSumVecSingedResult {
  
  
  
- ALWAYS_INLINE LogSumVecSingedResult log_sum_vec_signed_v1(   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vec,
+ALWAYS_INLINE LogSumVecSingedResult log_sum_vec_signed_v1(   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vec,
                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> signs,
                                                        const std::string &vect_type) {
    
@@ -186,14 +167,14 @@ ALWAYS_INLINE void log_abs_sum_exp_general_v2(  const Eigen::Ref<const Eigen::Ma
  
 
  
- ALWAYS_INLINE  void log_abs_matrix_vector_mult_v1(  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_matrix,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_matrix,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vector,
-                                             const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> sign_vector,
-                                             const std::string &vect_type_exp,
-                                             const std::string &vect_type_log,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>> log_abs_result,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>> sign_result) {
+ALWAYS_INLINE  void log_abs_matrix_vector_mult_v1(   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_matrix,
+                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_matrix,
+                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vector,
+                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> sign_vector,
+                                                     const std::string &vect_type_exp,
+                                                     const std::string &vect_type_log,
+                                                     Eigen::Ref<Eigen::Matrix<double, -1, 1>> log_abs_result,
+                                                     Eigen::Ref<Eigen::Matrix<double, -1, 1>> sign_result) {
 
    int n_rows = log_abs_matrix.rows();
    int n_cols = log_abs_matrix.cols();
@@ -236,7 +217,7 @@ ALWAYS_INLINE void log_abs_sum_exp_general_v2(  const Eigen::Ref<const Eigen::Ma
  
  
  
- ALWAYS_INLINE void log_abs_matrix_vector_mult_v2(   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_matrix,
+ALWAYS_INLINE void log_abs_matrix_vector_mult_v2(   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_matrix,
                                              const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_matrix,
                                              const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vector,
                                              const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> sign_vector,
@@ -302,7 +283,9 @@ ALWAYS_INLINE void log_abs_sum_exp_general_v2(  const Eigen::Ref<const Eigen::Ma
 
 
 
-ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   log_sum_exp_2d_Eigen_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
+ 
+ 
+ALWAYS_INLINE   Eigen::Matrix<double, -1, 1>   log_sum_exp_2d_Eigen_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
    
        int N = x.rows();
        
@@ -327,7 +310,7 @@ ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   log_sum_exp_2d_Eigen_double( const 
  
  
 
-ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   log_sum_exp_2d_Stan_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
+ALWAYS_INLINE   Eigen::Matrix<double, -1, 1>   log_sum_exp_2d_Stan_double( const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  x )  {
    
        int N = x.rows();
        

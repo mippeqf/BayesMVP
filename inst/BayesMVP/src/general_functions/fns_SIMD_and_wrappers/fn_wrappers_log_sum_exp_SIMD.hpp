@@ -41,24 +41,24 @@ using namespace Eigen;
   
 #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
   
-  ALWAYS_INLINE Eigen::Matrix<double, -1, 1  >   fast_log_sum_exp_2d_AVX2_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>>   x) {
+ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   fast_log_sum_exp_2d_AVX2_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>>   x) {
     
-    const int N = x.rows();
-    const std::string vect_type_exp = "AVX2";
-    const std::string vect_type_log = "AVX2";
+      const int N = x.rows();
+      const std::string vect_type_exp = "AVX2";
+      const std::string vect_type_log = "AVX2";
+      
+      Eigen::Matrix<double, -1, 1> log_sum_abs_result(N);
+      Eigen::Matrix<double, -1, 1> container_max_logs(N);
+      
+      log_sum_exp_general(x, 
+                          vect_type_exp,
+                          vect_type_log,
+                          log_sum_abs_result,
+                          container_max_logs);
+      
+      return log_sum_abs_result;
     
-    Eigen::Matrix<double, -1, 1> log_sum_abs_result(N);
-    Eigen::Matrix<double, -1, 1> container_max_logs(N);
-    
-    log_sum_exp_general(x, 
-                        vect_type_exp,
-                        vect_type_log,
-                        log_sum_abs_result,
-                        container_max_logs);
-    
-    return log_sum_abs_result;
-    
-  } 
+} 
 
 
 
@@ -70,24 +70,24 @@ using namespace Eigen;
 
 #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
   
-  ALWAYS_INLINE Eigen::Matrix<double, -1, 1  >   fast_log_sum_exp_2d_AVX512_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>> x) {
+ALWAYS_INLINE Eigen::Matrix<double, -1, 1>   fast_log_sum_exp_2d_AVX512_double(  Eigen::Ref<Eigen::Matrix<double, -1, -1>> x) {
+      
+      const int N = x.rows();
+      const std::string vect_type_exp = "AVX512";
+      const std::string vect_type_log = "AVX512";
+      
+      Eigen::Matrix<double, -1, 1> log_sum_abs_result(N);
+      Eigen::Matrix<double, -1, 1> container_max_logs(N);
+      
+      log_sum_exp_general(x, 
+                          vect_type_exp,
+                          vect_type_log,
+                          log_sum_abs_result,
+                          container_max_logs);
+      
+      return log_sum_abs_result;
     
-    const int N = x.rows();
-    const std::string vect_type_exp = "AVX512";
-    const std::string vect_type_log = "AVX512";
-    
-    Eigen::Matrix<double, -1, 1> log_sum_abs_result(N);
-    Eigen::Matrix<double, -1, 1> container_max_logs(N);
-    
-    log_sum_exp_general(x, 
-                        vect_type_exp,
-                        vect_type_log,
-                        log_sum_abs_result,
-                        container_max_logs);
-    
-    return log_sum_abs_result;
-    
-  }
+}
   
   
 #endif
@@ -96,9 +96,9 @@ using namespace Eigen;
   
   
   
-ALWAYS_INLINE Eigen::Matrix<double, -1, 1> fn_log_sum_exp_2d_double(      Eigen::Ref<Eigen::Matrix<double, -1, -1>>  x,    // Eigen::Matrix<double, -1, 2> &x,
-                                                                          const std::string &vect_type = "Stan",
-                                                                          const bool &skip_checks = false) {
+ALWAYS_INLINE  Eigen::Matrix<double, -1, 1> fn_log_sum_exp_2d_double(      Eigen::Ref<Eigen::Matrix<double, -1, -1>>  x,    // Eigen::Matrix<double, -1, 2> &x,
+                                                                           const std::string &vect_type = "Stan",
+                                                                           const bool &skip_checks = false) {
     
     {
       if (vect_type == "Eigen") {

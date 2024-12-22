@@ -27,8 +27,8 @@
 
  
  
- // is_finite_mask and is_not_NaN_mask for AVX2
- inline __m256d is_finite_mask(__m256d x) {
+// is_finite_mask and is_not_NaN_mask for AVX2
+inline __m256d is_finite_mask(__m256d x) {
        
        const __m256d sign_bit = _mm256_set1_pd(-0.0);
        
