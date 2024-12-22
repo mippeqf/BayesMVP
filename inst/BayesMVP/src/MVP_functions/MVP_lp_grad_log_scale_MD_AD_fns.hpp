@@ -976,7 +976,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                      }
                      sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);   // std::cout << "After sign" << std::endl;
                 #else
-                     const Eigen::Matrix<double, -1, -1>   &log_abs_L_Omega_recip_double = stan::math::log(eps + stan::math::fabs(L_Omega_recip_double[c]));
+                     const Eigen::Matrix<double, -1, -1>   &log_abs_L_Omega_recip_double = stan::math::log(stan::math::fabs(L_Omega_recip_double[c]));
                      const Eigen::Matrix<double, -1, -1>   &sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);
                 #endif
                     
