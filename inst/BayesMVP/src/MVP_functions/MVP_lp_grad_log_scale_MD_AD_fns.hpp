@@ -731,9 +731,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           // START of c loop
           for (int c = 0; c < n_class; c++) {
 
-                  inc_array.setZero(); //   = 0.0; // needs to be reset to 0
+                  inc_array.setZero();  //// needs to be reset to 0
                 
-                  for (int t = 0; t < n_tests; t++) {   // start of t loop
+                  for (int t = 0; t < n_tests; t++) {   //// start of t loop
       
                     if (n_covariates_max > 1) {
                       
@@ -742,25 +742,25 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                             sign_Bound_Z[c].col(t) =   Bound_Z[c].col(t).array().sign();
                             log_abs_Bound_Z[c].col(t) =    fn_EIGEN_double(Bound_Z[c].col(t).array().abs(), "log", vect_type_log);
                       
-                    } else {  // intercept-only
+                    } else {  //// intercept-only
                       
                             Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  - ( beta_double_array[c](0, t)  +   inc_array.array()   )  ) ;
                             
-                            auto temp_array_1 = Bound_Z[c].col(t).array();
-                            auto temp_array_2 = temp_array_1.sign();
-                            sign_Bound_Z[c].col(t) =   temp_array_2;
+                            {
+                              auto Bound_Z_col_t_array = Bound_Z[c].col(t).array();
+                              auto Bound_Z_col_t_sign_array = Bound_Z_col_t_array.sign();
+                              sign_Bound_Z[c].col(t) =   Bound_Z_col_t_sign_array.matrix();
                             
-                            temp_array_1 = Bound_Z[c].col(t).array();
-                            temp_array_2 = temp_array_1.abs();
-                            log_abs_Bound_Z[c].col(t) =    fn_EIGEN_double(temp_array_2, "log", vect_type_log);
+                              auto Bound_Z_col_t_abs_array = Bound_Z_col_t_array.abs();
+                              log_abs_Bound_Z[c].col(t) =    fn_EIGEN_double(Bound_Z_col_t_abs_array.matrix(), "log", vect_type_log);
+                            }
                             
                     }
       
                     //// create masks
-                    auto y_chunk_col_t_dbl = y_chunk.col(t).cast<double>();
-                    auto y_chunk_col_t_dbl_array = y_chunk_col_t_dbl.array();
-                    overflow_mask =   ( (Bound_Z[c].col(t).array() > overflow_threshold)  && (y_chunk_col_t_dbl_array == 1.0) ).cast<int>().matrix() ;
-                    underflow_mask =  ( (Bound_Z[c].col(t).array() < underflow_threshold) && (y_chunk_col_t_dbl_array == 0.0) ).cast<int>().matrix() ;
+                    Eigen::Matrix<double, -1, 1> y_chunk_col_t_dbl = y_chunk.col(t).cast<double>();
+                    overflow_mask =   ( (Bound_Z[c].col(t).array() > overflow_threshold)  && (y_chunk_col_t_dbl.array() == 1.0) ).cast<int>().matrix() ;
+                    underflow_mask =  ( (Bound_Z[c].col(t).array() < underflow_threshold) && (y_chunk_col_t_dbl.array() == 0.0) ).cast<int>().matrix() ;
                     OK_mask = ( (overflow_mask.array() == 0) && (underflow_mask.array() == 0) ).cast<int>().matrix() ;
 
                     //// counts 
@@ -834,20 +834,20 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                                         Model_args_as_cpp_struct);
                                 
                    //// compute log-scale quantities (for grad)
-                   auto phi_Bound_Z_col_t = phi_Bound_Z[c].col(t);
+                   Eigen::Matrix<double, -1, 1> phi_Bound_Z_col_t = phi_Bound_Z[c].col(t);
                    auto phi_Bound_Z_col_t_array = phi_Bound_Z_col_t.array();
                    auto phi_Bound_Z_col_t_array_abs = phi_Bound_Z_col_t_array.abs();
-                   log_phi_Bound_Z[c].col(t).array() =   fn_EIGEN_double(  phi_Bound_Z_col_t_array_abs,  "log", vect_type_log);
+                   log_phi_Bound_Z[c].col(t) =   fn_EIGEN_double(  phi_Bound_Z_col_t_array_abs,  "log", vect_type_log);
                    
-                   auto phi_Z_recip_col_t = phi_Bound_Z[c].col(t);
+                   Eigen::Matrix<double, -1, 1> phi_Z_recip_col_t = phi_Z_recip[c].col(t);
                    auto phi_Z_recip_col_t_array = phi_Z_recip_col_t.array();
                    auto phi_Z_recip_col_t_array_abs = phi_Z_recip_col_t_array.abs();
-                   log_phi_Z_recip[c].col(t).array() =   fn_EIGEN_double(  phi_Z_recip_col_t_array_abs,  "log", vect_type_log);
+                   log_phi_Z_recip[c].col(t) =   fn_EIGEN_double(  phi_Z_recip_col_t_array_abs,  "log", vect_type_log);
                    
-                   auto Z_std_norm_col_t = phi_Bound_Z[c].col(t);
+                   Eigen::Matrix<double, -1, 1> Z_std_norm_col_t = Z_std_norm[c].col(t);
                    auto Z_std_norm_col_t_array = Z_std_norm_col_t.array();
                    auto Z_std_norm_col_t_array_abs = Z_std_norm_col_t_array.abs();
-                   log_Z_std_norm[c].col(t).array()  =   fn_EIGEN_double(  Z_std_norm_col_t_array_abs,   "log", vect_type_log);
+                   log_Z_std_norm[c].col(t)  =   fn_EIGEN_double(  Z_std_norm_col_t_array_abs,   "log", vect_type_log);
               
             if (n_OK == chunk_size)  { 
                         //// carry on as normal as (likely) no * problematic * overflows/underflows
@@ -872,10 +872,10 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                                                                    u_array,
                                                                                    Model_args_as_cpp_struct);
                                     
-                                    phi_Bound_Z[c](index, t).array() =  fn_EIGEN_double(  log_phi_Bound_Z[c](index, t),  "exp", vect_type_exp); // not needed if comp. grad on log-scale
-                                    phi_Z_recip[c](index, t).array() =  fn_EIGEN_double(  log_phi_Z_recip[c](index, t),  "exp", vect_type_exp); // not needed if comp. grad on log-scale
+                                    phi_Bound_Z[c](index, t) =  fn_EIGEN_double(  log_phi_Bound_Z[c](index, t),  "exp", vect_type_exp); // not needed if comp. grad on log-scale
+                                    phi_Z_recip[c](index, t) =  fn_EIGEN_double(  log_phi_Z_recip[c](index, t),  "exp", vect_type_exp); // not needed if comp. grad on log-scale
                                      
-                         }
+                        }
                         
                         if (n_overflows > 0) { //// overflow (w/ y == 1)
 
@@ -897,8 +897,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                                                                  u_array,
                                                                                  Model_args_as_cpp_struct);
                                   
-                                  phi_Bound_Z[c](index, t).array() =  fn_EIGEN_double(  log_phi_Bound_Z[c](index, t),  "exp", vect_type_exp);  // not needed if comp. grad on log-scale
-                                  phi_Z_recip[c](index, t).array() =  fn_EIGEN_double(  log_phi_Z_recip[c](index, t),  "exp", vect_type_exp);  // not needed if comp. grad on log-scale
+                                  phi_Bound_Z[c](index, t) =  fn_EIGEN_double(  log_phi_Bound_Z[c](index, t),  "exp", vect_type_exp);  // not needed if comp. grad on log-scale
+                                  phi_Z_recip[c](index, t) =  fn_EIGEN_double(  log_phi_Z_recip[c](index, t),  "exp", vect_type_exp);  // not needed if comp. grad on log-scale
 
                         }
 
@@ -906,8 +906,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
             
               if (t < n_tests - 1) {
                 
-                    auto L_Omega_row_tp1 = L_Omega_double[c].row(t + 1);
-                    auto L_Omega_row_tp1_head = L_Omega_row_tp1.head(t + 1);
+                    Eigen::Matrix<double, 1, -1> L_Omega_row_tp1 = L_Omega_double[c].row(t + 1);
+                    Eigen::Matrix<double, 1, -1> L_Omega_row_tp1_head = L_Omega_row_tp1.head(t + 1);
                     Eigen::Matrix<double, -1, 1> L_Omega_row_tp1_head_transpose = L_Omega_row_tp1_head.transpose();
                     inc_array  =     Z_std_norm[c].leftCols(t + 1) * L_Omega_row_tp1_head_transpose;
                     
@@ -916,7 +916,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
             }      //// end of t loop
                   
                 if (n_class > 1) {  /// if latent class 
-                  Eigen::Matrix<double, -1, 1> rowwise_sum = y1_log_prob[c].rowwise().sum();
+                  Eigen::Matrix<double, -1, 1>  rowwise_sum = y1_log_prob[c].rowwise().sum();
                   lp_array.col(c).array() =     rowwise_sum.array() + log_prev(0, c) ;
                 } else {
                   lp_array.col(0) =     y1_log_prob[0].rowwise().sum();
@@ -944,13 +944,16 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
         }
         
         // #ifdef _WIN32
-                Eigen::Matrix<double, -1, 1> prob_n  =  fn_EIGEN_double(out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size), "exp",  vect_type_exp);
-                Eigen::Matrix<double, -1, 1> prob_n_recip  = 1.0 / prob_n.array();
-                Eigen::Matrix<double, -1, 1> log_prob_n_recip = fn_EIGEN_double(1.0 / prob_n.array(), "log", vect_type_log); 
+                Eigen::Matrix<double, -1, 1> log_lik = out_mat.tail(N);
+                Eigen::Matrix<double, -1, 1> prob_n  =  fn_EIGEN_double( log_lik.segment(chunk_size_orig * chunk_counter, chunk_size), "exp",  vect_type_exp);
+                auto prob_n_array = prob_n.array();
+                auto prob_n_recip_array = 1.0 / prob_n_array;
+                Eigen::Matrix<double, -1, 1> prob_n_recip  = prob_n_recip_array;
+                Eigen::Matrix<double, -1, 1> log_prob_n_recip = fn_EIGEN_double(prob_n_recip, "log", vect_type_log); 
         // #else
         //         const Eigen::Matrix<double, -1, 1> &prob_n  =  fn_EIGEN_double(out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size), "exp",  vect_type_exp);
         //         const Eigen::Matrix<double, -1, 1> &prob_n_recip  = 1.0 / prob_n.array();
-        //         const Eigen::Matrix<double, -1, 1> &log_prob_n_recip = fn_EIGEN_double(1.0 / prob_n.array(), "log", vect_type_log);
+        //         const Eigen::Matrix<double, -1, 1> &log_prob_n_recip = fn_EIGEN_double(prob_n_recip, "log", vect_type_log);
         // #endif
         
         const bool compute_final_scalar_grad = false;
