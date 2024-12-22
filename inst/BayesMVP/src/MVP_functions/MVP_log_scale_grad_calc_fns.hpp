@@ -166,13 +166,136 @@ auto bound_log(const Eigen::ArrayBase<Derived> &log_x) {
  
  
 
+
+ 
+
+
  
  
- 
- 
- 
- 
-inline  void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(      const int t,
+//  
+//  
+// inline  void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(      const int t,
+//                                                                   const std::vector<int> &index,
+//                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
+//                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
+//                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
+//                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_Z_std_norm,
+//                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
+//                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
+//                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
+//                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
+//                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
+//                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
+//                                                                   const Model_fn_args_struct &Model_args_as_cpp_struct
+// ) {
+// 
+//          const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);
+//          const double a = 0.07056;
+//          const double b = 1.5976;
+//          const double a_times_3 = 3.0 * a;
+//          
+//          const bool debug = Model_args_as_cpp_struct.Model_args_bools(14);
+//          const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
+//          
+//          const std::string vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
+//          const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
+//          const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
+//          const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
+//          
+//          const int dim = index.size();
+//          
+//          //// pre-allocate storage containers 
+//          Eigen::Matrix<double, -1, 1> res = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//          Eigen::Matrix<double, -1, 1> temp = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//          Eigen::Matrix<double, -1, 1> temp_2 = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//          Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//          Eigen::Matrix<double, -1, 1> u_log = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//          Eigen::Matrix<double, -1, 1> log_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//          Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//          Eigen::Matrix<double, -1, 1> logit_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//          Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m = Eigen::Matrix<double, -1, 1>::Zero(dim);
+// 
+//          {
+//            res = fn_EIGEN_double(Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi);
+//            log_Bound_U_Phi_Bound_Z =   res;
+//            
+//            res = fn_EIGEN_double(log_Bound_U_Phi_Bound_Z, "exp", vect_type_exp);
+//            Bound_U_Phi_Bound_Z(index, t)    =   res;  
+//            
+//            temp = u_array(index, t);
+//            u_log =  fn_EIGEN_double(temp, "log",  vect_type_log);
+//            log_Phi_Z =   u_log +  log_Bound_U_Phi_Bound_Z ; /// log(u * Phi_Bound_Z); 
+//            
+//            res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
+//            Phi_Z(index, t) =   res;  //// computed but not actually used
+//          }
+// 
+//          //// log_1m_Phi_Z =   stan::math::log1m_exp( u_log + log_Bound_U_Phi_Bound_Z );
+//          {
+//            auto temp_array_1 = Bound_U_Phi_Bound_Z(index, t).array();
+//            auto temp_array_2 = u_array(index, t).array();
+//            auto temp_array = temp_array_1 * temp_array_2;
+//            temp = temp_array.matrix();
+//            log_1m_Phi_Z = fn_EIGEN_double(temp , "log1m",  vect_type_log);   
+//            logit_Phi_Z =   log_Phi_Z - log_1m_Phi_Z; 
+//            res = fn_EIGEN_double( logit_Phi_Z, "inv_Phi_approx_from_logit_prob",  vect_type_inv_Phi_approx_from_logit_prob);
+//            Z_std_norm(index, t)    =  res; 
+//          }
+// 
+//          {
+//            auto temp_array = Z_std_norm(index, t).array();
+//            auto temp_array_abs = temp_array.abs();
+//            temp = temp_array_abs.matrix();
+//            res = fn_EIGEN_double(temp, "log", vect_type_log);
+//            log_Z_std_norm(index, t)    = res;
+//            y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z ;  
+//            prob(index, t) =        Bound_U_Phi_Bound_Z(index, t) ; //// computed but not actually used
+//          }
+//       
+//            ////  log_Bound_U_Phi_Bound_Z_1m =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z); //// use log1m_exp for stability!
+//            res = fn_EIGEN_double(  Bound_U_Phi_Bound_Z(index, t), "log1m",  vect_type_log);
+//            log_Bound_U_Phi_Bound_Z_1m = res;
+//   
+//          {
+//            auto temp_array = Bound_Z(index, t).array();
+//            auto temp_array_sq = temp_array.square();
+//            auto temp_array_2 = a_times_3 * temp_array_sq + b;
+//            temp = temp_array_2.matrix();
+//            res = fn_EIGEN_double(temp, "log", vect_type_log);
+//            res = res + log_Bound_U_Phi_Bound_Z_1m;
+//            log_phi_Bound_Z(index, t)  = res;//  fn_EIGEN_double(temp, "log", vect_type_log) + log_Bound_U_Phi_Bound_Z_1m;
+//            // log_phi_Bound_Z(index, t).array()  = stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array() + log_Bound_U_Phi_Bound_Z.array() + log_Bound_U_Phi_Bound_Z_1m.array();
+//          }
+//          
+//          {
+//            auto temp_array = Z_std_norm(index, t).array();
+//            auto temp_array_sq = temp_array.square();
+//            auto temp_array_2 = a_times_3 * temp_array_sq + b;
+//            temp = temp_array_2.matrix();
+//            temp_2 = fn_EIGEN_double( temp, "log", vect_type_log);
+//            res = temp_2 + log_Phi_Z + log_1m_Phi_Z;
+//            auto res_array = res.array();
+//            auto m_res_array = - res_array;
+//            res = m_res_array.matrix();
+//            log_phi_Z_recip(index, t).array()  = res; // - (temp_2 + log_Phi_Z + log_1m_Phi_Z).array();
+//            // log_phi_Z_recip(index, t).array()  = - (stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  + log_Phi_Z.array() + log_1m_Phi_Z.array()).array() ;
+//          }
+//  
+// 
+// }
+// 
+//  
+
+
+
+
+
+
+
+
+
+
+inline void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
                                                                   const std::vector<int> &index,
                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
@@ -186,243 +309,276 @@ inline  void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(      const int t,
                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
                                                                   const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
+            
+            const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);
+            const double a = 0.07056;
+            const double b = 1.5976;
+            const double a_times_3 = 3.0 * a;
+            
+            const bool debug = Model_args_as_cpp_struct.Model_args_bools(14);
+            const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
+            
+            const std::string vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
+            const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
+            const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
+            const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
+            
+            Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z =   fn_EIGEN_double(   Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi) ;
+            log_Bound_U_Phi_Bound_Z =  (log_Bound_U_Phi_Bound_Z);   //// add bounds checking
+            Bound_U_Phi_Bound_Z(index, t)    =    fn_EIGEN_double( log_Bound_U_Phi_Bound_Z, "exp", vect_type_exp); /// same as Stan (should work well??)
+            
+            Eigen::Matrix<double, -1, 1>  u_log =  fn_EIGEN_double(u_array(index, t), "log",  vect_type_log).array();
+            Eigen::Matrix<double, -1, 1>  log_Phi_Z =   u_log.array() +  log_Bound_U_Phi_Bound_Z.array() ; /// log(u * Phi_Bound_Z); /// same as Stan (should work well)
+            log_Phi_Z =   (log_Phi_Z);   //// add bounds checking
+            Phi_Z(index, t).array() =   fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp).array();  //// computed but not actually used
+            
+            //// Eigen::Matrix<double, -1, 1> log_1m_Phi_Z =   stan::math::log1m_exp( u_log + log_Bound_U_Phi_Bound_Z );
+            Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = fn_EIGEN_double(  (  Bound_U_Phi_Bound_Z(index, t).array()  * u_array(index, t).array() ).matrix() , "log1m",  vect_type_log);   /// same as Stan (should work well)
+            log_1m_Phi_Z =   (log_1m_Phi_Z);   //// add bounds checking
+            Eigen::Matrix<double, -1, 1> logit_Phi_Z =   log_Phi_Z - log_1m_Phi_Z; /// same as Stan (should work well)
+            Z_std_norm(index, t).array()    =  fn_EIGEN_double(  logit_Phi_Z, "inv_Phi_approx_from_logit_prob",  vect_type_inv_Phi_approx_from_logit_prob); /// same as Stan (should work well)
+            
+            log_Z_std_norm(index, t)    = fn_EIGEN_double(Z_std_norm(index, t).array().abs().matrix(), "log", vect_type_log);
+            log_Z_std_norm(index, t) =   (log_Z_std_norm(index, t));   //// add bounds checking
+            
+            y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z ; /// same as Stan (should work well)
+            y1_log_prob(index, t) =   (y1_log_prob(index, t));   //// add bounds checking
+            
+            prob(index, t) =        Bound_U_Phi_Bound_Z(index, t) ; //// computed but not actually used
+            
+            //// Eigen::Matrix<double, -1, 1>  log_Bound_U_Phi_Bound_Z_1m =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z); //// use log1m_exp for stability!
+            Eigen::Matrix<double, -1, 1>  log_Bound_U_Phi_Bound_Z_1m = fn_EIGEN_double(  Bound_U_Phi_Bound_Z(index, t), "log1m",  vect_type_log);
+            log_Bound_U_Phi_Bound_Z_1m =   (log_Bound_U_Phi_Bound_Z_1m);   //// add bounds checking
+            
+            log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
+            log_phi_Bound_Z(index, t) =   (log_phi_Bound_Z(index, t));   //// add bounds checking
+            
+            log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array() ;
+            log_phi_Z_recip(index, t) =   (log_phi_Z_recip(index, t));   //// add bounds checking
+            
+  
+}
 
+
+
+
+
+ 
+ 
+ 
+
+// 
+// 
+//  
+// inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t,
+//                                                                      const int num_overflows,
+//                                                                      const std::vector<int> &index,
+//                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
+//                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
+//                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
+//                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_Z_std_norm,
+//                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
+//                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
+//                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
+//                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
+//                                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
+//                                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
+//                                                                      const Model_fn_args_struct &Model_args_as_cpp_struct
+// ) {
+//   
+//        const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);
+//        const double a = 0.07056;
+//        const double b = 1.5976;
+//        const double a_times_3 = 3.0 * a;
+//        
+//        const std::string vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
+//        const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
+//        const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
+//        const std::string vect_type_lse = Model_args_as_cpp_struct.Model_args_strings(5);
+//        const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
+//        
+//        const int dim = index.size();
+//        
+//        //// pre-allocate storage containers 
+//        Eigen::Matrix<double, -1, 1> res = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        Eigen::Matrix<double, -1, 1> temp = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        Eigen::Matrix<double, -1, 1> temp_2 = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        Eigen::Matrix<double, -1, 1> Bound_U_Phi_Bound_Z_1m = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        Eigen::Matrix<double, -1, 1> log_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        Eigen::Matrix<double, -1, 1> logit_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+//        ////
+//        Eigen::Matrix<double, -1, -1> tmp_array_2d_to_lse = Eigen::Matrix<double, -1, -1>::Zero(num_overflows, 2);
+//        Eigen::Matrix<double, -1, 1> container_max_logs = Eigen::Matrix<double, -1, 1>::Constant(dim, -700.0);
+//        ////
+//        
+//        {
+//          auto temp_array = Bound_Z(index, t).array();
+//          auto m_temp_array = - temp_array;
+//          res = m_temp_array.matrix();
+//          log_Bound_U_Phi_Bound_Z_1m =   fn_EIGEN_double( res, "log_Phi_approx",  vect_type_log_Phi);
+//          Bound_U_Phi_Bound_Z_1m =     fn_EIGEN_double( log_Bound_U_Phi_Bound_Z_1m, "exp",  vect_type_exp);
+//          log_Bound_U_Phi_Bound_Z     =  fn_EIGEN_double( Bound_U_Phi_Bound_Z_1m, "log1m",  vect_type_log);
+//          // log_Bound_U_Phi_Bound_Z =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z_1m); //// use log1m_exp for stability!
+//          // log_Bound_U_Phi_Bound_Z = log_Bound_U_Phi_Bound_Z.array().min(700.0).max(-700.0); //// add bounds checking
+//        }
+//  
+//        {
+//          auto temp_array = Bound_U_Phi_Bound_Z_1m.array();
+//          auto one_temp_array = 1.0 - temp_array;
+//          res = one_temp_array.matrix();
+//          Bound_U_Phi_Bound_Z(index, t) = res; //// this is computed but not actually used?
+//        }
+//        
+//        {
+//          temp = fn_EIGEN_double( u_array(index, t), "log",  vect_type_log);
+//          temp_2 = log_Bound_U_Phi_Bound_Z_1m + temp;
+//          tmp_array_2d_to_lse.col(0)   =  temp_2;
+//          tmp_array_2d_to_lse.col(1)   =  log_Bound_U_Phi_Bound_Z;
+//        }
+//        
+//        {
+//          log_sum_exp_general(tmp_array_2d_to_lse, 
+//                              vect_type_exp, 
+//                              vect_type_log, 
+//                              log_Phi_Z, 
+//                              container_max_logs);
+//          //// log_Phi_Z  =   fn_log_sum_exp_2d_double(tmp_array_2d_to_lse, vect_type_lse);
+//          
+//          res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
+//          Phi_Z(index, t) = res;
+//          
+//          temp = fn_EIGEN_double(u_array(index, t), "log1m",  vect_type_log);
+//          temp_2 = temp + log_Bound_U_Phi_Bound_Z_1m;
+//          log_1m_Phi_Z  = temp_2;
+//        }
+//        
+//        {
+//          logit_Phi_Z = log_Phi_Z - log_1m_Phi_Z;
+//          res = fn_EIGEN_double(logit_Phi_Z, "inv_Phi_approx_from_logit_prob", vect_type_inv_Phi_approx_from_logit_prob);
+//          Z_std_norm(index, t) =  res;
+//        }
+//        
+//        {
+//          auto temp_array = Z_std_norm(index, t).array();
+//          auto temp_array_2 = temp_array.abs();
+//          temp = temp_array_2.matrix();
+//          res = fn_EIGEN_double(temp, "log", vect_type_log);
+//          log_Z_std_norm(index, t)  = res;
+//          y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z_1m;
+//          prob(index, t)   =     Bound_U_Phi_Bound_Z_1m;  //// this is computed but not actually used?
+//        }
+//        
+//        {
+//          auto temp_array = Bound_Z(index, t).array();
+//          auto temp_array_sq = temp_array.square();
+//          auto temp_array_2 = a_times_3 * temp_array_sq + b;
+//          temp = temp_array_2.matrix();
+//          res = fn_EIGEN_double(temp, "log", vect_type_log);
+//          res = res + log_Bound_U_Phi_Bound_Z_1m;
+//          log_phi_Bound_Z(index, t)  = res;//  fn_EIGEN_double(temp, "log", vect_type_log) + log_Bound_U_Phi_Bound_Z_1m;
+//          //// log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
+//        }
+//        
+//        {
+//          auto temp_array = Z_std_norm(index, t).array();
+//          auto temp_array_sq = temp_array.square();
+//          auto temp_array_2 = a_times_3 * temp_array_sq + b;
+//          temp = temp_array_2.matrix();
+//          temp_2 = fn_EIGEN_double( temp, "log", vect_type_log);
+//          res = temp_2 + log_Phi_Z + log_1m_Phi_Z;
+//          auto res_array = res.array();
+//          auto res_array_2 = - res_array;
+//          res = res_array_2.matrix();
+//          log_phi_Z_recip(index, t).array()  = res; // - (temp_2 + log_Phi_Z + log_1m_Phi_Z).array();
+//          //// log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array();
+//        }
+// 
+//    
+// }
+// 
+// 
+//  
+
+ 
+ 
+ 
+ 
+ inline void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(         const int t,
+                                                                    const int num_overflows,
+                                                                    const std::vector<int> &index,
+                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
+                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
+                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
+                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_Z_std_norm,
+                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
+                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
+                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
+                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
+                                                                    const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
+                                                                    const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
+                                                                    const Model_fn_args_struct &Model_args_as_cpp_struct
+ ) {
+   
          const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);
          const double a = 0.07056;
          const double b = 1.5976;
          const double a_times_3 = 3.0 * a;
          
-         const bool debug = Model_args_as_cpp_struct.Model_args_bools(14);
-         const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
-         
          const std::string vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
          const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
          const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
+         const std::string vect_type_lse = Model_args_as_cpp_struct.Model_args_strings(5);
          const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
          
-         const int dim = index.size();
+         Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m =  ( fn_EIGEN_double( - Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi) ); /// TEMP
+         log_Bound_U_Phi_Bound_Z_1m =  (log_Bound_U_Phi_Bound_Z_1m);   //// add bounds checking
+         Eigen::Matrix<double, -1, 1> Bound_U_Phi_Bound_Z_1m =     fn_EIGEN_double( log_Bound_U_Phi_Bound_Z_1m, "exp",  vect_type_exp);
          
-         //// pre-allocate storage containers 
-         Eigen::Matrix<double, -1, 1> res = Eigen::Matrix<double, -1, 1>::Zero(dim);
-         Eigen::Matrix<double, -1, 1> temp = Eigen::Matrix<double, -1, 1>::Zero(dim);
-         Eigen::Matrix<double, -1, 1> temp_2 = Eigen::Matrix<double, -1, 1>::Zero(dim);
-         Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
-         Eigen::Matrix<double, -1, 1> u_log = Eigen::Matrix<double, -1, 1>::Zero(dim);
-         Eigen::Matrix<double, -1, 1> log_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
-         Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
-         Eigen::Matrix<double, -1, 1> logit_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
-         Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m = Eigen::Matrix<double, -1, 1>::Zero(dim);
-
-         {
-           res = fn_EIGEN_double(Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi);
-           log_Bound_U_Phi_Bound_Z =   res;
-           
-           res = fn_EIGEN_double(log_Bound_U_Phi_Bound_Z, "exp", vect_type_exp);
-           Bound_U_Phi_Bound_Z(index, t)    =   res;  
-           
-           temp = u_array(index, t);
-           u_log =  fn_EIGEN_double(temp, "log",  vect_type_log);
-           log_Phi_Z =   u_log +  log_Bound_U_Phi_Bound_Z ; /// log(u * Phi_Bound_Z); 
-           
-           res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
-           Phi_Z(index, t) =   res;  //// computed but not actually used
-         }
-
-         //// log_1m_Phi_Z =   stan::math::log1m_exp( u_log + log_Bound_U_Phi_Bound_Z );
-         {
-           auto temp_array_1 = Bound_U_Phi_Bound_Z(index, t).array();
-           auto temp_array_2 = u_array(index, t).array();
-           auto temp_array = temp_array_1 * temp_array_2;
-           temp = temp_array.matrix();
-           log_1m_Phi_Z = fn_EIGEN_double(temp , "log1m",  vect_type_log);   
-           logit_Phi_Z =   log_Phi_Z - log_1m_Phi_Z; 
-           res = fn_EIGEN_double( logit_Phi_Z, "inv_Phi_approx_from_logit_prob",  vect_type_inv_Phi_approx_from_logit_prob);
-           Z_std_norm(index, t)    =  res; 
-         }
-
-         {
-           auto temp_array = Z_std_norm(index, t).array();
-           auto temp_array_abs = temp_array.abs();
-           temp = temp_array_abs.matrix();
-           res = fn_EIGEN_double(temp, "log", vect_type_log);
-           log_Z_std_norm(index, t)    = res;
-           y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z ;  
-           prob(index, t) =        Bound_U_Phi_Bound_Z(index, t) ; //// computed but not actually used
-         }
-      
-           ////  log_Bound_U_Phi_Bound_Z_1m =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z); //// use log1m_exp for stability!
-           res = fn_EIGEN_double(  Bound_U_Phi_Bound_Z(index, t), "log1m",  vect_type_log);
-           log_Bound_U_Phi_Bound_Z_1m = res;
-  
-         {
-           auto temp_array = Bound_Z(index, t).array();
-           auto temp_array_sq = temp_array.square();
-           auto temp_array_2 = a_times_3 * temp_array_sq + b;
-           temp = temp_array_2.matrix();
-           res = fn_EIGEN_double(temp, "log", vect_type_log);
-           res = res + log_Bound_U_Phi_Bound_Z_1m;
-           log_phi_Bound_Z(index, t)  = res;//  fn_EIGEN_double(temp, "log", vect_type_log) + log_Bound_U_Phi_Bound_Z_1m;
-           // log_phi_Bound_Z(index, t).array()  = stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array() + log_Bound_U_Phi_Bound_Z.array() + log_Bound_U_Phi_Bound_Z_1m.array();
-         }
+         Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z     =  fn_EIGEN_double(Bound_U_Phi_Bound_Z_1m, "log1m",  vect_type_log);
+         log_Bound_U_Phi_Bound_Z =  (log_Bound_U_Phi_Bound_Z);   //// add bounds checking
          
-         {
-           auto temp_array = Z_std_norm(index, t).array();
-           auto temp_array_sq = temp_array.square();
-           auto temp_array_2 = a_times_3 * temp_array_sq + b;
-           temp = temp_array_2.matrix();
-           temp_2 = fn_EIGEN_double( temp, "log", vect_type_log);
-           res = temp_2 + log_Phi_Z + log_1m_Phi_Z;
-           auto res_array = res.array();
-           auto m_res_array = - res_array;
-           res = m_res_array.matrix();
-           log_phi_Z_recip(index, t).array()  = res; // - (temp_2 + log_Phi_Z + log_1m_Phi_Z).array();
-           // log_phi_Z_recip(index, t).array()  = - (stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  + log_Phi_Z.array() + log_1m_Phi_Z.array()).array() ;
-         }
- 
-
-}
-
- 
-
-
- 
- 
- 
-
-
-
- 
-inline  void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t,
-                                                                     const int num_overflows,
-                                                                     const std::vector<int> &index,
-                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
-                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
-                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
-                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_Z_std_norm,
-                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
-                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
-                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
-                                                                     Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
-                                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
-                                                                     const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
-                                                                     const Model_fn_args_struct &Model_args_as_cpp_struct
-) {
-  
-       const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);
-       const double a = 0.07056;
-       const double b = 1.5976;
-       const double a_times_3 = 3.0 * a;
-       
-       const std::string vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
-       const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
-       const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
-       const std::string vect_type_lse = Model_args_as_cpp_struct.Model_args_strings(5);
-       const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
-       
-       const int dim = index.size();
-       
-       //// pre-allocate storage containers 
-       Eigen::Matrix<double, -1, 1> res = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       Eigen::Matrix<double, -1, 1> temp = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       Eigen::Matrix<double, -1, 1> temp_2 = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       Eigen::Matrix<double, -1, 1> Bound_U_Phi_Bound_Z_1m = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       Eigen::Matrix<double, -1, 1> log_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       Eigen::Matrix<double, -1, 1> logit_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
-       ////
-       Eigen::Matrix<double, -1, -1> tmp_array_2d_to_lse = Eigen::Matrix<double, -1, -1>::Zero(num_overflows, 2);
-       Eigen::Matrix<double, -1, 1> container_max_logs = Eigen::Matrix<double, -1, 1>::Constant(dim, -700.0);
-       ////
-       
-       {
-         auto temp_array = Bound_Z(index, t).array();
-         auto m_temp_array = - temp_array;
-         res = m_temp_array.matrix();
-         log_Bound_U_Phi_Bound_Z_1m =   fn_EIGEN_double( res, "log_Phi_approx",  vect_type_log_Phi);
-         Bound_U_Phi_Bound_Z_1m =     fn_EIGEN_double( log_Bound_U_Phi_Bound_Z_1m, "exp",  vect_type_exp);
-         log_Bound_U_Phi_Bound_Z     =  fn_EIGEN_double( Bound_U_Phi_Bound_Z_1m, "log1m",  vect_type_log);
-         // log_Bound_U_Phi_Bound_Z =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z_1m); //// use log1m_exp for stability!
+         // Eigen::Matrix<double, -1, 1>  log_Bound_U_Phi_Bound_Z =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z_1m); //// use log1m_exp for stability!
          // log_Bound_U_Phi_Bound_Z = log_Bound_U_Phi_Bound_Z.array().min(700.0).max(-700.0); //// add bounds checking
-       }
- 
-       {
-         auto temp_array = Bound_U_Phi_Bound_Z_1m.array();
-         auto one_temp_array = 1.0 - temp_array;
-         res = one_temp_array.matrix();
-         Bound_U_Phi_Bound_Z(index, t) = res; //// this is computed but not actually used?
-       }
-       
-       {
-         temp = fn_EIGEN_double( u_array(index, t), "log",  vect_type_log);
-         temp_2 = log_Bound_U_Phi_Bound_Z_1m + temp;
-         tmp_array_2d_to_lse.col(0)   =  temp_2;
-         tmp_array_2d_to_lse.col(1)   =  log_Bound_U_Phi_Bound_Z;
-       }
-       
-       {
-         log_sum_exp_general(tmp_array_2d_to_lse, 
-                             vect_type_exp, 
-                             vect_type_log, 
-                             log_Phi_Z, 
-                             container_max_logs);
-         //// log_Phi_Z  =   fn_log_sum_exp_2d_double(tmp_array_2d_to_lse, vect_type_lse);
          
-         res = fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
-         Phi_Z(index, t) = res;
+         Bound_U_Phi_Bound_Z(index, t).array() =   1.0 - Bound_U_Phi_Bound_Z_1m.array(); //// this is computed but not actually used?
          
-         temp = fn_EIGEN_double(u_array(index, t), "log1m",  vect_type_log);
-         temp_2 = temp + log_Bound_U_Phi_Bound_Z_1m;
-         log_1m_Phi_Z  = temp_2;
-       }
-       
-       {
-         logit_Phi_Z = log_Phi_Z - log_1m_Phi_Z;
-         res = fn_EIGEN_double(logit_Phi_Z, "inv_Phi_approx_from_logit_prob", vect_type_inv_Phi_approx_from_logit_prob);
-         Z_std_norm(index, t) =  res;
-       }
-       
-       {
-         auto temp_array = Z_std_norm(index, t).array();
-         auto temp_array_2 = temp_array.abs();
-         temp = temp_array_2.matrix();
-         res = fn_EIGEN_double(temp, "log", vect_type_log);
-         log_Z_std_norm(index, t)  = res;
+         Eigen::Matrix<double, -1, -1>  tmp_array_2d_to_lse(num_overflows, 2);
+         tmp_array_2d_to_lse.col(0)   =  (log_Bound_U_Phi_Bound_Z_1m + fn_EIGEN_double(u_array(index, t), "log",  vect_type_log)).matrix() ;
+         tmp_array_2d_to_lse.col(1)  =    log_Bound_U_Phi_Bound_Z;
+         tmp_array_2d_to_lse =  (tmp_array_2d_to_lse);   //// add bounds checking  
+         
+         Eigen::Matrix<double, -1, 1> log_Phi_Z  =      fn_log_sum_exp_2d_double(tmp_array_2d_to_lse, vect_type_lse);
+         log_Phi_Z =  (log_Phi_Z);   //// add bounds checking
+         
+         Phi_Z(index, t)  =   fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
+         Eigen::Matrix<double, -1, 1> log_1m_Phi_Z  =  fn_EIGEN_double(u_array(index, t), "log1m",  vect_type_log)  + log_Bound_U_Phi_Bound_Z_1m;
+         log_1m_Phi_Z =  (log_1m_Phi_Z);   //// add bounds checking
+         
+         Eigen::Matrix<double, -1, 1> logit_Phi_Z = log_Phi_Z - log_1m_Phi_Z;
+         Z_std_norm(index, t).array()    =    fn_EIGEN_double(logit_Phi_Z, "inv_Phi_approx_from_logit_prob", vect_type_inv_Phi_approx_from_logit_prob);
+         
+         log_Z_std_norm(index, t)    = fn_EIGEN_double(Z_std_norm(index, t).array().abs().matrix(), "log", vect_type_log);
+         log_Z_std_norm(index, t) =  (  log_Z_std_norm(index, t));   //// add bounds checking
+         
          y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z_1m;
+         y1_log_prob(index, t) =  (y1_log_prob(index, t));   //// add bounds checking
+         
          prob(index, t)   =     Bound_U_Phi_Bound_Z_1m;  //// this is computed but not actually used?
-       }
-       
-       {
-         auto temp_array = Bound_Z(index, t).array();
-         auto temp_array_sq = temp_array.square();
-         auto temp_array_2 = a_times_3 * temp_array_sq + b;
-         temp = temp_array_2.matrix();
-         res = fn_EIGEN_double(temp, "log", vect_type_log);
-         res = res + log_Bound_U_Phi_Bound_Z_1m;
-         log_phi_Bound_Z(index, t)  = res;//  fn_EIGEN_double(temp, "log", vect_type_log) + log_Bound_U_Phi_Bound_Z_1m;
-         //// log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
-       }
-       
-       {
-         auto temp_array = Z_std_norm(index, t).array();
-         auto temp_array_sq = temp_array.square();
-         auto temp_array_2 = a_times_3 * temp_array_sq + b;
-         temp = temp_array_2.matrix();
-         temp_2 = fn_EIGEN_double( temp, "log", vect_type_log);
-         res = temp_2 + log_Phi_Z + log_1m_Phi_Z;
-         auto res_array = res.array();
-         auto res_array_2 = - res_array;
-         res = res_array_2.matrix();
-         log_phi_Z_recip(index, t).array()  = res; // - (temp_2 + log_Phi_Z + log_1m_Phi_Z).array();
-         //// log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array();
-       }
-
+         
+         log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
+         log_phi_Bound_Z(index, t) =  (log_phi_Bound_Z(index, t));   //// add bounds checking
+         
+         log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array() ;
+         log_phi_Z_recip(index, t) =  (log_phi_Z_recip(index, t));   //// add bounds checking
    
-}
-
-
+ }
  
+
+
+
 
 
 

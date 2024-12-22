@@ -1001,7 +1001,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
       if (  (grad_option != "none") || (grad_option == "test") ) {
         
                 // #ifdef _WIN32
-                    const double eps = 1e-10;
+                    // const double eps = 1e-10;
                     Eigen::Matrix<double, -1, -1> abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
                     Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Constant(n_tests, n_tests, -700.0);
                     Eigen::Matrix<double, -1, -1> sign_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Ones(n_tests, n_tests);
@@ -1019,7 +1019,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                      }
                      sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);   // std::cout << "After sign" << std::endl;
                 // #else
-                //      const Eigen::Matrix<double, -1, -1>   &log_abs_L_Omega_recip_double = stan::math::log(stan::math::fabs(L_Omega_recip_double[c]));
+                //      const Eigen::Matrix<double, -1, -1>   &log_abs_L_Omega_recdip_double = stan::math::log(stan::math::fabs(L_Omega_recip_double[c]));
                 //      const Eigen::Matrix<double, -1, -1>   &sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);
                 // #endif
                     
