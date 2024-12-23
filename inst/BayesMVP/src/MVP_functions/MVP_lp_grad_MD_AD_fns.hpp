@@ -684,12 +684,12 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
 
         }
         
-        u_grad_array_CM_chunk.setZero(); //// reset to 0
+        u_grad_array_CM_chunk.setZero(); //// reset between chunks as re-using same container
 
-        y_chunk = y_ref.middleRows( chunk_size_orig * chunk_counter , chunk_size).array().cast<double>();
+        y_chunk = y_ref.middleRows( chunk_size_orig * chunk_counter, chunk_size).array().cast<double>();
 
         //// Nuisance parameter transformation step
-        u_unc_vec_chunk = u_unc_vec.segment( chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests);
+        u_unc_vec_chunk = u_unc_vec.segment( chunk_size_orig * n_tests * chunk_counter, chunk_size * n_tests);
 
         fn_MVP_compute_nuisance(    u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
         log_jac_u +=    fn_MVP_compute_nuisance_log_jac_u(   u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
@@ -750,7 +750,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                     container_max_logs);
       
                 out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size) = log_sum_result;
-          
                // out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size).array()   = fn_log_sum_exp_2d_double(lp_array,  vect_type_lse).array() ;
          
         } else {

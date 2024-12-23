@@ -477,9 +477,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
   std::vector<Eigen::Matrix<double, -1, -1>> U_Omega_grad_array =  vec_of_mats<double>(n_tests, n_tests, n_class);
   Eigen::Matrix<double, -1, 1 > L_Omega_grad_vec(n_corrs + (2 * n_tests));
   Eigen::Matrix<double, -1, 1 > U_Omega_grad_vec(n_corrs);
-  Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(2); //
-  Eigen::Matrix<double, -1, 1>  prev_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(2); //
-  Eigen::Matrix<double,  1, 1>  prev_unconstrained_grad_vec_out =   Eigen::Matrix<double, 1, 1>::Zero(2 - 1); //
+  Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(n_class); //
+  Eigen::Matrix<double, -1, 1>  prev_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(n_class); //
+  Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec_out = Eigen::Matrix<double, -1, 1>::Zero(n_class - 1); //
   /////////////////////////////////////////////////
   
   {
@@ -500,8 +500,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
     std::vector<Eigen::Matrix<double, -1, -1>>     log_abs_Bound_Z =  vec_of_mats<double>(chunk_size, n_tests, n_class);
     std::vector<Eigen::Matrix<double, -1, -1>>     sign_Bound_Z =     vec_of_mats<double>(chunk_size, n_tests, n_class);
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, -1> y_chunk =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-    Eigen::Matrix<double, -1, -1> u_array =  Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+    Eigen::Matrix<double, -1, -1> y_chunk =        Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+    Eigen::Matrix<double, -1, -1> u_array =        Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
     Eigen::Matrix<double, -1, -1> y_sign_chunk =   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
     Eigen::Matrix<double, -1, -1> y_m_y_sign_x_u = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
     ///////////////////////////////////////////////
@@ -510,10 +510,10 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
     Eigen::Matrix<double, -1, -1> u_grad_array_CM_chunk   =           Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
     Eigen::Matrix<double, -1, -1> log_abs_u_grad_array_CM_chunk   =   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, 1> log_sum_result = Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-    Eigen::Matrix<double, -1, 1> log_sum_abs_result = Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-    Eigen::Matrix<double, -1, 1> sign_result = Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
-    Eigen::Matrix<double, -1, 1> container_max_logs = Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+    Eigen::Matrix<double, -1, 1> log_sum_result =           Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+    Eigen::Matrix<double, -1, 1> log_sum_abs_result =       Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+    Eigen::Matrix<double, -1, 1> sign_result =              Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+    Eigen::Matrix<double, -1, 1> container_max_logs =       Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
     Eigen::Matrix<double, -1, 1> container_sum_exp_signed = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
     ///////////////////////////////////////////////
     Eigen::Matrix<double, -1, 1> u_unc_vec_chunk =    Eigen::Matrix<double, -1, 1>::Zero(chunk_size * n_tests); 
@@ -536,28 +536,28 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
     Eigen::Matrix<double, -1, -1>     sign_z_grad_term =  Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
     ///////////////////////////////////////////////
     Eigen::Matrix<double, -1, -1>     log_abs_prod_container_or_inc_array_comp  =  Eigen::Matrix<double, -1, -1>::Constant(chunk_size, n_tests, -700.0);
-    Eigen::Matrix<double, -1, -1>     sign_prod_container_or_inc_array_comp  =  Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
-    Eigen::Matrix<double, -1, -1>     log_abs_derivs_chain_container_vec_comp =  Eigen::Matrix<double, -1, -1>::Constant(chunk_size, n_tests, -700.0);
-    Eigen::Matrix<double, -1, -1>     sign_derivs_chain_container_vec_comp =  Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
+    Eigen::Matrix<double, -1, -1>     sign_prod_container_or_inc_array_comp  =     Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
+    Eigen::Matrix<double, -1, -1>     log_abs_derivs_chain_container_vec_comp =    Eigen::Matrix<double, -1, -1>::Constant(chunk_size, n_tests, -700.0);
+    Eigen::Matrix<double, -1, -1>     sign_derivs_chain_container_vec_comp =       Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
     ///////////////////////////////////////////////
     Eigen::Matrix<double, -1, 1>      log_abs_prod_container_or_inc_array  =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-    Eigen::Matrix<double, -1, 1>      sign_prod_container_or_inc_array  =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
-    Eigen::Matrix<double, -1, 1>      log_abs_derivs_chain_container_vec  =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-    Eigen::Matrix<double, -1, 1>      sign_derivs_chain_container_vec  =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
-    Eigen::Matrix<double, -1, 1>      log_prob_rowwise_prod_temp_all  =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+    Eigen::Matrix<double, -1, 1>      sign_prod_container_or_inc_array  =     Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+    Eigen::Matrix<double, -1, 1>      log_abs_derivs_chain_container_vec  =   Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+    Eigen::Matrix<double, -1, 1>      sign_derivs_chain_container_vec  =      Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+    Eigen::Matrix<double, -1, 1>      log_prob_rowwise_prod_temp_all  =       Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
     ///////////////////////////////////////////////
     Eigen::Matrix<double, -1, 1>  log_abs_prev_grad_array_col_for_each_n =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-    Eigen::Matrix<double, -1, 1>  sign_prev_grad_array_col_for_each_n =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+    Eigen::Matrix<double, -1, 1>  sign_prev_grad_array_col_for_each_n =     Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
     ///////////////////////////////////////////////
-    Eigen::Matrix<double, -1, 1>  log_abs_a  =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-    Eigen::Matrix<double, -1, 1>  sign_a =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
-    Eigen::Matrix<double, -1, 1>  log_abs_b =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-    Eigen::Matrix<double, -1, 1>  sign_b =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+    Eigen::Matrix<double, -1, 1>  log_abs_a  =       Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+    Eigen::Matrix<double, -1, 1>  sign_a =           Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+    Eigen::Matrix<double, -1, 1>  log_abs_b =        Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+    Eigen::Matrix<double, -1, 1>  sign_b =           Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
     Eigen::Matrix<double, -1, 1>  sign_sum_result =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
-    Eigen::Matrix<double, -1, -1> log_terms =  Eigen::Matrix<double, -1, -1>::Constant(chunk_size, n_tests, -700.0);
-    Eigen::Matrix<double, -1, -1> sign_terms =  Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
-    Eigen::Matrix<double, -1, 1>  final_log_sum =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-    Eigen::Matrix<double, -1, 1>  final_sign =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+    Eigen::Matrix<double, -1, -1> log_terms =        Eigen::Matrix<double, -1, -1>::Constant(chunk_size, n_tests, -700.0);
+    Eigen::Matrix<double, -1, -1> sign_terms =       Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
+    Eigen::Matrix<double, -1, 1>  final_log_sum =    Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+    Eigen::Matrix<double, -1, 1>  final_sign =       Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
     ///////////////////////////////////////////////
     Eigen::VectorXi overflow_mask(chunk_size);
     Eigen::VectorXi underflow_mask(chunk_size);
@@ -580,10 +580,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
     std::vector<Eigen::Matrix<double, -1, -1>>   sign_beta_grad_array_for_each_n =      beta_grad_array_for_each_n;
     std::vector<Eigen::Matrix<double, -1, -1>>   log_abs_beta_grad_array_for_each_n =   beta_grad_array_for_each_n;
     ///////////////////////////////////////////////
-    // #ifdef _WIN32
     Eigen::Matrix<double, -1, 1>  rowwise_log_sum = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
     Eigen::Matrix<double, -1, 1>  rowwise_prod =    Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-    // #endif
+    Eigen::Matrix<double, -1, 1>  rowwise_sum =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
     ///////////////////////////////////////////////
     
     { // start of big local block
@@ -700,30 +699,24 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                             log_abs_beta_grad_array_for_each_n[i].resize(last_chunk_size, n_tests);
                           } 
                           
-                          // #ifdef _WIN32
                             rowwise_log_sum.resize(last_chunk_size);
                             rowwise_prod.resize(last_chunk_size);
-                          // #endif
+                            rowwise_sum.resize(last_chunk_size);
                           
         }
 
         u_grad_array_CM_chunk.setZero() ; //// reset between chunks as re-using same container
         log_abs_u_grad_array_CM_chunk.setConstant(-700);  // reset between chunks as re-using same container
 
-        y_chunk = y_ref.middleRows( chunk_size_orig * chunk_counter, chunk_size).cast<double>() ;
+        y_chunk = y_ref.middleRows( chunk_size_orig * chunk_counter, chunk_size).cast<double>();
         
         ////// Nuisance parameter transformation step
         u_unc_vec_chunk = u_unc_vec.segment( chunk_size_orig * n_tests * chunk_counter, chunk_size * n_tests);
         
-        fn_MVP_compute_nuisance(    u_vec_chunk, 
-                                    u_unc_vec_chunk, Model_args_as_cpp_struct);
-         
-        log_jac_u +=    fn_MVP_compute_nuisance_log_jac_u(   u_vec_chunk,
-                                                             u_unc_vec_chunk,
-                                                             Model_args_as_cpp_struct);
+        fn_MVP_compute_nuisance(    u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
+        log_jac_u +=    fn_MVP_compute_nuisance_log_jac_u(   u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
         
         u_array  =  u_vec_chunk.reshaped(chunk_size, n_tests);
-        
         y_sign_chunk =    ( (y_chunk.array()  + (y_chunk.array() - 1.0)) ).matrix();
         y_m_y_sign_x_u =   ( y_chunk.array()  - y_sign_chunk.array() * u_array.array() ).matrix();
         
@@ -744,28 +737,33 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                       
                     } else {  //// intercept-only
                       
-                            Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  - ( beta_double_array[c](0, t)  +   inc_array.array()   )  ) ;
-                            
-                            //// ---- up to here OK --------------------------------------------------------------------------------------------------------------------------------------------------------- 
-                            
-                            {   ////-----------------------------------------------
-                              const Eigen::Matrix<double, -1, 1> Bound_Z_col_t = Bound_Z[c].col(t);
-                              const Eigen::Matrix<double, -1, 1> Bound_Z_col_t_sign = stan::math::sign(Bound_Z_col_t);
-                              sign_Bound_Z[c].col(t) =   Bound_Z_col_t_sign;
-
-                              const Eigen::Matrix<double, -1, 1> Bound_Z_col_t_abs =  stan::math::abs(Bound_Z_col_t);
-                              log_abs_Bound_Z[c].col(t) =    fn_EIGEN_double(Bound_Z_col_t_abs, "log", vect_type_log);
-                            }   ////-----------------------------------------------
+                            Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  -1.0*( beta_double_array[c](0, t)  +   inc_array.array()   )  ) ;
+                                
+                            { ////-----------------------------------------------
+                                Eigen::Matrix<double, -1, 1> Bound_Z_col_t =          Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                                Eigen::Matrix<double, -1, 1> Bound_Z_col_t_sign =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                                Eigen::Matrix<double, -1, 1> Bound_Z_col_t_abs =      Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                                ////
+                                Bound_Z_col_t = Bound_Z[c].col(t);
+                                Bound_Z_col_t_sign = stan::math::sign(Bound_Z_col_t);
+                                Bound_Z_col_t_abs =  stan::math::abs(Bound_Z_col_t);
+                                ////
+                                sign_Bound_Z[c].col(t) =   Bound_Z_col_t_sign;
+                                log_abs_Bound_Z[c].col(t) =    fn_EIGEN_double( Bound_Z_col_t_abs, "log", vect_type_log);
+                            } ////-----------------------------------------------
                             
                     }
       
                     //// create masks
                     { ////-----------------------------------------------
-                      const Eigen::Matrix<double, -1, 1> y_chunk_col_t_dbl = y_chunk.col(t);
-                      const Eigen::Matrix<double, -1, 1> Bound_Z_col_t = Bound_Z[c].col(t);
-                      overflow_mask =   ( (Bound_Z_col_t.array() > overflow_threshold)  && (y_chunk_col_t_dbl.array() == 1.0) ).cast<int>().matrix() ;
-                      underflow_mask =  ( (Bound_Z_col_t.array() < underflow_threshold) && (y_chunk_col_t_dbl.array() == 0.0) ).cast<int>().matrix() ;
-                      OK_mask = ( (overflow_mask.array() == 0) && (underflow_mask.array() == 0) ).cast<int>().matrix() ;
+                        Eigen::Matrix<double, -1, 1> y_chunk_col_t_dbl =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                        Eigen::Matrix<double, -1, 1> Bound_Z_col_t =         Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                        ////
+                        y_chunk_col_t_dbl = y_chunk.col(t);
+                        Bound_Z_col_t = Bound_Z[c].col(t);
+                        overflow_mask =   ( (Bound_Z_col_t.array() > overflow_threshold)  && (y_chunk_col_t_dbl.array() == 1.0) ).cast<int>().matrix() ;
+                        underflow_mask =  ( (Bound_Z_col_t.array() < underflow_threshold) && (y_chunk_col_t_dbl.array() == 0.0) ).cast<int>().matrix() ;
+                        OK_mask = ( (overflow_mask.array() == 0) && (underflow_mask.array() == 0) ).cast<int>().matrix() ;
                     } ////-----------------------------------------------
 
                     //// counts 
@@ -774,9 +772,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                     const int n_problem = n_overflows + n_underflows;
                     const int n_OK = OK_mask.sum();
                     
-                    std::vector<int> over_index(n_overflows);
-                    std::vector<int> under_index(n_underflows);
-                    std::vector<int> problem_index(n_problem);
+                    std::vector<int> over_index(n_overflows, 0);
+                    std::vector<int> under_index(n_underflows, 0);
+                    std::vector<int> problem_index(n_problem, 0);
                     
                     int counter_over  = 0;
                     int counter_under  = 0;
@@ -828,29 +826,32 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                    //// compute/update important grad quantities for GHK-MVP
                    fn_MVP_compute_phi_Z_recip_cols(    t,
                                                        phi_Z_recip[c], // computing this
-                                                       Phi_Z[c],
-                                                       Z_std_norm[c],
-                                                       Model_args_as_cpp_struct);
+                                                       Phi_Z[c], Z_std_norm[c], Model_args_as_cpp_struct);
 
                    fn_MVP_compute_phi_Bound_Z_cols(     t,
                                                         phi_Bound_Z[c], // computing this
-                                                        Bound_U_Phi_Bound_Z[c],
-                                                        Bound_Z[c], 
-                                                        Model_args_as_cpp_struct);
+                                                        Bound_U_Phi_Bound_Z[c], Bound_Z[c], Model_args_as_cpp_struct);
                                 
                    //// compute log-scale quantities (for grad)
                    { ////-----------------------------------------------
-                     const Eigen::Matrix<double, -1, 1> phi_Bound_Z_col_t = phi_Bound_Z[c].col(t);
-                     const Eigen::Matrix<double, -1, 1> phi_Bound_Z_col_t_abs = stan::math::abs(phi_Bound_Z_col_t);
-                     log_phi_Bound_Z[c].col(t) =   fn_EIGEN_double(  phi_Bound_Z_col_t_abs,  "log", vect_type_log);
-
-                     const Eigen::Matrix<double, -1, 1> phi_Z_recip_col_t = phi_Z_recip[c].col(t);
-                     const Eigen::Matrix<double, -1, 1> phi_Z_recip_col_t_abs = stan::math::abs(phi_Z_recip_col_t);
-                     log_phi_Z_recip[c].col(t) =   fn_EIGEN_double(  phi_Z_recip_col_t_abs,  "log", vect_type_log);
-
-                     const Eigen::Matrix<double, -1, 1> Z_std_norm_col_t = Z_std_norm[c].col(t);
-                     const Eigen::Matrix<double, -1, 1> Z_std_norm_col_t_abs = stan::math::abs(Z_std_norm_col_t);
-                     log_Z_std_norm[c].col(t)  =   fn_EIGEN_double(  Z_std_norm_col_t_abs,   "log", vect_type_log);
+                       Eigen::Matrix<double, -1, -1> temp_mat =       Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+                       Eigen::Matrix<double, -1, 1>  temp_col_t =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                       Eigen::Matrix<double, -1, 1>  temp_col_t_abs = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                       
+                       temp_mat = phi_Bound_Z[c];
+                       temp_col_t = temp_mat.col(t);
+                       temp_col_t_abs = stan::math::abs(temp_col_t);
+                       log_phi_Bound_Z[c].col(t) =   fn_EIGEN_double(  temp_col_t_abs,  "log", vect_type_log);
+  
+                       temp_mat = phi_Z_recip[c];
+                       temp_col_t = temp_mat.col(t);
+                       temp_col_t_abs = stan::math::abs(temp_col_t);
+                       log_phi_Z_recip[c].col(t) =   fn_EIGEN_double(  temp_col_t_abs,  "log", vect_type_log);
+  
+                       temp_mat = Z_std_norm[c];
+                       temp_col_t = temp_mat.col(t);
+                       temp_col_t_abs = stan::math::abs(temp_col_t);
+                       log_Z_std_norm[c].col(t)  =   fn_EIGEN_double(  temp_col_t_abs,  "log", vect_type_log);
                    } ////-----------------------------------------------
               
             if (n_OK == chunk_size)  { 
@@ -910,20 +911,24 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
             
               if (t < n_tests - 1) { 
 
-                      //-----------------------------------------------
-                      const Eigen::Matrix<double, 1, -1> L_Omega_row_tp1 = L_Omega_double[c].row(t + 1);
-                      const Eigen::Matrix<double, 1, -1> L_Omega_row_tp1_head = L_Omega_row_tp1.head(t + 1);
-                      const Eigen::Matrix<double, -1, 1> L_Omega_row_tp1_head_transpose = L_Omega_row_tp1_head.transpose();
+                      //// -----------------------------------------------
+                      Eigen::Matrix<double, 1, -1> L_Omega_row_tp1 =                  Eigen::Matrix<double, 1, -1>::Zero(chunk_size);
+                      Eigen::Matrix<double, 1, -1> L_Omega_row_tp1_head =             Eigen::Matrix<double, 1, -1>::Zero(chunk_size);
+                      Eigen::Matrix<double, -1, 1> L_Omega_row_tp1_head_transpose =   Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                      ////
+                      L_Omega_row_tp1 = L_Omega_double[c].row(t + 1);
+                      L_Omega_row_tp1_head = L_Omega_row_tp1.head(t + 1);
+                      L_Omega_row_tp1_head_transpose = L_Omega_row_tp1_head.transpose();
                       inc_array  =     Z_std_norm[c].leftCols(t + 1) * L_Omega_row_tp1_head_transpose;
-                      //-----------------------------------------------
+                      //// -----------------------------------------------
 
               }    
               
             }  //// end of t loop
                   
                 if (n_class > 1) {  /// if latent class 
-                    const Eigen::Matrix<double, -1, 1>  rowwise_sum = y1_log_prob[c].rowwise().sum();
-                    lp_array.col(c).array() =     rowwise_sum.array() + log_prev(0, c);
+                    rowwise_sum = y1_log_prob[c].rowwise().sum();
+                    lp_array.col(c).array() =  rowwise_sum.array() + log_prev(0, c);
                 } else {
                     lp_array.col(0) =     y1_log_prob[0].rowwise().sum();
                 }
@@ -934,7 +939,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
   
         if (n_class > 1) {  /// if latent class 
           
-              //// -----------------------------------------------
               log_sum_exp_general(   lp_array,
                                      vect_type_exp,
                                      vect_type_log,
@@ -942,7 +946,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                                      container_max_logs);
 
               out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size) = log_sum_result;
-              //// -----------------------------------------------
           
         } else {
           
@@ -950,18 +953,18 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           
         }
         
-          Eigen::Matrix<double, -1, 1> log_prob_n_recip = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+          Eigen::Matrix<double, -1, 1> log_prob_n_recip =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
           { //// -----------------------------------------------
-            Eigen::Matrix<double, -1, 1> log_lik = Eigen::Matrix<double, -1, 1>::Zero(N);
+            Eigen::Matrix<double, -1, 1> log_lik =         Eigen::Matrix<double, -1, 1>::Zero(N);
             Eigen::Matrix<double, -1, 1> log_lik_segment = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-            Eigen::Matrix<double, -1, 1> prob_n = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-            Eigen::Matrix<double, -1, 1> prob_n_recip = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+            Eigen::Matrix<double, -1, 1> prob_n =          Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+            Eigen::Matrix<double, -1, 1> prob_n_recip =    Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
             ////
             log_lik = out_mat.tail(N);
             log_lik_segment = log_lik.segment(chunk_size_orig * chunk_counter, chunk_size);
-            prob_n  =  fn_EIGEN_double(log_lik_segment, "exp",  vect_type_exp);
+            prob_n  =  fn_EIGEN_double( log_lik_segment, "exp",  vect_type_exp);
             prob_n_recip = stan::math::inv(prob_n);
-            log_prob_n_recip = fn_EIGEN_double(prob_n_recip, "log", vect_type_log);
+            log_prob_n_recip = fn_EIGEN_double( prob_n_recip, "log", vect_type_log);
           } //// -----------------------------------------------
         
         const bool compute_final_scalar_grad = false;
@@ -986,26 +989,33 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
           Eigen::Matrix<double, -1, -1> prob_recip =        Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
           
           { ////-----------------------------------------------
-                Eigen::Matrix<double, -1, -1> temp_mat = y1_log_prob[c];
-                Eigen::Matrix<double, -1, -1> temp_mat_2 = -1.0*temp_mat;
-                y1_log_prob_recip = temp_mat_2;
-          }
-          {
-                Eigen::Matrix<double, -1, -1> temp_mat = Z_std_norm[c];
-                Eigen::Matrix<double, -1, -1> temp_mat_2 = stan::math::sign(temp_mat);
-                sign_Z_std_norm = temp_mat_2;
-          }
-          {
-                Eigen::Matrix<double, -1, -1> temp_mat = prob[c];
-                Eigen::Matrix<double, -1, -1> temp_mat_2 = stan::math::inv(temp_mat);
-                prob_recip = temp_mat_2;
-          }///  ----------------------------------------------
+            
+              Eigen::Matrix<double, -1, -1> temp_mat =   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+              Eigen::Matrix<double, -1, -1> temp_mat_2 = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+              
+                { 
+                      temp_mat = y1_log_prob[c];
+                      temp_mat_2 = -1.0*temp_mat;
+                      y1_log_prob_recip = temp_mat_2;
+                }
+                {
+                      temp_mat = Z_std_norm[c];
+                      temp_mat_2 = stan::math::sign(temp_mat);
+                      sign_Z_std_norm = temp_mat_2;
+                }
+                {
+                      temp_mat = prob[c];
+                      temp_mat_2 = stan::math::inv(temp_mat);
+                      prob_recip = temp_mat_2;
+                } 
+              
+          } ////-----------------------------------------------
      
       if (  (grad_option != "none") || (grad_option == "test") ) {
        
-                    ////-----------------------------------------------
+                    //// -----------------------------------------------
                     Eigen::Matrix<double, -1, -1> abs_L_Omega_recip_double =     Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
-                    Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Constant(n_tests, n_tests, -700.0);
+                    Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
                     Eigen::Matrix<double, -1, -1> sign_L_Omega_recip_double =    Eigen::Matrix<double, -1, -1>::Ones(n_tests, n_tests);
                      
                     ///// do operations one at a time
@@ -1014,7 +1024,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                         log_abs_L_Omega_recip_double(t, t) = stan::math::log(abs_L_Omega_recip_double(t, t));
                      }
                      sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);   // std::cout << "After sign" << std::endl;
-                     ////-----------------------------------------------
+                    //// -----------------------------------------------
                     
                 fn_MVP_grad_prep_log_scale(       log_prob_rowwise_prod_temp,
                                                   log_prob_recip_rowwise_prod_temp,
@@ -1434,7 +1444,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
     //////////////////////// gradients for latent class membership probabilitie(s) (i.e. disease prevalence)
     if (n_class > 1) {
         for (int c = 0; c < n_class; c++) {
-          prev_unconstrained_grad_vec(c)  =   prev_grad_vec(c)   * deriv_p_wrt_pu_double ;
+          prev_unconstrained_grad_vec(c)  =   prev_grad_vec(c) * deriv_p_wrt_pu_double ;
         }
         prev_unconstrained_grad_vec(0) = prev_unconstrained_grad_vec(1) - prev_unconstrained_grad_vec(0) - 2 * tanh_u_prev[1];
         prev_unconstrained_grad_vec_out(0) = prev_unconstrained_grad_vec(0);
