@@ -581,15 +581,16 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
          
 // #ifdef _WIN32
        {
+           
+           Eigen::Matrix<double, -1, 1>  y1_log_prob_rowwise_sum =       Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+           Eigen::Matrix<double, -1, 1>  y1_log_prob_recip_rowwise_sum = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
   
            for (int i = 0; i < n_tests; i++) {
 
                    int t = n_tests - (i + 1);
                    
-                   Eigen::Matrix<double, -1, -1> y1_log_prob_block = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, i + 1);
-                   Eigen::Matrix<double, -1, 1> y1_log_prob_rowwise_sum = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+                   Eigen::Matrix<double, -1, -1> y1_log_prob_block =       Eigen::Matrix<double, -1, -1>::Zero(chunk_size, i + 1);
                    Eigen::Matrix<double, -1, -1> y1_log_prob_recip_block = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, i + 1);
-                   Eigen::Matrix<double, -1, 1> y1_log_prob_recip_rowwise_sum = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
                    
                    y1_log_prob_block = y1_log_prob.block(0, t + 0, chunk_size, i + 1);
                    y1_log_prob_rowwise_sum =  y1_log_prob_block.rowwise().sum();
@@ -604,19 +605,19 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
              log_prob_rowwise_prod_temp_all  =   y1_log_prob.rowwise().sum();
 
            if (n_class > 1) { //// i.e. if latent class
+             
+               Eigen::Matrix<double, -1, 1> y1_log_prob_rowwise_sum =                Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+               Eigen::Matrix<double, -1, 1> log_prob_recip_rowwise_prod_temp_col_t = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+               Eigen::Matrix<double, -1, 1> log_prev_p_log_prob_n_recip =            Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+               Eigen::Matrix<double, -1, 1> res =                                    Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
 
                  for (int i = 0; i < n_tests; i++) {
 
                        int t = n_tests - (i + 1);
-
-                       Eigen::Matrix<double, -1, 1> y1_log_prob_rowwise_sum = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-                       Eigen::Matrix<double, -1, 1> log_prob_recip_rowwise_prod_temp_col_t = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-                       Eigen::Matrix<double, -1, 1> log_prev_p_log_prob_n_recip = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-                       Eigen::Matrix<double, -1, 1> res = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-
+                   
                        y1_log_prob_rowwise_sum =  y1_log_prob.rowwise().sum();
                        log_prob_recip_rowwise_prod_temp_col_t =  log_prob_recip_rowwise_prod_temp.col(t);
-                       log_prev_p_log_prob_n_recip =  log_prev + log_prob_n_recip.array();
+                       log_prev_p_log_prob_n_recip.array() =  log_prev + log_prob_n_recip.array();
                       
                        res = log_prev_p_log_prob_n_recip + y1_log_prob_rowwise_sum + log_prob_recip_rowwise_prod_temp_col_t;
                        log_common_grad_term_1.col(t) = res;
@@ -628,28 +629,39 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
                  log_common_grad_term_1.setConstant(-700);
 
            }
+           
+           Eigen::Matrix<double, -1, 1> log_abs_res_1 =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+           Eigen::Matrix<double, -1, 1> log_abs_res_2 =  Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+           Eigen::Matrix<double, -1, 1> sign_res_1 =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+           Eigen::Matrix<double, -1, 1> sign_res_2 =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+           Eigen::Matrix<double, -1, 1> temp_col_t =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+           Eigen::Matrix<double, -1, 1> abs_res_1 =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
 
            for (int t = 0; t < n_tests; t++) {
 
                  const double L_Omega_diag_log_abs = log_abs_L_Omega_recip_double(t, t);
                  const double L_Omega_diag_sign = sign_L_Omega_recip_double(t, t);
-
-                 Eigen::Matrix<double, -1, 1> log_abs_res_1 = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-                 log_abs_res_1   =  (log_phi_Bound_Z.col(t).array() + L_Omega_diag_log_abs).matrix() ;
+                 
+                 log_abs_res_1 = log_phi_Bound_Z.col(t);
+                 log_abs_res_1.array() += L_Omega_diag_log_abs;
                  log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t) = log_abs_res_1;
-
-                 Eigen::Matrix<double, -1, 1> log_abs_res_2 = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-                 log_abs_res_2  = ( fn_EIGEN_double( y_m_y_sign_x_u.col(t).array().abs(), "log",  vect_type_log).array() + log_phi_Z_recip.col(t).array() +
-                                  log_phi_Bound_Z.col(t).array()  +  L_Omega_diag_log_abs ).matrix();
+           
+                 temp_col_t = y_m_y_sign_x_u.col(t);
+                 abs_res_1 = stan::math::abs(temp_col_t);
+                 log_abs_res_1 = fn_EIGEN_double( abs_res_1, "log",  vect_type_log);
+                 log_abs_res_2.array()  =   log_abs_res_1.array();
+                 log_abs_res_2.array() +=   log_phi_Z_recip.col(t).array();
+                 log_abs_res_2.array() +=   log_phi_Bound_Z.col(t).array();
+                 log_abs_res_2.array() +=   L_Omega_diag_log_abs;
                  log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t) = log_abs_res_2;
 
                  //// note that densities and probs are always positive so signs = +1
-                 Eigen::Matrix<double, -1, 1> sign_res_1 = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-                 sign_res_1  = (y_sign_chunk.col(t).array().sign() *  L_Omega_diag_sign).matrix() ;
+                 temp_col_t = y_sign_chunk.col(t);
+                 sign_res_1.array()  = (temp_col_t.array().sign() *  L_Omega_diag_sign) ;
                  sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.col(t) = sign_res_1;
 
-                 Eigen::Matrix<double, -1, 1> sign_res_2 = Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-                 sign_res_2  = (y_m_y_sign_x_u.col(t).array().sign() *  L_Omega_diag_sign).matrix() ;
+                 temp_col_t = y_m_y_sign_x_u.col(t);
+                 sign_res_2.array()  = (temp_col_t.array().sign() * L_Omega_diag_sign) ;
                  sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.col(t) = sign_res_2;
 
            }
