@@ -841,17 +841,17 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                        temp_mat = phi_Bound_Z[c];
                        temp_col_t = temp_mat.col(t);
                        temp_col_t_abs = stan::math::abs(temp_col_t);
-                       log_phi_Bound_Z[c].col(t) =   fn_EIGEN_double(  temp_col_t_abs,  "log", vect_type_log);
+                       log_phi_Bound_Z[c].col(t) =   fn_EIGEN_double( temp_col_t_abs,  "log", vect_type_log);
   
                        temp_mat = phi_Z_recip[c];
                        temp_col_t = temp_mat.col(t);
                        temp_col_t_abs = stan::math::abs(temp_col_t);
-                       log_phi_Z_recip[c].col(t) =   fn_EIGEN_double(  temp_col_t_abs,  "log", vect_type_log);
+                       log_phi_Z_recip[c].col(t) =   fn_EIGEN_double( temp_col_t_abs,  "log", vect_type_log);
   
                        temp_mat = Z_std_norm[c];
                        temp_col_t = temp_mat.col(t);
                        temp_col_t_abs = stan::math::abs(temp_col_t);
-                       log_Z_std_norm[c].col(t)  =   fn_EIGEN_double(  temp_col_t_abs,  "log", vect_type_log);
+                       log_Z_std_norm[c].col(t)  =   fn_EIGEN_double( temp_col_t_abs,  "log", vect_type_log);
                    } ////-----------------------------------------------
               
             if (n_OK == chunk_size)  { 

@@ -635,7 +635,7 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
            Eigen::Matrix<double, -1, 1> sign_res_1 =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
            Eigen::Matrix<double, -1, 1> sign_res_2 =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
            Eigen::Matrix<double, -1, 1> temp_col_t =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
-           Eigen::Matrix<double, -1, 1> abs_res_1 =     Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
+           Eigen::Matrix<double, -1, 1> abs_res_1 =      Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
 
            for (int t = 0; t < n_tests; t++) {
 
@@ -649,7 +649,7 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
                  temp_col_t = y_m_y_sign_x_u.col(t);
                  abs_res_1 = stan::math::abs(temp_col_t);
                  log_abs_res_1 = fn_EIGEN_double( abs_res_1, "log",  vect_type_log);
-                 log_abs_res_2.array()  =   log_abs_res_1.array();
+                 log_abs_res_2  =   log_abs_res_1;
                  log_abs_res_2.array() +=   log_phi_Z_recip.col(t).array();
                  log_abs_res_2.array() +=   log_phi_Bound_Z.col(t).array();
                  log_abs_res_2.array() +=   L_Omega_diag_log_abs;
