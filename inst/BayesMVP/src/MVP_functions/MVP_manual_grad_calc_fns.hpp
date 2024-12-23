@@ -30,7 +30,7 @@ using namespace Eigen;
  
 
 //// fn that computes important quantities needed for the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-ALWAYS_INLINE  void fn_MVP_compute_lp_GHK_cols(    const int t,
+ALWAYS_INLINE  void fn_MVP_compute_lp_GHK_cols(   const int t,
                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
@@ -69,12 +69,12 @@ ALWAYS_INLINE  void fn_MVP_compute_lp_GHK_cols(    const int t,
  
  
  
-/// fn that computes phi_Bound_Z needed for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
+//// fn that computes phi_Bound_Z needed for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
 ALWAYS_INLINE  void fn_MVP_compute_phi_Bound_Z_cols(      const int t,
-                                                         Eigen::Matrix<double, -1, -1> &phi_Bound_Z, //// updating this
-                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_U_Phi_Bound_Z,
-                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
-                                                         const Model_fn_args_struct &Model_args_as_cpp_struct
+                                                          Eigen::Matrix<double, -1, -1> &phi_Bound_Z, //// updating this
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_U_Phi_Bound_Z,
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
+                                                          const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
    
    
@@ -108,11 +108,11 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Bound_Z_cols(      const int t,
  
  
 // fn that computes phi_Z_recip auto for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
-ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(    const int t,
-                                                                         Eigen::Matrix<double, -1, -1> &phi_Z_recip,   //// updating this
-                                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Phi_Z,
-                                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Z_std_norm,
-                                                                         const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(     const int t,
+                                                         Eigen::Matrix<double, -1, -1> &phi_Z_recip,   //// updating this
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Phi_Z,
+                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Z_std_norm,
+                                                         const Model_fn_args_struct &Model_args_as_cpp_struct
 ) { 
    
        const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);

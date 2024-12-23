@@ -24,28 +24,6 @@ using namespace Eigen;
 
 
 
-
-
- // 
- // Eigen::Matrix<double, -1, 1>  log1m_ab(const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> a, 
- //                                        const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> b,
- //                                        const std::string &vect_type_log) {
- //   
- //   Eigen::Matrix<double, -1, 1> ab = a.array() * b.array();
- //   
- //   return Eigen::Select(ab.array() < 1e-8, -ab.array(), fn_EIGEN_double(ab, "log1m",  vect_type_log).array());
- //   
- // }
- // 
- // 
- // 
- // 
- // Eigen::Matrix<double, -1, 1> inv_Phi_approx_from_logit_prob(const Eigen::Matrix<double, -1, 1> &logit_p) { 
- //   return 5.494 *  stan::math::sinh(0.33333333333333331483 * stan::math::asinh( 0.3418 * logit_p  )) ; 
- // }
- // 
- // 
-
  
 
 void printVectorContents(const std::string& name, 
@@ -323,38 +301,38 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
             const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
             const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
             
-            Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z =   fn_EIGEN_double(   Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi) ;
-            log_Bound_U_Phi_Bound_Z =  (log_Bound_U_Phi_Bound_Z);   //// add bounds checking
-            Bound_U_Phi_Bound_Z(index, t)    =    fn_EIGEN_double( log_Bound_U_Phi_Bound_Z, "exp", vect_type_exp); /// same as Stan (should work well??)
+            const int dim = index.size();
             
-            Eigen::Matrix<double, -1, 1>  u_log =  fn_EIGEN_double(u_array(index, t), "log",  vect_type_log).array();
-            Eigen::Matrix<double, -1, 1>  log_Phi_Z =   u_log.array() +  log_Bound_U_Phi_Bound_Z.array() ; /// log(u * Phi_Bound_Z); /// same as Stan (should work well)
-            log_Phi_Z =   (log_Phi_Z);   //// add bounds checking
-            Phi_Z(index, t).array() =   fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp).array();  //// computed but not actually used
+            Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+            Eigen::Matrix<double, -1, 1> u_log = Eigen::Matrix<double, -1, 1>::Zero(dim);
+            Eigen::Matrix<double, -1, 1> log_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+            Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+            Eigen::Matrix<double, -1, 1> logit_Phi_Z = Eigen::Matrix<double, -1, 1>::Zero(dim);
+            Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m = Eigen::Matrix<double, -1, 1>::Zero(dim);
             
-            //// Eigen::Matrix<double, -1, 1> log_1m_Phi_Z =   stan::math::log1m_exp( u_log + log_Bound_U_Phi_Bound_Z );
-            Eigen::Matrix<double, -1, 1> log_1m_Phi_Z = fn_EIGEN_double(  (  Bound_U_Phi_Bound_Z(index, t).array()  * u_array(index, t).array() ).matrix() , "log1m",  vect_type_log);   /// same as Stan (should work well)
-            log_1m_Phi_Z =   (log_1m_Phi_Z);   //// add bounds checking
-            Eigen::Matrix<double, -1, 1> logit_Phi_Z =   log_Phi_Z - log_1m_Phi_Z; /// same as Stan (should work well)
-            Z_std_norm(index, t).array()    =  fn_EIGEN_double(  logit_Phi_Z, "inv_Phi_approx_from_logit_prob",  vect_type_inv_Phi_approx_from_logit_prob); /// same as Stan (should work well)
             
-            log_Z_std_norm(index, t)    = fn_EIGEN_double(Z_std_norm(index, t).array().abs().matrix(), "log", vect_type_log);
-            log_Z_std_norm(index, t) =   (log_Z_std_norm(index, t));   //// add bounds checking
+            log_Bound_U_Phi_Bound_Z =   fn_EIGEN_double(  Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi);
+            Bound_U_Phi_Bound_Z(index, t)    =    fn_EIGEN_double( log_Bound_U_Phi_Bound_Z, "exp", vect_type_exp);  
             
-            y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z ; /// same as Stan (should work well)
-            y1_log_prob(index, t) =   (y1_log_prob(index, t));   //// add bounds checking
+            u_log =  fn_EIGEN_double( u_array(index, t), "log",  vect_type_log);
+            log_Phi_Z =   u_log.array() +  log_Bound_U_Phi_Bound_Z.array() ; /// log(u * Phi_Bound_Z);  
+            Phi_Z(index, t) =   fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);  //// computed but not actually used
             
+            //// log_1m_Phi_Z =   stan::math::log1m_exp( u_log + log_Bound_U_Phi_Bound_Z );
+            log_1m_Phi_Z = fn_EIGEN_double(  (  Bound_U_Phi_Bound_Z(index, t).array() * u_array(index, t).array() ).matrix() , "log1m",  vect_type_log);   
+            logit_Phi_Z =   log_Phi_Z - log_1m_Phi_Z;  
+            Z_std_norm(index, t)    =  fn_EIGEN_double(  logit_Phi_Z, "inv_Phi_approx_from_logit_prob",  vect_type_inv_Phi_approx_from_logit_prob);  
+            
+            log_Z_std_norm(index, t).array()   = fn_EIGEN_double( Z_std_norm(index, t).array().abs(), "log", vect_type_log);
+            
+            y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z ;  
             prob(index, t) =        Bound_U_Phi_Bound_Z(index, t) ; //// computed but not actually used
             
-            //// Eigen::Matrix<double, -1, 1>  log_Bound_U_Phi_Bound_Z_1m =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z); //// use log1m_exp for stability!
-            Eigen::Matrix<double, -1, 1>  log_Bound_U_Phi_Bound_Z_1m = fn_EIGEN_double(  Bound_U_Phi_Bound_Z(index, t), "log1m",  vect_type_log);
-            log_Bound_U_Phi_Bound_Z_1m =   (log_Bound_U_Phi_Bound_Z_1m);   //// add bounds checking
+            ////  log_Bound_U_Phi_Bound_Z_1m =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z); //// use log1m_exp for stability!
+            log_Bound_U_Phi_Bound_Z_1m = fn_EIGEN_double(  Bound_U_Phi_Bound_Z(index, t), "log1m",  vect_type_log);
             
-            log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
-            log_phi_Bound_Z(index, t) =   (log_phi_Bound_Z(index, t));   //// add bounds checking
-            
-            log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array() ;
-            log_phi_Z_recip(index, t) =   (log_phi_Z_recip(index, t));   //// add bounds checking
+            log_phi_Bound_Z(index, t).array()  =     stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
+            log_phi_Z_recip(index, t).array()  = - ( stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array() ;
             
   
 }
@@ -534,45 +512,32 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
          const std::string vect_type_inv_Phi_approx_from_logit_prob = Model_args_as_cpp_struct.Model_args_strings(10);
          
          Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z_1m =  ( fn_EIGEN_double( - Bound_Z(index, t), "log_Phi_approx",  vect_type_log_Phi) ); /// TEMP
-         log_Bound_U_Phi_Bound_Z_1m =  (log_Bound_U_Phi_Bound_Z_1m);   //// add bounds checking
          Eigen::Matrix<double, -1, 1> Bound_U_Phi_Bound_Z_1m =     fn_EIGEN_double( log_Bound_U_Phi_Bound_Z_1m, "exp",  vect_type_exp);
          
          Eigen::Matrix<double, -1, 1> log_Bound_U_Phi_Bound_Z     =  fn_EIGEN_double(Bound_U_Phi_Bound_Z_1m, "log1m",  vect_type_log);
-         log_Bound_U_Phi_Bound_Z =  (log_Bound_U_Phi_Bound_Z);   //// add bounds checking
-         
          // Eigen::Matrix<double, -1, 1>  log_Bound_U_Phi_Bound_Z =  stan::math::log1m_exp(log_Bound_U_Phi_Bound_Z_1m); //// use log1m_exp for stability!
-         // log_Bound_U_Phi_Bound_Z = log_Bound_U_Phi_Bound_Z.array().min(700.0).max(-700.0); //// add bounds checking
+         // log_Bound_U_Phi_Bound_Z = log_Bound_U_Phi_Bound_Z.array().min(700.0).max(-700.0);
          
          Bound_U_Phi_Bound_Z(index, t).array() =   1.0 - Bound_U_Phi_Bound_Z_1m.array(); //// this is computed but not actually used?
          
          Eigen::Matrix<double, -1, -1>  tmp_array_2d_to_lse(num_overflows, 2);
          tmp_array_2d_to_lse.col(0)   =  (log_Bound_U_Phi_Bound_Z_1m + fn_EIGEN_double(u_array(index, t), "log",  vect_type_log)).matrix() ;
          tmp_array_2d_to_lse.col(1)  =    log_Bound_U_Phi_Bound_Z;
-         tmp_array_2d_to_lse =  (tmp_array_2d_to_lse);   //// add bounds checking  
          
          Eigen::Matrix<double, -1, 1> log_Phi_Z  =      fn_log_sum_exp_2d_double(tmp_array_2d_to_lse, vect_type_lse);
-         log_Phi_Z =  (log_Phi_Z);   //// add bounds checking
          
          Phi_Z(index, t)  =   fn_EIGEN_double(log_Phi_Z, "exp",  vect_type_exp);
          Eigen::Matrix<double, -1, 1> log_1m_Phi_Z  =  fn_EIGEN_double(u_array(index, t), "log1m",  vect_type_log)  + log_Bound_U_Phi_Bound_Z_1m;
-         log_1m_Phi_Z =  (log_1m_Phi_Z);   //// add bounds checking
          
          Eigen::Matrix<double, -1, 1> logit_Phi_Z = log_Phi_Z - log_1m_Phi_Z;
-         Z_std_norm(index, t).array()    =    fn_EIGEN_double(logit_Phi_Z, "inv_Phi_approx_from_logit_prob", vect_type_inv_Phi_approx_from_logit_prob);
-         
-         log_Z_std_norm(index, t)    = fn_EIGEN_double(Z_std_norm(index, t).array().abs().matrix(), "log", vect_type_log);
-         log_Z_std_norm(index, t) =  (  log_Z_std_norm(index, t));   //// add bounds checking
+         Z_std_norm(index, t)   =    fn_EIGEN_double(logit_Phi_Z, "inv_Phi_approx_from_logit_prob", vect_type_inv_Phi_approx_from_logit_prob);
+         log_Z_std_norm(index, t)   = fn_EIGEN_double(Z_std_norm(index, t).array().abs().matrix(), "log", vect_type_log);
          
          y1_log_prob(index, t)  =    log_Bound_U_Phi_Bound_Z_1m;
-         y1_log_prob(index, t) =  (y1_log_prob(index, t));   //// add bounds checking
-         
          prob(index, t)   =     Bound_U_Phi_Bound_Z_1m;  //// this is computed but not actually used?
          
          log_phi_Bound_Z(index, t).array()  =         stan::math::log( a_times_3 * Bound_Z(index, t).array().square() + b  ).array()  +   log_Bound_U_Phi_Bound_Z.array()  +   log_Bound_U_Phi_Bound_Z_1m.array();
-         log_phi_Bound_Z(index, t) =  (log_phi_Bound_Z(index, t));   //// add bounds checking
-         
          log_phi_Z_recip(index, t).array()  =    - (   stan::math::log(  ( a_times_3 * Z_std_norm(index, t).array().square() + b  ).array()  ).array()  +   log_Phi_Z.array()  +  log_1m_Phi_Z.array()  ).array() ;
-         log_phi_Z_recip(index, t) =  (log_phi_Z_recip(index, t));   //// add bounds checking
    
  }
  
@@ -744,38 +709,38 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
  
  
 
- inline  void fn_MVP_compute_nuisance_grad_log_scale(     const std::vector<int> &n_problem_array,
-                                                        const std::vector<std::vector<int>> &problem_index_array,
-                                                        Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_u_grad_array_CM_chunk,  // indexed
-                                                        Eigen::Ref<Eigen::Matrix<double, -1, -1>> u_grad_array_CM_chunk,  // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_double,
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip, // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob, // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_recip,  // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,  // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,  // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,  // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,  // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,  // indexed
-                                                        const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,  // indexed
-                                                        Eigen::Matrix<double, -1, -1>  &log_abs_z_grad_term,  /// NOT Eigen::Ref as can't resize them !!!
-                                                        Eigen::Matrix<double, -1, -1>  &sign_z_grad_term,
-                                                        Eigen::Matrix<double, -1, -1>  &log_abs_grad_prob,
-                                                        Eigen::Matrix<double, -1, -1>  &sign_grad_prob,
-                                                        Eigen::Matrix<double, -1, 1>   &log_abs_prod_container_or_inc_array,
-                                                        Eigen::Matrix<double, -1, 1>   &sign_prod_container_or_inc_array,
-                                                        Eigen::Matrix<double, -1, 1>   &log_sum_result,  
-                                                        Eigen::Matrix<double, -1, 1>   &sign_sum_result, 
-                                                        Eigen::Matrix<double, -1, -1>  &log_terms,
-                                                        Eigen::Matrix<double, -1, -1>  &sign_terms,
-                                                        Eigen::Matrix<double, -1, 1> &log_abs_a,
-                                                        Eigen::Matrix<double, -1, 1> &log_abs_b,
-                                                        Eigen::Matrix<double, -1, 1> &sign_a,
-                                                        Eigen::Matrix<double, -1, 1> &sign_b,
-                                                        Eigen::Matrix<double, -1, 1> &container_max_logs,
-                                                        Eigen::Matrix<double, -1, 1> &container_sum_exp_signed,
-                                                        const Model_fn_args_struct &Model_args_as_cpp_struct
+inline  void fn_MVP_compute_nuisance_grad_log_scale(      const std::vector<int> &n_problem_array,
+                                                          const std::vector<std::vector<int>> &problem_index_array,
+                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_u_grad_array_CM_chunk,  // indexed
+                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> u_grad_array_CM_chunk,  // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_double,
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip, // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob, // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_recip,  // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,  // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,  // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,  // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,  // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,  // indexed
+                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,  // indexed
+                                                          Eigen::Matrix<double, -1, -1>  &log_abs_z_grad_term,  /// NOT Eigen::Ref as can't resize them !!!
+                                                          Eigen::Matrix<double, -1, -1>  &sign_z_grad_term,
+                                                          Eigen::Matrix<double, -1, -1>  &log_abs_grad_prob,
+                                                          Eigen::Matrix<double, -1, -1>  &sign_grad_prob,
+                                                          Eigen::Matrix<double, -1, 1>   &log_abs_prod_container_or_inc_array,
+                                                          Eigen::Matrix<double, -1, 1>   &sign_prod_container_or_inc_array,
+                                                          Eigen::Matrix<double, -1, 1>   &log_sum_result,  
+                                                          Eigen::Matrix<double, -1, 1>   &sign_sum_result, 
+                                                          Eigen::Matrix<double, -1, -1>  &log_terms,
+                                                          Eigen::Matrix<double, -1, -1>  &sign_terms,
+                                                          Eigen::Matrix<double, -1, 1> &log_abs_a,
+                                                          Eigen::Matrix<double, -1, 1> &log_abs_b,
+                                                          Eigen::Matrix<double, -1, 1> &sign_a,
+                                                          Eigen::Matrix<double, -1, 1> &sign_b,
+                                                          Eigen::Matrix<double, -1, 1> &container_max_logs,
+                                                          Eigen::Matrix<double, -1, 1> &container_sum_exp_signed,
+                                                          const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
   
   
@@ -1107,7 +1072,7 @@ inline   void fn_MVP_grad_prep_log_scale(                Eigen::Ref<Eigen::Matri
   
   
 
-  inline  void      fn_MVP_compute_coefficients_grad_log_scale(    const std::vector<int> &n_problem_array,
+inline  void      fn_MVP_compute_coefficients_grad_log_scale(   const std::vector<int> &n_problem_array,
                                                                 const std::vector<std::vector<int>> &problem_index_array,
                                                                 Eigen::Matrix<double, -1, -1> &beta_grad_array,
                                                                 std::vector<Eigen::Matrix<double, -1, -1>> &sign_beta_grad_array_for_each_n, 
