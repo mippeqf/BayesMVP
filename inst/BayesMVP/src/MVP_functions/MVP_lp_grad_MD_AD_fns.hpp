@@ -613,78 +613,78 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
        
       for (int nc = 0; nc < n_total_chunks; nc++) {
         
-        int chunk_counter = nc; 
-        
-        if ((chunk_counter == n_full_chunks) && (n_chunks > 1) && (last_chunk_size > 0)) { // Last chunk (remainder - don't use AVX / SIMD for this)
-
-                        chunk_size = last_chunk_size;  //// update chunk_size
-
-                        //// use either Loop (i.e. double fn's) or Stan's vectorisation for the remainder (i.e. last) chunk, regardless of input
-                        vect_type = "Stan";
-                        vect_type_exp = "Stan";
-                        vect_type_log = "Stan";
-                        vect_type_lse = "Stan";
-                        vect_type_tanh = "Stan";
-                        vect_type_Phi =  "Stan";
-                        vect_type_log_Phi = "Stan";
-                        vect_type_inv_Phi = "Stan";
-                        vect_type_inv_Phi_approx_from_logit_prob = "Stan";
-
-                        ///////////////////////////////////////////////
-                        for (int c = 0; c < n_class; c++) {
-                          Z_std_norm[c].resize(last_chunk_size, n_tests);
-                          Bound_Z[c].resize(last_chunk_size, n_tests);
-                          Bound_U_Phi_Bound_Z[c].resize(last_chunk_size, n_tests);
-                          prob[c].resize(last_chunk_size, n_tests);
-                          Phi_Z[c].resize(last_chunk_size, n_tests);
-                        }
-                        ///////////////////////////////////////////////
-                        y1_log_prob.resize(last_chunk_size, n_tests);
-                        phi_Z_recip.resize(last_chunk_size, n_tests);
-                        phi_Bound_Z.resize(last_chunk_size, n_tests);
-                        ///////////////////////////////////////////////
-                        u_grad_array_CM_chunk.resize(last_chunk_size, n_tests);
-                        ///////////////////////////////////////////////
-                        common_grad_term_1.resize(last_chunk_size, n_tests);
-                        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.resize(last_chunk_size, n_tests);
-                        y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.resize(last_chunk_size, n_tests);
-                        prob_rowwise_prod_temp.resize(last_chunk_size, n_tests);
-                        prob_recip_rowwise_prod_temp.resize(last_chunk_size, n_tests);
-                        ///////////////////////////////////////////////
-                        prod_container_or_inc_array.resize(last_chunk_size);
-                        derivs_chain_container_vec.resize(last_chunk_size);
-                        prob_rowwise_prod_temp_all.resize(last_chunk_size);
-                        ///////////////////////////////////////////////
-                        grad_prob.resize(last_chunk_size, n_tests);
-                        z_grad_term.resize(last_chunk_size, n_tests);
-                        ///////////////////////////////////////////////
-                        y_chunk.resize(last_chunk_size, n_tests);
-                        u_array.resize(last_chunk_size, n_tests);
-                        y_sign.resize(last_chunk_size, n_tests);
-                        y_m_y_sign_x_u.resize(last_chunk_size, n_tests);
-                        ///////////////////////////////////////////////
-                        u_grad_array_CM_chunk_block.resize(last_chunk_size, n_tests);
-                        ///////////////////////////////////////////////
-                        u_unc_vec_chunk.resize(last_chunk_size * n_tests);
-                        u_vec_chunk.resize(last_chunk_size * n_tests);
-                        du_wrt_duu_chunk.resize(last_chunk_size * n_tests);
-                        d_J_wrt_duu_chunk.resize(last_chunk_size * n_tests);
-                        ///////////////////////////////////////////////
-                        lp_array.resize(last_chunk_size, n_class);
-                        ///////////////////////////////////////////////
-                        prob_n.resize(last_chunk_size);
-                        prob_n_recip.resize(last_chunk_size);
-                        log_sum_result.resize(last_chunk_size);
-                        container_max_logs.resize(last_chunk_size);
-                        ///////////////////////////////////////////////
-                        //#ifdef _WIN32
-                          rowwise_log_sum.resize(last_chunk_size);
-                          rowwise_prod.resize(last_chunk_size);
-                          rowwise_sum.resize(last_chunk_size);
-                        //#endif
-                        ///////////////////////////////////////////////
-
-        }
+          int chunk_counter = nc; 
+          
+          if ((chunk_counter == n_full_chunks) && (n_chunks > 1) && (last_chunk_size > 0)) { // Last chunk (remainder - don't use AVX / SIMD for this)
+  
+                          chunk_size = last_chunk_size;  //// update chunk_size
+  
+                          //// use either Loop (i.e. double fn's) or Stan's vectorisation for the remainder (i.e. last) chunk, regardless of input
+                          vect_type = "Stan";
+                          vect_type_exp = "Stan";
+                          vect_type_log = "Stan";
+                          vect_type_lse = "Stan";
+                          vect_type_tanh = "Stan";
+                          vect_type_Phi =  "Stan";
+                          vect_type_log_Phi = "Stan";
+                          vect_type_inv_Phi = "Stan";
+                          vect_type_inv_Phi_approx_from_logit_prob = "Stan";
+  
+                          ///////////////////////////////////////////////
+                          for (int c = 0; c < n_class; c++) {
+                            Z_std_norm[c].resize(last_chunk_size, n_tests);
+                            Bound_Z[c].resize(last_chunk_size, n_tests);
+                            Bound_U_Phi_Bound_Z[c].resize(last_chunk_size, n_tests);
+                            prob[c].resize(last_chunk_size, n_tests);
+                            Phi_Z[c].resize(last_chunk_size, n_tests);
+                          }
+                          ///////////////////////////////////////////////
+                          y1_log_prob.resize(last_chunk_size, n_tests);
+                          phi_Z_recip.resize(last_chunk_size, n_tests);
+                          phi_Bound_Z.resize(last_chunk_size, n_tests);
+                          ///////////////////////////////////////////////
+                          u_grad_array_CM_chunk.resize(last_chunk_size, n_tests);
+                          ///////////////////////////////////////////////
+                          common_grad_term_1.resize(last_chunk_size, n_tests);
+                          y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip.resize(last_chunk_size, n_tests);
+                          y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip.resize(last_chunk_size, n_tests);
+                          prob_rowwise_prod_temp.resize(last_chunk_size, n_tests);
+                          prob_recip_rowwise_prod_temp.resize(last_chunk_size, n_tests);
+                          ///////////////////////////////////////////////
+                          prod_container_or_inc_array.resize(last_chunk_size);
+                          derivs_chain_container_vec.resize(last_chunk_size);
+                          prob_rowwise_prod_temp_all.resize(last_chunk_size);
+                          ///////////////////////////////////////////////
+                          grad_prob.resize(last_chunk_size, n_tests);
+                          z_grad_term.resize(last_chunk_size, n_tests);
+                          ///////////////////////////////////////////////
+                          y_chunk.resize(last_chunk_size, n_tests);
+                          u_array.resize(last_chunk_size, n_tests);
+                          y_sign.resize(last_chunk_size, n_tests);
+                          y_m_y_sign_x_u.resize(last_chunk_size, n_tests);
+                          ///////////////////////////////////////////////
+                          u_grad_array_CM_chunk_block.resize(last_chunk_size, n_tests);
+                          ///////////////////////////////////////////////
+                          u_unc_vec_chunk.resize(last_chunk_size * n_tests);
+                          u_vec_chunk.resize(last_chunk_size * n_tests);
+                          du_wrt_duu_chunk.resize(last_chunk_size * n_tests);
+                          d_J_wrt_duu_chunk.resize(last_chunk_size * n_tests);
+                          ///////////////////////////////////////////////
+                          lp_array.resize(last_chunk_size, n_class);
+                          ///////////////////////////////////////////////
+                          prob_n.resize(last_chunk_size);
+                          prob_n_recip.resize(last_chunk_size);
+                          log_sum_result.resize(last_chunk_size);
+                          container_max_logs.resize(last_chunk_size);
+                          ///////////////////////////////////////////////
+                          //#ifdef _WIN32
+                            rowwise_log_sum.resize(last_chunk_size);
+                            rowwise_prod.resize(last_chunk_size);
+                            rowwise_sum.resize(last_chunk_size);
+                          //#endif
+                          ///////////////////////////////////////////////
+  
+          }
         
         u_grad_array_CM_chunk.setZero(); //// reset between chunks as re-using same container
 
@@ -712,9 +712,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                           if (n_covariates_max > 1) {
                               Eigen::Matrix<double, -1, 1> Xbeta_given_class_c_col_t = X[c][t].block(chunk_size_orig * chunk_counter, 0, chunk_size, n_covariates_per_outcome_vec(c, t)).cast<double>()  *
                               beta_double_array[c].col(t).head(n_covariates_per_outcome_vec(c, t));
-                              Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  - ( Xbeta_given_class_c_col_t.array()    +      prod_container_or_inc_array.array()   )  ) ;
+                              Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  -1.0*( Xbeta_given_class_c_col_t.array()    +      prod_container_or_inc_array.array()   )  ) ;
                           } else {  // intercept-only
-                              Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  - ( beta_double_array[c](0, t) +      prod_container_or_inc_array.array()   )  ) ;
+                              Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  -1.0*( beta_double_array[c](0, t) +  prod_container_or_inc_array.array()   )  ) ;
                           }
                           
                           //// compute/update important log-lik quantities for GHK-MVP
@@ -729,16 +729,17 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                                        u_array,
                                                        Model_args_as_cpp_struct);
                         
-                          if (t < n_tests - 1)  prod_container_or_inc_array.array()  =   ( Z_std_norm[c].leftCols(t + 1)  *   ( L_Omega_double[c].row(t+1).head(t+1).transpose()  ) ) ;
+                          if (t < n_tests - 1)  prod_container_or_inc_array = Z_std_norm[c].leftCols(t + 1)  *   L_Omega_double[c].row(t+1).head(t+1).transpose()  ;
       
                   }   /// / end of t loop
       
                   if (n_class > 1) { // if latent class
                       rowwise_sum = y1_log_prob.rowwise().sum();
-                      lp_array.col(c).array() =     rowwise_sum.array() + log_prev(0, c);
+                      rowwise_sum.array() += log_prev(0, c);
+                      lp_array.col(c) = rowwise_sum;
                   } else {
                       rowwise_sum = y1_log_prob.rowwise().sum();
-                      lp_array.col(0).array() =     rowwise_sum.array();
+                      lp_array.col(0) =     rowwise_sum;
                   }
 
           }  //// end of c loop
@@ -769,91 +770,113 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
         /////////////////  ------------------------- compute grad  ---------------------------------------------------------------------------------
         for (int c = 0; c < n_class; c++) {
           
-          // const Eigen::Matrix<double, -1, -1> &prob_recip = stan::math::inv(prob[c]);  // this should be fine since prob[c] isn't a temporary(?)
-          const Eigen::Matrix<double, -1, -1> prob_recip = stan::math::inv(prob[c]);  // this should be fine since prob[c] isn't a temporary(?)
-          
-          //// compute/update important log-lik quantities for GHK-MVP
-          for (int t = 0; t < n_tests; t++) {
-
-                fn_MVP_compute_phi_Z_recip_cols(   t,
-                                                   phi_Z_recip, // computing this
-                                                   Phi_Z[c], Z_std_norm[c], Model_args_as_cpp_struct);
-
-                fn_MVP_compute_phi_Bound_Z_cols(   t,
-                                                   phi_Bound_Z, // computing this
-                                                   Bound_U_Phi_Bound_Z[c], Bound_Z[c], Model_args_as_cpp_struct);
-          }
-          
-          
-          if (grad_option != "none") { // not the issue
-
-            fn_MVP_grad_prep(       prob[c],
-                                    y_sign,
-                                    y_m_y_sign_x_u,
-                                    L_Omega_recip_double[c],
-                                    prev(0, c),
-                                    prob_n_recip,
-                                    phi_Z_recip,
-                                    phi_Bound_Z,
-                                    prob_recip,
-                                    prob_rowwise_prod_temp,
-                                    prob_recip_rowwise_prod_temp,
-                                    prob_rowwise_prod_temp_all,
-                                    common_grad_term_1,
-                                    y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                    y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                    Model_args_as_cpp_struct) ;
-
-          }
-          
-          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
-          if ( (grad_option == "us_only") || (grad_option == "all") ) {
+              // const Eigen::Matrix<double, -1, -1> &prob_recip = stan::math::inv(prob[c]);  // this should be fine since prob[c] isn't a temporary(?)
+              const Eigen::Matrix<double, -1, -1> prob_recip = stan::math::inv(prob[c]);  // this should be fine since prob[c] isn't a temporary(?)
+              
+              //// compute/update important log-lik quantities for GHK-MVP
+              for (int t = 0; t < n_tests; t++) {
     
-                u_grad_array_CM_chunk_block =  u_grad_array_CM_chunk.block(0, 0, chunk_size, n_tests);
+                    fn_MVP_compute_phi_Z_recip_cols(   t,
+                                                       phi_Z_recip, // computing this
+                                                       Phi_Z[c], Z_std_norm[c], Model_args_as_cpp_struct);
     
-                fn_MVP_compute_nuisance_grad_v2(  u_grad_array_CM_chunk_block,
-                                                  phi_Z_recip,
-                                                  common_grad_term_1,
-                                                  L_Omega_double[c],
-                                                  prob[c],
-                                                  prob_recip,
-                                                  prob_rowwise_prod_temp,
-                                                  y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                  y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                  z_grad_term,
-                                                  grad_prob,
-                                                  prod_container_or_inc_array,
-                                                  derivs_chain_container_vec,
-                                                  Model_args_as_cpp_struct);
+                    fn_MVP_compute_phi_Bound_Z_cols(   t,
+                                                       phi_Bound_Z, // computing this
+                                                       Bound_U_Phi_Bound_Z[c], Bound_Z[c], Model_args_as_cpp_struct);
+              }
+              
+              
+              if (grad_option != "none") { // not the issue
     
-                u_grad_array_CM_chunk.block(0, 0, chunk_size, n_tests).matrix() += u_grad_array_CM_chunk_block;
+                fn_MVP_grad_prep(       prob[c],
+                                        y_sign,
+                                        y_m_y_sign_x_u,
+                                        L_Omega_recip_double[c],
+                                        prev(0, c),
+                                        prob_n_recip,
+                                        phi_Z_recip,
+                                        phi_Bound_Z,
+                                        prob_recip,
+                                        prob_rowwise_prod_temp,
+                                        prob_recip_rowwise_prod_temp,
+                                        prob_rowwise_prod_temp_all,
+                                        common_grad_term_1,
+                                        y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                        y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                        Model_args_as_cpp_struct) ;
     
-                //// update output vector once all u_grad computations are done
-                out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array()  =  u_grad_array_CM_chunk.reshaped();
+              }
+              
+              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
+              if ( (grad_option == "us_only") || (grad_option == "all") ) {
+        
+                    u_grad_array_CM_chunk_block =  u_grad_array_CM_chunk.block(0, 0, chunk_size, n_tests);
+        
+                    fn_MVP_compute_nuisance_grad_v2(  u_grad_array_CM_chunk_block,
+                                                      phi_Z_recip,
+                                                      common_grad_term_1,
+                                                      L_Omega_double[c],
+                                                      prob[c],
+                                                      prob_recip,
+                                                      prob_rowwise_prod_temp,
+                                                      y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                      y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                      z_grad_term,
+                                                      grad_prob,
+                                                      prod_container_or_inc_array,
+                                                      derivs_chain_container_vec,
+                                                      Model_args_as_cpp_struct);
+        
+                    u_grad_array_CM_chunk.block(0, 0, chunk_size, n_tests).matrix() += u_grad_array_CM_chunk_block;
+        
+                    //// update output vector once all u_grad computations are done
+                    out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array()  =  u_grad_array_CM_chunk.reshaped();
+        
+                    //// account for unconstrained -> constrained transformations and Jacobian adjustments
+                    fn_MVP_nuisance_first_deriv(  du_wrt_duu_chunk,
+                                                  u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
+        
+                    fn_MVP_nuisance_deriv_of_log_det_J(    d_J_wrt_duu_chunk,
+                                                           u_vec_chunk, u_unc_vec_chunk, du_wrt_duu_chunk, Model_args_as_cpp_struct);
+        
+                    out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() =
+                             out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() * du_wrt_duu_chunk.array() + d_J_wrt_duu_chunk.array();
     
-                //// account for unconstrained -> constrained transformations and Jacobian adjustments
-                fn_MVP_nuisance_first_deriv(  du_wrt_duu_chunk,
-                                              u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
+              }
+              
+              /////////////////////////////////////////////////////////////////////////// Grad of intercepts / coefficients (beta's)
+              if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "coeff_only") ) {
     
-                fn_MVP_nuisance_deriv_of_log_det_J(    d_J_wrt_duu_chunk,
-                                                       u_vec_chunk, u_unc_vec_chunk, du_wrt_duu_chunk, Model_args_as_cpp_struct);
+                    fn_MVP_compute_coefficients_grad_v3(     c,
+                                                             beta_grad_array[c],
+                                                             chunk_counter,
+                                                             n_covariates_max,
+                                                             common_grad_term_1,
+                                                             L_Omega_double[c],
+                                                             prob[c],
+                                                             prob_recip,
+                                                             prob_rowwise_prod_temp,
+                                                             y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                             y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                             z_grad_term,
+                                                             grad_prob,
+                                                             prod_container_or_inc_array,
+                                                             derivs_chain_container_vec,
+                                                             true,  ///   compute_final_scalar_grad,
+                                                             Model_args_as_cpp_struct);
+                
+              }
+              
+              /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of L_Omega ('s)
+              if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "corr_only") ) {
     
-                out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() =
-                         out_mat.segment(1, n_us).segment(chunk_size_orig * n_tests * chunk_counter , chunk_size * n_tests).array() * du_wrt_duu_chunk.array() + d_J_wrt_duu_chunk.array();
-
-          }
-          
-          /////////////////////////////////////////////////////////////////////////// Grad of intercepts / coefficients (beta's)
-          if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "coeff_only") ) {
-
-                fn_MVP_compute_coefficients_grad_v3(     c,
-                                                         beta_grad_array[c],
-                                                         chunk_counter,
-                                                         n_covariates_max,
+                    fn_MVP_compute_L_Omega_grad_v3(      U_Omega_grad_array[c],
                                                          common_grad_term_1,
                                                          L_Omega_double[c],
                                                          prob[c],
                                                          prob_recip,
+                                                         Bound_Z[c],
+                                                         Z_std_norm[c],
                                                          prob_rowwise_prod_temp,
                                                          y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
                                                          y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
@@ -863,56 +886,34 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                                          derivs_chain_container_vec,
                                                          true,  ///   compute_final_scalar_grad,
                                                          Model_args_as_cpp_struct);
-            
-          }
-          
-          /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of L_Omega ('s)
-          if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "corr_only") ) {
-
-                fn_MVP_compute_L_Omega_grad_v3(      U_Omega_grad_array[c],
-                                                     common_grad_term_1,
-                                                     L_Omega_double[c],
-                                                     prob[c],
-                                                     prob_recip,
-                                                     Bound_Z[c],
-                                                     Z_std_norm[c],
-                                                     prob_rowwise_prod_temp,
-                                                     y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                     y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                     z_grad_term,
-                                                     grad_prob,
-                                                     prod_container_or_inc_array,
-                                                     derivs_chain_container_vec,
-                                                     true,  ///   compute_final_scalar_grad,
-                                                     Model_args_as_cpp_struct);
-
-          }
-          
-          if (n_class > 1) { /// prevelance only estimated for latent class models
-
-            if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "prev_only" ) ) {
-                
-                  // #ifdef _WIN32
-                        // Eigen::Matrix<double, -1, -1> log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
-                        // Eigen::Matrix<double, -1, 1>  rowwise_log_sum =  log_prob.rowwise().sum();
-                        // Eigen::Matrix<double, -1, 1>  rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
-                        // double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum();
-                        // prev_grad_vec(c)  +=  prev_grad ;
-                        ////
-                        // const Eigen::Matrix<double, -1, -1> &log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
-                        const Eigen::Matrix<double, -1, -1> log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
-                        rowwise_log_sum =  log_prob.rowwise().sum();
-                        rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
-                        double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum();
-                        prev_grad_vec(c)  +=  prev_grad;
-                  // #else
-                  //       prev_grad_vec(c)  +=  (  prob_n_recip.array()  *  fn_EIGEN_double( fn_EIGEN_double(prob[c] , "log",  vect_type_log).rowwise().sum(), "exp",  vect_type_exp).array() ).sum();
-                  // #endif
-
-            }
-
-          }
-          
+    
+              }
+              
+              if (n_class > 1) { /// prevelance only estimated for latent class models
+    
+                if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "prev_only" ) ) {
+                    
+                      // #ifdef _WIN32
+                            // Eigen::Matrix<double, -1, -1> log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
+                            // Eigen::Matrix<double, -1, 1>  rowwise_log_sum =  log_prob.rowwise().sum();
+                            // Eigen::Matrix<double, -1, 1>  rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
+                            // double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum();
+                            // prev_grad_vec(c)  +=  prev_grad ;
+                            ////
+                            // const Eigen::Matrix<double, -1, -1> &log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
+                            const Eigen::Matrix<double, -1, -1> log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
+                            rowwise_log_sum =  log_prob.rowwise().sum();
+                            rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
+                            double prev_grad = (  prob_n_recip.array()  *  rowwise_prod.array() ).sum();
+                            prev_grad_vec(c)  +=  prev_grad;
+                      // #else
+                      //       prev_grad_vec(c)  +=  (  prob_n_recip.array()  *  fn_EIGEN_double( fn_EIGEN_double(prob[c] , "log",  vect_type_log).rowwise().sum(), "exp",  vect_type_exp).array() ).sum();
+                      // #endif
+    
+                }
+    
+              }
+              
         }
         
       }

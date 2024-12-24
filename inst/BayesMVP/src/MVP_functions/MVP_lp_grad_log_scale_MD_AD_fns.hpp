@@ -731,13 +731,13 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                     if (n_covariates_max > 1) {
                       
                             const Eigen::Matrix<double, -1, 1>    Xbeta_given_class_c_col_t = X[c][t].block(chunk_size_orig * chunk_counter, 0, chunk_size, n_covariates_per_outcome_vec(c, t)).cast<double>()  * beta_double_array[c].col(t).head(n_covariates_per_outcome_vec(c, t));
-                            Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  -1.0*( Xbeta_given_class_c_col_t.array()    +      inc_array.array()   )  ) ;
-                            sign_Bound_Z[c].col(t).array() =   Bound_Z[c].col(t).array().sign();
-                            log_abs_Bound_Z[c].col(t) =    fn_EIGEN_double(Bound_Z[c].col(t).array().abs(), "log", vect_type_log);
+                            Bound_Z[c].col(t) =     L_Omega_recip_double[c](t, t) * (  -1.0*( Xbeta_given_class_c_col_t + inc_array  )  ) ;
+                            sign_Bound_Z[c].col(t) =   stan::math::sign(Bound_Z[c].col(t));
+                            log_abs_Bound_Z[c].col(t) =    fn_EIGEN_double( stan::math::abs(Bound_Z[c].col(t)), "log", vect_type_log);
                       
                     } else {  //// intercept-only
                       
-                            Bound_Z[c].col(t).array() = L_Omega_recip_double[c](t, t) * (  -1.0*( beta_double_array[c](0, t)  +   inc_array.array()   )  ) ;
+                            Bound_Z[c].col(t).array() = L_Omega_recip_double[c](t, t) * ( -1.0*( beta_double_array[c](0, t) + inc_array.array() ) ) ;
                                 
                             { ////-----------------------------------------------
                                 Eigen::Matrix<double, -1, 1> Bound_Z_col_t =          Eigen::Matrix<double, -1, 1>::Zero(chunk_size);
@@ -1017,48 +1017,47 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
 
           } ////-----------------------------------------------
      
-      // if ( (grad_option != "none") || (grad_option == "test") ) {
-      //  
-      //               ////// ------------------------------------------------
-      //               // Eigen::Matrix<double, -1, -1> abs_L_Omega_recip_double =     Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
-      //               // Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
-      //               // Eigen::Matrix<double, -1, -1> sign_L_Omega_recip_double =    Eigen::Matrix<double, -1, -1>::Ones(n_tests, n_tests);
-      //               // std::cout << "After container creation" << std::endl;
-      //               ////// ------------------------------------------------
-      //               
-      //               ////// ------------------------------------------------
-      //               // //// do operations one at a time
-      //               //  abs_L_Omega_recip_double =  stan::math::abs(L_Omega_recip_double[c]);      std::cout << "After abs" << std::endl;
-      //               //  sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);     std::cout << "After sign" << std::endl;
-      //               //  for (int t = 0; t < n_tests; t++) {
-      //               //     log_abs_L_Omega_recip_double(t, t) = stan::math::log(abs_L_Omega_recip_double(t, t));
-      //               //  }
-      //               //  std::cout << "After log" << std::endl;
-      //               ////// ------------------------------------------------
-      //               
-      //               // // --------------------------------------------------
-      //               // fn_MVP_grad_prep_log_scale(       log_prob_rowwise_prod_temp,
-      //               //                                   log_prob_recip_rowwise_prod_temp,
-      //               //                                   log_prob_rowwise_prod_temp_all,
-      //               //                                   log_common_grad_term_1,
-      //               //                                   log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-      //               //                                   log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-      //               //                                   sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-      //               //                                   sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-      //               //                                   y1_log_prob[c],
-      //               //                                   y1_log_prob_recip,
-      //               //                                   log_prob_n_recip,
-      //               //                                   log_prev(0, c), /// if not latent class, this is a dummy variable
-      //               //                                   log_phi_Bound_Z[c],
-      //               //                                   log_phi_Z_recip[c],
-      //               //                                   log_abs_L_Omega_recip_double,
-      //               //                                   sign_L_Omega_recip_double,
-      //               //                                   y_sign_chunk,
-      //               //                                   y_m_y_sign_x_u,
-      //               //                                   Model_args_as_cpp_struct);
-      //               // // -----------------------------------------------
-      // 
-      //     }
+      if ( (grad_option != "none") || (grad_option == "test") ) {
+
+                    //// ------------------------------------------------
+                    Eigen::Matrix<double, -1, -1> abs_L_Omega_recip_double =     Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
+                    Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
+                    Eigen::Matrix<double, -1, -1> sign_L_Omega_recip_double =    Eigen::Matrix<double, -1, -1>::Ones(n_tests, n_tests);
+                    std::cout << "After container creation" << std::endl;
+                    //// ------------------------------------------------
+
+                    //// ------------------------------------------------
+                     abs_L_Omega_recip_double =  stan::math::abs(L_Omega_recip_double[c]);      std::cout << "After abs" << std::endl;
+                     sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);     std::cout << "After sign" << std::endl;
+                     for (int t = 0; t < n_tests; t++) {
+                        log_abs_L_Omega_recip_double(t, t) = stan::math::log(abs_L_Omega_recip_double(t, t));
+                     }
+                     std::cout << "After log" << std::endl;
+                    //// ------------------------------------------------
+
+                    //// --------------------------------------------------
+                    fn_MVP_grad_prep_log_scale(       log_prob_rowwise_prod_temp,
+                                                      log_prob_recip_rowwise_prod_temp,
+                                                      log_prob_rowwise_prod_temp_all,
+                                                      log_common_grad_term_1,
+                                                      log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                      log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                      sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                      sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                      y1_log_prob[c],
+                                                      y1_log_prob_recip,
+                                                      log_prob_n_recip,
+                                                      log_prev(0, c), /// if not latent class, this is a dummy variable
+                                                      log_phi_Bound_Z[c],
+                                                      log_phi_Z_recip[c],
+                                                      log_abs_L_Omega_recip_double,
+                                                      sign_L_Omega_recip_double,
+                                                      y_sign_chunk,
+                                                      y_m_y_sign_x_u,
+                                                      Model_args_as_cpp_struct);
+                    //// -----------------------------------------------
+
+          }
     
             //// these should all be OK on windows  (not dangling reference)
             Eigen::Matrix<double, -1, -1> common_grad_term_1 = fn_EIGEN_double(log_common_grad_term_1, "exp", vect_type_exp);
