@@ -39,17 +39,21 @@ override CPP_COMPILER_TYPE = "C:\rtools44\mingw64\bin\ccache.exe" gcc ## $(BINPR
 override CXX_STD = -std=gnu++17 # Use C++17
 
 override BASE_FLAGS =   -O3  -march=native  -mtune=native \
-                        -fPIC    -D_REENTRANT  -DSTAN_THREADS -pthread \
+                        -fPIC   -D_REENTRANT  -DSTAN_THREADS -pthread \
                         -fpermissive \
                         -mfma -mavx -mavx2 \
                         -flarge-source-files \
-                        -fopenmp -lgomp \
-                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math
+                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math 
+                    
 
 ##                         -mavx512vl -mavx512dq  -mavx512f \
  
 ##                         -fno-math-errno  -fno-signed-zeros  -fno-trapping-math \
 ##                         -DNDEBUG  -ffp-contract=fast \
+
+## -fopenmp -lgomp \
+
+##     -fno-unroll-loops
 
 
 
@@ -57,10 +61,8 @@ override BASE_FLAGS =   -O3  -march=native  -mtune=native \
 HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('\\\\\\\\', '/', Sys.getenv('USERPROFILE')))")/
 $(info HOME is: $(HOME))
 
-
 # Get R library path (this will work for any R version)
 R_LIB_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[grep('00LOCK|00new', .libPaths(), invert=TRUE)][1])")
-
 
 # Debug current environment
 $(info HOME directory is: $(HOME))
