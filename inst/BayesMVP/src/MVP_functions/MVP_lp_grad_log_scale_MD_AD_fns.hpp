@@ -717,8 +717,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
         log_jac_u +=    fn_MVP_compute_nuisance_log_jac_u(   u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
         
         u_array  =  u_vec_chunk.reshaped(chunk_size, n_tests);
-        y_sign_chunk =    ( (y_chunk.array()  + (y_chunk.array() - 1.0)) ).matrix();
-        y_m_y_sign_x_u =   ( y_chunk.array()  - y_sign_chunk.array() * u_array.array() ).matrix();
+        y_sign.array() =      y_chunk.array() + (y_chunk.array() - 1.0) ;
+        y_m_y_sign_x_u.array() =  y_chunk.array() - (y_sign.array() * u_array.array());
         
         {
           // START of c loop
@@ -931,9 +931,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                 //// -----------------------------------------------
                 if (n_class > 1) {  /// if latent class
                     rowwise_sum = y1_log_prob[c].rowwise().sum();
-                    lp_array.col(c).array() =  rowwise_sum.array() + log_prev(0, c);
+                    rowwise_sum.array() += log_prev(0, c);
+                    lp_array.col(c) = rowwise_sum;
                 } else {
-                    lp_array.col(0) =     y1_log_prob[0].rowwise().sum();
+                    rowwise_sum = y1_log_prob.rowwise().sum();
+                    lp_array.col(0) =     rowwise_sum;
                 }
                 //// -----------------------------------------------
             
@@ -1023,16 +1025,16 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                     Eigen::Matrix<double, -1, -1> abs_L_Omega_recip_double =     Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
                     Eigen::Matrix<double, -1, -1> log_abs_L_Omega_recip_double = Eigen::Matrix<double, -1, -1>::Zero(n_tests, n_tests);
                     Eigen::Matrix<double, -1, -1> sign_L_Omega_recip_double =    Eigen::Matrix<double, -1, -1>::Ones(n_tests, n_tests);
-                    std::cout << "After container creation" << std::endl;
+                    // std::cout << "After container creation" << std::endl;
                     //// ------------------------------------------------
 
                     //// ------------------------------------------------
-                     abs_L_Omega_recip_double =  stan::math::abs(L_Omega_recip_double[c]);      std::cout << "After abs" << std::endl;
-                     sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);     std::cout << "After sign" << std::endl;
+                     abs_L_Omega_recip_double =  stan::math::abs(L_Omega_recip_double[c]);    //  std::cout << "After abs" << std::endl;
+                     sign_L_Omega_recip_double = stan::math::sign(L_Omega_recip_double[c]);   //  std::cout << "After sign" << std::endl;
                      for (int t = 0; t < n_tests; t++) {
                         log_abs_L_Omega_recip_double(t, t) = stan::math::log(abs_L_Omega_recip_double(t, t));
                      }
-                     std::cout << "After log" << std::endl;
+                     // std::cout << "After log" << std::endl;
                     //// ------------------------------------------------
 
                     //// --------------------------------------------------
