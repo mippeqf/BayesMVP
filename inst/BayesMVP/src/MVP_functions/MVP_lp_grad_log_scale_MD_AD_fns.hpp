@@ -566,11 +566,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
     std::vector<std::vector<std::vector<int>>> problem_index_array(n_class);
     std::vector<std::vector<int>> n_problem_array(n_class);
     for (int c = 0; c < n_class; c++) {
-      problem_index_array[c].resize(n_tests); // initialise 
-      n_problem_array[c].resize(n_tests);  // initialise 
-      for (int t = 0; t < n_tests; t++) { 
-        n_problem_array[c][t] = 0; // initialise 
-      }
+        problem_index_array[c].resize(n_tests); // initialise 
+        n_problem_array[c].resize(n_tests);     // initialise 
+        for (int t = 0; t < n_tests; t++) { 
+          n_problem_array[c][t] = 0; // initialise 
+        }
     }
     ///////////////////////////////////////////////
     std::vector<Eigen::Matrix<double, -1, -1>>   Omega_grad_array_for_each_n =     vec_of_mats<double>(chunk_size, n_tests, n_tests);
@@ -671,7 +671,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                           sign_grad_prob.resize(last_chunk_size, n_tests);
                           sign_z_grad_term.resize(last_chunk_size, n_tests);
            
-                          // matrix arrays
+                          //// matrix arrays
                           for (int c = 0; c < n_class; c++) {
                                 Z_std_norm[c].resize(last_chunk_size, n_tests);
                                 log_Z_std_norm[c].resize(last_chunk_size, n_tests);
@@ -697,7 +697,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
                             beta_grad_array_for_each_n[i].resize(last_chunk_size, n_tests);
                             sign_beta_grad_array_for_each_n[i].resize(last_chunk_size, n_tests);
                             log_abs_beta_grad_array_for_each_n[i].resize(last_chunk_size, n_tests);
-                          } 
+                          }
                           
                             rowwise_log_sum.resize(last_chunk_size);
                             rowwise_prod.resize(last_chunk_size);
@@ -710,7 +710,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
 
         y_chunk = y_ref.middleRows( chunk_size_orig * chunk_counter, chunk_size).cast<double>();
         
-        ////// Nuisance parameter transformation step
+        //// Nuisance parameter transformation step
         u_unc_vec_chunk = u_unc_vec.segment( chunk_size_orig * n_tests * chunk_counter, chunk_size * n_tests);
         
         fn_MVP_compute_nuisance(    u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
