@@ -389,7 +389,7 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
     const int n_params_main = Model_args_as_cpp_struct.n_params_main;
     const int n_params = n_params_main + n_nuisance;
   
-    const std::string grad_option = "main_only"; ///////////////////// DEBUG
+    const std::string grad_option = "main_only";  
      
     const std::string metric_shape_main = EHMC_Metric_struct_as_cpp_struct.metric_shape_main;
     
@@ -424,14 +424,14 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                 result_input.main_velocity_vec_proposed()  =   result_input.main_velocity_0_vec(); // set initial velocity
                 result_input.main_theta_vec_proposed() =       result_input.main_theta_vec();   // set to CURRENT theta   
       
-                //// ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------------------------------------------
+                //// ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///------------------------------------------
                 if (EHMC_args_as_cpp_struct.tau_main < EHMC_args_as_cpp_struct.eps_main) { EHMC_args_as_cpp_struct.tau_main = EHMC_args_as_cpp_struct.eps_main; }
                 generate_random_tau_ii_dqrng(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
                 if (EHMC_args_as_cpp_struct.tau_main_ii < EHMC_args_as_cpp_struct.eps_main) { EHMC_args_as_cpp_struct.tau_main_ii = EHMC_args_as_cpp_struct.eps_main; }
                 int    L_ii = std::ceil(  EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
                 if (L_ii < 1) { L_ii = 1 ; }
                 
-                //// initial lp  
+                //// initial lp  (and grad)
                 fn_lp_grad_InPlace(     result_input.lp_and_grad_outs(), 
                                         Model_type, 
                                         force_autodiff, force_PartialLog, multi_attempts,
