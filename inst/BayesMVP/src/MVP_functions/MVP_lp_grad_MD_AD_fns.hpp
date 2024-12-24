@@ -769,8 +769,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
         /////////////////  ------------------------- compute grad  ---------------------------------------------------------------------------------
         for (int c = 0; c < n_class; c++) {
           
-          // const Eigen::Matrix<double, -1, -1> &prob_recip = stan::math::inv(prob[c]) // this should be fine since prob[c] isn't a temporary(?)
-          const Eigen::Matrix<double, -1, -1> prob_recip = stan::math::inv(prob[c]) // this should be fine since prob[c] isn't a temporary(?)
+          // const Eigen::Matrix<double, -1, -1> &prob_recip = stan::math::inv(prob[c]);  // this should be fine since prob[c] isn't a temporary(?)
+          const Eigen::Matrix<double, -1, -1> prob_recip = stan::math::inv(prob[c]);  // this should be fine since prob[c] isn't a temporary(?)
           
           //// compute/update important log-lik quantities for GHK-MVP
           for (int t = 0; t < n_tests; t++) {
