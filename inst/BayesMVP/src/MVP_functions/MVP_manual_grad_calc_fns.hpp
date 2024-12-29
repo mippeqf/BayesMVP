@@ -42,19 +42,19 @@ ALWAYS_INLINE  void fn_MVP_compute_lp_GHK_cols(   const int t,
                                                   const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
       
-       const std::string &vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
-       const std::string &Phi_type = Model_args_as_cpp_struct.Model_args_strings(1);
-       const std::string &vect_type_Phi = Model_args_as_cpp_struct.Model_args_strings(7);
-       const std::string &inv_Phi_type = Model_args_as_cpp_struct.Model_args_strings(2);
-       const std::string &vect_type_inv_Phi = Model_args_as_cpp_struct.Model_args_strings(9);
+       const std::string vect_type_log = Model_args_as_cpp_struct.Model_args_strings(4);
+       const std::string Phi_type = Model_args_as_cpp_struct.Model_args_strings(1);
+       const std::string vect_type_Phi = Model_args_as_cpp_struct.Model_args_strings(7);
+       const std::string inv_Phi_type = Model_args_as_cpp_struct.Model_args_strings(2);
+       const std::string vect_type_inv_Phi = Model_args_as_cpp_struct.Model_args_strings(9);
        
        ////// Compute on NON-log-scale for all observations using ".col(t)". 
        Bound_U_Phi_Bound_Z.col(t) =   fn_EIGEN_double( Bound_Z.col(t), Phi_type, vect_type_Phi );   
-       Phi_Z.col(t) = y_chunk.col(t).array() * Bound_U_Phi_Bound_Z.col(t).array() +   (y_chunk.col(t).array() -  Bound_U_Phi_Bound_Z.col(t).array()) *   
-                      ((y_chunk.col(t).array()  + (y_chunk.col(t).array()  - 1.0)) * u_array.col(t).array());
+       Phi_Z.col(t).array() = y_chunk.col(t).array() * Bound_U_Phi_Bound_Z.col(t).array() +   (y_chunk.col(t).array() -  Bound_U_Phi_Bound_Z.col(t).array()) *   
+                            ((y_chunk.col(t).array()  + (y_chunk.col(t).array()  - 1.0)) * u_array.col(t).array());
        Z_std_norm.col(t) =   fn_EIGEN_double( Phi_Z.col(t),   inv_Phi_type, vect_type_inv_Phi);      
-       prob.col(t) =    y_chunk.col(t).array()  * (1.0 - Bound_U_Phi_Bound_Z.col(t).array() ) + ( y_chunk.col(t).array()  -  1.0)  *  
-                        Bound_U_Phi_Bound_Z.col(t).array() * ( y_chunk.col(t).array()  +  (  y_chunk.col(t).array()  - 1.0)  )  ;
+       prob.col(t).array() =    y_chunk.col(t).array()  * (1.0 - Bound_U_Phi_Bound_Z.col(t).array() ) + ( y_chunk.col(t).array()  -  1.0)  *  
+                                Bound_U_Phi_Bound_Z.col(t).array() * ( y_chunk.col(t).array()  +  (  y_chunk.col(t).array()  - 1.0)  )  ;
        y1_log_prob.col(t)  =    fn_EIGEN_double( prob.col(t),  "log", vect_type_log);
    
 }
@@ -83,19 +83,33 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Bound_Z_cols(      const int t,
          const double b = 1.5976;
          const double a_times_3 = 3.0 * a;
          
-         const std::string &Phi_type = Model_args_as_cpp_struct.Model_args_strings(1);
-         const std::string &vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
+         const std::string Phi_type = Model_args_as_cpp_struct.Model_args_strings(1);
+         const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
          
          phi_Bound_Z.col(t).setZero();
      
          ///////// grad stuff
          if ( (Phi_type == "Phi_approx") || (Phi_type == "Phi_approx_2") ) { // vect_type
-           phi_Bound_Z.col(t).array()  +=         ( a_times_3 * Bound_Z.col(t).array().square() + b  ).array()  *  Bound_U_Phi_Bound_Z.col(t).array() * (1.0 -  Bound_U_Phi_Bound_Z.col(t).array() )   ;
-         }  else if (Phi_type == "Phi")   { 
-           phi_Bound_Z.col(t).array()  +=         sqrt_2_pi_recip * fn_EIGEN_double( ( - 0.5 * Bound_Z.col(t).array().square() ).matrix(),  "exp", vect_type_exp).array();
+              const Eigen::Matrix<double, -1, 1> Bound_Z_col_t_sq = stan::math::square(Bound_Z.col(t));
+              const Eigen::Matrix<double, -1, 1> temp = (a_times_3 * Bound_Z_col_t_sq.array() + b).matrix();
+              temp.array() *= Bound_U_Phi_Bound_Z.col(t).array();
+              temp.array() *= (1.0 - Bound_U_Phi_Bound_Z.col(t).array()).array();
+              phi_Bound_Z.col(t).array() += temp.array();
+         }  else if (Phi_type == "Phi")   {  
+              const Eigen::Matrix<double, -1, 1> Bound_Z_col_t_sq = stan::math::square(Bound_Z.col(t));
+              const Eigen::Matrix<double, -1, 1> temp = (-0.5)*Bound_Z_col_t_sq; 
+              temp = fn_EIGEN_double(temp, "exp", vect_type_exp);
+              temp = sqrt_2_pi_recip*temp;
+              phi_Bound_Z.col(t).array() +=   temp.array();
          }
-       
-        // return phi_Bound_Z.col(t);
+         
+         // ///////// grad stuff
+         // if ( (Phi_type == "Phi_approx") || (Phi_type == "Phi_approx_2") ) { // vect_type
+         //   phi_Bound_Z.col(t).array()  +=         ( a_times_3 * Bound_Z.col(t).array().square() + b  ).array()  *  Bound_U_Phi_Bound_Z.col(t).array() * (1.0 -  Bound_U_Phi_Bound_Z.col(t).array() )   ;
+         // }  else if (Phi_type == "Phi")   {  
+         //   phi_Bound_Z.col(t).array()  +=         sqrt_2_pi_recip * fn_EIGEN_double( ( - 0.5 * Bound_Z.col(t).array().square() ).matrix(),  "exp", vect_type_exp).array();
+         // }
+         
    
 }
 
@@ -120,19 +134,35 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(     const int t,
        const double b = 1.5976;
        const double a_times_3 = 3.0 * a;
        
-       const std::string &Phi_type = Model_args_as_cpp_struct.Model_args_strings(1);
-       const std::string &vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
+       const std::string Phi_type = Model_args_as_cpp_struct.Model_args_strings(1);
+       const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
        
        phi_Z_recip.col(t).setZero();
        
        ///////// grad stuff
        if ( (Phi_type == "Phi_approx") || (Phi_type == "Phi_approx_2") ) { // vect_type
-         phi_Z_recip.col(t).array()  +=    1.0 / ((  ( a_times_3 * Z_std_norm.col(t).array().square() + b  ).array()  ).array()*  Phi_Z.col(t).array() * (1.0 -  Phi_Z.col(t).array())  ).array() ;
-       }  else if (Phi_type == "Phi")   { 
-         phi_Z_recip.col(t).array()  +=    1.0 /  (   sqrt_2_pi_recip * fn_EIGEN_double( ( - 0.5 * Z_std_norm.col(t).array().square() ).matrix(),  "exp", vect_type_exp) ).array();
-       } 
+           const Eigen::Matrix<double, -1, 1> Z_col_t_sq = stan::math::square(Z_std_norm.col(t));
+           const Eigen::Matrix<double, -1, 1> temp = (a_times_3 * Z_col_t_sq.array() + b).matrix();
+           temp.array() *= Phi_Z.col(t).array();
+           temp.array() *= (1.0 - Phi_Z.col(t).array()).array();
+           temp = stan::math::inv(temp);
+           phi_Bound_Z.col(t).array() += temp.array();
+       }  else if (Phi_type == "Phi")   {  
+           const Eigen::Matrix<double, -1, 1> Z_col_t_sq = stan::math::square(Z_std_norm.col(t));
+           const Eigen::Matrix<double, -1, 1> temp = (-0.5)*Z_col_t_sq; 
+           temp = fn_EIGEN_double(temp, "exp", vect_type_exp);
+           temp = sqrt_2_pi_recip*temp;
+           temp = stan::math::inv(temp);
+           phi_Bound_Z.col(t).array() += temp.array();
+       }
        
-     //  return phi_Z_recip.col(t);
+       // ///////// grad stuff
+       // if ( (Phi_type == "Phi_approx") || (Phi_type == "Phi_approx_2") ) { // vect_type
+       //     phi_Z_recip.col(t).array()  +=    1.0 / ((  ( a_times_3 * Z_std_norm.col(t).array().square() + b  ).array()  ).array()*  Phi_Z.col(t).array() * (1.0 -  Phi_Z.col(t).array())  ).array() ;
+       // }  else if (Phi_type == "Phi")   {  
+       //     phi_Z_recip.col(t).array()  +=    1.0 /  (   sqrt_2_pi_recip * fn_EIGEN_double( ( - 0.5 * Z_std_norm.col(t).array().square() ).matrix(),  "exp", vect_type_exp) ).array();
+       // } 
+        
    
 } 
 
@@ -223,7 +253,7 @@ ALWAYS_INLINE  void fn_MVP_grad_prep(            const Eigen::Ref<const Eigen::M
   
        const int  n_class = Model_args_as_cpp_struct.Model_args_ints(1);
        const bool debug = Model_args_as_cpp_struct.Model_args_bools(14);
-       const std::string &vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
+       const std::string vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
        
        // const std::string &Phi_type = Model_args_as_cpp_struct.Model_args_strings(8);
        // const std::string &vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
@@ -331,7 +361,7 @@ ALWAYS_INLINE void fn_MVP_compute_nuisance_grad_v2(     Eigen::Ref<Eigen::Matrix
 
         const int  n_class = Model_args_as_cpp_struct.Model_args_ints(1);
         const bool debug = Model_args_as_cpp_struct.Model_args_bools(14);
-        const std::string &vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
+        const std::string vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
 
         const int chunk_size = u_grad_array_CM_chunk.rows();
         const int n_tests = u_grad_array_CM_chunk.cols();
@@ -472,7 +502,7 @@ ALWAYS_INLINE void fn_MVP_compute_coefficients_grad_v2(    const int c, // laten
   
   const int  n_class = Model_args_as_cpp_struct.Model_args_ints(1);
   const bool debug = Model_args_as_cpp_struct.Model_args_bools(14);
-  const std::string &vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
+  const std::string vect_type = Model_args_as_cpp_struct.Model_args_strings(0);
   
   const std::vector<Eigen::Matrix<double, -1, -1>>  &X =  Model_args_as_cpp_struct.Model_args_2_layer_vecs_of_mats_double[0][c];
   const Eigen::Matrix<int, -1, 1> &n_covariates_per_outcome_vec = Model_args_as_cpp_struct.Model_args_mats_int[0].row(c).transpose();
