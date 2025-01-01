@@ -939,20 +939,21 @@ void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD_and_AD_
   
         if (n_class > 1) {  /// if latent class 
           
-              //// -----------------------------------------------  works
-              // log_sum_exp_general(   lp_array,
-              //                        vect_type_exp,
-              //                        vect_type_log,
-              //                        log_sum_result,
-              //                        container_max_logs);
-              // 
-              // out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size) = log_sum_result;
-              out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size) =  fn_log_sum_exp_2d_double(lp_array, vect_type_lse);
+              // -----------------------------------------------  works
+              log_sum_exp_general(   lp_array,
+                                     vect_type_exp,
+                                     vect_type_log,
+                                     log_sum_result,
+                                     container_max_logs);
+              const int index_start = 1 + n_params + chunk_size_orig * chunk_counter;
+              out_mat.segment(index_start, chunk_size) = log_sum_result;
+              // out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size) =  fn_log_sum_exp_2d_double(lp_array, vect_type_lse);
               //// -----------------------------------------------  works
           
         } else {
           
-              out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size) = lp_array.col(0);
+              const int index_start = 1 + n_params + chunk_size_orig * chunk_counter;
+              out_mat.segment(index_start, chunk_size) = lp_array.col(0);
           
         }
         

@@ -720,7 +720,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                           if (n_covariates_max > 1) {
                               Eigen::Matrix<double, -1, 1> Xbeta_given_class_c_col_t = X[c][t].block(chunk_size_orig * chunk_counter, 0, chunk_size, n_covariates_per_outcome_vec(c, t)).cast<double>()  *
                               beta_double_array[c].col(t).head(n_covariates_per_outcome_vec(c, t));
-                              Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  -1.0*( Xbeta_given_class_c_col_t.array()    +      prod_container_or_inc_array.array()   )  ) ;
+                              Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  -1.0*( Xbeta_given_class_c_col_t.array()  +   prod_container_or_inc_array.array()   )  ) ;
                           } else {  // intercept-only
                               Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  -1.0*( beta_double_array[c](0, t) + prod_container_or_inc_array.array()   )  ) ;
                           }

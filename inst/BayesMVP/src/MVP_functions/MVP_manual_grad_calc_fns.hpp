@@ -91,13 +91,13 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Bound_Z_cols(      const int t,
          ///////// grad stuff
          if ( (Phi_type == "Phi_approx") || (Phi_type == "Phi_approx_2") ) { // vect_type
               const Eigen::Matrix<double, -1, 1> Bound_Z_col_t_sq = stan::math::square(Bound_Z.col(t));
-              const Eigen::Matrix<double, -1, 1> temp = (a_times_3 * Bound_Z_col_t_sq.array() + b).matrix();
+              Eigen::Matrix<double, -1, 1> temp = (a_times_3 * Bound_Z_col_t_sq.array() + b).matrix();
               temp.array() *= Bound_U_Phi_Bound_Z.col(t).array();
               temp.array() *= (1.0 - Bound_U_Phi_Bound_Z.col(t).array()).array();
               phi_Bound_Z.col(t).array() += temp.array();
          }  else if (Phi_type == "Phi")   {  
               const Eigen::Matrix<double, -1, 1> Bound_Z_col_t_sq = stan::math::square(Bound_Z.col(t));
-              const Eigen::Matrix<double, -1, 1> temp = (-0.5)*Bound_Z_col_t_sq; 
+              Eigen::Matrix<double, -1, 1> temp = (-0.5)*Bound_Z_col_t_sq; 
               temp = fn_EIGEN_double(temp, "exp", vect_type_exp);
               temp = sqrt_2_pi_recip*temp;
               phi_Bound_Z.col(t).array() +=   temp.array();
@@ -142,18 +142,18 @@ ALWAYS_INLINE  void fn_MVP_compute_phi_Z_recip_cols(     const int t,
        ///////// grad stuff
        if ( (Phi_type == "Phi_approx") || (Phi_type == "Phi_approx_2") ) { // vect_type
            const Eigen::Matrix<double, -1, 1> Z_col_t_sq = stan::math::square(Z_std_norm.col(t));
-           const Eigen::Matrix<double, -1, 1> temp = (a_times_3 * Z_col_t_sq.array() + b).matrix();
+           Eigen::Matrix<double, -1, 1> temp = (a_times_3 * Z_col_t_sq.array() + b).matrix();
            temp.array() *= Phi_Z.col(t).array();
            temp.array() *= (1.0 - Phi_Z.col(t).array()).array();
            temp = stan::math::inv(temp);
-           phi_Bound_Z.col(t).array() += temp.array();
+           phi_Z_recip.col(t).array() += temp.array();
        }  else if (Phi_type == "Phi")   {  
            const Eigen::Matrix<double, -1, 1> Z_col_t_sq = stan::math::square(Z_std_norm.col(t));
-           const Eigen::Matrix<double, -1, 1> temp = (-0.5)*Z_col_t_sq; 
+           Eigen::Matrix<double, -1, 1> temp = (-0.5)*Z_col_t_sq; 
            temp = fn_EIGEN_double(temp, "exp", vect_type_exp);
            temp = sqrt_2_pi_recip*temp;
            temp = stan::math::inv(temp);
-           phi_Bound_Z.col(t).array() += temp.array();
+           phi_Z_recip.col(t).array() += temp.array();
        }
        
        // ///////// grad stuff
@@ -183,7 +183,7 @@ ALWAYS_INLINE void compute_rowwise_products( Eigen::Ref<M1> prod_temp,
                                                                const int n_tests) {
          
          for (int i = 0; i < n_tests; i++) {  
-           int t = n_tests - (i+1);
+           int t = n_tests - (i + 1);
            prod_temp.col(t).array() = prob.block(0, t + 0, chunk_size, i + 1).rowwise().prod().array();
            recip_temp.col(t).array() = prob_recip.block(0, t + 0, chunk_size, i + 1).rowwise().prod().array();
          }
@@ -232,6 +232,8 @@ ALWAYS_INLINE void compute_final_terms(  Eigen::Ref<M1> y_sign_out,
  
  
  
+ 
+
 //// fn that computes important quantities needed for the gradient of the GHK parameterisation of the MVP / LC_MVP (and latent_trait) models
 ALWAYS_INLINE  void fn_MVP_grad_prep(            const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> prob,
                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y_sign_chunk,
