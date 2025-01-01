@@ -29,23 +29,16 @@
 using namespace Eigen;
 
 
+// typedef __m512d (*FuncAVX)(const __m512d);
+// typedef __m512d (*FuncAVX_wo_checks)(const __m512d);
  
-
- 
-
-typedef double (*FuncDouble)(double);
-typedef double (*FuncDouble_wo_checks)(double);
+using FuncAVX = std::function<__m512d(__m512d)>;
+using FuncAVX_wo_checks = std::function<__m512d(__m512d)>;
 
 
-typedef __m512d (*FuncAVX512)(const __m512d);
-typedef __m512d (*FuncAVX512_wo_checks)(const __m512d);
- 
-
- 
- 
- template <typename T, typename FuncAVX512, typename FuncDouble>
- ALWAYS_INLINE  void fn_AVX512_row_or_col_vector(   Eigen::Ref<T>  x,
-                                                    const FuncAVX512 &fn_AVX512,
+template <typename T, typename FuncAVX, typename FuncDouble>
+ALWAYS_INLINE  void fn_AVX512_row_or_col_vector(    Eigen::Ref<T>  x,
+                                                    const FuncAVX &fn_AVX,
                                                     const FuncDouble &fn_double) {
 
 
@@ -58,7 +51,7 @@ typedef __m512d (*FuncAVX512_wo_checks)(const __m512d);
    {
        int counter = 0;
        for (int i = N - vect_size; i < N; ++i) {
-         x_tail(counter) = fn_double(x(i));
+         x_tail(counter) = x(i);
          counter += 1;
        }
    }
@@ -67,9 +60,9 @@ typedef __m512d (*FuncAVX512_wo_checks)(const __m512d);
 
            for (int i = 0; i + vect_size <= N_divisible_by_vect_size; i += vect_size) {
 
-             const __m512d AVX_array = _mm512_load_pd(&x(i));
-             const __m512d AVX_array_out = fn_AVX512(AVX_array);
-             _mm512_store_pd(&x(i), AVX_array_out);
+               const __m512d AVX_array = _mm512_load_pd(&x(i));
+               const __m512d AVX_array_out = fn_AVX(AVX_array);
+               _mm512_store_pd(&x(i), AVX_array_out);
 
            }
            
@@ -78,11 +71,10 @@ typedef __m512d (*FuncAVX512_wo_checks)(const __m512d);
            if (N_divisible_by_vect_size != N) {    // Handle remainder
              int counter = 0;
                for (int i = N - vect_size; i < N; ++i) {
-                      x(i) =  (x_tail(counter));
+                      x(i) =  fn_double(x_tail(counter));
                       counter += 1;
                }
             }
-
 
    }  else {   // If N < vect_size, handle everything with scalar operations
 
@@ -93,7 +85,7 @@ typedef __m512d (*FuncAVX512_wo_checks)(const __m512d);
    }
 
 
- }
+}
  
  
  
@@ -101,9 +93,9 @@ typedef __m512d (*FuncAVX512_wo_checks)(const __m512d);
  
  
  
-template<typename T, typename FuncAVX512, typename FuncDouble>
+template<typename T, typename FuncAVX, typename FuncDouble>
 ALWAYS_INLINE  void fn_AVX512_matrix(  Eigen::Ref<T> x,
-                                       const FuncAVX512 &fn_AVX512,
+                                       const FuncAVX &fn_AVX,
                                        const FuncDouble &fn_double) {
    
    const int n_rows = x.rows();
@@ -113,7 +105,7 @@ ALWAYS_INLINE  void fn_AVX512_matrix(  Eigen::Ref<T> x,
        for (int j = 0; j < n_cols; ++j) {  
           Eigen::Matrix<double, -1, 1> x_col = x.col(j);
           Eigen::Ref<Eigen::Matrix<double, -1, 1>> x_col_Ref(x_col);
-          fn_AVX512_row_or_col_vector<typename T::ColXpr>(x_col_Ref, fn_AVX512, fn_double);
+          fn_AVX512_row_or_col_vector<typename T::ColXpr>(x_col_Ref, fn_AVX, fn_double);
           x.col(j) = x_col_Ref;
        }
    } else { 
@@ -121,7 +113,7 @@ ALWAYS_INLINE  void fn_AVX512_matrix(  Eigen::Ref<T> x,
           Eigen::Matrix<double, 1, -1> x_row = x.row(j);
           using RowType = decltype(x_row);
           Eigen::Ref<Eigen::Matrix<double, 1, -1>> x_row_Ref(x_row);
-          fn_AVX512_row_or_col_vector<RowType>(x_row_Ref, fn_AVX512, fn_double);
+          fn_AVX512_row_or_col_vector<RowType>(x_row_Ref, fn_AVX, fn_double);
           x.row(j) = x_row_Ref;
      }
    }
@@ -135,25 +127,25 @@ ALWAYS_INLINE  void fn_AVX512_matrix(  Eigen::Ref<T> x,
  
 
 
-template <typename T, typename FuncAVX512, typename FuncDouble>
-ALWAYS_INLINE  void fn_AVX512_dbl_Eigen(Eigen::Ref<T> x, 
-                                        const FuncAVX512 &fn_AVX512, 
-                                        const FuncDouble &fn_double) {
+template <typename T, typename FuncAVX, typename FuncDouble>
+ALWAYS_INLINE  void fn_AVX512_dbl_Eigen( Eigen::Ref<T> x, 
+                                         const FuncAVX &fn_AVX, 
+                                         const FuncDouble &fn_double) {
   
     constexpr int n_rows = T::RowsAtCompileTime;
     constexpr int n_cols = T::ColsAtCompileTime;
     
     if constexpr (n_rows == 1 && n_cols == -1) {   // Row vector case
     
-          fn_AVX512_row_or_col_vector(x, fn_AVX512, fn_double);
+          fn_AVX512_row_or_col_vector(x, fn_AVX, fn_double);
       
     } else if constexpr (n_rows == -1 && n_cols == 1) {  // Column vector case
      
-          fn_AVX512_row_or_col_vector(x, fn_AVX512, fn_double);
+          fn_AVX512_row_or_col_vector(x, fn_AVX, fn_double);
       
     } else {   // General matrix case
     
-          fn_AVX512_matrix(x, fn_AVX512, fn_double);
+          fn_AVX512_matrix(x, fn_AVX, fn_double);
       
     }
   
@@ -166,21 +158,21 @@ ALWAYS_INLINE  void fn_AVX512_dbl_Eigen(Eigen::Ref<T> x,
   
  
 
-template<typename FuncAVX512, typename FuncDouble, typename FuncAVX512_wo_checks, typename FuncDouble_wo_checks, typename T>
+template<typename FuncAVX, typename FuncDouble, typename FuncAVX_wo_checks, typename FuncDouble_wo_checks, typename T>
 ALWAYS_INLINE  void                   fn_process_double_AVX512_sub_function(     Eigen::Ref<T> x, // since this is helper function we call x by reference "&" not "&&"
-                                                                                 const FuncAVX512 &fn_fast_AVX512_function,
+                                                                                 const FuncAVX &fn_fast_AVX_function,
                                                                                  const FuncDouble &fn_fast_double_function,
-                                                                                 const FuncAVX512_wo_checks &fn_fast_AVX512_function_wo_checks,
+                                                                                 const FuncAVX_wo_checks &fn_fast_AVX_function_wo_checks,
                                                                                  const FuncDouble_wo_checks &fn_fast_double_function_wo_checks, 
                                                                                  bool skip_checks) {
   
   if (skip_checks == false) {
     
-     fn_AVX512_dbl_Eigen(x, fn_fast_AVX512_function, fn_fast_double_function);
+     fn_AVX512_dbl_Eigen(x, fn_fast_AVX_function, fn_fast_double_function);
     
   } else {
     
-     fn_AVX512_dbl_Eigen(x, fn_fast_AVX512_function_wo_checks, fn_fast_double_function_wo_checks);
+     fn_AVX512_dbl_Eigen(x, fn_fast_AVX_function_wo_checks, fn_fast_double_function_wo_checks);
  
   }
   
@@ -196,9 +188,9 @@ ALWAYS_INLINE  void                   fn_process_double_AVX512_sub_function(    
  
   
 template <typename T>
-ALWAYS_INLINE    void        fn_return_Ref_double_AVX512(  Eigen::Ref<T> x,
-                                                   const std::string &fn,
-                                                   const bool skip_checks) {
+ALWAYS_INLINE    void        fn_process_Ref_double_AVX512(  Eigen::Ref<T> x,
+                                                            const std::string &fn,
+                                                            const bool skip_checks) {
   
   if        (fn == "exp") {                              fn_process_double_AVX512_sub_function(x, fast_exp_1_AVX512, mvp_std_exp, fast_exp_1_wo_checks_AVX512, mvp_std_exp, skip_checks) ;
   } else if (fn == "log") {                              fn_process_double_AVX512_sub_function(x, fast_log_1_AVX512, mvp_std_log, fast_log_1_wo_checks_AVX512, mvp_std_log, skip_checks) ;

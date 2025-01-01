@@ -35,25 +35,93 @@ using namespace Eigen;
 
  
 
-
-ALWAYS_INLINE void log_sum_exp_general(      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_vals,  
-                                             const std::string &vect_type_exp,
-                                             const std::string &vect_type_log,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>> log_sum_result,
-                                             Eigen::Ref<Eigen::Matrix<double, -1, 1>> container_max_logs) {
-  
-  // find max for each row across all columns
-  container_max_logs = log_vals.rowwise().maxCoeff();
-  // sum across columns
- //Eigen::Matrix<double, -1, 1> sum_exp =  (fn_EIGEN_double( (log_vals.colwise() - container_max_logs) , "exp", vect_type_exp).array()).matrix().rowwise().sum();
-  // compute results
-  log_sum_result = container_max_logs + fn_EIGEN_double( (fn_EIGEN_double( (log_vals.colwise() - container_max_logs) , "exp", vect_type_exp).array()).matrix().rowwise().sum().array().abs(), "log", vect_type_log);
+ALWAYS_INLINE  void log_sum_exp_general(      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_vals,  
+                                              const std::string &vect_type_exp,
+                                              const std::string &vect_type_log,
+                                              Eigen::Ref<Eigen::Matrix<double, -1, 1>> log_sum_result,
+                                              Eigen::Ref<Eigen::Matrix<double, -1, 1>> container_max_logs) {
+    
+    // find max for each row across all columns
+    // container_max_logs = log_vals.rowwise().maxCoeff();
+    const Eigen::Matrix<double, -1, 1>  temp_container_max_logs = log_vals.rowwise().maxCoeff(); // this works on windows 
+    const Eigen::Matrix<double, -1, -1> temp = (log_vals.colwise() - temp_container_max_logs);
+    const Eigen::Matrix<double, -1, -1> temp_2 = fn_EIGEN_double(temp, "exp", vect_type_exp);
+    const Eigen::Matrix<double, -1, 1> sum_exp =  temp_2.rowwise().sum();
+    const Eigen::Matrix<double, -1, 1> sum_exp_abs = stan::math::abs(sum_exp);
+    /// up to here OK on windows
+    log_sum_result = fn_EIGEN_double(sum_exp_abs, "log", vect_type_log);
+    log_sum_result.array() += temp_container_max_logs.array();
    
 }
 
 
 
-  
+
+
+
+//// with optional additional underflow protection (can be commented out easily)
+ALWAYS_INLINE void log_abs_sum_exp_general_v2(   const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_vals,
+                                                 const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> signs,
+                                                 const std::string &vect_type_exp,
+                                                 const std::string &vect_type_log,
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, 1>> log_sum_abs_result,
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, 1>> sign_result,
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, 1>> container_max_logs,
+                                                 Eigen::Ref<Eigen::Matrix<double, -1, 1>> container_sum_exp_signed) {
+     
+    // const double min_exp_neg = -700.0;
+    // const double max_exp_arg =  700.0;
+    // const double tiny = stan::math::exp(min_exp_neg);
+     
+    //container_max_logs = log_abs_vals.rowwise().maxCoeff();    //// Find max log_abs value for each row 
+    const Eigen::Matrix<double, -1, 1>  temp_container_max_logs = log_abs_vals.rowwise().maxCoeff();
+    
+    // const Eigen::Matrix<double, -1, -1>  &shifted_logs = (log_abs_vals.colwise() - temp_container_max_logs);   //// Compute shifted logs with underflow protection
+    const Eigen::Matrix<double, -1, -1>  shifted_logs = (log_abs_vals.colwise() - temp_container_max_logs);   //// Compute shifted logs with underflow protection
+    //  Eigen::Matrix<double, -1, -1>  shifted_logs = (log_abs_vals.colwise() - container_max_logs);   //// Compute shifted logs with underflow protection
+     
+    //// Compute exp terms and sum over columns with signs 
+    const Eigen::Matrix<double, -1, -1> temp = (log_abs_vals.colwise() - temp_container_max_logs);
+    const Eigen::Matrix<double, -1, -1> temp_2 = fn_EIGEN_double(temp, "exp", vect_type_exp);
+    const Eigen::Matrix<double, -1, -1> temp_3 = (temp_2.array() * signs.array()).matrix();
+    const Eigen::Matrix<double, -1, 1>  container_sum_exp_signed_temp = temp_3.rowwise().sum();
+    const Eigen::Matrix<double, -1, 1>  container_sum_exp_signed_temp_signed = stan::math::sign(container_sum_exp_signed_temp);
+    const Eigen::Matrix<double, -1, 1>  container_sum_exp_signed_temp_abs = stan::math::abs(container_sum_exp_signed_temp);
+    const Eigen::Matrix<double, -1, 1>  container_sum_exp_signed_temp_log_abs = fn_EIGEN_double( container_sum_exp_signed_temp_abs, "log", vect_type_log);
+    
+    //// Compute sign_result and log_sum_abs_result
+    sign_result = container_sum_exp_signed_temp_signed;
+    log_sum_abs_result = temp_container_max_logs + container_sum_exp_signed_temp_log_abs;
+    
+    // sign_result(i) = std::copysign(1.0, sum_exp);
+    // log_sum_abs_result(i) = container_max_logs(i) +  stan::math::log(stan::math::abs(sum_exp));
+    
+    // for (Eigen::Index i = 0; i < container_sum_exp_signed.rows(); ++i) {
+    // 
+    //       double sum_exp = container_sum_exp_signed(i);
+    // 
+    //       if (stan::math::abs(sum_exp) < tiny) {   //  if exp's cancel out or are too small
+    // 
+    //             sign_result(i) = 0.0;
+    //             log_sum_abs_result(i) = min_exp_neg;
+    // 
+    //       } else {  // Normal case
+    // 
+    //             sign_result(i) = std::copysign(1.0, sum_exp); 
+    //             log_sum_abs_result(i) = container_max_logs(i) +  stan::math::log(stan::math::abs(sum_exp));
+    //       }
+    // 
+    // }
+    
+   
+} 
+
+
+
+
+
+
+
  
 
 
@@ -68,9 +136,9 @@ struct LogSumVecSingedResult {
  
  
  
-ALWAYS_INLINE LogSumVecSingedResult log_sum_vec_signed_v1(   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vec,
-                                                       const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> signs,
-                                                       const std::string &vect_type) {
+ALWAYS_INLINE  LogSumVecSingedResult log_sum_vec_signed_v1(   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> log_abs_vec,
+                                                              const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> signs,
+                                                              const std::string &vect_type) {
    
              // const double huge_neg = -700.0;
              double max_log_abs = stan::math::max(log_abs_vec);  // find max 
@@ -102,64 +170,7 @@ ALWAYS_INLINE LogSumVecSingedResult log_sum_vec_signed_v1(   const Eigen::Ref<co
  
  
  
- 
- 
- 
-//// with optional additional underflow protection (can be commented out easily)
-ALWAYS_INLINE void log_abs_sum_exp_general_v2(  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_vals,
-                                         const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> signs,
-                                         const std::string &vect_type_exp,
-                                         const std::string &vect_type_log,
-                                         Eigen::Ref<Eigen::Matrix<double, -1, 1>> log_sum_abs_result,
-                                         Eigen::Ref<Eigen::Matrix<double, -1, 1>> sign_result,
-                                         Eigen::Ref<Eigen::Matrix<double, -1, 1>> container_max_logs,
-                                         Eigen::Ref<Eigen::Matrix<double, -1, 1>> container_sum_exp_signed) {
 
-  const double min_exp_neg = -700.0 ;
-  const double max_exp_arg =  700.0;
-  const double tiny = stan::math::exp(min_exp_neg);
-
-  container_max_logs = log_abs_vals.rowwise().maxCoeff();    // Find max log_abs value for each row 
-
-
-  const Eigen::Matrix<double, -1, -1>  &shifted_logs = (log_abs_vals.colwise() - container_max_logs);   //// Compute shifted logs with underflow protection
-  
-  //  Eigen::Matrix<double, -1, -1>  shifted_logs = (log_abs_vals.colwise() - container_max_logs);   //// Compute shifted logs with underflow protection
-  //  shifted_logs = (shifted_logs.array() < -max_exp_arg).select( -max_exp_arg, shifted_logs );  ////// Clip very negative values to avoid unnecessary exp computations
-
-  //// Compute exp terms and sum over columns with signs 
-  container_sum_exp_signed = (fn_EIGEN_double((log_abs_vals.colwise() - container_max_logs).matrix(), "exp", vect_type_exp).array() *  signs.array()).matrix().rowwise().sum();
-
-  //// Compute sign_result and log_sum_abs_result
-  sign_result = container_sum_exp_signed.array().sign();
-  log_sum_abs_result.array() = container_max_logs.array() + fn_EIGEN_double( container_sum_exp_signed.array().abs(), "log", vect_type_log).array();
- 
-   // sign_result(i) = std::copysign(1.0, sum_exp);
-   // log_sum_abs_result(i) = container_max_logs(i) +  stan::math::log(stan::math::abs(sum_exp));
- 
- // for (Eigen::Index i = 0; i < container_sum_exp_signed.rows(); ++i) {
- // 
- //       double sum_exp = container_sum_exp_signed(i);
- // 
- //       if (stan::math::abs(sum_exp) < tiny) {   //  if exp's cancel out or are too small
- // 
- //             sign_result(i) = 0.0;
- //             log_sum_abs_result(i) = min_exp_neg;
- // 
- //       } else {  // Normal case
- // 
- //             sign_result(i) = std::copysign(1.0, sum_exp);
- //             log_sum_abs_result(i) = container_max_logs(i) +  stan::math::log(stan::math::abs(sum_exp));
- //       }
- // 
- // }
-  
-
-} 
-
-
- 
- 
  
  
  

@@ -83,14 +83,18 @@ ALWAYS_INLINE      void          fn_void_Ref_double_Stan(   Eigen::Ref<T> x,
      } else if (fn == "logit") {   x =   stan::math::logit(x);
      } else if (fn == "tanh")  {   x =   stan::math::tanh(x);
      } else if (fn == "Phi_approx") {      x =    stan::math::Phi_approx(x);
-     } else if (fn == "log_Phi_approx") {    x =   stan::math::log_inv_logit((0.07056*x.array().square()*x.array()  +  1.5976*x.array()).matrix());  
+     } else if (fn == "log_Phi_approx") {  
+           auto x_array = x.array(); 
+           auto x_sq = x_array.square();  
+           auto temp = 0.07056*x_sq*x_array  +  1.5976*x_array;
+           x =   stan::math::log_inv_logit(temp.matrix());  
      } else if (fn == "inv_Phi_approx") {  x =    inv_Phi_approx_Stan(x);
      } else if (fn == "Phi") {             x =    stan::math::Phi(x);
      } else if (fn == "inv_Phi") {         x =    stan::math::inv_Phi(x);
      } else if (fn == "inv_Phi_approx_from_logit_prob") {  x =  inv_Phi_approx_from_logit_prob_Stan(x);
-     } else if (fn == "inv_Phi_from_log_prob") {  x =   stan::math::std_normal_log_qf(x.matrix());
-     } else if (fn == "inv_logit") {  x =   stan::math::inv_logit(x.matrix());
-     } else if (fn == "log_inv_logit") {  x =   stan::math::log_inv_logit(x.matrix());
+     } else if (fn == "inv_Phi_from_log_prob") {  x =   stan::math::std_normal_log_qf(x);
+     } else if (fn == "inv_logit") {  x =   stan::math::inv_logit(x);
+     } else if (fn == "log_inv_logit") {  x =   stan::math::log_inv_logit(x);
      } else {
     
      }

@@ -26,15 +26,6 @@ using namespace Eigen;
 
 
  
-
- 
-typedef double (*FuncDouble)(double);
-typedef double (*FuncDouble_wo_checks)(double);
-
- 
-  
- 
- 
  
 template <typename T,  typename FuncDouble>
 ALWAYS_INLINE void fn_Loop_row_or_col_vector(      Eigen::Ref<T>  x, 

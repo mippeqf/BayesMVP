@@ -1,8 +1,8 @@
 #pragma once 
 
 
-#ifndef FAST_AND_APPROX_AVX256_AVX2_FNS_HPP
-#define FAST_AND_APPROX_AVX256_AVX2_FNS_HPP
+#ifndef FAST_AND_APPROX_AVX2_FNS_HPP
+#define FAST_AND_APPROX_AVX2_FNS_HPP
 
  
  
@@ -17,6 +17,7 @@
 #if defined(__AVX2__) && ( !(defined(__AVX256VL__) && defined(__AVX256F__)  && defined(__AVX256DQ__)) ) // use AVX2 if AVX-256 not available 
  
 
+
 //// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
  
@@ -28,7 +29,7 @@
  
  
 // is_finite_mask and is_not_NaN_mask for AVX2
-inline __m256d is_finite_mask(__m256d x) {
+inline __m256d  is_finite_mask VECTORCALL(__m256d x) {
        
        const __m256d sign_bit = _mm256_set1_pd(-0.0);
        
@@ -39,7 +40,7 @@ inline __m256d is_finite_mask(__m256d x) {
    
  }
 
-inline __m256d is_not_NaN_mask(__m256d x) {
+inline __m256d is_not_NaN_mask VECTORCALL(__m256d x) {
  
        return _mm256_cmp_pd(x, x, _CMP_EQ_OQ);
  
@@ -58,7 +59,7 @@ inline __m256d is_not_NaN_mask(__m256d x) {
  
  
  
-inline    __m256d  _mm256_abs_pd(const __m256d x) {
+inline    __m256d   _mm256_abs_pd VECTORCALL(const __m256d x) {
   
     const __m256d sign_bit = _mm256_set1_pd(-0.0);
     const __m256d x_abs = _mm256_andnot_pd(sign_bit, x);
@@ -74,31 +75,73 @@ inline    __m256d  _mm256_abs_pd(const __m256d x) {
   
  
 
+// Simple test function that just multiplies vector by 2
+__m256d   test_simple_AVX2 VECTORCALL(const __m256d x) {
+   
+       const __m256d two = _mm256_set1_pd(2.0);
+       return _mm256_mul_pd(x, two);
+       
+}
+
+// The scalar version for comparison
+double test_simple_scalar(const double x) {
+  
+     return x * 2.0;
+  
+} 
+
 
 
 ///////////////////  fns - exp   -----------------------------------------------------------------------------------------------------------------------------
  
 
-inline    __m256d fast_ldexp(const __m256d AVX_a,
-                             const __m256i AVX_i) {
+inline    __m256d   fast_ldexp VECTORCALL(  const __m256d AVX_a,
+                                            const __m256i AVX_i) {
    
-  return  _mm256_castsi256_pd (_mm256_add_epi64 (_mm256_slli_epi64 (AVX_i, 52ULL), _mm256_castpd_si256(AVX_a))); /* AVX_a = p * 2^AVX_i */
-  
+    const uint64_t shift_val_52 = 52;
+    __m256i shifted = _mm256_slli_epi64(AVX_i, shift_val_52);
+    __m256i a_bits = _mm256_castpd_si256(AVX_a);
+    __m256i result = _mm256_add_epi64(shifted, a_bits);
+    return _mm256_castsi256_pd(result);
+    //// return  _mm256_castsi256_pd (_mm256_add_epi64 (_mm256_slli_epi64 (AVX_i, shift_val_52), _mm256_castpd_si256(AVX_a))); /* AVX_a = p * 2^AVX_i */
   
 }
 
  
+// Replace _mm256_srai_epi64 (AVX-512 fn) with this helper function (forAVX2)
+inline __m256i   avx2_srai_epi64 VECTORCALL(__m256i x, int count) {
+  
+     // Get the sign bits
+     const __m256i sign_bits = _mm256_and_si256(_mm256_srai_epi32(_mm256_permute4x64_epi64(x, 0xF5), 31),
+                                                _mm256_set1_epi64x(0xFFFFFFFF00000000));
+     
+     // Perform arithmetic shift on lower 32 bits
+     const __m256i shift_result = _mm256_srai_epi32(x, count);
+     
+     // Combine results
+     return _mm256_or_si256(shift_result,  
+                            _mm256_and_si256(sign_bits, 
+                                             _mm256_set1_epi64x(0xFFFFFFFF00000000)));
+}
+
 
 // Fast implementation of ldexp (multiply by power of 2) using AVX2 intrinsics
 // Computes: a * 2^i for 4 pairs of values simultaneously
 // Handles edge cases by splitting large exponents into two steps
  
-inline __m256d fast_ldexp_2(const __m256d AVX_a, 
-                            const __m256i AVX_i) {
+inline __m256d fast_ldexp_2 VECTORCALL(const __m256d AVX_a, 
+                                         const __m256i AVX_i) {
   
+  
+      const uint64_t shift_val_52 = 52;  // Double-precision exponent shift
+      const uint64_t shift_val_63 = 63;  // Sign bit position
+      const uint64_t shift_val_1000 = 1000;  // Safe threshold for exponents
+      const uint64_t shift_val_neg_2000 = 2000;  // Double threshold for negative case
+      const uint64_t mask = 0xF;  // 4-bit comparison mask (one bit per double)   
+      
       // Get sign mask: for each 64-bit integer, shift right by 63 bits (arithmetic shift)
-      // This replicates the sign bit across all bits: 0x0000... for positive, 0xFFFF... for negative
-      const __m256i neg_mask = _mm256_srai_epi64(AVX_i, 63);
+      // This replicates the sign bit across all bits: 0x0000... for positive, 0xFFFF... for negative    ;
+      const __m256i neg_mask = avx2_srai_epi64(AVX_i, shift_val_63);
       
       // Calculate absolute value using the formula: abs(x) = (x XOR sign_mask) - sign_mask
       // 1. XOR with sign mask flips all bits if negative, keeps same if positive
@@ -106,7 +149,7 @@ inline __m256d fast_ldexp_2(const __m256d AVX_a,
       const __m256i abs_i = _mm256_sub_epi64(_mm256_xor_si256(AVX_i, neg_mask), neg_mask);
       
       // Create vector with all elements = 1000 (our safe threshold for exponents)
-      const __m256i threshold = _mm256_set1_epi64x(1000);
+      const __m256i threshold = _mm256_set1_epi64x(shift_val_1000);
       
       // Compare abs_i with threshold by subtraction
       // If abs_i > threshold, result will be positive
@@ -114,18 +157,18 @@ inline __m256d fast_ldexp_2(const __m256d AVX_a,
       
       // Create comparison mask by getting sign bits of comparison result
       // Will be 0xFFFF... where abs_i <= threshold, 0x0000... where abs_i > threshold
-      const __m256i cmp_mask = _mm256_srai_epi64(cmp, 63);
+      const __m256i cmp_mask = avx2_srai_epi64(cmp, shift_val_63);
       
       // Convert comparison mask to 4-bit integer (one bit per double)
       // If result != 0xF (not all bits set), then at least one value exceeded threshold
-      if (_mm256_movemask_pd(_mm256_castsi256_pd(cmp_mask)) != 0xF) {
+      if (_mm256_movemask_pd(_mm256_castsi256_pd(cmp_mask)) != mask) {
               
               // Handle large exponents by splitting into two steps
               
               // Create i1 = ±1000 based on original sign:
               // 1. AND neg_mask with -2000 gives -2000 for negative numbers, 0 for positive
               // 2. XOR with threshold (1000) gives -1000 for negative numbers, 1000 for positive
-              const __m256i i1 = _mm256_xor_si256(_mm256_and_si256(neg_mask, _mm256_set1_epi64x(-2000)), threshold);
+              const __m256i i1 = _mm256_xor_si256(_mm256_and_si256(neg_mask, _mm256_set1_epi64x(shift_val_neg_2000)), threshold);
               
               // Calculate remaining exponent: i2 = original_i - i1
               const __m256i i2 = _mm256_sub_epi64(AVX_i, i1);
@@ -133,7 +176,7 @@ inline __m256d fast_ldexp_2(const __m256d AVX_a,
               // First scaling step: multiply by 2^i1
               // 1. Shift i1 left by 52 to position it in double's exponent field
               // 2. Add to bit pattern of input doubles (effectively multiplying by 2^i1)
-              const __m256d mid = _mm256_castsi256_pd(_mm256_add_epi64(_mm256_slli_epi64(i1, 52), _mm256_castpd_si256(AVX_a))); 
+              const __m256d mid = _mm256_castsi256_pd(_mm256_add_epi64(_mm256_slli_epi64(i1, shift_val_52), _mm256_castpd_si256(AVX_a))); 
               
               // Second scaling step: multiply intermediate result by 2^i2
               // Same process as above but with i2 and intermediate result
@@ -160,18 +203,31 @@ inline __m256d fast_ldexp_2(const __m256d AVX_a,
 
 
 // Helper function for AVX2 64-bit conversion
-inline __m256i avx2_cvtpd_epi64(__m256d x) {
+inline __m256i avx2_cvtpd_epi64 VECTORCALL(__m256d x) {
  
-     // Extract doubles and convert to int64 one at a time
-     alignas(32) int64_t result[4];
-     alignas(32) double temp[4];
+     // Extract doubles and convert to int64 one at a tim
+      #ifdef _MSC_VER
+           _declspec(align(32)) int64_t result[4];
+           _declspec(align(32)) double temp[4];
+      #else
+           alignas(32) int64_t result[4];
+           alignas(32) double temp[4];
+      #endif
+     // alignas(32) int64_t result[4];
+     // alignas(32) double temp[4];
      _mm256_store_pd(temp, x);
      
      for(int i = 0; i < 4; i++) {
-       result[i] = (int64_t)std::llrint(temp[i]);  // Use llrint for proper rounding
-     } 
+           // Use llrint for proper rounding
+          #ifdef _MSC_VER
+                 result[i] = (int64_t)_mm_cvtsd_si64(_mm_load_sd(&temp[i]));  // Use SSE2 conversion
+          #else
+                 result[i] = (int64_t)std::llrint(temp[i]); 
+          #endif
+     }
      
-     return _mm256_load_si256((__m256i*)result);
+     //// return _mm256_load_si256((__m256i*)result);
+     return _mm256_load_si256(reinterpret_cast<const __m256i*>(static_cast<void*>(result)));
  
 }
 
@@ -180,48 +236,48 @@ inline __m256i avx2_cvtpd_epi64(__m256d x) {
 // Adapted from: https://stackoverflow.com/questions/48863719/fastest-implementation-of-exponential-function-using-avx
 // added   (optional) extra degree(s) for poly approx (oroginal float fn had 4 degrees) - using "minimaxApprox" R package to find coefficient terms
 // R code:    minimaxApprox::minimaxApprox(fn = exp, lower = -0.346573590279972643113, upper = 0.346573590279972643113, degree = 5, basis ="Chebyshev")
-inline    __m256d fast_exp_1_wo_checks_AVX2(const __m256d x)  {
-  
-  
-  
-  const __m256d exp_l2e = _mm256_set1_pd (1.442695040888963387); /* log2(e) */
-  const __m256d exp_l2h = _mm256_set1_pd (-0.693145751999999948367); /* -log(2)_hi */
-  const __m256d exp_l2l = _mm256_set1_pd (-0.00000142860676999999996193); /* -log(2)_lo */
-  
-  // /* coefficients for core approximation to exp() in [-log(2)/2, log(2)/2] */
-  const __m256d exp_c0 =     _mm256_set1_pd(0.00000276479776161191821278);
-  const __m256d exp_c1 =     _mm256_set1_pd(0.0000248844480527491290235);
-  const __m256d exp_c2 =     _mm256_set1_pd(0.000198411488032534342194);
-  const __m256d exp_c3 =     _mm256_set1_pd(0.00138888017711994078175);
-  const __m256d exp_c4 =     _mm256_set1_pd(0.00833333340524595143906);
-  const __m256d exp_c5 =     _mm256_set1_pd(0.0416666670404215802592);
-  const __m256d exp_c6 =     _mm256_set1_pd(0.166666666664891632843);
-  const __m256d exp_c7 =     _mm256_set1_pd(0.499999999994389376923);
-  const __m256d exp_c8 =     _mm256_set1_pd(1.00000000000001221245);
-  const __m256d exp_c9 =     _mm256_set1_pd(1.00000000000001332268);
-  
-  const __m256d input  = x;
-  
-  /* exp(x) = 2^i * e^f; i = rint (log2(e) * a), f = a - log(2) * i */
-  const __m256d t = _mm256_mul_pd(x, exp_l2e);      /* t = log2(e) * a */
-  ///  const __m256i i = _mm256_cvttpd_epi32(t);       /* i = (int)rint(t) */
-  const __m256i i = avx2_cvtpd_epi64(t);  
-  const __m256d x_2 = _mm256_round_pd(t, _MM_FROUND_TO_NEAREST_INT) ; // ((0<<4)| _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC|_MM_FROUND_NO_EXC));
-  const __m256d f = _mm256_fmadd_pd(x_2, exp_l2l, _mm256_fmadd_pd (x_2, exp_l2h, input));  /* a - log(2)_hi * r */    /* f = a - log(2)_hi * r - log(2)_lo * r */
-  
-  /* p ~= exp (f), -log(2)/2 <= f <= log(2)/2 */
-  __m256d p = exp_c0;
-  p = _mm256_fmadd_pd(p, f, exp_c1);
-  p = _mm256_fmadd_pd(p, f, exp_c2);
-  p = _mm256_fmadd_pd(p, f, exp_c3);
-  p = _mm256_fmadd_pd(p, f, exp_c4);
-  p = _mm256_fmadd_pd(p, f, exp_c5);
-  p = _mm256_fmadd_pd(p, f, exp_c6);
-  p = _mm256_fmadd_pd(p, f, exp_c7);
-  p = _mm256_fmadd_pd(p, f, exp_c8);
-  p = _mm256_fmadd_pd(p, f, exp_c9);
-  
-  return  fast_ldexp(p, i) ;    /* exp(x) = 2^i * p */
+inline    __m256d fast_exp_1_wo_checks_AVX2 VECTORCALL(const __m256d x)  {
+    
+    const __m256d exp_l2e = _mm256_set1_pd (1.442695040888963387); /* log2(e) */
+    const __m256d exp_l2h = _mm256_set1_pd (-0.693145751999999948367); /* -log(2)_hi */
+    const __m256d exp_l2l = _mm256_set1_pd (-0.00000142860676999999996193); /* -log(2)_lo */
+    
+    // /* coefficients for core approximation to exp() in [-log(2)/2, log(2)/2] */
+    const __m256d exp_c0 =     _mm256_set1_pd(0.00000276479776161191821278);
+    const __m256d exp_c1 =     _mm256_set1_pd(0.0000248844480527491290235);
+    const __m256d exp_c2 =     _mm256_set1_pd(0.000198411488032534342194);
+    const __m256d exp_c3 =     _mm256_set1_pd(0.00138888017711994078175);
+    const __m256d exp_c4 =     _mm256_set1_pd(0.00833333340524595143906);
+    const __m256d exp_c5 =     _mm256_set1_pd(0.0416666670404215802592);
+    const __m256d exp_c6 =     _mm256_set1_pd(0.166666666664891632843);
+    const __m256d exp_c7 =     _mm256_set1_pd(0.499999999994389376923);
+    const __m256d exp_c8 =     _mm256_set1_pd(1.00000000000001221245);
+    const __m256d exp_c9 =     _mm256_set1_pd(1.00000000000001332268);
+    
+    const __m256d input  = x;
+    
+    /* exp(x) = 2^i * e^f; i = rint (log2(e) * a), f = a - log(2) * i */
+    const __m256d t = _mm256_mul_pd(x, exp_l2e);      /* t = log2(e) * a */
+    ///  const __m256i i = _mm256_cvttpd_epi32(t);       /* i = (int)rint(t) */
+    const __m256i i = avx2_cvtpd_epi64(t);  
+    // const __m256d x_2 = _mm256_round_pd(t, _MM_FROUND_TO_NEAREST_INT) ; // ((0<<4)| _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC|_MM_FROUND_NO_EXC));
+    const __m256d x_2 = _mm256_round_pd(t, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+    const __m256d f0 = _mm256_fmadd_pd(x_2, exp_l2h, input);
+    const __m256d f = _mm256_fmadd_pd(x_2, exp_l2l, f0);  /* a - log(2)_hi * r */    /* f = a - log(2)_hi * r - log(2)_lo * r */
+    
+    /* p ~= exp (f), -log(2)/2 <= f <= log(2)/2 */
+    __m256d p = exp_c0;
+    p = _mm256_fmadd_pd(p, f, exp_c1);
+    p = _mm256_fmadd_pd(p, f, exp_c2);
+    p = _mm256_fmadd_pd(p, f, exp_c3);
+    p = _mm256_fmadd_pd(p, f, exp_c4);
+    p = _mm256_fmadd_pd(p, f, exp_c5);
+    p = _mm256_fmadd_pd(p, f, exp_c6);
+    p = _mm256_fmadd_pd(p, f, exp_c7);
+    p = _mm256_fmadd_pd(p, f, exp_c8);
+    p = _mm256_fmadd_pd(p, f, exp_c9);
+    
+    return  fast_ldexp_2(p, i) ;    /* exp(x) = 2^i * p */
   
 }
  
@@ -232,7 +288,7 @@ inline    __m256d fast_exp_1_wo_checks_AVX2(const __m256d x)  {
 
  
 // see https://stackoverflow.com/questions/39587752/difference-between-ldexp1-x-and-exp2x
-inline __m256d fast_exp_1_AVX2(const __m256d a) {
+inline __m256d fast_exp_1_AVX2  VECTORCALL(const __m256d a) {
   
   const __m256d   exp_bound  =   _mm256_set1_pd(708.4);
   const __m256d   pos_inf  =    _mm256_set1_pd(INFINITY);
@@ -276,7 +332,7 @@ inline __m256d fast_exp_1_AVX2(const __m256d a) {
  /// replace with manual fn:
 
  
-inline __m256d avx2_cvtepi64_pd(__m256i v) {
+inline __m256d avx2_cvtepi64_pd VECTORCALL(__m256i v) {
 
   
       // Extract high and low 64-bit integers
@@ -300,7 +356,7 @@ inline __m256d avx2_cvtepi64_pd(__m256i v) {
  
 
 //https://stackoverflow.com/a/65537754/9007125 // vectorized version of the answer by njuffa
-inline     __m256d fast_log_1_wo_checks_AVX2(const __m256d a ) {
+inline     __m256d fast_log_1_wo_checks_AVX2 VECTORCALL(const __m256d a ) {
   
   
   
@@ -345,7 +401,7 @@ inline     __m256d fast_log_1_wo_checks_AVX2(const __m256d a ) {
 }
 
 
-inline __m256d fast_log1p_1_wo_checks_AVX2(const __m256d x) {
+inline __m256d fast_log1p_1_wo_checks_AVX2 VECTORCALL(const __m256d x) {
   
     const __m256d small =  _mm256_set1_pd(1e-4);
     const __m256d minus_one_half  =  _mm256_set1_pd(-0.50);
@@ -360,13 +416,13 @@ inline __m256d fast_log1p_1_wo_checks_AVX2(const __m256d x) {
   
 }
 
-inline __m256d fast_log1m_1_wo_checks_AVX2(const __m256d x) {
+inline __m256d fast_log1m_1_wo_checks_AVX2 VECTORCALL(const __m256d x) {
   
      return fast_log1p_1_wo_checks_AVX2(_mm256_sub_pd(_mm256_setzero_pd(), x));
   
 } 
 
-inline __m256d fast_log1p_exp_1_wo_checks_AVX2(const __m256d x) {
+inline __m256d fast_log1p_exp_1_wo_checks_AVX2 VECTORCALL(const __m256d x) {
   
       const __m256d neg_x = _mm256_sub_pd(_mm256_setzero_pd(), x);
   
@@ -386,7 +442,7 @@ inline __m256d fast_log1p_exp_1_wo_checks_AVX2(const __m256d x) {
 
 
 // //https://stackoverflow.com/a/65537754/9007125
-inline __m256d fast_log_1_AVX2(const __m256d a) {
+inline __m256d fast_log_1_AVX2 VECTORCALL(const __m256d a) {
   
   const __m256d  pos_inf  =    _mm256_set1_pd(INFINITY);
   const __m256d  neg_inf  =    _mm256_set1_pd(-INFINITY);
@@ -412,7 +468,7 @@ inline __m256d fast_log_1_AVX2(const __m256d a) {
 // //  see: https://www.johndcook.com/cpp_log_one_plus_x.html
 
 
-inline __m256d fast_log1p_1_AVX2(const __m256d x) {
+inline __m256d fast_log1p_1_AVX2 VECTORCALL(const __m256d x) {
   
   const __m256d minus_1 =  _mm256_set1_pd(-1.0);
   const __m256d neg_half = _mm256_set1_pd(-0.5);
@@ -433,7 +489,7 @@ inline __m256d fast_log1p_1_AVX2(const __m256d x) {
 
 
 // //  compute log(1-x) without losing precision for small values of x.
-inline __m256d fast_log1m_1_AVX2(const __m256d x) {
+inline __m256d fast_log1m_1_AVX2 VECTORCALL(const __m256d x) {
   
   return fast_log1p_1_AVX2(_mm256_sub_pd(_mm256_setzero_pd(), x));
   
@@ -441,7 +497,7 @@ inline __m256d fast_log1m_1_AVX2(const __m256d x) {
 
 
 // //  compute log(1+x) without losing precision for small values of x. //  see: https://www.johndcook.com/cpp_log_one_plus_x.html
-inline __m256d fast_log1p_exp_1_AVX2(const __m256d x) {
+inline __m256d fast_log1p_exp_1_AVX2 VECTORCALL(const __m256d x) {
   
   const __m256d neg_x = _mm256_sub_pd(_mm256_setzero_pd(), x);
   
@@ -455,7 +511,7 @@ inline __m256d fast_log1p_exp_1_AVX2(const __m256d x) {
 
 
 
-inline     __m256d fast_logit_wo_checks_AVX2(const __m256d x)   {
+inline     __m256d fast_logit_wo_checks_AVX2 VECTORCALL(const __m256d x)   {
   
   const __m256d log_x = fast_log_1_AVX2(x);
   const __m256d log_1m_x =  fast_log1m_1_AVX2(x);
@@ -465,7 +521,7 @@ inline     __m256d fast_logit_wo_checks_AVX2(const __m256d x)   {
 
 
 
-inline     __m256d fast_logit_AVX2(const __m256d x)   {
+inline     __m256d fast_logit_AVX2 VECTORCALL(const __m256d x)   {
   
   const __m256d log_x = fast_log_1_AVX2(x);
   const __m256d log_1m_x =  fast_log1m_1_AVX2(x);
@@ -541,7 +597,7 @@ inline     __m256d fast_logit_AVX2(const __m256d x)   {
 
  
 
-inline     __m256d  fast_inv_logit_for_x_pos_AVX2(const __m256d x )  {
+inline     __m256d  fast_inv_logit_for_x_pos_AVX2 VECTORCALL(const __m256d x )  {
   
           const __m256d  exp_m_x =  fast_exp_1_AVX2(_mm256_sub_pd(_mm256_setzero_pd(), x)) ;
           
@@ -550,7 +606,7 @@ inline     __m256d  fast_inv_logit_for_x_pos_AVX2(const __m256d x )  {
 
 
 
-inline     __m256d  fast_inv_logit_for_x_neg_AVX2(const __m256d x )  {
+inline     __m256d  fast_inv_logit_for_x_neg_AVX2 VECTORCALL(const __m256d x )  {
   
           const __m256d  log_eps  =   _mm256_set1_pd(-18.420680743952367);
           const __m256d  exp_x =  fast_exp_1_AVX2(x) ;
@@ -560,7 +616,7 @@ inline     __m256d  fast_inv_logit_for_x_neg_AVX2(const __m256d x )  {
                                       _mm256_cmp_pd(x,  log_eps, _CMP_GT_OQ));
 }
 
-inline     __m256d  fast_inv_logit_AVX2(const __m256d x )  {
+inline     __m256d  fast_inv_logit_AVX2 VECTORCALL(const __m256d x )  {
   
     return  _mm256_blendv_pd(  fast_inv_logit_for_x_neg_AVX2(x),
                                fast_inv_logit_for_x_pos_AVX2(x), 
@@ -574,7 +630,7 @@ inline     __m256d  fast_inv_logit_AVX2(const __m256d x )  {
 
  
  
-inline      __m256d  fast_inv_logit_for_x_pos_wo_checks_AVX2(const __m256d x )  {
+inline      __m256d  fast_inv_logit_for_x_pos_wo_checks_AVX2 VECTORCALL(const __m256d x )  {
 
   const __m256d  exp_m_x =  fast_exp_1_wo_checks_AVX2(_mm256_sub_pd(_mm256_setzero_pd(), x)) ;
   
@@ -582,7 +638,7 @@ inline      __m256d  fast_inv_logit_for_x_pos_wo_checks_AVX2(const __m256d x )  
   
 }
 
-inline     __m256d  fast_inv_logit_for_x_neg_wo_checks_AVX2(const __m256d x )  {
+inline     __m256d  fast_inv_logit_for_x_neg_wo_checks_AVX2 VECTORCALL(const __m256d x )  {
   
   const __m256d  log_eps  =   _mm256_set1_pd(-18.420680743952367);
   const __m256d  exp_x =  fast_exp_1_wo_checks_AVX2(x) ;
@@ -593,7 +649,7 @@ inline     __m256d  fast_inv_logit_for_x_neg_wo_checks_AVX2(const __m256d x )  {
   
 }
 
-inline      __m256d  fast_inv_logit_wo_checks_AVX2(const __m256d x )  {
+inline      __m256d  fast_inv_logit_wo_checks_AVX2 VECTORCALL(const __m256d x )  {
   
   return  _mm256_blendv_pd(    fast_inv_logit_for_x_neg_wo_checks_AVX2(x),
                                fast_inv_logit_for_x_pos_wo_checks_AVX2(x), 
@@ -613,7 +669,7 @@ inline      __m256d  fast_inv_logit_wo_checks_AVX2(const __m256d x )  {
 
 ////////////
 
-inline     __m256d  fast_log_inv_logit_for_x_pos_AVX2(const __m256d x )  {
+inline     __m256d  fast_log_inv_logit_for_x_pos_AVX2 VECTORCALL(const __m256d x )  {
   
     const    __m256d   m_x = _mm256_sub_pd(_mm256_setzero_pd(), x);
   
@@ -621,7 +677,7 @@ inline     __m256d  fast_log_inv_logit_for_x_pos_AVX2(const __m256d x )  {
     
 }
 
-inline     __m256d  fast_log_inv_logit_for_x_neg_AVX2(const __m256d x )  {
+inline     __m256d  fast_log_inv_logit_for_x_neg_AVX2 VECTORCALL(const __m256d x )  {
 
     const __m256d  log_eps  =   _mm256_set1_pd(-18.420680743952367);
   
@@ -631,7 +687,7 @@ inline     __m256d  fast_log_inv_logit_for_x_neg_AVX2(const __m256d x )  {
   
 }
 
-inline     __m256d  fast_log_inv_logit_AVX2(const __m256d x )  {
+inline     __m256d  fast_log_inv_logit_AVX2 VECTORCALL(const __m256d x )  {
   
     return  _mm256_blendv_pd(    fast_log_inv_logit_for_x_neg_AVX2(x),
                                  fast_log_inv_logit_for_x_pos_AVX2(x), 
@@ -647,13 +703,13 @@ inline     __m256d  fast_log_inv_logit_AVX2(const __m256d x )  {
 
  
 ////////////
-inline     __m256d  fast_log_inv_logit_for_x_pos_wo_checks_AVX2(const __m256d x )  {
+inline     __m256d  fast_log_inv_logit_for_x_pos_wo_checks_AVX2 VECTORCALL(const __m256d x )  {
   
    return   _mm256_sub_pd(_mm256_setzero_pd(), fast_log1p_exp_1_wo_checks_AVX2((_mm256_sub_pd(_mm256_setzero_pd(), x)) ) );
    
 }
 
-inline     __m256d  fast_log_inv_logit_for_x_neg_wo_checks_AVX2(const __m256d x )  {
+inline     __m256d  fast_log_inv_logit_for_x_neg_wo_checks_AVX2 VECTORCALL(const __m256d x )  {
   
     const __m256d  log_eps  =   _mm256_set1_pd(-18.420680743952367);
   
@@ -663,7 +719,7 @@ inline     __m256d  fast_log_inv_logit_for_x_neg_wo_checks_AVX2(const __m256d x 
     
 }
 
-inline     __m256d  fast_log_inv_logit_wo_checks_AVX2(const __m256d x )  {
+inline     __m256d  fast_log_inv_logit_wo_checks_AVX2 VECTORCALL(const __m256d x )  {
   
     return  _mm256_blendv_pd(    fast_log_inv_logit_for_x_neg_wo_checks_AVX2(x),
                                  fast_log_inv_logit_for_x_pos_wo_checks_AVX2(x),
@@ -682,7 +738,7 @@ inline     __m256d  fast_log_inv_logit_wo_checks_AVX2(const __m256d x )  {
 
 
  
-inline     __m256d  fast_Phi_approx_wo_checks_AVX2(const __m256d x)  {
+inline     __m256d  fast_Phi_approx_wo_checks_AVX2 VECTORCALL(const __m256d x)  {
   
   const __m256d a =     _mm256_set1_pd(0.07056);
   const __m256d b =     _mm256_set1_pd(1.5976);
@@ -698,7 +754,7 @@ inline     __m256d  fast_Phi_approx_wo_checks_AVX2(const __m256d x)  {
 
  
  
-inline     __m256d  fast_Phi_approx_AVX2(const __m256d x )  {
+inline     __m256d  fast_Phi_approx_AVX2 VECTORCALL(const __m256d x )  {
   
   const __m256d a =     _mm256_set1_pd(0.07056);
   const __m256d b =     _mm256_set1_pd(1.5976);
@@ -719,7 +775,7 @@ inline     __m256d  fast_Phi_approx_AVX2(const __m256d x )  {
    
 
 
-inline      __m256d  fast_inv_Phi_approx_wo_checks_AVX2(const __m256d x )  {
+inline      __m256d  fast_inv_Phi_approx_wo_checks_AVX2 VECTORCALL(const __m256d x )  {
   
   const __m256d  inv_Phi_approx_c1 = _mm256_set1_pd(-0.3418);
   const __m256d  inv_Phi_approx_c2 = _mm256_set1_pd(2.74699999999999988631);
@@ -742,7 +798,7 @@ inline      __m256d  fast_inv_Phi_approx_wo_checks_AVX2(const __m256d x )  {
 
  
 
-inline     __m256d  fast_inv_Phi_approx_AVX2(const __m256d x )  {
+inline     __m256d  fast_inv_Phi_approx_AVX2 VECTORCALL(const __m256d x )  {
   
   const __m256d  one_third =  _mm256_set1_pd(0.33333333333333331483);
   
@@ -768,7 +824,7 @@ inline     __m256d  fast_inv_Phi_approx_AVX2(const __m256d x )  {
 
 
 // need to add citation to this (slight modification from a forum post)
-inline      __m256d  fast_inv_Phi_approx_from_logit_prob_wo_checks_AVX2(const __m256d logit_p )  {
+inline      __m256d  fast_inv_Phi_approx_from_logit_prob_wo_checks_AVX2 VECTORCALL(const __m256d logit_p )  {
   
   const __m256d  inv_Phi_approx_c1 = _mm256_set1_pd(-0.3418);
   const __m256d  inv_Phi_approx_c2 = _mm256_set1_pd(2.74699999999999988631);
@@ -787,7 +843,7 @@ inline      __m256d  fast_inv_Phi_approx_from_logit_prob_wo_checks_AVX2(const __
 
 
 
-inline     __m256d  fast_inv_Phi_approx_from_logit_prob_AVX2(const __m256d logit_p )  {
+inline     __m256d  fast_inv_Phi_approx_from_logit_prob_AVX2 VECTORCALL(const __m256d logit_p )  {
   
   const __m256d  inv_Phi_approx_c1 = _mm256_set1_pd(-0.3418);
   const __m256d  inv_Phi_approx_c2 = _mm256_set1_pd(2.74699999999999988631);
@@ -813,7 +869,7 @@ inline     __m256d  fast_inv_Phi_approx_from_logit_prob_AVX2(const __m256d logit
 
  
  
-inline      __m256d  fast_log_Phi_approx_wo_checks_AVX2(const __m256d x )  {
+inline      __m256d  fast_log_Phi_approx_wo_checks_AVX2 VECTORCALL(const __m256d x )  {
   
   const __m256d a =     _mm256_set1_pd(0.07056);
   const __m256d b =     _mm256_set1_pd(1.5976);
@@ -835,7 +891,7 @@ inline      __m256d  fast_log_Phi_approx_wo_checks_AVX2(const __m256d x )  {
  
 
 
-inline __m256d fast_log_Phi_approx_AVX2(const __m256d x) {
+inline __m256d fast_log_Phi_approx_AVX2 VECTORCALL(const __m256d x) {
   
   const __m256d a =     _mm256_set1_pd(0.07056);
   const __m256d b =     _mm256_set1_pd(1.5976);
@@ -861,7 +917,7 @@ inline __m256d fast_log_Phi_approx_AVX2(const __m256d x) {
  
 
 
-inline      __m256d    fast_tanh_AVX2( const  __m256d x  )   {
+inline      __m256d    fast_tanh_AVX2 VECTORCALL( const  __m256d x  )   {
   
   
   const __m256d  two =     _mm256_set1_pd(2.0);
@@ -873,7 +929,7 @@ inline      __m256d    fast_tanh_AVX2( const  __m256d x  )   {
  
  
  
-inline      __m256d    fast_tanh_wo_checks_AVX2(const   __m256d x  )   {
+inline      __m256d    fast_tanh_wo_checks_AVX2 VECTORCALL(const   __m256d x  )   {
   
   const __m256d  two =     _mm256_set1_pd(2.0);
   const __m256d  m_two =   _mm256_set1_pd(-2.0);
@@ -885,8 +941,8 @@ inline      __m256d    fast_tanh_wo_checks_AVX2(const   __m256d x  )   {
 
 
 // from: https://stackoverflow.com/questions/57870896/writing-a-portable-sse-avx-version-of-stdcopysign
-inline    __m256d CopySign(const __m256d srcSign, 
-                           const __m256d srcValue) {
+inline    __m256d CopySign VECTORCALL(const __m256d srcSign, 
+                                        const __m256d srcValue) {
     
     const __m256d mask0 = _mm256_set1_pd(-0.);
     
@@ -952,7 +1008,7 @@ inline    __m256d CopySign(const __m256d srcSign,
  
  
  //// based on Abramowitz-Stegun polynomial approximation for Phi
- inline __m256d fast_Phi_wo_checks_AVX2(const __m256d x) {
+ inline __m256d fast_Phi_wo_checks_AVX2 VECTORCALL(const __m256d x) {
    
    const __m256d a =  _mm256_set1_pd(0.2316419);
    const __m256d b1 = _mm256_set1_pd(0.31938153);
@@ -998,7 +1054,7 @@ inline    __m256d CopySign(const __m256d srcSign,
  
 
 
-inline __m256d fast_Phi_AVX2(const __m256d x) {
+inline __m256d fast_Phi_AVX2 VECTORCALL(const __m256d x) {
   
   
   const __m256d Phi_upper_bound =  _mm256_set1_pd(8.25);
@@ -1050,7 +1106,7 @@ inline __m256d fast_Phi_AVX2(const __m256d x) {
  /// vectorised, AVX-256 version of Stan fn provided by Sean Pinkney:  https://github.com/stan-dev/math/issues/2555 
  
  
- inline __m256d fast_inv_Phi_wo_checks_case_2a_AVX2(const __m256d p,
+ inline __m256d fast_inv_Phi_wo_checks_case_2a_AVX2 VECTORCALL(const __m256d p,
                                                       __m256d r) { ///  CASE 2(a): if abs(q) > 0.425  AND   if r <= 5.0 
    
    // std::cout << "calling  fast_Phi_wo_checks_case_2a_AVX256"   << "\n"; 
@@ -1083,7 +1139,7 @@ inline __m256d fast_Phi_AVX2(const __m256d x) {
  }  
 
 
-inline __m256d fast_inv_Phi_wo_checks_case_2b_AVX2(const __m256d p,
+inline __m256d fast_inv_Phi_wo_checks_case_2b_AVX2 VECTORCALL(const __m256d p,
                                                          __m256d r) { ///  CASE 2(a): if abs(q) > 0.425  AND   if r > 5.0 
   
   // std::cout << "calling  fast_Phi_wo_checks_case_2b_AVX256"   << "\n"; 
@@ -1118,7 +1174,7 @@ inline __m256d fast_inv_Phi_wo_checks_case_2b_AVX2(const __m256d p,
  
 
 
-inline __m256d fast_inv_Phi_wo_checks_case_2_AVX2(const __m256d p,
+inline __m256d fast_inv_Phi_wo_checks_case_2_AVX2 VECTORCALL(const __m256d p,
                                                   const __m256d q) {  /// CASE 2 (i.e. one of case 2(a) or 2(b) depending on value of r)
   
   const __m256d is_q_gr_0 = _mm256_cmp_pd(q, _mm256_setzero_pd(), _CMP_GT_OQ);
@@ -1151,10 +1207,10 @@ inline __m256d fast_inv_Phi_wo_checks_case_2_AVX2(const __m256d p,
 
 
 
-inline __m256d fast_inv_Phi_wo_checks_case_1_AVX2(const __m256d p,
+inline __m256d fast_inv_Phi_wo_checks_case_1_AVX2 VECTORCALL(const __m256d p,
                                                   const __m256d q) { ///  CASE 1: if abs(q) <= 0.425
   
-  
+   
   const __m256d q_sq = _mm256_mul_pd(q, q);
   const __m256d r = _mm256_sub_pd(_mm256_set1_pd(0.180625), q_sq);
   
@@ -1184,7 +1240,7 @@ inline __m256d fast_inv_Phi_wo_checks_case_1_AVX2(const __m256d p,
 
  
 
-inline __m256d fast_inv_Phi_wo_checks_AVX2(const __m256d p) {
+inline __m256d fast_inv_Phi_wo_checks_AVX2 VECTORCALL(const __m256d p) {
   
   const __m256d q = _mm256_sub_pd(p, _mm256_set1_pd(0.50));
   const __m256d is_q_le_threshold = _mm256_cmp_pd(_mm256_abs_pd(q), _mm256_set1_pd(0.425), _CMP_LE_OQ);
