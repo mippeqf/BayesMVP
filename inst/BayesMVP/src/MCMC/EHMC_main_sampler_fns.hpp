@@ -334,12 +334,12 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       
       const int n_params_main = Model_args_as_cpp_struct.n_params_main;
       const int n_params = n_params_main + n_nuisance;
 
-      Eigen::Matrix<double, -1, 1> grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
+      Eigen::Matrix<double, -1, 1> grad_main =   lp_and_grad_outs.segment(1 + n_nuisance, n_params_main);
 
       for (int l = 0; l < L_ii; l++) {
 
             // Update velocity (first half step)
-            velocity_main_vec_proposed_ref.array() +=  ( 0.5 * eps * M_inv_main_vec.array() *  grad_main.array() ).array() ;
+            velocity_main_vec_proposed_ref.array() +=   0.5 * eps * M_inv_main_vec.array() *  grad_main.array()   ;
 
             //// updae params by full step
             theta_main_vec_proposed_ref.array()  +=  eps *     velocity_main_vec_proposed_ref.array() ;
@@ -350,10 +350,10 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       
                                theta_main_vec_proposed_ref, theta_us_vec_initial_ref, y_ref, grad_option,
                                Model_args_as_cpp_struct,
                                Stan_model_as_cpp_struct);
-            grad_main =  ( lp_and_grad_outs.segment(1 + n_nuisance, n_params_main).array()).matrix();
+            grad_main =   lp_and_grad_outs.segment(1 + n_nuisance, n_params_main);
 
             // Update velocity (second half step)
-            velocity_main_vec_proposed_ref.array() +=  ( 0.5 * eps * M_inv_main_vec.array() *  grad_main.array() ).array() ;
+            velocity_main_vec_proposed_ref.array() +=  0.5 * eps * M_inv_main_vec.array() *  grad_main.array()   ;
 
       } // End of leapfrog steps
 

@@ -200,6 +200,10 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
   
       const std::string grad_option = "us_only";
       
+      // //// --------------------------------------------------------------------------------
+      // const std::string grad_option_temp = Model_args_as_cpp_struct.Model_args_strings(13);
+      // //// --------------------------------------------------------------------------------
+      
       const double eps_1 = EHMC_args_as_cpp_struct.eps_us; ; // std::sqrt(h);
       const double eps_1_sq = eps_1 * eps_1; /// h_sq is equiv. to MALA step-size  ??
       const double cos_eps_2 = (1.0 - 0.25 * eps_1_sq) / (1.0 + 0.25 * eps_1_sq);
@@ -244,20 +248,24 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
               if (EHMC_args_as_cpp_struct.diffusion_HMC == false)  L_ii = std::ceil( EHMC_args_as_cpp_struct.tau_us_ii /  EHMC_args_as_cpp_struct.eps_us );
               if (L_ii < 1) { L_ii = 1 ; }
               
-              { //// --------------------------------------------------------------------------------
-                  const bool force_PartialLog_temp = true;
-                  const std::string grad_option_temp = "none";  // working  (windows)
-                 // const std::string grad_option_temp = "test";     // not working (windows)
-
-                  //// initial lp-only (for TESTING/DEBUG)
-                  fn_lp_grad_InPlace(     result_input.lp_and_grad_outs(),
-                                          Model_type,
-                                          force_autodiff, force_PartialLog_temp, multi_attempts,
-                                          result_input.main_theta_vec(), result_input.us_theta_vec(),
-                                          y_ref,  grad_option_temp,
-                                          Model_args_as_cpp_struct,
-                                          Stan_model_as_cpp_struct);
-              } //// --------------------------------------------------------------------------------
+              // if (grad_option_temp != "no_testing")  { //// --------------------------------------------------------------------------------
+              //        const bool force_PartialLog_temp = true;
+              //        //  const std::string grad_option_temp = "none";  // seems fine (windows) w/ 500 ---
+              //        // const std::string grad_option_temp = "test";     // seems fine (windows) w/ 500 ---
+              //        //   const std::string grad_option_temp = "us_only";     // seems fine (windows) w/ 500  --- seems fine (windows) w/ 1
+              //        // const std::string grad_option_temp = "coeff_only";   // seems fine (windows)  w/ 500 ---
+              //        // const std::string grad_option_temp = "corr_only";     // seems fine (windows)  w/ 500 ---
+              //        //  const std::string grad_option_temp = "prev_only";      // seems fine (windows)  w/ 500 --- seems fine (windows) w/ 1
+              // 
+              //         //// initial lp / grad (for TESTING/DEBUG)
+              //         fn_lp_grad_InPlace(     result_input.lp_and_grad_outs(),
+              //                                 Model_type,
+              //                                 force_autodiff, force_PartialLog_temp, multi_attempts,
+              //                                 result_input.main_theta_vec(), result_input.us_theta_vec(),
+              //                                 y_ref,  grad_option_temp,
+              //                                 Model_args_as_cpp_struct,
+              //                                 Stan_model_as_cpp_struct);
+              // } //// --------------------------------------------------------------------------------
               
               //// initial lp  (and grad)
               fn_lp_grad_InPlace(     result_input.lp_and_grad_outs(), 
