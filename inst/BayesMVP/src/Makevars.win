@@ -38,12 +38,11 @@ override CPP_COMPILER_TYPE = "C:\rtools44\mingw64\bin\ccache.exe" gcc ## $(BINPR
 
 override CXX_STD = -std=gnu++17 # Use C++17
 
-override BASE_FLAGS =   -O3  -march=native  -mtune=native \
+override BASE_FLAGS =   -O3  -march=znver3  -mtune=znver3 \
                         -fPIC   -D_REENTRANT  -DSTAN_THREADS -pthread \
                         -fpermissive \
-                        -mfma -mavx -mavx2 \
-                        -flarge-source-files \
-                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math 
+                        -mfma -mavx2 \
+                        -flarge-source-files
                     
 
 ##                         -mavx512vl -mavx512dq  -mavx512f \
@@ -54,6 +53,8 @@ override BASE_FLAGS =   -O3  -march=native  -mtune=native \
 ## -fopenmp -lgomp \
 
 ##     -fno-unroll-loops
+
+## -mavx
 
 
 
@@ -183,27 +184,24 @@ override  PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_MATH_LIB)/tbb/include" \
     -I"$(STAN_LIB)/rapidjson_1.1.0" \
     -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
-    -I"$(CMDSTAN_PATH)" \
+    -I"$(STAN_MATH)" \
+    -I"$(STAN_MATH_LIB)" \
     -I"$(STAN_ROOT)" \
     -I"$(STAN_SRC)" \
-    -I"$(STAN_MATH)" \
-    -I"$(STAN_BASE)" \
-    -I"$(STAN_LIB)" \
-    -I"$(STAN_MATH_LIB)" \
     -I"$(STAN_BASE)/model" \
     -I"$(STAN_BASE)/services" \
     -I"$(STAN_BASE)/io" \
     -I"$(STAN_BASE)/mcmc" \
     -I"$(STAN_BASE)/analyze" \
-    -I"$(STAN_BASE)/callbacks" \
-    -I"$(STAN_BASE)/lang" \
-    -I"$(STAN_BASE)/optimization" \
-    -I"$(STAN_BASE)/variational" \
     -I"$(TBB_PATH)/include" \
     -I"$(TBB_PATH)" \
     -I"$(BRIDGESTAN_SRC)"
 
- 
+
+####     -I"$(CMDSTAN_PATH)" \         -I"$(STAN_LIB)" \      -I"$(STAN_BASE)" \      
+####     -I"$(STAN_BASE)/variational" \      -I"$(STAN_BASE)/optimization" \       -I"$(STAN_BASE)/lang" \      -I"$(STAN_BASE)/callbacks" \
+
+
 override  PKG_CXXFLAGS = $(PKG_CPPFLAGS)
 override  CPPFLAGS = $(PKG_CPPFLAGS)
 override  CXXFLAGS = $(PKG_CPPFLAGS)
