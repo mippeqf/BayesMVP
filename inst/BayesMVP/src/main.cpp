@@ -64,22 +64,38 @@
 
 
 #if defined(__GNUC__) || defined(__clang__)
-#define ALWAYS_INLINE __attribute__((always_inline)) inline
+    #define ALWAYS_INLINE __attribute__((always_inline)) inline
 #elif defined(_MSC_VER)
-#define ALWAYS_INLINE __forceinline
+    #define ALWAYS_INLINE __forceinline
 #else
-#define ALWAYS_INLINE inline
+    #define ALWAYS_INLINE inline
 #endif
  
  
+ 
+
 #if defined(_MSC_VER)
-#define VECTORCALL __vectorcall
+    #define VECTORCALL __vectorcall
 #else
-#define VECTORCALL
+    #define VECTORCALL
 #endif
  
+ 
+ 
+typedef double (*FuncDouble)(const double);
+
+
+#if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__) // use AVX-512 if available 
+    typedef __m512d (*FuncAVX)(const __m512d); 
+#elif defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
+    // typedef __m256d (*FuncAVX)(const __m256d) __attribute__((sysv_abi));  // forcing System V ABI
+    typedef __m256d (*FuncAVX)(const __m256d); 
+#elif defined(__AVX__) && !(defined(__AVX2__)) &&  ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX
+    typedef __m128d (*FuncAVX)(const __m128d); 
+#endif
  
    
+
 #include <sstream>
 #include <stdexcept>    
 #include <complex>
@@ -115,7 +131,7 @@
 //     #include "omp.h"
 // #endif
 //     
-
+ 
     
 #include <RcppParallel.h>
     /// #include <RcppEigen.h>
@@ -126,21 +142,19 @@
 
 
 
-using FuncDouble = std::function<double(double)>;
-using FuncDouble_wo_checks = std::function<double(double)>;
-// typedef double (*FuncDouble)(double);
-// typedef double (*FuncDouble_wo_checks)(double);
-
-
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Stan.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Loop.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX2_fns.hpp" // will only compile if  AVX2 is available
 #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_fns.hpp" // will only compile if  AVX-512 is available
+
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2_test.hpp" ///////////  FOR DEBUG ONLY
+
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_overall.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_dbl.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_SIMD.hpp"
+
 
 
 #include "general_functions/array_creators_Eigen_fns.hpp"
@@ -164,14 +178,14 @@ using FuncDouble_wo_checks = std::function<double(double)>;
 #include "MVP_functions/MVP_lp_grad_MD_AD_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_log_scale_MD_AD_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_multi_attempts.hpp"
-//////// #include "MVP_functions/MVP_manual_Hessian_calc_fns.hpp"
+//// #include "MVP_functions/MVP_manual_Hessian_calc_fns.hpp"
 
 
 #define COMPILE_LATENT_TRAIT 0
 #define COMPILE_MCMC_MAIN 1
 
+////// Latent trait model functions
 #if COMPILE_LATENT_TRAIT
-    ////// Latent trait model functions
     #include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
     #include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
     #include "LC_LT_functions/LC_LT_lp_grad_AD_fns.hpp"
@@ -187,17 +201,7 @@ using FuncDouble_wo_checks = std::function<double(double)>;
 #include "model_rng.hpp" 
     
     
-// ////// general lp_grad fn / manual/Stan model selector
-// #if __has_include("bridgestan.h")
-//     #define HAS_BRIDGESTAN_H 1
-//     #include "bridgestan.h"
-//     #include "version.hpp"
-//     #include "model_rng.hpp"
-// #else
-//     #define HAS_BRIDGESTAN_H 0
-// #endif
-
-
+    
 #include "general_functions/Stan_model_helper_fns.hpp"
 #include "general_functions/Stan_model_helper_fns_parallel.hpp"
 
@@ -496,18 +500,47 @@ void warmUpThreads(std::size_t nThreads) {
 
 
 // [[Rcpp::export]]
-Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             Eigen::Matrix<double, -1, -1> x,
+Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             const Eigen::Matrix<double, -1, -1> x,
                                                                              const std::string fn,
                                                                              const std::string vect_type,
                                                                              const bool skip_checks
 ) {
-  
+
     Eigen::Matrix<double, -1, -1> x_copy = x;
     Eigen::Ref<Eigen::Matrix<double, -1, -1>> x_copy_ref(x_copy);
-    fn_EIGEN_Ref_double(x_copy_ref, fn, vect_type, skip_checks);  // modify in-place
-    return x_copy_ref;
     
-} 
+    if (fn == "test_simple_debug") {
+      const std::string test_simple_string = "test_simple";
+      TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
+    } else {
+      fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
+    }
+    
+    return x_copy_ref;
+
+}
+
+
+
+
+
+// // [[Rcpp::export]]
+// Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             const Eigen::Matrix<double, -1, -1> x,
+//                                                                              const std::string fn,
+//                                                                              const std::string vect_type,
+//                                                                              const bool skip_checks
+// ) {
+//   
+//   Eigen::Matrix<double, -1, -1> x_copy = x;
+//   Eigen::Ref<Eigen::Matrix<double, -1, -1>> x_copy_ref(x_copy);
+//   TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place 
+//   return x_copy_ref;
+//   
+// } 
+
+
+
+ 
 
 
 
@@ -517,19 +550,51 @@ Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             Eig
 
 
 
-// [[Rcpp::export]] 
-Eigen::Matrix<double, -1, 1>     Rcpp_wrapper_EIGEN_double_colvec(           Eigen::Matrix<double, -1, 1> x,
+// [[Rcpp::export]]
+Eigen::Matrix<double, -1, 1>     Rcpp_wrapper_EIGEN_double_colvec(           const Eigen::Matrix<double, -1, 1> x,
                                                                              const std::string fn,
                                                                              const std::string vect_type,
                                                                              const bool skip_checks
 ) {
-  
+
   Eigen::Matrix<double, -1, 1> x_copy = x;
   Eigen::Ref<Eigen::Matrix<double, -1, 1>> x_copy_ref(x_copy);
-  fn_EIGEN_Ref_double(x_copy_ref, fn, vect_type, skip_checks);  // modify in-place
+  
+  if (fn == "test_simple_debug") {
+    const std::string test_simple_string = "test_simple";
+    TEST_fn_process_Ref_double_AVX2(x_copy_ref, test_simple_string, skip_checks);  // modify in-place
+  } else {
+    fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
+  }
+  
   return x_copy_ref;
-   
+
 }
+
+
+
+
+// // [[Rcpp::export]] 
+// Eigen::Matrix<double, -1, 1>     Rcpp_wrapper_EIGEN_double_colvec(           const Eigen::Matrix<double, -1, 1> x,
+//                                                                              const std::string fn,
+//                                                                              const std::string vect_type,
+//                                                                              const bool skip_checks
+// ) {
+//   
+//   Eigen::Matrix<double, -1, 1> x_copy = x;
+//   Eigen::Ref<Eigen::Matrix<double, -1, 1>> x_copy_ref(x_copy);
+//   TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
+//   return x_copy_ref;
+//   
+// } 
+
+
+
+ 
+
+
+
+
 
 
 

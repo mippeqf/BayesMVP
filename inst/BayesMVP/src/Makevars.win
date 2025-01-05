@@ -3,7 +3,6 @@
 
 ####### -----  BayesmMVP  path
 ifeq ($(OS),Windows_NT)
-   ##  PKG_PATH = $(shell cd)
      PKG_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(getwd())")
 else
      PKG_PATH = $(shell pwd)
@@ -30,8 +29,13 @@ $(info PKG_R_PATH is: $(PKG_R_PATH))
 #CPP_COMPILER_TYPE =     $(BINPREF)$(CCBASE) $(M_ARCH) #  gcc ###   C:/rtools44/x86_64-w64-mingw32.static.posix/bin/gcc.exe   gcc
 
 ## Default flags:
-override CXX_COMPILER_TYPE = "C:\rtools44\mingw64\bin\ccache.exe" g++ ## $(BINPREF)$(CCBASE) $(M_ARCH)  
-override CPP_COMPILER_TYPE = "C:\rtools44\mingw64\bin\ccache.exe" gcc ## $(BINPREF)$(CCBASE) $(M_ARCH)  
+override CXX_COMPILER_TYPE =  clang++ 
+override CPP_COMPILER_TYPE =  clang  
+
+## override CXX_COMPILER_TYPE =  g++ ## $(BINPREF)$(CCBASE) $(M_ARCH)  
+## override CPP_COMPILER_TYPE =  gcc ## $(BINPREF)$(CCBASE) $(M_ARCH)  
+## override CXX_COMPILER_TYPE = "C:\rtools44\mingw64\bin\ccache.exe" $(BINPREF)$(CCBASE) $(M_ARCH)  
+## override CPP_COMPILER_TYPE = "C:\rtools44\mingw64\bin\ccache.exe" $(BINPREF)$(CCBASE) $(M_ARCH)  
 
 ## override CXX_COMPILER_TYPE = $(shell where /R "C:\rtools44\mingw64\bin" ccache 2>NUL && echo "ccache g++" || echo "g++")
 ## override CPP_COMPILER_TYPE = $(shell where /R "C:\rtools44\mingw64\bin" ccache 2>NUL && echo "ccache gcc" || echo "gcc")
@@ -41,8 +45,7 @@ override CXX_STD = -std=gnu++17 # Use C++17
 override BASE_FLAGS =   -O3  -march=znver3  -mtune=znver3 \
                         -fPIC   -D_REENTRANT  -DSTAN_THREADS -pthread \
                         -fpermissive \
-                        -mfma -mavx2 \
-                        -flarge-source-files
+                        -mfma -mavx -mavx2
                     
 
 ##                         -mavx512vl -mavx512dq  -mavx512f \
@@ -56,7 +59,8 @@ override BASE_FLAGS =   -O3  -march=znver3  -mtune=znver3 \
 
 ## -mavx
 
-
+## -Wa,-muse-unaligned-vector-move
+## -malign-double
 
 # Get Windows user profile directory directly
 HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('\\\\\\\\', '/', Sys.getenv('USERPROFILE')))")/
