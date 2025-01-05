@@ -96,48 +96,48 @@ using namespace Eigen;
 // #else
 
 template <typename T>
-ALWAYS_INLINE  void               fn_EIGEN_Ref_double(    Eigen::Ref<T> x,
-                                                          const std::string &fn,
-                                                          const std::string &vect_type,
-                                                          const bool &skip_checks) {
+inline  void               fn_EIGEN_Ref_double(     Eigen::Ref<T> x_Ref,
+                                                    const std::string &fn,
+                                                    const std::string &vect_type,
+                                                    const bool &skip_checks) {
    
-         T  x_res = x; /// make a copy - TEMP
-         Eigen::Ref<T> x_res_Ref(x_res); 
+         // T  x_res = x; /// make a copy - TEMP
+         // Eigen::Ref<T> x_res_Ref(x_res); 
         
        /////  stan::math::check_finite(fn.c_str(), "x", x);  // using c_str() to convert std::string to const char*
       
         if (fn == "inv_Phi_from_log_prob") {
       
-                 x = stan::math::std_normal_log_qf(x_res_Ref); 
+               x_Ref = stan::math::std_normal_log_qf(x_Ref); 
       
         } else {
       
           if (vect_type == "Stan") {
       
-                fn_void_Ref_double_Stan(x_res_Ref, fn, skip_checks);
+                fn_void_Ref_double_Stan(x_Ref, fn, skip_checks);
        
           } else if (vect_type == "AVX2" ) { // use AVX-512 or AVX2 or loop (i.e., rely on automatic vectorisation)
       
               #if defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
-                         fn_process_Ref_double_AVX2(x_res_Ref, fn, skip_checks);
+                         fn_process_Ref_double_AVX2(x_Ref, fn, skip_checks);
               #endif
       
           } else if (vect_type == "AVX512" ) { // use AVX-512 or AVX2 or loop (i.e., rely on automatic vectorisation)
       
               #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)
-                         fn_process_Ref_double_AVX512(x_res_Ref, fn, skip_checks);
+                         fn_process_Ref_double_AVX512(x_Ref, fn, skip_checks);
               #endif
       
           } else {
             
-                fn_return_Loop(x_res_Ref, fn, skip_checks);
+                fn_return_Loop(x_Ref, fn, skip_checks);
               // throw std::invalid_argument( os.str() ); /// note: std::invalid_argument doesnt seem to work w/ Stan math lib
       
           }
       
         }
         
-        x = x_res_Ref;  // re-assign - TEMP
+        // x = x_res_Ref;  // re-assign - TEMP
 
 }
 
