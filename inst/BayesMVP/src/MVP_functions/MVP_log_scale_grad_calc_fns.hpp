@@ -259,7 +259,7 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t,
          const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);
          const double a = 0.07056;
          const double b = 1.5976;
-         const double a_times_3 = 3.0 * a;
+         const double a_times_3 = 3.0 * a; 
          
          const std::string vect_type_log_Phi = Model_args_as_cpp_struct.Model_args_strings(8);
          const std::string vect_type_exp = Model_args_as_cpp_struct.Model_args_strings(3);
