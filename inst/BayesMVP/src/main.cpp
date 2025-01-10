@@ -1,15 +1,30 @@
 
 
-  
-
 // [[Rcpp::depends(RcppParallel)]]
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(dqrng)]]
 
 // [[Rcpp::plugins(cpp17)]]
- 
+// [[Rcpp::plugins(openmp)]]
+
 #define EIGEN_NO_DEBUG
 #define EIGEN_DONT_PARALLELIZE
+ 
+#include <omp.h>
+ 
+#include <iostream>
+#include <sstream>
+#include <stdexcept>    
+#include <complex>
+#include <map>
+#include <vector>   
+#include <string>  
+#include <stdexcept>
+#include <stdio.h>  
+#include <algorithm>
+#include <cmath>
+ 
+ 
  
 //// Stan includes
 #include <stan/math/prim.hpp>
@@ -17,8 +32,6 @@
 #include <stan/math.hpp>
 
  
-
-//// Eigen includes
 #include "eigen_config.hpp"
 
 #undef OUT
@@ -46,8 +59,6 @@
 #include <stan/math/prim/fun/cholesky_decompose.hpp>
 #include <stan/math/prim/fun/eigenvalues_sym.hpp>
 #include <stan/math/prim/fun/diag_post_multiply.hpp>
-
-
 
 #include <stan/math/prim/prob/multi_normal_cholesky_lpdf.hpp>
 #include <stan/math/prim/prob/lkj_corr_cholesky_lpdf.hpp>
@@ -94,19 +105,7 @@ typedef double (*FuncDouble)(const double);
     typedef __m128d (*FuncAVX)(const __m128d); 
 #endif
  
-   
 
-#include <sstream>
-#include <stdexcept>    
-#include <complex>
-#include <map>
-#include <vector>   
-#include <string>  
-#include <stdexcept>
-#include <stdio.h>  
-#include <iostream>
-#include <algorithm>
-#include <cmath>
    
  
      
@@ -141,14 +140,13 @@ typedef double (*FuncDouble)(const double);
 #include "general_functions/double_fns.hpp"
 
 
-
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Stan.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Loop.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX2_fns.hpp" // will only compile if  AVX2 is available
 #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_fns.hpp" // will only compile if  AVX-512 is available
 
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available
-#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2_test.hpp" ///////////  FOR DEBUG ONLY
+//// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2_test.hpp" ///////////  FOR DEBUG ONLY
 
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_overall.hpp"
@@ -222,7 +220,7 @@ typedef double (*FuncDouble)(const double);
   #include "MCMC/EHMC_find_initial_eps_fns.hpp"
   #include "MCMC/EHMC_single_threaded_samp_fns.hpp"
   #include "MCMC/EHMC_multi_threaded_samp_fns_RCPP.hpp"
-  //// #include "MCMC/EHMC_multi_threaded_samp_fns_OMP.hpp"
+  //// #include "MCMC/EHMC_multi_threaded_samp_fns_OMP.hpp" //// needs OpenMP
 #endif
 
 
@@ -499,6 +497,10 @@ void warmUpThreads(std::size_t nThreads) {
 
 
 
+
+
+
+
 // [[Rcpp::export]]
 Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             const Eigen::Matrix<double, -1, -1> x,
                                                                              const std::string fn,
@@ -510,8 +512,8 @@ Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             con
     Eigen::Ref<Eigen::Matrix<double, -1, -1>> x_copy_ref(x_copy);
     
     if (fn == "test_simple_debug") {
-      const std::string test_simple_string = "test_simple";
-      TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
+      // const std::string test_simple_string = "test_simple";
+      // TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
     } else {
       fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
     }
@@ -523,33 +525,24 @@ Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             con
 
 
 
-
-// // [[Rcpp::export]]
-// Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             const Eigen::Matrix<double, -1, -1> x,
-//                                                                              const std::string fn,
-//                                                                              const std::string vect_type,
-//                                                                              const bool skip_checks
-// ) {
-//   
-//   Eigen::Matrix<double, -1, -1> x_copy = x;
-//   Eigen::Ref<Eigen::Matrix<double, -1, -1>> x_copy_ref(x_copy);
-//   TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place 
-//   return x_copy_ref;
-//   
-// } 
-
-
-
  
 
 
 
 
-
-
-
-
-
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 // [[Rcpp::export]]
 Eigen::Matrix<double, -1, 1>     Rcpp_wrapper_EIGEN_double_colvec(           const Eigen::Matrix<double, -1, 1> x,
                                                                              const std::string fn,
@@ -559,40 +552,17 @@ Eigen::Matrix<double, -1, 1>     Rcpp_wrapper_EIGEN_double_colvec(           con
 
   Eigen::Matrix<double, -1, 1> x_copy = x;
   Eigen::Ref<Eigen::Matrix<double, -1, 1>> x_copy_ref(x_copy);
-  
+
   if (fn == "test_simple_debug") {
-    const std::string test_simple_string = "test_simple";
-    TEST_fn_process_Ref_double_AVX2(x_copy_ref, test_simple_string, skip_checks);  // modify in-place
+    // const std::string test_simple_string = "test_simple";
+    // TEST_fn_process_Ref_double_AVX2(x_copy_ref, test_simple_string, skip_checks);  // modify in-place
   } else {
     fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
   }
-  
+
   return x_copy_ref;
 
 }
-
-
-
-
-// // [[Rcpp::export]] 
-// Eigen::Matrix<double, -1, 1>     Rcpp_wrapper_EIGEN_double_colvec(           const Eigen::Matrix<double, -1, 1> x,
-//                                                                              const std::string fn,
-//                                                                              const std::string vect_type,
-//                                                                              const bool skip_checks
-// ) {
-//   
-//   Eigen::Matrix<double, -1, 1> x_copy = x;
-//   Eigen::Ref<Eigen::Matrix<double, -1, 1>> x_copy_ref(x_copy);
-//   TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
-//   return x_copy_ref;
-//   
-// } 
-
-
-
- 
-
-
 
 
 
@@ -615,34 +585,34 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
                                                                          const std::string grad_option,
                                                                          const Rcpp::List Model_args_as_Rcpp_List
 ) {
-  
+
   const int N = y.rows();
   const int n_us = theta_us_vec.rows()  ;
-  const int n_params_main =  theta_main_vec.rows()  ; 
+  const int n_params_main =  theta_main_vec.rows()  ;
   const int n_params = n_params_main + n_us;
-   
+
   /// convert to Eigen
   const Eigen::Matrix<double, -1, 1> theta_main_vec_Ref =  theta_main_vec;
   const Eigen::Matrix<double, -1, 1> theta_us_vec_Ref =  theta_us_vec;
   const Eigen::Matrix<int, -1, -1>   y_Ref =  y;
-   
+
   const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-  
-  
+
+
   Eigen::Matrix<double, -1, 1> lp_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);
-  
+
   Stan_model_struct Stan_model_as_cpp_struct;
-  
-  if (Model_type == "Stan") { 
-    
+
+  if (Model_type == "Stan") {
+
     unsigned int seed = 123;
     const std::string model_so_file = Model_args_as_cpp_struct.model_so_file;
-    const std::string json_file_path = Model_args_as_cpp_struct.json_file_path; 
+    const std::string json_file_path = Model_args_as_cpp_struct.json_file_path;
     Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(model_so_file, json_file_path, seed);
-    
-  } 
-  
- 
+
+  }
+
+
   fn_lp_grad_InPlace(   lp_grad_outs,
                         Model_type,
                         force_autodiff, force_PartialLog, multi_attempts,
@@ -651,17 +621,13 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
                         grad_option,
                         Model_args_as_cpp_struct,//MVP_workspace,
                         Stan_model_as_cpp_struct);
-  
+
   fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
- 
-  
+
+
   return lp_grad_outs;
-  
-} 
 
-
-
-
+}
 
 
 
@@ -726,33 +692,18 @@ Rcpp::List  Rcpp_compute_MCMC_diagnostics(     const std::vector<Rcpp::NumericMa
 // [[Rcpp::export]]
 Rcpp::String  detect_vectorization_support() {
 
-  
-    #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__) // use AVX-512 if available 
+
+    #if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__) // use AVX-512 if available
       return "AVX512";
     #elif defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
       return "AVX2";
     #elif defined(__AVX__) && !(defined(__AVX2__)) &&  ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2 // use AVX
       return "AVX";
     #endif
-      
+
       return "Stan";
-  
+
 }
-  
-  
-  
-// #if defined(__AVX__) && !(defined(__AVX2__) && defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__))
-//   return "AVX";
-// #elif defined(__AVX2__) && !(defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__))
-//   return "AVX2";
-// #elif defined(__AVX512VL__) && defined(__AVX512F__) && defined(__AVX512DQ__)
-//   return "AVX512";
-// #else
-//   return "Stan";
-// #endif
-// 
-// }
-// 
 
 
 
@@ -770,47 +721,8 @@ Rcpp::String  detect_vectorization_support() {
 
 
 
-
-
-
-
-
-//
-// // [[Rcpp::export]]
-// Eigen::Matrix<double, -1, 1>     fn_Rcpp_wrapper_fn_Hessian_diag_nuisance(   const std::string Model_type,
-//                                                                              const Eigen::Matrix<double, -1, 1> theta_main_vec,
-//                                                                              const Eigen::Matrix<double, -1, 1> theta_us_vec,
-//                                                                              const Eigen::Matrix<int, -1, -1>  y,
-//                                                                              const Rcpp::List Model_args_as_Rcpp_List
-// ) {
-//
-//   const int N = y.rows();
-//   const int n_us = theta_us_vec.rows()  ;
-//   const int n_params_main =  theta_main_vec.rows()  ;
-//   const int n_params = n_params_main + n_us;
-//
-//   /// convert to Eigen
-//   const Eigen::Matrix<double, -1, 1> theta_main_vec_Eigen =  theta_main_vec;
-//   const Eigen::Matrix<double, -1, 1> theta_us_vec_Eigen =  theta_us_vec;
-//   const Eigen::Matrix<int, -1, -1>   y_Eigen =  y;
-//
-//   const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-//
-//   return fn_diag_hessian_us_only_manual(   theta_main_vec_Eigen, theta_us_vec_Eigen, y_Eigen, Model_args_as_cpp_struct);
-//
-// }
-
-
-
-
-
-
-
-
-
-
-
-
+ 
+ 
 
 // [[Rcpp::export]]
 Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Matrix<double, -1, -1> M_dense_main,  /// to be updated
@@ -832,19 +744,19 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
                                                                       const double   n_burnin,
                                                                       const std::string metric_type
 ) {
-  
+
          const int N = y.rows();
          const int n_us = theta_us_vec.rows()  ;
          const int n_params_main =  theta_main_vec.rows()  ;
          const int n_params = n_params_main + n_us;
-        
+
          const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-         
+
          Eigen::Matrix<double, -1, -1> M_dense_main_copy = M_dense_main;
          Eigen::Matrix<double, -1, -1> M_inv_dense_main_copy = M_inv_dense_main;
          Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol_copy = M_inv_dense_main_chol;
-         
-          
+
+
          update_M_dense_main_Hessian_InPlace(     M_dense_main_copy,
                                                   M_inv_dense_main_copy,
                                                   M_inv_dense_main_chol_copy,
@@ -863,8 +775,8 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
                                                   ii,
                                                   n_burnin,
                                                   metric_type);
-       
-        
+
+
          return Rcpp::List::create(
            Rcpp::Named("M_dense_main_copy") = M_dense_main_copy,
            Rcpp::Named("M_inv_dense_main_copy") = M_inv_dense_main_copy,
@@ -875,78 +787,7 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // [[Rcpp::export]]
-// Eigen::Matrix<double, -1, -1>     fn_Rcpp_wrapper_compute_main_Hessian_num_diff(     const double num_diff_e,
-//                                                                                      const double shrinkage_factor,
-//                                                                                      const std::string  Model_type,
-//                                                                                      const bool force_autodiff,
-//                                                                                      const bool force_PartialLog,
-//                                                                                      const bool multi_attempts,
-//                                                                                      const Eigen::Matrix<double, -1, 1> theta_main_vec,
-//                                                                                      const Eigen::Matrix<double, -1, 1> theta_us_vec,
-//                                                                                      const Eigen::Matrix<int, -1, -1> y,
-//                                                                                      const Rcpp::List Model_args_as_Rcpp_List,
-//                                                                                      const double   ii,
-//                                                                                      const double   n_burnin,
-//                                                                                      const std::string metric_type
-// ) {
-//
-//   const int N = y.rows();
-//   const int n_us = theta_us_vec.rows()  ;
-//   const int n_params_main =  theta_main_vec.rows()  ;
-//   const int n_params = n_params_main + n_us;
-//
-//   const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
-//
-//   Eigen::Matrix<double, -1, -1> Hessian(n_params_main, n_params_main);
-//
-//   Stan_model_struct Stan_model_as_cpp_struct;
-//
-// #if HAS_BRIDGESTAN_H
-//   if (Model_args_as_cpp_struct.model_so_file != "none") {
-//
-//     Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file,
-//                                                            Model_args_as_cpp_struct.json_file_path,
-//                                                            123);
-//
-//   }
-// #endif
-//
-//   Hessian = num_diff_Hessian_main_given_nuisance(   num_diff_e,
-//                                                     shrinkage_factor,
-//                                                     Model_type,
-//                                                     force_autodiff,
-//                                                     force_PartialLog,
-//                                                     multi_attempts,
-//                                                     theta_main_vec,
-//                                                     theta_us_vec,
-//                                                     y,
-//                                                     Model_args_as_cpp_struct,
-//                                                     Stan_model_as_cpp_struct);
-//
-//   return Hessian;
-//
-// }
-//
-//
-//
-
-
-
-
+ 
 
 
 
@@ -1055,16 +896,13 @@ Eigen::Matrix<double, -1, 1>     fn_Rcpp_wrapper_adapt_eps_ADAM(   double eps,  
                              eps_adam);
 
 
- 
+
 
 }
 
 
 
-
-
-
-
+ 
 
 
 
@@ -1081,37 +919,34 @@ Eigen::Matrix<double, -1, -1>  fn_update_snaper_m_and_s(     Eigen::Matrix<doubl
 
       const double kappa  =  8.0;
       const double eta_m  =  1.0 / (std::ceil(static_cast<double>(ii)/kappa) + 1.0);
-    
+
       // update snaper_m
       if (static_cast<int>(ii) < 2) {
         snaper_m = theta_vec_mean;
       } else {
         snaper_m = (1.0 - eta_m)*snaper_m + eta_m*theta_vec_mean;
       }
-    
+
       // update posterior variances (snaper_s_empirical)
       Eigen::Matrix<double, -1, 1> theta_vec_mean_m_snaper_m = (theta_vec_mean  - snaper_m);
       Eigen::Matrix<double, -1, 1> current_variances = ( theta_vec_mean_m_snaper_m.array() * theta_vec_mean_m_snaper_m.array() ).matrix() ;
       snaper_s_empirical = (1.0 - eta_m)*snaper_s_empirical   +   eta_m*current_variances;
-    
+
       Eigen::Matrix<double, -1, -1> out_mat(snaper_m.rows(), 2);
       out_mat.col(0) = snaper_m;
       out_mat.col(1) = snaper_s_empirical;
-      
+
       return out_mat;
 
 }
 
 
+ 
 
 
-
-
-
-
-
-
-
+ 
+ 
+ 
 // [[Rcpp::export]]
 Eigen::Matrix<double, -1, 1> fn_update_eigen_max_and_eigen_vec(       double eigen_max,   //// NOT const as updating!
                                                                       Eigen::Matrix<double, -1, 1> eigen_vector,  //// NOT const as updating!
@@ -1159,7 +994,7 @@ Eigen::Matrix<double, -1, 1> fn_update_snaper_w_dense_M(    Eigen::Matrix<double
 
 
     const int eta_w = 3;
-  
+
     //// update W (for DENSE M) - this part varies from the diag_M tau-adaptation function!
     Eigen::Matrix<double, -1, 1> x_c = M_dense_sqrt * (theta_vec - snaper_m_vec); // this is the only part which is different from diag (and of course the inputs).
     if    (eigen_max > 0.0)    {
@@ -1169,7 +1004,7 @@ Eigen::Matrix<double, -1, 1> fn_update_snaper_w_dense_M(    Eigen::Matrix<double
     } else {
       snaper_w_vec = x_c;
     }
-  
+
     return snaper_w_vec;
 
 }
@@ -1184,27 +1019,26 @@ Eigen::Matrix<double, -1, 1> fn_update_snaper_w_dense_M(    Eigen::Matrix<double
 
 // [[Rcpp::export]]
 Eigen::Matrix<double, -1, 1>  fn_update_snaper_w_diag_M(       Eigen::Matrix<double, -1, 1>  snaper_w_vec,    //// NOT const as updating!
-                                                               const Eigen::Matrix<double, -1, 1>  eigen_vector,
-                                                               const double eigen_max,
-                                                               const Eigen::Matrix<double, -1, 1>  theta_vec,
-                                                               const Eigen::Matrix<double, -1, 1>  snaper_m_vec,
-                                                               const double ii,
-                                                               const Eigen::Matrix<double, -1, 1>  sqrt_M_vec
+                                                             const Eigen::Matrix<double, -1, 1>  eigen_vector,
+                                                             const double eigen_max,
+                                                             const Eigen::Matrix<double, -1, 1>  theta_vec,
+                                                             const Eigen::Matrix<double, -1, 1>  snaper_m_vec,
+                                                             const double ii,
+                                                             const Eigen::Matrix<double, -1, 1>  sqrt_M_vec
 ) {
-
-
-    const int eta_w = 3;
   
-    //// update W (for DIAG M)
-    const Eigen::Matrix<double, -1, 1> x_c = ( sqrt_M_vec.array() * (theta_vec - snaper_m_vec).array() ).matrix() ; // this is the only part which is different from diag (and of course the inputs).
-    if    (eigen_max > 0.0)    {
-      Eigen::Matrix<double, -1, 1> current_w = ( x_c.array() * (x_c.array() * eigen_vector.array()).sum() ).matrix() ;
-      snaper_w_vec = ( snaper_w_vec.array() * ((ii - eta_w) / (ii + 1)) + ((eta_w + 1) / (ii + 1)) * current_w.array() ).matrix() ; /// update snaper_w_vec
-    } else {
-      snaper_w_vec = x_c;
-    }
-  
-    return snaper_w_vec;
+      const int eta_w = 3; 
+    
+      //// update W (for DIAG M)
+      const Eigen::Matrix<double, -1, 1> x_c = ( sqrt_M_vec.array() * (theta_vec - snaper_m_vec).array() ).matrix() ; // this is the only part which is different from diag (and of course the inputs).
+      if    (eigen_max > 0.0)    {
+        Eigen::Matrix<double, -1, 1> current_w = ( x_c.array() * (x_c.array() * eigen_vector.array()).sum() ).matrix() ;
+        snaper_w_vec = ( snaper_w_vec.array() * ((ii - eta_w) / (ii + 1)) + ((eta_w + 1) / (ii + 1)) * current_w.array() ).matrix() ; /// update snaper_w_vec
+      } else {
+        snaper_w_vec = x_c;
+      } 
+    
+      return snaper_w_vec; 
 
 }
 
@@ -1214,47 +1048,48 @@ Eigen::Matrix<double, -1, 1>  fn_update_snaper_w_diag_M(       Eigen::Matrix<dou
 
 
 
- // [[Rcpp::export]]
- Eigen::Matrix<double, -1, 1> fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM(    const Eigen::Matrix<double, -1, 1> eigen_vector,
-                                                                           const double eigen_max,
-                                                                           const Eigen::Matrix<double, -1, 1> theta_vec_initial,
-                                                                           const Eigen::Matrix<double, -1, 1> theta_vec_prop,
-                                                                           const Eigen::Matrix<double, -1, 1> snaper_m_vec,
-                                                                           const Eigen::Matrix<double, -1, 1> velocity_prop,
-                                                                           const Eigen::Matrix<double, -1, 1> velocity_0,
-                                                                           double tau,  /// updating this
-                                                                           const double LR,
-                                                                           const double ii,
-                                                                           const double n_burnin,
-                                                                           const Eigen::Matrix<double, -1, 1> sqrt_M_vec,
-                                                                           double tau_m_adam,   /// updating this
-                                                                           double tau_v_adam,  /// updating this
-                                                                           const double tau_ii
- ) {
+// [[Rcpp::export]]
+Eigen::Matrix<double, -1, 1> fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM(    const Eigen::Matrix<double, -1, 1> eigen_vector,
+                                                                         const double eigen_max,
+                                                                         const Eigen::Matrix<double, -1, 1> theta_vec_initial,
+                                                                         const Eigen::Matrix<double, -1, 1> theta_vec_prop,
+                                                                         const Eigen::Matrix<double, -1, 1> snaper_m_vec,
+                                                                         const Eigen::Matrix<double, -1, 1> velocity_prop,
+                                                                         const Eigen::Matrix<double, -1, 1> velocity_0,
+                                                                         double tau,  /// updating this
+                                                                         const double LR,
+                                                                         const double ii,
+                                                                         const double n_burnin, 
+                                                                         const Eigen::Matrix<double, -1, 1> sqrt_M_vec,
+                                                                         double tau_m_adam,   /// updating this
+                                                                         double tau_v_adam,  /// updating this
+                                                                         const double tau_ii
+) {
 
-     //  Eigen::Matrix<double, -1, 1> out_vec(3);
+       //  Eigen::Matrix<double, -1, 1> out_vec(3); 
+    
+         ////// for main (this also updates snaper_w)
+      return   fn_update_tau_w_diag_M_ADAM(
+                                           eigen_vector,
+                                           eigen_max,
+                                           theta_vec_initial,
+                                           theta_vec_prop,
+                                           snaper_m_vec,   // READ-ONLY in this function
+                                           velocity_prop,
+                                           velocity_0,
+                                           tau,  // being modified !!! 
+                                           LR,
+                                           ii,
+                                           n_burnin,
+                                           sqrt_M_vec,  // READ-ONLY in this function
+                                           tau_m_adam,
+                                           tau_v_adam,  // being modified !!!
+                                           tau_ii
+                                         );
 
-       ////// for main (this also updates snaper_w)
-    return   fn_update_tau_w_diag_M_ADAM(
-                                         eigen_vector,
-                                         eigen_max,
-                                         theta_vec_initial,
-                                         theta_vec_prop,
-                                         snaper_m_vec,   // READ-ONLY in this function
-                                         velocity_prop,
-                                         velocity_0,
-                                         tau,  // being modified !!!
-                                         LR,
-                                         ii,
-                                         n_burnin,
-                                         sqrt_M_vec,  // READ-ONLY in this function
-                                         tau_m_adam,
-                                         tau_v_adam,  // being modified !!!
-                                         tau_ii
-                                       );
 
+} 
 
- }
 
 
 
@@ -1355,54 +1190,6 @@ Eigen::Matrix<double, -1, -1>  Rcpp_Chol(const Eigen::Matrix<double, -1, -1>  &m
 
 
 
-//
-// // [[Rcpp::export]]
-// Eigen::Matrix<double, -1, -1> sqrtm(const Eigen::Matrix<double, -1, -1> &M) {
-//
-//   // make sure the input matrix is symmetric
-//   Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, -1, -1>> solver(M);
-//
-//   if (solver.info() != Eigen::Success) {
-//     throw std::runtime_error("Eigenvalue decomposition failed!");
-//   }
-//
-//   // extract eigenvalues and eigenvectors
-//   Eigen::Matrix<double, -1, -1>  D = solver.eigenvalues().array().sqrt().matrix().asDiagonal(); // sqrt of eigenvalues
-//   Eigen::Matrix<double, -1, -1>  V = solver.eigenvectors(); // eigenvectors
-//
-//   // Reconstruct the square root of the matrix
-//   Eigen::Matrix<double, -1, -1> M_sqrt = V * D *  V.transpose();
-//
-//   return M_sqrt;
-//
-// }
-//
-//
-
-
-
-//
-//
-// inline Eigen::Matrix<double, -1, -1>  fn_update_empirical_covariance(Eigen::Ref<Eigen::Matrix<double, -1, -1>>  empicical_cov_main,
-//                                                               Eigen::Ref<Eigen::Matrix<double, -1, 1>>  snaper_m_vec,
-//                                                               Eigen::Ref<Eigen::Matrix<double, -1, 1>>  theta_vec,
-//                                                               double ii) {
-//   double ii_p1 = ii + 1.0;
-//
-//   Eigen::Matrix<double, -1, 1> delta = theta_vec - snaper_m_vec;
-//   Eigen::Matrix<double, -1, -1> delta_x_self_transpose = delta * delta.transpose();
-//   empicical_cov_main.array() =  (  (ii_p1 - 1.0) * empicical_cov_main.array()  + delta_x_self_transpose.array() *  ((ii_p1  -  1.0) / ii_p1) ) / ii_p1 ;
-//
-//   empicical_cov_main = near_PD(empicical_cov_main);
-//
-//   return empicical_cov_main;
-//
-//
-// }
-
-
-
-
 
 
 
@@ -1458,37 +1245,6 @@ inline void clean_vector(Eigen::Matrix<double, -1, 1> &vec) {
 
 
 
-//
-// // [[Rcpp::export]]
-// std::vector<Eigen::Matrix<double, -1, -1>> fn_2D_to_3D_array_Eigen(  const Eigen::Matrix<double, -1, -1> theta_trace_as_2D_array,
-//                                                                      const int n_params_main,
-//                                                                      const int n_chains,
-//                                                                      const int n_iter) {
-//
-//
-//   std::vector<Eigen::Matrix<double, -1, -1>> theta_trace_3D_array = vec_of_mats(n_params_main, n_chains, n_iter);
-//   std::vector<Eigen::Matrix<double, -1, -1>> theta_trace_3D_array_out = vec_of_mats(n_iter, n_chains, n_params_main);
-//
-//   for (int ii = 0; ii < n_iter; ++ii) {
-//     for (int kk = 0; kk < n_chains; ++kk) {
-//       for (int j = 0; j < n_params_main; ++j) {
-//         int row_index = j + kk * n_params_main;
-//         try {
-//           theta_trace_3D_array[ii](j, kk) = theta_trace_as_2D_array(row_index, ii);
-//           theta_trace_3D_array_out[j](ii, kk) =  theta_trace_3D_array[ii](j, kk);
-//         } catch (...) {
-//           // Handle error
-//         }
-//       }
-//     }
-//   }
-//
-//
-//   return theta_trace_3D_array_out;
-//
-// }
-//
-
 
 
 
@@ -1534,20 +1290,20 @@ Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int
                                                              123);
 
   }
-  
-  
+
+
   HMCResult result_input(n_params_main, n_us, N);
-  
+
   result_input.main_theta_vec_0() = theta_main_vector_from_single_chain_input_from_R;
   result_input.main_theta_vec() = theta_main_vector_from_single_chain_input_from_R;
-  
+
   result_input.us_theta_vec_0() = theta_us_vector_from_single_chain_input_from_R;
   result_input.us_theta_vec() = theta_us_vector_from_single_chain_input_from_R;
-  
+
   HMC_output_single_chain  HMC_output_single_chain_i(n_iter, n_nuisance_to_track, n_params_main, n_us, N);
 
   pcg64 rng(seed, 0);
-  
+
      fn_sample_HMC_multi_iter_single_thread(    HMC_output_single_chain_i,
                                                 result_input,
                                                 burnin_indicator,
@@ -1592,6 +1348,8 @@ Rcpp::List     Rcpp_wrapper_fn_sample_HMC_multi_iter_single_thread(    const int
 
 
 
+
+
 // [[Rcpp::export]]
 Rcpp::List    fn_compute_param_constrain_from_trace_parallel(   const std::vector<Eigen::Matrix<double, -1, -1>> unc_params_trace_input_main,
                                                                 const std::vector<Eigen::Matrix<double, -1, -1>> unc_params_trace_input_nuisance,
@@ -1624,8 +1382,8 @@ Rcpp::List    fn_compute_param_constrain_from_trace_parallel(   const std::vecto
 
   //// Run parallel chains
   RcppParallel::parallelFor(0, n_chains, worker);
-  
-  //// copy results to output 
+
+  //// copy results to output
   worker.copy_results_to_output();
 
   Rcpp::List out(n_chains);
@@ -1710,7 +1468,7 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
   for (int kk = 0; kk < n_threads_R; ++kk) {
      y_copies_R[kk] = y_Eigen_R;
   }
- 
+
    // tbb::task_scheduler_init init(n_threads_R);
    warmUpThreads(n_threads_R);
 
@@ -1776,295 +1534,12 @@ Rcpp::List                                   Rcpp_fn_RcppParallel_EHMC_sampling(
 
 
 
-// 
-// 
-// 
-// // [[Rcpp::export]]
-// Rcpp::List                                   Rcpp_fn_OpenMP_EHMC_sampling(  const int n_threads_R,
-//                                                                                   const int seed_R,
-//                                                                                   const int n_iter_R,
-//                                                                                   const bool iter_one_by_one,
-//                                                                                   const bool partitioned_HMC_R,
-//                                                                                   const std::string Model_type_R,
-//                                                                                   const bool sample_nuisance_R,
-//                                                                                   const bool force_autodiff_R,
-//                                                                                   const bool force_PartialLog_R,
-//                                                                                   const bool multi_attempts_R,
-//                                                                                   const int n_nuisance_to_track,
-//                                                                                   const Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_input_from_R,
-//                                                                                   const Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_input_from_R,
-//                                                                                   const Eigen::Matrix<int, -1, -1> y_Eigen_R,
-//                                                                                   const Rcpp::List Model_args_as_Rcpp_List,  ///// ALWAYS read-only
-//                                                                                   const Rcpp::List EHMC_args_as_Rcpp_List,
-//                                                                                   const Rcpp::List EHMC_Metric_as_Rcpp_List
-// ) {
-//   
-//         //// key dimensions
-//         const int n_params_main = theta_main_vectors_all_chains_input_from_R.rows();
-//         const int n_us = theta_us_vectors_all_chains_input_from_R.rows();
-//          
-//         //// create EMPTY OUTPUT / containers* to be filled (each col filled from different thread w/ each col corresponding to a different chain)
-//         Rcpp::NumericMatrix  theta_main_vectors_all_chains_output_to_R =  fn_convert_EigenMat_to_RcppMat_dbl(theta_main_vectors_all_chains_input_from_R);   // write to this
-//          
-//         //// nuisance
-//         Rcpp::NumericMatrix  theta_us_vectors_all_chains_output_to_R  = fn_convert_EigenMat_to_RcppMat_dbl(theta_us_vectors_all_chains_input_from_R);
-//          
-//         //// convert lists to C++ structs
-//         const Model_fn_args_struct     Model_args_as_cpp_struct =   convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List); ///// ALWAYS read-only
-//         const EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
-//         const EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
-//         //// replicate these structs for thread-safety as we will be modifying them for burnin
-//         std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  n_threads_R); // read-only
-//         std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R); // need to edit these !!
-//         std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, n_threads_R); // read-only
-//          
-//         ///// Traces
-//         const int N = Model_args_as_cpp_struct.N;
-//         std::vector<Eigen::Matrix<double, -1, -1>> trace_output = vec_of_mats<double>(n_params_main, n_iter_R, n_threads_R);
-//         std::vector<Eigen::Matrix<double, -1, -1>> trace_output_divs =  vec_of_mats<double>(1, n_iter_R, n_threads_R);
-//         std::vector<Eigen::Matrix<double, -1, -1>> trace_output_nuisance =  vec_of_mats<double>(n_nuisance_to_track, n_iter_R, n_threads_R);
-//         std::vector<Eigen::Matrix<double, -1, -1>> trace_output_log_lik = vec_of_mats<double>(N, n_iter_R, n_threads_R);  //// possibly dummy
-//          
-//         ///// data copies
-//         std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), n_threads_R);
-//         for (int kk = 0; kk < n_threads_R; ++kk) {
-//           y_copies_R[kk] = y_Eigen_R;
-//         }
-//         
-//         // tbb::task_scheduler_init init(n_threads_R);
-//         warmUpThreads(n_threads_R);
-//         
-//         //// call OpenMP fn 
-//             EHMC_sampling_OpenMP(   n_threads_R,
-//                                     seed_R,
-//                                     n_iter_R,
-//                                     partitioned_HMC_R,
-//                                     Model_type_R,
-//                                     sample_nuisance_R,
-//                                     force_autodiff_R,
-//                                     force_PartialLog_R,
-//                                     multi_attempts_R,
-//                                     ///// inputs
-//                                     theta_main_vectors_all_chains_input_from_R,
-//                                     theta_us_vectors_all_chains_input_from_R,
-//                                     ///// outputs (main)
-//                                     trace_output,
-//                                     ///// data
-//                                     y_copies_R,
-//                                     ///// structs
-//                                     Model_args_as_cpp_struct_copies_R, ///// ALWAYS read-only
-//                                     EHMC_args_as_cpp_struct_copies_R,
-//                                     EHMC_Metric_as_cpp_struct_copies_R,
-//                                     ///// traces
-//                                     trace_output_divs,
-//                                     n_nuisance_to_track,
-//                                     trace_output_nuisance,
-//                                     trace_output_log_lik
-//         );
-//         
-//         ///  //// Reset everything
-//         //// parallel_hmc_sampling.reset();
-//         
-//         //// Return results
-//         return Rcpp::List::create(trace_output,
-//                                   trace_output_divs,
-//                                   trace_output_nuisance,
-//                                   theta_main_vectors_all_chains_output_to_R,
-//                                   theta_us_vectors_all_chains_output_to_R,
-//                                   trace_output_log_lik
-//         );
-//         
-//   
-//   
-//   
-// }
-// 
-// 
-// 
-// 
-
 
 
 
 
 
  
-
-
-// 
-// 
-// 
-// 
-// // [[Rcpp::export]]
-// Rcpp::List                            fn_R_OpenMP_EHMC_single_iter_burnin(   int n_threads_R,
-//                                                                         int seed_R,
-//                                                                         int n_iter_R,
-//                                                                         int current_iter_R,
-//                                                                         int n_adapt,
-//                                                                         const bool burnin_indicator,
-//                                                                         std::string Model_type_R,
-//                                                                         bool sample_nuisance_R,
-//                                                                         bool force_autodiff_R,
-//                                                                         bool force_PartialLog_R,
-//                                                                         bool multi_attempts_R,
-//                                                                         const int n_nuisance_to_track,
-//                                                                         const double max_eps_main,
-//                                                                         const double max_eps_us,
-//                                                                         bool partitioned_HMC_R,
-//                                                                         const std::string metric_type_main,
-//                                                                         double shrinkage_factor,
-//                                                                         const std::string metric_type_nuisance,
-//                                                                         const double tau_main_target,
-//                                                                         const double tau_us_target,
-//                                                                         const int clip_iter,
-//                                                                         const int gap,
-//                                                                         const bool main_L_manual,
-//                                                                         const bool us_L_manual,
-//                                                                         const int L_main_if_manual,
-//                                                                         const int L_us_if_manual,
-//                                                                         const int max_L,
-//                                                                         const double tau_mult,
-//                                                                         const double ratio_M_us,
-//                                                                         const double ratio_Hess_main,
-//                                                                         const int M_interval_width,
-//                                                                         Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_input_from_R,
-//                                                                         Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_input_from_R,
-//                                                                         const Eigen::Matrix<int, -1, -1> y_Eigen_R,
-//                                                                         const Rcpp::List Model_args_as_Rcpp_List,  ///// ALWAYS read-only
-//                                                                         Rcpp::List EHMC_args_as_Rcpp_List,
-//                                                                         Rcpp::List EHMC_Metric_as_Rcpp_List,
-//                                                                         Rcpp::List EHMC_burnin_as_Rcpp_List
-// ) {
-//   
-//   //// key dimensions
-//   const int n_params_main = theta_main_vectors_all_chains_input_from_R.rows();
-//   const int n_us = theta_us_vectors_all_chains_input_from_R.rows();
-//   
-//   //// create EMPTY OUTPUT / containers* to be filled (each col filled from different thread w/ each col corresponding to a different chain)
-//   Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_output_to_R =   (theta_main_vectors_all_chains_input_from_R);   // write to this
-//   Eigen::Matrix<double, -1, -1>  other_main_out_vector_all_chains_output_to_R(10, n_threads_R);  // write to this
-//   double p_jump_main_R = 0.0;
-//   int div_main_R = 0;
-//   
-//   //// nuisance
-//   Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_output_to_R  =  (theta_us_vectors_all_chains_input_from_R);
-//   Eigen::Matrix<double, -1, -1>  other_us_out_vector_all_chains_output_to_R(10, n_threads_R);  // write to this
-//   double p_jump_us_R = 0.0;
-//   int div_us_R = 0;
-//   
-//   //// convert lists to C++ structs 
-//   Model_fn_args_struct     Model_args_as_cpp_struct =   convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List); ///// ALWAYS read-only
-//   EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
-//   EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
-//   EHMC_burnin_struct       EHMC_burnin_as_cpp_struct  = convert_R_List_EHMC_burnin_struct(EHMC_burnin_as_Rcpp_List);
-//   
-//   //// replicate these structs for thread-safety as we will be modifying them for burnin
-//   std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  n_threads_R); // read-only
-//   std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R); // need to edit these !!
-//   std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, n_threads_R); // read-only
-//   std::vector<EHMC_burnin_struct>   EHMC_burnin_as_cpp_struct_copies_R =    replicate_EHMC_burnin_struct(   EHMC_burnin_as_cpp_struct, n_threads_R); // read-only 
-//   
-//   //// data copies
-//   std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), n_threads_R);
-//   for (int kk = 0; kk < n_threads_R; ++kk) {
-//     y_copies_R[kk] = y_Eigen_R;
-//   }
-//   
-//   /////// containers for burnin outputs ONLY (not needed for sampling) - stores: theta_0, theta_prop, velocity_0, velocity_prop
-//   Eigen::Matrix<double, -1, -1>  theta_main_0_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
-//   Eigen::Matrix<double, -1, -1>  theta_main_prop_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
-//   Eigen::Matrix<double, -1, -1>  velocity_main_0_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
-//   Eigen::Matrix<double, -1, -1>  velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
-//   Eigen::Matrix<double, -1, -1>  theta_us_0_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
-//   Eigen::Matrix<double, -1, -1>  theta_us_prop_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
-//   Eigen::Matrix<double, -1, -1>  velocity_us_0_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
-//   Eigen::Matrix<double, -1, -1>  velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R(n_us, n_threads_R);
-//    
-//   int n_iter_for_fn_call = n_iter_R;
-//   if (burnin_indicator == true) n_iter_for_fn_call = 1;
-//   
-//   int one =  1; 
-//   
-//   //// make trace containers (as 2D matrix using 3D mapping functions)
-//   std::vector<Eigen::Matrix<double, -1, -1>> trace_output = vec_of_mats<double>(n_params_main, n_iter_R, n_threads_R);
-//   
-//   // //// local storage 
-//   // const int N = Model_args_as_cpp_struct.N;
-//   // std::vector<HMC_output_single_chain> HMC_outputs;
-//   // HMC_outputs.reserve(n_threads_R);
-//   // for (int i = 0; i < n_threads_R; ++i) {
-//   //   HMC_output_single_chain HMC_output_single_chain(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N);
-//   //   HMC_outputs.emplace_back(HMC_output_single_chain);
-//   // }
-//   
-//   
-//   // // create worker
-//   EHMC_burnin_OpenMP(         n_threads_R,
-//                               seed_R,
-//                               one,
-//                               current_iter_R,
-//                               partitioned_HMC_R,
-//                               Model_type_R,
-//                               sample_nuisance_R,
-//                               force_autodiff_R,
-//                               force_PartialLog_R,
-//                               multi_attempts_R,
-//                               ///// inputs
-//                               theta_main_vectors_all_chains_input_from_R,
-//                               theta_us_vectors_all_chains_input_from_R,
-//                               ///// other outputs  
-//                               other_main_out_vector_all_chains_output_to_R,
-//                               other_us_out_vector_all_chains_output_to_R,
-//                               ///// data
-//                               y_copies_R,
-//                               //////////////  input structs
-//                               Model_args_as_cpp_struct_copies_R, 
-//                               EHMC_args_as_cpp_struct_copies_R,
-//                               EHMC_Metric_as_cpp_struct_copies_R,
-//                               EHMC_burnin_as_cpp_struct_copies_R,
-//                               ////////// burnin-specific stuff
-//                               theta_main_vectors_all_chains_output_to_R,
-//                               theta_us_vectors_all_chains_output_to_R,
-//                               //// main
-//                               theta_main_0_burnin_tau_adapt_all_chains_input_from_R,
-//                               theta_main_prop_burnin_tau_adapt_all_chains_input_from_R,
-//                               velocity_main_0_burnin_tau_adapt_all_chains_input_from_R,
-//                               velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R,
-//                               //// nuisance
-//                               theta_us_0_burnin_tau_adapt_all_chains_input_from_R,
-//                               theta_us_prop_burnin_tau_adapt_all_chains_input_from_R,
-//                               velocity_us_0_burnin_tau_adapt_all_chains_input_from_R,
-//                               velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R);
-//     
-//     // Return results
-//     return Rcpp::List::create(
-//       ////// main outputs for main params & nuisance
-//       Rcpp::wrap(trace_output), // theta
-//       Rcpp::wrap(theta_main_vectors_all_chains_output_to_R),
-//       Rcpp::wrap(other_main_out_vector_all_chains_output_to_R),
-//       Rcpp::wrap(theta_us_vectors_all_chains_output_to_R), // 3 // theta
-//       Rcpp::wrap(other_us_out_vector_all_chains_output_to_R),
-//       //////
-//       theta_main_0_burnin_tau_adapt_all_chains_input_from_R,
-//       theta_main_prop_burnin_tau_adapt_all_chains_input_from_R, // 10
-//       velocity_main_0_burnin_tau_adapt_all_chains_input_from_R,
-//       velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R, // 12
-//       theta_us_0_burnin_tau_adapt_all_chains_input_from_R,
-//       theta_us_prop_burnin_tau_adapt_all_chains_input_from_R, // 14
-//       velocity_us_0_burnin_tau_adapt_all_chains_input_from_R,
-//       velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R, // 16
-//       //////
-//       EHMC_Metric_as_cpp_struct.M_dense_main,
-//       EHMC_Metric_as_cpp_struct.M_inv_dense_main,
-//       EHMC_Metric_as_cpp_struct.M_inv_dense_main_chol,
-//       EHMC_Metric_as_cpp_struct.M_inv_us_vec
-//     );
-//     
-//  
-//   
-// }
-// 
-
 
 
 
@@ -2137,19 +1612,19 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
   EHMC_fn_args_struct      EHMC_args_as_cpp_struct =    convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
   EHMC_Metric_struct       EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
   EHMC_burnin_struct       EHMC_burnin_as_cpp_struct  = convert_R_List_EHMC_burnin_struct(EHMC_burnin_as_Rcpp_List);
- 
+
   //// replicate these structs for thread-safety as we will be modifying them for burnin
   std::vector<Model_fn_args_struct> Model_args_as_cpp_struct_copies_R =     replicate_Model_fn_args_struct( Model_args_as_cpp_struct,  n_threads_R); // read-only
   std::vector<EHMC_fn_args_struct>  EHMC_args_as_cpp_struct_copies_R =      replicate_EHMC_fn_args_struct(  EHMC_args_as_cpp_struct,   n_threads_R); // need to edit these !!
   std::vector<EHMC_Metric_struct>   EHMC_Metric_as_cpp_struct_copies_R =    replicate_EHMC_Metric_struct(   EHMC_Metric_as_cpp_struct, n_threads_R); // read-only
   std::vector<EHMC_burnin_struct>   EHMC_burnin_as_cpp_struct_copies_R =    replicate_EHMC_burnin_struct(   EHMC_burnin_as_cpp_struct, n_threads_R); // read-only
- 
+
   ///// data copies
   std::vector<Eigen::Matrix<int, -1, -1>> y_copies_R = vec_of_mats<int>(y_Eigen_R.rows(), y_Eigen_R.cols(), n_threads_R);
   for (int kk = 0; kk < n_threads_R; ++kk) {
     y_copies_R[kk] = y_Eigen_R;
   }
- 
+
   /////// containers for burnin outputs ONLY (not needed for sampling) - stores: theta_0, theta_prop, velocity_0, velocity_prop
   Rcpp::NumericMatrix  theta_main_0_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
   Rcpp::NumericMatrix  theta_main_prop_burnin_tau_adapt_all_chains_input_from_R(n_params_main, n_threads_R);
@@ -2168,8 +1643,7 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
 
   int one =  1;
 
-  
-  // // create worker
+  //// create worker
   RcppParallel_EHMC_burnin parallel_hmc_test(         n_threads_R,
                                                       seed_R,
                                                       one,
@@ -2191,7 +1665,7 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
                                                       ///// data
                                                       y_copies_R,
                                                       /////// structs
-                                                      Model_args_as_cpp_struct_copies_R, 
+                                                      Model_args_as_cpp_struct_copies_R,
                                                       EHMC_args_as_cpp_struct_copies_R,
                                                       EHMC_Metric_as_cpp_struct_copies_R,
                                                       EHMC_burnin_as_cpp_struct_copies_R,
@@ -2214,7 +1688,7 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
   //   fn_bs_destroy_Stan_model(Model_args_as_cpp_struct.bs_model_ptr,
   //                            Model_args_as_cpp_struct.bs_handle);
   // }
-  
+
   //// Reset everything
   parallel_hmc_test.reset();
 
@@ -2249,690 +1723,8 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
 
   }
 
-  
-  
-  
-  
 
- //
- //
- // if (burnin_indicator == true) {
- //
- //
- //
- //    ////////////   ------  Begin burnin / warmup   -------------------------------------------------------------------------
- //    //// make containers to re-use in iteration (ii) loop
- //    Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_Eigen =   Rcpp::as<Eigen::Matrix<double, -1, -1>>(theta_main_vectors_all_chains_output_to_R)  ;
- //    Eigen::Matrix<double, -1, 1>   theta_vec_current_main  = theta_main_vectors_all_chains_Eigen.rowwise().mean();
- //    Eigen::Matrix<double, -1, 1>   snaper_m_vec_main = theta_vec_current_main;
- //    Eigen::Matrix<double, -1, 1>   snaper_s_vec_main_empirical =  EHMC_burnin_as_cpp_struct.snaper_s_vec_main_empirical;
- //    Eigen::Matrix<double, -1, 1>   snaper_w_vec_main  = EHMC_burnin_as_cpp_struct.snaper_w_vec_main;
- //    double eigen_max_main =  EHMC_burnin_as_cpp_struct.eigen_max_main;
- //    Eigen::Matrix<double, -1, 1>   eigen_vector_main  =  EHMC_burnin_as_cpp_struct.eigen_vector_main;
- //
- //
- //    Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_Eigen =     Rcpp::as<Eigen::Matrix<double, -1, -1>>(theta_us_vectors_all_chains_output_to_R)  ;
- //    Eigen::Matrix<double, -1, 1>   theta_vec_current_us  = theta_us_vectors_all_chains_Eigen.rowwise().mean();
- //    Eigen::Matrix<double, -1, 1>   snaper_m_vec_us =  theta_vec_current_us;
- //    Eigen::Matrix<double, -1, 1>   snaper_s_vec_us_empirical  =  EHMC_burnin_as_cpp_struct.snaper_s_vec_us_empirical;
- //    Eigen::Matrix<double, -1, 1>   snaper_w_vec_us  =  EHMC_burnin_as_cpp_struct.snaper_w_vec_us;
- //    double eigen_max_us =   EHMC_burnin_as_cpp_struct.eigen_max_us;
- //    Eigen::Matrix<double, -1, 1>   eigen_vector_us  = EHMC_burnin_as_cpp_struct.eigen_vector_us;
- //
- //    Eigen::Matrix<double, -1, 1>   tau_main_per_chain_to_avg_vec  = Eigen::Matrix<double, -1, 1>::Zero(n_threads_R);
- //    Eigen::Matrix<double, -1, 1>   tau_m_adam_main_per_chain_to_avg_vec  = Eigen::Matrix<double, -1, 1>::Zero(n_threads_R);
- //    Eigen::Matrix<double, -1, 1>   tau_v_adam_main_per_chain_to_avg_vec  = Eigen::Matrix<double, -1, 1>::Zero(n_threads_R);
- //
- //    Eigen::Matrix<double, -1, 1>   tau_us_per_chain_to_avg_vec  = Eigen::Matrix<double, -1, 1>::Zero(n_threads_R);
- //    Eigen::Matrix<double, -1, 1>   tau_m_adam_us_per_chain_to_avg_vec  = Eigen::Matrix<double, -1, 1>::Zero(n_threads_R);
- //    Eigen::Matrix<double, -1, 1>   tau_v_adam_us_per_chain_to_avg_vec  = Eigen::Matrix<double, -1, 1>::Zero(n_threads_R);
- //
- //    ///// set ADAM hyper-params for eps / tau adaptation
- //    const double beta1_adam = 0.00; // ADAM hyperparameter 1
- //    const double beta2_adam = 0.95; // ADAM hyperparameter 2
- //    const double eps_adam = 1e-8; // ADAM "eps" for numerical stability
- //    const double kappa = 8.0;
- //    //double eta_m = 1.0/(std::ceil(1.0/kappa) + 1.0);
- //
- //    int n_iter_adaptation_window = 1; /// doing BCA @ every iteration!
- //
- //    ///// for main
- //    const double LR_main = EHMC_burnin_as_cpp_struct.LR_main;  ///   shared between the K chains
- //    const double adapt_delta_main =    EHMC_burnin_as_cpp_struct.adapt_delta_main; ///   shared between the K chains
- //
- //    Eigen::Matrix<double, -1, -1> M_dense_main = EHMC_Metric_as_cpp_struct.M_dense_main;
- //    Eigen::Matrix<double, -1, -1> M_inv_dense_main = EHMC_Metric_as_cpp_struct.M_inv_dense_main;
- //    Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol = EHMC_Metric_as_cpp_struct.M_inv_dense_main_chol;
- //    Eigen::Matrix<double, -1, -1>  M_dense_main_Chol = ( M_dense_main.llt().matrixL() ).toDenseMatrix().matrix() ;
- //    Eigen::Matrix<double, -1, -1>  M_dense_sqrt = M_dense_main_Chol;// sqrtm(M_dense_main); // compute mass matrix sqrt (for burnin adaptation)
- //
- //    ///// for nuisance
- //    const double LR_us = EHMC_burnin_as_cpp_struct.LR_us;  ///   shared between the K chains
- //    const double adapt_delta_us =    EHMC_burnin_as_cpp_struct.adapt_delta_us; ///   shared between the K chains
- //
- //
- //    double tau_us_prop, tau_main_prop;
- //    double L_main, L_us;
- //
- //    Eigen::Matrix<double, -1, 1> M_inv_us_vec =  EHMC_Metric_as_cpp_struct.M_inv_us_vec;
- //    Eigen::Matrix<double, -1, 1> sqrt_M_us_vec = EHMC_burnin_as_cpp_struct.sqrt_M_us_vec;
- //
- //    const int N = y_Eigen_R.rows();
- //    const int n_tests = y_Eigen_R.cols();
- //
- //    double divs_main = 0.0;
- //    double p_jump_main_mean = 0.0;
- //
- //    Eigen::Matrix<double, -1, -1> empicical_cov_main = EHMC_Metric_as_cpp_struct.M_inv_dense_main;
- //
- //    double tau_main, tau_m_adam_main, tau_v_adam_main;
- //    double eps_main, eps_m_adam_main, eps_v_adam_main;
- //    double tau_us, tau_m_adam_us, tau_v_adam_us;
- //    double eps_us, eps_m_adam_us, eps_v_adam_us;
- //
- //    tau_main = EHMC_args_as_cpp_struct.tau_main;
- //    eps_main = EHMC_args_as_cpp_struct.eps_main;
- //    tau_us =   EHMC_args_as_cpp_struct.tau_us;
- //    eps_us = EHMC_args_as_cpp_struct.eps_us;
- //
- //    tau_m_adam_main = EHMC_burnin_as_cpp_struct.tau_m_adam_main;
- //    tau_v_adam_main = EHMC_burnin_as_cpp_struct.tau_v_adam_main;
- //    eps_m_adam_main = EHMC_burnin_as_cpp_struct.eps_m_adam_main;
- //    eps_v_adam_main = EHMC_burnin_as_cpp_struct.eps_v_adam_main;
- //
- //    tau_m_adam_us = EHMC_burnin_as_cpp_struct.tau_m_adam_us;
- //    tau_v_adam_us = EHMC_burnin_as_cpp_struct.tau_v_adam_us;
- //    eps_m_adam_us = EHMC_burnin_as_cpp_struct.eps_m_adam_us;
- //    eps_v_adam_us = EHMC_burnin_as_cpp_struct.eps_v_adam_us;
- //
- //    const std::string Hessian_string =  "Hessian";
- //    const std::string Empirical_string =  "Empirical";
- //
- //
- //    const int n_burnin = n_iter_R;
- //    if (n_adapt == 0) {
- //      n_adapt =  n_burnin - std::round(n_burnin/10);
- //    }
- //
- //
- //    ///// --------  start of burnin iterations   ----------------------------------------------------------------------------------------------------------------
- //    for (int ii = 0; ii < n_iter_R; ++ii) {
- //
- //      if (ii < n_adapt) {
- //
- //              if (ii < clip_iter) { /// MALA up until clip_iter
- //
- //                tau_us =   1.0 * eps_us;
- //                tau_main = 1.0 * eps_main;
- //
- //                L_main = tau_main / eps_main;
- //                L_us = tau_us / eps_us;
- //
- //              } else  {
- //
- //                      try {
- //
- //                              double clip_iter_dbl = static_cast<double>(clip_iter);
- //                              double gap_dbl =       static_cast<double>(gap);
- //                              double ii_dbl =   static_cast<double>(ii);
- //
- //                              double clip_iter_p_gap_div_4 =    static_cast<double>(std::round( (clip_iter_dbl + gap_dbl/4.0 )) );
- //                              double clip_iter_p_gap_div_2 =    static_cast<double>(std::round( (clip_iter_dbl + gap_dbl/2.0 )) );
- //                              double clip_iter_p_gap_div_1p33 = static_cast<double>(std::round( (clip_iter_dbl + gap_dbl/1.3333333333333333333333333 )) );
- //                              double clip_iter_p_gap_m1 = clip_iter + gap - 1.0;
- //
- //                              double tau_inc_1_main =  ( (0.50 * tau_mult * std::sqrt(eigen_max_main) ));
- //                              double tau_inc_2_main =  ( (0.75 * tau_mult * std::sqrt(eigen_max_main) ));
- //                              double tau_inc_3_main =  ( (tau_mult * std::sqrt(eigen_max_main) ));
- //
- //                              double tau_inc_1_us =   (0.50 * tau_mult * std::sqrt(eigen_max_us) );
- //                              double tau_inc_2_us =   (0.75 * tau_mult * std::sqrt(eigen_max_us) );
- //                              double tau_inc_3_us =   (tau_mult * std::sqrt(eigen_max_us) );
- //
- //                              eps_us =   EHMC_args_as_cpp_struct_copies[0].eps_us;
- //                              eps_main = EHMC_args_as_cpp_struct_copies[0].eps_main;
- //
- //
- //                              if (ii_dbl <= clip_iter_p_gap_div_4) {
- //                                tau_main =  5.0 * eps_main;
- //                                tau_us   =  5.0   * eps_us;
- //                              } else if ( (ii_dbl > clip_iter_p_gap_div_4)  &&  (ii_dbl <= clip_iter_p_gap_div_2) )  {
- //                                tau_main =  10.0  * eps_main;
- //                                tau_us   =  10.0    * eps_us;
- //                              } else if ( (ii_dbl > clip_iter_p_gap_div_2) && (ii_dbl <= clip_iter_p_gap_div_1p33) ) {
- //                                tau_main = tau_inc_1_main;
- //                                tau_us   = tau_inc_1_us;
- //                                if (tau_main_target != 0) {
- //                                  tau_main = tau_main_target;
- //                                }
- //                                if (tau_us_target != 0) {
- //                                  tau_us = tau_us_target;
- //                                }
- //                              } else if ( (ii_dbl > clip_iter_p_gap_div_1p33) && (ii_dbl <= clip_iter_p_gap_m1) ) {
- //                                tau_main = tau_inc_2_main;
- //                                tau_us   = tau_inc_2_us;
- //                                if (tau_main_target != 0) {
- //                                  tau_main = tau_main_target;
- //                                }
- //                                if (tau_us_target != 0) {
- //                                  tau_us = tau_us_target;
- //                                }
- //                              } else if ( (ii_dbl > clip_iter_p_gap_m1) && (ii_dbl <= clip_iter_p_gap_m1 + 50) ) {
- //                                tau_main =  tau_inc_3_main;
- //                                tau_us =  tau_inc_3_us;
- //                                if (tau_main_target != 0) {
- //                                  tau_main = tau_main_target;
- //                                }
- //                                if (tau_us_target != 0) {
- //                                  tau_us = tau_us_target;
- //                                }
- //                              } else {
- //                                tau_main = EHMC_args_as_cpp_struct_copies[0].tau_main;
- //                                tau_us =   EHMC_args_as_cpp_struct_copies[0].tau_us;
- //                              }
- //
- //                      } catch (...) {
- //
- //                      }
- //
- //                      L_main = tau_main / eps_main;
- //                      L_us = tau_us / eps_us;
- //
- //              }
- //
- //              //// limit max tau / L (like Stan's "max_treedepth)
- //              if (tau_main > static_cast<double>(max_L)*eps_main) tau_main =   static_cast<double>(max_L)*eps_main;
- //              if (tau_us >   static_cast<double>(max_L)*eps_us) tau_us       = static_cast<double>(max_L)*eps_us;
- //
- //              if (main_L_manual == true) {
- //                tau_main = L_main_if_manual * eps_main;
- //              }
- //              if (us_L_manual == true) {
- //                tau_us = L_us_if_manual * eps_us;
- //              }
- //
- //              if (tau_main < eps_main) tau_main = eps_main;
- //              if (tau_us < eps_us)     tau_us = eps_us;
- //
- //              for (int kk = 0; kk < n_threads_R; ++kk) {
- //                EHMC_args_as_cpp_struct_copies[kk].tau_us = tau_us;
- //                EHMC_args_as_cpp_struct_copies[kk].tau_main = tau_main;
- //              }
- //
- //      }
- //
- //              if (ii % 10 == 0) {
- //
- //                double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter_R));
- //                pct_complete = std::round(pct_complete);  // round to nearest integer if needed
- //              //  Rcpp::Rcout << "Burn-in is " <<  pct_complete << "% complete"  << std::endl;
- //                Rcpp::Rcout << BLUE     <<  "Burn-in is" <<  RESET  <<  pct_complete <<  BLUE << "% complete"  << RESET << std::endl;
- //
- //                Rcpp::Rcout << "L_main = "  << L_main  << std::endl;
- //                Rcpp::Rcout << YELLOW     << "eps_main = "  <<  RESET  << eps_main << std::endl;
- //
- //                Rcpp::Rcout << "L_us = "  << L_us  << std::endl;
- //                Rcpp::Rcout << "eps_us = "  << eps_us  << std::endl;
- //
- //                double sqrt_eigen_max_main = tau_mult * stan::math::sqrt(eigen_max_main);
- //                double sqrt_eigen_max_us = tau_mult *  stan::math::sqrt(eigen_max_us);
- //                Rcpp::Rcout << "tau_mult * sqrt_eigen_max_main = "  <<   sqrt_eigen_max_main  << std::endl;
- //                Rcpp::Rcout << "tau_mult *  sqrt_eigen_max_us = "  <<     sqrt_eigen_max_us  << std::endl;
- //
- //                Rcpp::Rcout << "n_divs (main) = "  <<     divs_main   << std::endl;
- //                Rcpp::Rcout << "p_jump_main_mean = "  <<     p_jump_main_mean   << std::endl;
- //                Rcpp::Rcout << " snaper_m_vec_main(30) = "  <<     snaper_m_vec_main(30)   << std::endl;
- //
- //              }
- //
- //              ////////////////////////////   ----------------  update snaper_m, snaper_s, snaper_w, and eigen_vec/eigen_max  for MAIN PARAMS  ------------------------------------------------------------
- //              if (ii < n_adapt) {
- //                  //// convert to Eigen
- //                  theta_main_vectors_all_chains_Eigen =   Rcpp::as<Eigen::Matrix<double, -1, -1>>(theta_main_vectors_all_chains_output_to_R)  ; /// current value of theta(s)
- //                  theta_vec_current_main =  theta_main_vectors_all_chains_Eigen.rowwise().mean(); /// current value of theta(s) [mean between K chains]
- //                  if (ii < 3) {
- //                    snaper_m_vec_main = theta_vec_current_main;
- //                  }
- //                  /////////   update snaper_m and snaper_s_empirical for MAIN
- //                  Eigen::Matrix<double, -1, -1>   outs_update_snaper_m_and_s_main =       fn_update_snaper_m_and_s( snaper_m_vec_main,  snaper_s_vec_main_empirical,
- //                                                                                                                    theta_vec_current_main, static_cast<double>(ii));
- //
- //                  // update values
- //                  if (is_NaN_or_Inf_Eigen(outs_update_snaper_m_and_s_main) == false) {
- //                    snaper_m_vec_main = outs_update_snaper_m_and_s_main.col(0);
- //                    snaper_s_vec_main_empirical = outs_update_snaper_m_and_s_main.col(1);
- //                  }
- //
- //                  ////////  update snaper_w   for MAIN
- //                  Eigen::Matrix<double, -1, 1> snaper_w_vec_main_prop           =  fn_update_snaper_w_dense_M(      snaper_w_vec_main, eigen_vector_main, eigen_max_main,
- //                                                                                                                    theta_vec_current_main,  snaper_m_vec_main,
- //                                                                                                                    static_cast<double>(ii),
- //                                                                                                                    M_dense_sqrt);
- //                   if (!(is_NaN_or_Inf_Eigen(snaper_w_vec_main_prop))) {
- //                     snaper_w_vec_main = snaper_w_vec_main_prop;
- //                   }
- //
- //                  Eigen::Matrix<double, -1, 1>  outs_update_eigen_max_and_eigen_vec_main =  fn_update_eigen_max_and_eigen_vec( eigen_max_main,   eigen_vector_main,  snaper_w_vec_main);
- //                  // update values
- //                  if (!(is_NaN_or_Inf_Eigen(outs_update_eigen_max_and_eigen_vec_main))) {
- //                      eigen_max_main =  std::max(0.0001, outs_update_eigen_max_and_eigen_vec_main(0));
- //                      eigen_vector_main = outs_update_eigen_max_and_eigen_vec_main.tail(n_params_main);
- //                  }
- //              }
- //              ////////////////////////////   ----------------   update snaper_m, snaper_s, snaper_w, and eigen_vec/eigen_max  for NUISANCE PARAMS  ------------------------------------------------------------
- //              if (ii < n_adapt) {
- //                  //// convert to Eigen
- //                  theta_us_vectors_all_chains_Eigen =     Rcpp::as<Eigen::Matrix<double, -1, -1>>(theta_us_vectors_all_chains_output_to_R)  ; /// current value of theta(s)
- //                  theta_vec_current_us =  theta_us_vectors_all_chains_Eigen.rowwise().mean(); /// current value of theta(s) [mean between K chains]
- //                  if (ii < 3) {
- //                    snaper_m_vec_us = theta_vec_current_us;
- //                  }
- //                  /////////   update snaper_m and snaper_s_empirical for us
- //                  Eigen::Matrix<double, -1, -1>  outs_update_snaper_m_and_s_us =       fn_update_snaper_m_and_s( snaper_m_vec_us,  snaper_s_vec_us_empirical,
- //                                                                                                                 theta_vec_current_us, static_cast<double>(ii));
- //
- //                  // update values
- //                  if (is_NaN_or_Inf_Eigen(outs_update_snaper_m_and_s_us) == false) {
- //                      snaper_m_vec_us = outs_update_snaper_m_and_s_us.col(0);
- //                      snaper_s_vec_us_empirical = outs_update_snaper_m_and_s_us.col(1);
- //                  }
- //
- //                  ////////  update snaper_w   for us
- //                  Eigen::Matrix<double, -1, 1>  snaper_w_vec_us_prop          =  fn_update_snaper_w_diag_M(   snaper_w_vec_us, eigen_vector_us, eigen_max_us,
- //                                                                                                              theta_vec_current_us, snaper_m_vec_us,
- //                                                                                                              static_cast<double>(ii),
- //                                                                                                              sqrt_M_us_vec);
- //                  if (is_NaN_or_Inf_Eigen(snaper_w_vec_us_prop) == false) {
- //                    snaper_w_vec_us = snaper_w_vec_us_prop;
- //                  }
- //                  Eigen::Matrix<double, -1, 1>   outs_update_eigen_max_and_eigen_vec_us =  fn_update_eigen_max_and_eigen_vec( eigen_max_us, eigen_vector_us, snaper_w_vec_us);
- //                    // update values
- //                    if (!(is_NaN_or_Inf_Eigen(outs_update_eigen_max_and_eigen_vec_us))) {
- //                      eigen_max_us =  std::max(0.0001, outs_update_eigen_max_and_eigen_vec_us(0));
- //                      eigen_vector_us = outs_update_eigen_max_and_eigen_vec_us.tail(n_us);
- //                    }
- //              }
- //              ////////  ----- Adapt mass matrix (M) for MAIN PARAMS  -------------------------------------------------------------------------------------------------------
- //              if (ii < n_adapt) {
- //                if (ii > 2) {
- //                  empicical_cov_main =  fn_update_empirical_covariance(empicical_cov_main, snaper_m_vec_main, theta_vec_current_main, static_cast<double>(ii));
- //                } else {
- //                  empicical_cov_main = M_inv_dense_main;
- //                }
- //              }
- //
- //              if (ii < n_adapt) {
- //                if  ( is_multiple(ii, M_interval_width) )  {    //  &&  (ii < static_cast<int>(std::round( static_cast<double>(n_adapt) * 0.90))  ) ) ) ) {
- //
- //                  if (metric_type_main ==  Hessian_string) {
- //
- //
- //                    if (ii < 0.5 * n_burnin)  {
- //                      shrinkage_factor = 1.00;
- //                    } else {
- //                      shrinkage_factor = 0.50;
- //                    }
- //
- //
- //                          try {
- //
- //                            Eigen::Matrix<double, -1, -1> M_dense_main = EHMC_Metric_as_cpp_struct.M_dense_main;
- //                            Eigen::Matrix<double, -1, -1> M_inv_dense_main = EHMC_Metric_as_cpp_struct.M_inv_dense_main;
- //                            Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol = EHMC_Metric_as_cpp_struct.M_inv_dense_main_chol;
- //
- //                            update_M_dense_main_Hessian_InPlace(   M_dense_main,  M_inv_dense_main,  M_inv_dense_main_chol,
- //                                                                   shrinkage_factor,
- //                                                                   ratio_Hess_main,
- //                                                                   M_interval_width,
- //                                                                   0.0001,
- //                                                                   Model_type_R,
- //                                                                   true, // force_ad
- //                                                                   false, // force_partialLog
- //                                                                   snaper_m_vec_main,  snaper_m_vec_us,
- //                                                                   y_Eigen_R,
- //                                                                   Model_args_as_cpp_struct,
- //                                                                   static_cast<double>(ii),
- //                                                                   static_cast<double>(n_adapt),
- //                                                                   metric_type_main);
- //
- //                            if (is_NaN_or_Inf_Eigen(M_dense_main) == false) {
- //
- //                              EHMC_Metric_as_cpp_struct.M_dense_main =          M_dense_main;
- //                              EHMC_Metric_as_cpp_struct.M_inv_dense_main =      M_inv_dense_main;
- //                              EHMC_Metric_as_cpp_struct.M_inv_dense_main_chol = M_inv_dense_main_chol;
- //                              /// now update sqrt of M_dense_main
- //                              Eigen::Matrix<double, -1, -1> M_dense_main_Chol =  Rcpp_Chol(M_dense_main) ; // (  EHMC_Metric_as_cpp_struct.M_dense_main.llt().matrixL() ).toDenseMatrix().matrix() ;
- //                              Eigen::Matrix<double, -1, -1> M_dense_sqrt =   M_dense_main_Chol; // sqrtm( EHMC_Metric_as_cpp_struct.M_dense_main);//  M_dense_main_Chol;//   compute mass matrix sqrt (for burnin adaptation)
- //                              EHMC_burnin_as_cpp_struct.M_dense_sqrt  = M_dense_sqrt;
- //                            }
- //
- //                          } catch (...) {
- //
- //                            Rcpp::Rcout << "Failed to update M_dense_main using Hessian (num diff)! - will attempt using empirical (co)variance" << std::endl;
- //
- //                          }
- //
- //                  } else if (metric_type_main == Empirical_string)  {
- //
- //                    try {
- //                              Eigen::Matrix<double, -1, -1> M_dense_main = EHMC_Metric_as_cpp_struct.M_dense_main;
- //                              Eigen::Matrix<double, -1, -1> M_inv_dense_main = EHMC_Metric_as_cpp_struct.M_inv_dense_main;
- //                              Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol = EHMC_Metric_as_cpp_struct.M_inv_dense_main_chol;
- //
- //                              M_inv_dense_main =   (1.0 - ratio_Hess_main)  * M_inv_dense_main + ratio_Hess_main *  empicical_cov_main ;
- //                              M_inv_dense_main = near_PD(M_inv_dense_main);
- //                              M_dense_main = M_inv_dense_main.inverse();
- //                              M_inv_dense_main_chol = Rcpp_Chol(M_inv_dense_main);
- //
- //                              if (is_NaN_or_Inf_Eigen(M_dense_main) == false) {
- //
- //                                EHMC_Metric_as_cpp_struct.M_dense_main =          M_dense_main;
- //                                EHMC_Metric_as_cpp_struct.M_inv_dense_main =      M_inv_dense_main;
- //                                EHMC_Metric_as_cpp_struct.M_inv_dense_main_chol = M_inv_dense_main_chol;
- //                                /// now update sqrt of M_dense_main
- //                                Eigen::Matrix<double, -1, -1> M_dense_main_Chol =  Rcpp_Chol(M_dense_main) ; // (  EHMC_Metric_as_cpp_struct.M_dense_main.llt().matrixL() ).toDenseMatrix().matrix() ;
- //                                Eigen::Matrix<double, -1, -1> M_dense_sqrt =   M_dense_main_Chol; // sqrtm( EHMC_Metric_as_cpp_struct.M_dense_main);//  M_dense_main_Chol;//   compute mass matrix sqrt (for burnin adaptation)
- //                                EHMC_burnin_as_cpp_struct.M_dense_sqrt  = M_dense_sqrt;
- //                              }
- //
- //                            } catch (...) {
- //
- //                              Rcpp::Rcout << "Failed to update M_dense_main using Hessian (num diff)! - will attempt using empirical (co)variance" << std::endl;
- //
- //                            }
- //
- //                  } else  {   //// unit metric
- //
- //
- //                  }
- //                }
- //              }
- //             ////////  ----- Adapt mass matrix (M) for NUISANCE PARAMS  (using diagonal M w/ empirical variances) -------------------------------------------------------
- //             if (ii < n_adapt) {
- //               if  ( is_multiple(ii, M_interval_width) )  {
- //
- //                     if (metric_type_nuisance ==  Empirical_string) {
- //
- //                           // double max_s_empirical_us =   snaper_s_vec_us_empirical.array().maxCoeff();
- //                            M_inv_us_vec.array()  =    (1.0 - ratio_M_us) * M_inv_us_vec.array()   +    ratio_M_us *   snaper_s_vec_us_empirical.array();
- //                            sqrt_M_us_vec.array() = (1.0 / sqrt_M_us_vec.array()).sqrt();
- //
- //                            //// update structs
- //                            EHMC_Metric_as_cpp_struct.M_inv_us_vec = M_inv_us_vec;
- //                            EHMC_burnin_as_cpp_struct.sqrt_M_us_vec = sqrt_M_us_vec;
- //
- //                     } else if (metric_type_nuisance ==  Hessian_string) {
- //
- //                       Eigen::Matrix<double, -1, 1>  Hessian_diag_nuisance = fn_diag_hessian_us_only_manual(snaper_m_vec_main, snaper_m_vec_us, y_Eigen_R, Model_args_as_cpp_struct);
- //                       Hessian_diag_nuisance.array() =   Hessian_diag_nuisance.array().abs();
- //                       clean_vector(Hessian_diag_nuisance);
- //                       Eigen::Matrix<double, -1, 1>  Hessian_inv_diag_nuisance = ( 1.0 / Hessian_diag_nuisance.array() ).matrix() ;
- //
- //                       M_inv_us_vec.array()  =    (1.0 - ratio_M_us) * M_inv_us_vec.array()   +   ratio_M_us *   Hessian_inv_diag_nuisance.array();
- //                       sqrt_M_us_vec.array() = (1.0 / sqrt_M_us_vec.array()).sqrt();
- //
- //                       //// update structs
- //                       EHMC_Metric_as_cpp_struct.M_inv_us_vec = M_inv_us_vec;
- //                       EHMC_burnin_as_cpp_struct.sqrt_M_us_vec = sqrt_M_us_vec;
- //
- //                     } else  {  //// unit metric
- //
- //                     }
- //                 }
- //              }
- //              ////////////////////////////   ----------------  adapt epsilon for MAIN-----------------------------------------------------------------------------
- //              if (ii < n_adapt) {
- //
- //                p_jump_main_mean = 0.0; // taking the MEAN between the K chains
- //                divs_main  = 0.0; // taking the MEAN between the K chains
- //                for (int kk = 0; kk < n_threads_R; ++kk) {
- //                  p_jump_main_mean += other_main_out_vector_all_chains_output_to_R(0, kk) ;
- //                  divs_main   += other_main_out_vector_all_chains_output_to_R(1, kk) ;
- //                }
- //                p_jump_main_mean = p_jump_main_mean / static_cast<double>(n_threads_R); /// compute mean
- //
- //                Eigen::Matrix<double, -1, 1>   out_vec_eps_main  = adapt_eps_ADAM(  eps_main,
- //                                                                                    eps_m_adam_main,
- //                                                                                    eps_v_adam_main,
- //                                                                                    static_cast<double>(ii),   static_cast<double>(n_burnin) ,
- //                                                                                    LR_main,
- //                                                                                    p_jump_main_mean,
- //                                                                                    adapt_delta_main,
- //                                                                                    beta1_adam, beta2_adam, eps_adam);
- //                if (is_NaN_or_Inf_Eigen(out_vec_eps_main) == false) {
- //                    eps_main =         out_vec_eps_main(0);
- //                    eps_m_adam_main =  out_vec_eps_main(1);
- //                    eps_v_adam_main =  out_vec_eps_main(2);
- //                    /// update values in the struct (same for all chains)
- //                    for (int kk = 0; kk < n_threads_R; ++kk) {
- //                      EHMC_args_as_cpp_struct_copies[kk].eps_main =             std::min(max_eps_main, out_vec_eps_main(0));
- //                    }
- //                }
- //              }
- //              // //////////////////////////   ----------------  adapt epsilon   for nuisance-----------------------------------------------------------------------------
- //              if (ii < n_adapt) {
- //
- //                double p_jump_us_mean = 0.0; // taking the MEAN between the K chains
- //                for (int kk = 0; kk < n_threads_R; ++kk) {
- //                  p_jump_us_mean += other_us_out_vector_all_chains_output_to_R(0, kk) ;
- //                }
- //                p_jump_us_mean = p_jump_us_mean / static_cast<double>(n_threads_R); /// compute mean
- //
- //                Eigen::Matrix<double, -1, 1>  out_vec_eps_us = adapt_eps_ADAM(  eps_us,
- //                                                                                eps_m_adam_us,
- //                                                                                eps_v_adam_us,
- //                                                                                static_cast<double>(ii),   static_cast<double>(n_burnin) ,
- //                                                                                LR_us,
- //                                                                                p_jump_us_mean,
- //                                                                                adapt_delta_us,
- //                                                                                beta1_adam, beta2_adam, eps_adam);
- //                if (is_NaN_or_Inf_Eigen(out_vec_eps_us) == false) {
- //                    eps_us =         out_vec_eps_us(0);
- //                    eps_m_adam_us =  out_vec_eps_us(1);
- //                    eps_v_adam_us =  out_vec_eps_us(2);
- //                    /// update values in the struct (same for all chains)
- //                    for (int kk = 0; kk < n_threads_R; ++kk) {
- //                      EHMC_args_as_cpp_struct_copies[kk].eps_us =            std::min(max_eps_us, out_vec_eps_us(0));
- //                    }
- //                }
- //
- //              }
- //              //////// ----------------  Now update tau for MAIN -----------------------------------------------------------------------------
- //              if (ii < n_adapt) {
- //
- //                tau_main_per_chain_to_avg_vec.setConstant(tau_main);
- //                tau_m_adam_main_per_chain_to_avg_vec.setConstant(tau_m_adam_main);
- //                tau_v_adam_main_per_chain_to_avg_vec.setConstant(tau_v_adam_main);
- //
- //                ////// update tau for main
- //                for (int kk = 0; kk < n_threads_R; ++kk) {
- //
- //                  double tau_main_kk =  other_main_out_vector_all_chains_output_to_R(5, kk);
- //
- //                  Eigen::Matrix<double, -1, 1> ADAM_tau_outs_main   =  fn_update_tau_w_dense_M_ADAM(   eigen_vector_main,
- //                                                                                                       eigen_max_main,
- //                                                                                                       fn_convert_RCppNumMat_Column_to_EigenColVec(theta_main_0_burnin_tau_adapt_all_chains_input_from_R.column(kk)),
- //                                                                                                       fn_convert_RCppNumMat_Column_to_EigenColVec(theta_main_prop_burnin_tau_adapt_all_chains_input_from_R.column(kk)),
- //                                                                                                       snaper_m_vec_main,
- //                                                                                                       fn_convert_RCppNumMat_Column_to_EigenColVec(velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R.column(kk)),
- //                                                                                                       fn_convert_RCppNumMat_Column_to_EigenColVec(velocity_main_0_burnin_tau_adapt_all_chains_input_from_R.column(kk)),
- //                                                                                                       tau_main,  //  being modified
- //                                                                                                       LR_main,
- //                                                                                                       static_cast<double>(ii),   static_cast<double>(n_burnin) ,
- //                                                                                                       M_dense_sqrt,
- //                                                                                                       tau_m_adam_main,  //  being modified
- //                                                                                                       tau_v_adam_main, //  being modified
- //                                                                                                       tau_main_kk);
- //
- //                  if (is_NaN_or_Inf_Eigen(ADAM_tau_outs_main) == false) {
- //                    tau_main_per_chain_to_avg_vec(kk) =        ADAM_tau_outs_main(0);
- //                    tau_m_adam_main_per_chain_to_avg_vec(kk) = ADAM_tau_outs_main(1);
- //                    tau_v_adam_main_per_chain_to_avg_vec(kk) = ADAM_tau_outs_main(2);
- //                  }
- //
- //                }
- //                // compute means between the K chains
- //                tau_main = tau_main_per_chain_to_avg_vec.mean();
- //                tau_m_adam_main = tau_m_adam_main_per_chain_to_avg_vec.mean();
- //                tau_v_adam_main = tau_v_adam_main_per_chain_to_avg_vec.mean();
- //                // update the struct(s) in each chain (to carry over to next iter)
- //
- //                if (main_L_manual == true) {
- //                  tau_main = L_main_if_manual * eps_main;
- //                }
- //
- //                for (int kk = 0; kk < n_threads_R; ++kk) {
- //                  EHMC_args_as_cpp_struct_copies[kk].tau_main = tau_main;
- //                }
- //              }
- //              //////// ----------------  Now update tau for us -----------------------------------------------------------------------------
- //              if (ii < n_adapt) {
- //
- //                tau_us_per_chain_to_avg_vec.setConstant(tau_us);
- //                tau_m_adam_us_per_chain_to_avg_vec.setConstant(tau_m_adam_us);
- //                tau_v_adam_us_per_chain_to_avg_vec.setConstant(tau_v_adam_us);
- //
- //                ////// update tau for us
- //                for (int kk = 0; kk < n_threads_R; ++kk) {
- //
- //                  double tau_us_kk =  other_us_out_vector_all_chains_output_to_R(5, kk);
- //
- //                  Eigen::Matrix<double, -1, 1> ADAM_tau_outs_us   = fn_update_tau_w_diag_M_ADAM( eigen_vector_us,
- //                                                                                                 eigen_max_us,
- //                                                                                                 fn_convert_RCppNumMat_Column_to_EigenColVec(theta_us_0_burnin_tau_adapt_all_chains_input_from_R.column(kk)),
- //                                                                                                 fn_convert_RCppNumMat_Column_to_EigenColVec(theta_us_prop_burnin_tau_adapt_all_chains_input_from_R.column(kk)),
- //                                                                                                 snaper_m_vec_us,
- //                                                                                                 fn_convert_RCppNumMat_Column_to_EigenColVec(velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R.column(kk)),
- //                                                                                                 fn_convert_RCppNumMat_Column_to_EigenColVec(velocity_us_0_burnin_tau_adapt_all_chains_input_from_R.column(kk)),
- //                                                                                                 tau_us,  //  being modified
- //                                                                                                 LR_us,
- //                                                                                                 static_cast<double>(ii),
- //                                                                                                 static_cast<double>(n_burnin) ,
- //                                                                                                 sqrt_M_us_vec,
- //                                                                                                 tau_m_adam_us,  //  being modified
- //                                                                                                 tau_v_adam_us, //  being modified
- //                                                                                                 tau_us_kk);
- //
- //                  if (is_NaN_or_Inf_Eigen(ADAM_tau_outs_us) == false) {
- //                    tau_us_per_chain_to_avg_vec(kk) =        ADAM_tau_outs_us(0);
- //                    tau_m_adam_us_per_chain_to_avg_vec(kk) = ADAM_tau_outs_us(1);
- //                    tau_v_adam_us_per_chain_to_avg_vec(kk) = ADAM_tau_outs_us(2);
- //                  }
- //
- //                }
- //                // compute means between the K chains
- //                tau_us = tau_us_per_chain_to_avg_vec.mean();
- //                tau_m_adam_us = tau_m_adam_us_per_chain_to_avg_vec.mean();
- //                tau_v_adam_us = tau_v_adam_us_per_chain_to_avg_vec.mean();
- //
- //                // update the struct(s) in each chain (to carry over to next iter)
- //                if (us_L_manual == true) {
- //                  tau_us = L_us_if_manual * eps_us;
- //                }
- //                for (int kk = 0; kk < n_threads_R; ++kk) {
- //                  EHMC_args_as_cpp_struct_copies[kk].tau_us = tau_us;
- //                }
- //
- //              }
- //
- //
- //              // // ///////////////////////////   ---------------- PERFORM ITERATION  ------------------------------------------------------------------------------------
- //              theta_main_vectors_all_chains_input_from_R =    (theta_main_vectors_all_chains_Eigen);
- //              theta_us_vectors_all_chains_input_from_R =      (theta_us_vectors_all_chains_Eigen);
- //
- //              try {
- //
- //                int one = 1;
- //
- //                // // create worker
- //                RcppParallel_EHMC_burnin parallel_hmc_test(         n_threads_R,
- //                                                                    seed_R,
- //                                                                    one,
- //                                                                    partitioned_HMC_R,
- //                                                                    Model_type_R,
- //                                                                    sample_nuisance_R,
- //                                                                    force_autodiff_R,
- //                                                                    force_PartialLog_R,
- //                                                                    multi_attempts_R,
- //                                                                    ///// inputs
- //                                                                    theta_main_vectors_all_chains_input_from_R,
- //                                                                    theta_us_vectors_all_chains_input_from_R,
- //                                                                    ///// outputs (main)
- //                                                                    other_main_out_vector_all_chains_output_to_R,
- //                                                                    ///// outputs (nuisance)
- //                                                                    other_us_out_vector_all_chains_output_to_R,
- //                                                                    ///// data
- //                                                                    y_Eigen_R,
- //                                                                    /////// structs
- //                                                                    Model_args_as_cpp_struct, ///// ALWAYS read-only
- //                                                                    EHMC_Metric_as_cpp_struct,
- //                                                                    EHMC_args_as_cpp_struct_copies,
- //                                                                    ////////// burnin-specific stuff
- //                                                                    theta_main_vectors_all_chains_output_to_R,
- //                                                                    theta_us_vectors_all_chains_output_to_R,
- //                                                                    theta_main_0_burnin_tau_adapt_all_chains_input_from_R,
- //                                                                    theta_main_prop_burnin_tau_adapt_all_chains_input_from_R,
- //                                                                    velocity_main_0_burnin_tau_adapt_all_chains_input_from_R,
- //                                                                    velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R,
- //                                                                    theta_us_0_burnin_tau_adapt_all_chains_input_from_R,
- //                                                                    theta_us_prop_burnin_tau_adapt_all_chains_input_from_R,
- //                                                                    velocity_us_0_burnin_tau_adapt_all_chains_input_from_R,
- //                                                                    velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R,
- //                                                                    EHMC_burnin_as_cpp_struct);
- //
- //
- //                  parallelFor(0, n_threads_R, parallel_hmc_test);     //// Call parallelFor
- //
- //              } catch (...) {
- //
- //                Rcpp::Rcout << "Iteration" << static_cast<double>(ii) << "Rejected!" << std::endl;
- //
- //              }
- //
- //
- //
- //    }  ////////// end of iterations / end of adaptation
- //
- //    //// shut down parallel processes
- //
- //      // if (Model_type_R == "Stan") {
- //      //     //// destroy model to free memory once finished (destroys dummy model if not using BridgeStan)
- //      //     fn_bs_destroy_Stan_model(Model_args_as_cpp_struct.bs_model_ptr,
- //      //                              Model_args_as_cpp_struct.bs_handle);
- //      // }
- //
- //
- //   {  /// burnin only
- //
- //          // Return results
- //          return Rcpp::List::create(
- //            ////// main outputs for main params & nuisance
- //            Named("trace_output") = Rcpp::wrap(trace_output), // theta
- //            Named("theta_main_vectors_all_chains_output_to_R") = Rcpp::wrap(theta_main_vectors_all_chains_output_to_R),
- //            Named("other_main_out_vector_all_chains_output_to_R") = Rcpp::wrap(other_main_out_vector_all_chains_output_to_R), // 3
- //            Named("theta_us_vectors_all_chains_output_to_R") = Rcpp::wrap(theta_us_vectors_all_chains_output_to_R),
- //            Named("other_us_out_vector_all_chains_output_to_R") = Rcpp::wrap(other_us_out_vector_all_chains_output_to_R),
- //            //////
- //            theta_main_0_burnin_tau_adapt_all_chains_input_from_R,
- //            theta_main_prop_burnin_tau_adapt_all_chains_input_from_R, // 10
- //            velocity_main_0_burnin_tau_adapt_all_chains_input_from_R,
- //            velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R, // 12
- //            theta_us_0_burnin_tau_adapt_all_chains_input_from_R,
- //            theta_us_prop_burnin_tau_adapt_all_chains_input_from_R, // 14
- //            velocity_us_0_burnin_tau_adapt_all_chains_input_from_R,
- //            velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R, // 16
- //            //////
- //            Named("M_dense_main") = EHMC_Metric_as_cpp_struct.M_dense_main,
- //            Named("M_inv_dense_main") = EHMC_Metric_as_cpp_struct.M_inv_dense_main,
- //            Named("M_inv_dense_main_chol") = EHMC_Metric_as_cpp_struct.M_inv_dense_main_chol,
- //            Named("M_inv_us_vec") = EHMC_Metric_as_cpp_struct.M_inv_us_vec
- //          );
- //
- //    }
- //
- //
- // }
- //
+
 
  // Return results
  return Rcpp::List::create(
@@ -2961,13 +1753,11 @@ Rcpp::List                                        fn_R_RcppParallel_EHMC_single_
 
 
 
-  }
+}
 
 
- 
 
 
- 
 
 
 
