@@ -37,10 +37,10 @@
 // Simple test function that just multiplies vector by 2
 __m256d  test_simple_AVX2 VECTORCALL(const __m256d x) {
    
-   // _mm256_zeroupper();  // Reset AVX state
+   // // _mm256_zeroupper();  // Reset AVX state
    ALIGN32  __m256d const two = _mm256_set1_pd(2.0);
    ALIGN32  __m256d const res = _mm256_mul_pd(x, two);
-   //_mm256_zeroupper();  // Reset AVX state
+   //// _mm256_zeroupper();  // Reset AVX state
    return res; 
    
 }
@@ -66,14 +66,14 @@ double test_simple_double(const double x) {
 
 __m256d   _mm256_abs_pd  VECTORCALL(const __m256d x) {
  
-   _mm256_zeroupper();  // Reset AVX state
+   // _mm256_zeroupper();  // Reset AVX state
    
    ALIGN32  __m256d const x_aligned = x;
    
    ALIGN32  __m256d const sign_bit = _mm256_set1_pd(-0.0);
    ALIGN32  __m256d const x_abs = _mm256_andnot_pd(sign_bit, x_aligned);
    
-   _mm256_zeroupper();  // Reset AVX state
+   // _mm256_zeroupper();  // Reset AVX state
    return x_abs;
  
 }
@@ -84,7 +84,7 @@ __m256d   _mm256_abs_pd  VECTORCALL(const __m256d x) {
 // is_finite_mask and is_not_NaN_mask for AVX2
 __m256d  is_finite_mask VECTORCALL(const __m256d x) {
   
-       _mm256_zeroupper();  // Reset AVX state
+       // _mm256_zeroupper();  // Reset AVX state
   
        ALIGN32  __m256d const x_aligned = x;
        
@@ -101,12 +101,12 @@ __m256d  is_finite_mask VECTORCALL(const __m256d x) {
 
 __m256d is_not_NaN_mask VECTORCALL(const __m256d x) {
   
-       _mm256_zeroupper();  // Reset AVX state
+       // _mm256_zeroupper();  // Reset AVX state
   
        ALIGN32 __m256d const x_aligned = x;
   
        ALIGN32 __m256d const res = _mm256_cmp_pd(x_aligned, x_aligned, _CMP_EQ_OQ);
-       _mm256_zeroupper();  // Reset AVX state
+       // _mm256_zeroupper();  // Reset AVX state
        return res;
  
 }
@@ -133,7 +133,7 @@ __m256d is_not_NaN_mask VECTORCALL(const __m256d x) {
 __m256d   fast_ldexp VECTORCALL(  const __m256d AVX_a,
                                   const __m256i AVX_i) {
   
-    _mm256_zeroupper();  // Reset AVX state
+    // _mm256_zeroupper();  // Reset AVX state
   
     ALIGN32  __m256d const AVX_a_aligned = AVX_a;
     ALIGN32  __m256i const AVX_i_aligned = AVX_i;
@@ -144,7 +144,7 @@ __m256d   fast_ldexp VECTORCALL(  const __m256d AVX_a,
     ALIGN32  __m256i const result = _mm256_add_epi64(shifted, a_bits);
     
     ALIGN32  __m256d const res = _mm256_castsi256_pd(result);
-    _mm256_zeroupper();  // Reset AVX state
+    // _mm256_zeroupper();  // Reset AVX state
     return res;
   
 }
@@ -154,7 +154,7 @@ __m256d   fast_ldexp VECTORCALL(  const __m256d AVX_a,
 __m256i   avx2_srai_epi64 VECTORCALL(  const __m256i x, 
                                        const int count) {
   
-     _mm256_zeroupper();  // Reset AVX state
+     // _mm256_zeroupper();  // Reset AVX state
   
      ALIGN32  __m256i const x_aligned = x;
   
@@ -169,7 +169,7 @@ __m256i   avx2_srai_epi64 VECTORCALL(  const __m256i x,
      ALIGN32  __m256i const res = _mm256_or_si256(shift_result,  
                                        _mm256_and_si256(sign_bits, 
                                                         _mm256_set1_epi64x(0xFFFFFFFF00000000))); 
-     _mm256_zeroupper();  // Reset AVX state
+     // _mm256_zeroupper();  // Reset AVX state
      return res;
      
 }
@@ -177,85 +177,83 @@ __m256i   avx2_srai_epi64 VECTORCALL(  const __m256i x,
 
 
 // 
-// // Fast implementation of ldexp (multiply by power of 2) using AVX2 intrinsics
-// // Computes: a * 2^i for 4 pairs of values simultaneously
-// // Handles edge cases by splitting large exponents into two steps
-// inline __m256d fast_ldexp_2 VECTORCALL( const __m256d AVX_a, 
-//                                         const __m256i AVX_i) {
-//   
-//       _mm256_zeroupper();  // Reset AVX state
-//   
-//       ALIGN32  __m256d const AVX_a_aligned = AVX_a;
-//       ALIGN32  __m256i const AVX_i_aligned = AVX_i;
-//   
-//       const uint64_t shift_val_52 = 52;  // Double-precision exponent shift
-//       const uint64_t shift_val_63 = 63;  // Sign bit position
-//       const uint64_t shift_val_1000 = 1000;  // Safe threshold for exponents
-//       const uint64_t shift_val_neg_2000 = 2000;  // Double threshold for negative case 
-//       const uint64_t mask = 0xF;  // 4-bit comparison mask (one bit per double)   
-//       
-//       // Get sign mask: for each 64-bit integer, shift right by 63 bits (arithmetic shift)
-//       // This replicates the sign bit across all bits: 0x0000... for positive, 0xFFFF... for negative    ;
-//       ALIGN32  __m256i const neg_mask = avx2_srai_epi64(AVX_i_aligned, shift_val_63);
-//       
-//       // Calculate absolute value using the formula: abs(x) = (x XOR sign_mask) - sign_mask
-//       // 1. XOR with sign mask flips all bits if negative, keeps same if positive
-//       // 2. Subtract sign mask adds 1 for negative numbers (two's complement)
-//       ALIGN32  __m256i const abs_i = _mm256_sub_epi64(_mm256_xor_si256(AVX_i_aligned, neg_mask), neg_mask);
-//       
-//       // Create vector with all elements = 1000 (our safe threshold for exponents)
-//       ALIGN32  __m256i const threshold = _mm256_set1_epi64x(shift_val_1000);
-//       
-//       // Compare abs_i with threshold by subtraction
-//       // If abs_i > threshold, result will be positive
-//       ALIGN32  __m256i const cmp = _mm256_sub_epi64(abs_i, threshold);
-//       
-//       // Create comparison mask by getting sign bits of comparison result
-//       // Will be 0xFFFF... where abs_i <= threshold, 0x0000... where abs_i > threshold
-//       ALIGN32  __m256i const cmp_mask = avx2_srai_epi64(cmp, shift_val_63);
-//       
-//       // Convert comparison mask to 4-bit integer (one bit per double)
-//       // If result != 0xF (not all bits set), then at least one value exceeded threshold
-//       if (_mm256_movemask_pd(_mm256_castsi256_pd(cmp_mask)) != mask) {
-//               
-//               // Handle large exponents by splitting into two steps
-//               
-//               // Create i1 = ±1000 based on original sign:
-//               // 1. AND neg_mask with -2000 gives -2000 for negative numbers, 0 for positive
-//               // 2. XOR with threshold (1000) gives -1000 for negative numbers, 1000 for positive
-//               ALIGN32  __m256i const i1 = _mm256_xor_si256(_mm256_and_si256(neg_mask, _mm256_set1_epi64x(shift_val_neg_2000)), threshold);
-//               
-//               // Calculate remaining exponent: i2 = original_i - i1
-//               ALIGN32  __m256i const i2 = _mm256_sub_epi64(AVX_i_aligned, i1);
-//               
-//               // First scaling step: multiply by 2^i1
-//               // 1. Shift i1 left by 52 to position it in double's exponent field
-//               // 2. Add to bit pattern of input doubles (effectively multiplying by 2^i1)
-//               ALIGN32  __m256d const mid = _mm256_castsi256_pd(_mm256_add_epi64(_mm256_slli_epi64(i1, shift_val_52), _mm256_castpd_si256(AVX_a))); 
-//               
-//               // Second scaling step: multiply intermediate result by 2^i2
-//               // Same process as above but with i2 and intermediate result
-//               // return _mm256_castsi256_pd(_mm256_add_epi64(_mm256_slli_epi64(i2, 52), _mm256_castpd_si256(mid)));
-//               ALIGN32  __m256d const res = fast_ldexp(mid, i2); 
-//               return  res; 
-//         
-//       }
-//       
-//       // For small exponents, perform direct scaling:
-//       // 1. Shift exponent left by 52 bits to align with double's exponent field
-//       // 2. Add to original number's bit pattern (effectively multiplying by 2^i)
-//       // return _mm256_castsi256_pd(_mm256_add_epi64(_mm256_slli_epi64(AVX_i, 52), _mm256_castpd_si256(AVX_a)));
-//       ALIGN32  __m256d const res = fast_ldexp(AVX_a_aligned, AVX_i_aligned); 
-//       _mm256_zeroupper();  // Reset AVX state
-//       return res;
-//   
-// }
-// 
-//  
+// Fast implementation of ldexp (multiply by power of 2) using AVX2 intrinsics
+// Computes: a * 2^i for 4 pairs of values simultaneously
+// Handles edge cases by splitting large exponents into two steps
+inline __m256d fast_ldexp_2 VECTORCALL( const __m256d AVX_a,
+                                        const __m256i AVX_i) {
+
+      // _mm256_zeroupper();  // Reset AVX state
+
+      ALIGN32  __m256d const AVX_a_aligned = AVX_a;
+      ALIGN32  __m256i const AVX_i_aligned = AVX_i;
+
+      const uint64_t shift_val_52 = 52;  // Double-precision exponent shift
+      const uint64_t shift_val_63 = 63;  // Sign bit position
+      const uint64_t shift_val_1000 = 1000;  // Safe threshold for exponents
+      const uint64_t shift_val_neg_2000 = 2000;  // Double threshold for negative case
+      const uint64_t mask = 0xF;  // 4-bit comparison mask (one bit per double)
+
+      // Get sign mask: for each 64-bit integer, shift right by 63 bits (arithmetic shift)
+      // This replicates the sign bit across all bits: 0x0000... for positive, 0xFFFF... for negative    ;
+      ALIGN32  __m256i const neg_mask = avx2_srai_epi64(AVX_i_aligned, shift_val_63);
+
+      // Calculate absolute value using the formula: abs(x) = (x XOR sign_mask) - sign_mask
+      // 1. XOR with sign mask flips all bits if negative, keeps same if positive
+      // 2. Subtract sign mask adds 1 for negative numbers (two's complement)
+      ALIGN32  __m256i const abs_i = _mm256_sub_epi64(_mm256_xor_si256(AVX_i_aligned, neg_mask), neg_mask);
+
+      // Create vector with all elements = 1000 (our safe threshold for exponents)
+      ALIGN32  __m256i const threshold = _mm256_set1_epi64x(shift_val_1000);
+
+      // Compare abs_i with threshold by subtraction
+      // If abs_i > threshold, result will be positive
+      ALIGN32  __m256i const cmp = _mm256_sub_epi64(abs_i, threshold);
+
+      // Create comparison mask by getting sign bits of comparison result
+      // Will be 0xFFFF... where abs_i <= threshold, 0x0000... where abs_i > threshold
+      ALIGN32  __m256i const cmp_mask = avx2_srai_epi64(cmp, shift_val_63);
+
+      // Convert comparison mask to 4-bit integer (one bit per double)
+      // If result != 0xF (not all bits set), then at least one value exceeded threshold
+      if (_mm256_movemask_pd(_mm256_castsi256_pd(cmp_mask)) != mask) {
+
+              // Handle large exponents by splitting into two steps
+
+              // Create i1 = ±1000 based on original sign:
+              // 1. AND neg_mask with -2000 gives -2000 for negative numbers, 0 for positive
+              // 2. XOR with threshold (1000) gives -1000 for negative numbers, 1000 for positive
+              ALIGN32  __m256i const i1 = _mm256_xor_si256(_mm256_and_si256(neg_mask, _mm256_set1_epi64x(shift_val_neg_2000)), threshold);
+
+              // Calculate remaining exponent: i2 = original_i - i1
+              ALIGN32  __m256i const i2 = _mm256_sub_epi64(AVX_i_aligned, i1);
+
+              // First scaling step: multiply by 2^i1
+              // 1. Shift i1 left by 52 to position it in double's exponent field
+              // 2. Add to bit pattern of input doubles (effectively multiplying by 2^i1)
+              ALIGN32  __m256d const mid = _mm256_castsi256_pd(_mm256_add_epi64(_mm256_slli_epi64(i1, shift_val_52), _mm256_castpd_si256(AVX_a)));
+
+              // Second scaling step: multiply intermediate result by 2^i2
+              // Same process as above but with i2 and intermediate result
+              // return _mm256_castsi256_pd(_mm256_add_epi64(_mm256_slli_epi64(i2, 52), _mm256_castpd_si256(mid)));
+              ALIGN32  __m256d const res = fast_ldexp(mid, i2);
+              return  res;
+
+      }
+
+      // For small exponents, perform direct scaling:
+      // 1. Shift exponent left by 52 bits to align with double's exponent field
+      // 2. Add to original number's bit pattern (effectively multiplying by 2^i)
+      // return _mm256_castsi256_pd(_mm256_add_epi64(_mm256_slli_epi64(AVX_i, 52), _mm256_castpd_si256(AVX_a)));
+      ALIGN32  __m256d const res = fast_ldexp(AVX_a_aligned, AVX_i_aligned);
+      // _mm256_zeroupper();  // Reset AVX state
+      return res;
+
+}
 
 
 
- 
+
  
  
 
@@ -293,16 +291,16 @@ __m256i avx2_cvtpd_epi64 VECTORCALL(const __m256d x) {
 // R code:    minimaxApprox::minimaxApprox(fn = exp, lower = -0.346573590279972643113, upper = 0.346573590279972643113, degree = 5, basis ="Chebyshev")
 __m256d fast_exp_1_wo_checks_AVX2  VECTORCALL( const __m256d x)  { 
   
-    REprintf("Entering fast_exp_1_wo_checks_AVX2 \n");
-    R_FlushConsole();
+    // REprintf("Entering fast_exp_1_wo_checks_AVX2 \n");
+    // R_FlushConsole();
   
-    _mm256_zeroupper();  // Reset AVX state
+    // _mm256_zeroupper();  // Reset AVX state
   
-    REprintf("Before x_aligned \n");
-    R_FlushConsole();
+    // REprintf("Before x_aligned \n");
+    // R_FlushConsole();
     ALIGN32  __m256d const x_aligned = x;
-    REprintf("After x_aligned \n");
-    R_FlushConsole();
+    // REprintf("After x_aligned \n");
+    // R_FlushConsole();
     
     ALIGN32  __m256d const exp_l2e = _mm256_set1_pd (1.442695040888963387); /* log2(e) */
     ALIGN32  __m256d const exp_l2h = _mm256_set1_pd (-0.693145751999999948367); /* -log(2)_hi */
@@ -325,23 +323,23 @@ __m256d fast_exp_1_wo_checks_AVX2  VECTORCALL( const __m256d x)  {
     /* exp(x) = 2^i * e^f; i = rint (log2(e) * a), f = a - log(2) * i */
     ALIGN32  __m256d const t = _mm256_mul_pd(x_aligned, exp_l2e);      /* t = log2(e) * a */
     ///  const __m256i i = _mm256_cvttpd_epi32(t);       /* i = (int)rint(t) */
-    REprintf("Before avx2_cvtpd_epi64 \n");
-    R_FlushConsole();
+    // REprintf("Before avx2_cvtpd_epi64 \n");
+    // R_FlushConsole();
     ALIGN32  __m256i const i = avx2_cvtpd_epi64(t);  
-    REprintf("After avx2_cvtpd_epi64 \n");
-    R_FlushConsole();
-    REprintf("Before _mm256_round_pd \n");
-    R_FlushConsole();
+    // REprintf("After avx2_cvtpd_epi64 \n");
+    // R_FlushConsole();
+    // REprintf("Before _mm256_round_pd \n");
+    // R_FlushConsole();
     // const __m256d x_2 = _mm256_round_pd(t, _MM_FROUND_TO_NEAREST_INT) ; // ((0<<4)| _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC|_MM_FROUND_NO_EXC));
     ALIGN32  __m256d const x_2 = _mm256_round_pd(t, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
-    REprintf("After _mm256_round_pd \n");
-    R_FlushConsole();
-    REprintf("Before _mm256_fmadd_pd \n");
-    R_FlushConsole();
+    // REprintf("After _mm256_round_pd \n");
+    // R_FlushConsole();
+    // REprintf("Before _mm256_fmadd_pd \n");
+    // R_FlushConsole();
     ALIGN32  __m256d const f0 = _mm256_fmadd_pd(x_2, exp_l2h, input);
     ALIGN32  __m256d const f =  _mm256_fmadd_pd(x_2, exp_l2l, f0);  /* a - log(2)_hi * r */    /* f = a - log(2)_hi * r - log(2)_lo * r */
-    REprintf("After _mm256_fmadd_pd \n");
-    R_FlushConsole();
+    // REprintf("After _mm256_fmadd_pd \n");
+    // R_FlushConsole();
     
     /* p ~= exp (f), -log(2)/2 <= f <= log(2)/2 */
     ALIGN32 __m256d p = exp_c0;
@@ -355,13 +353,12 @@ __m256d fast_exp_1_wo_checks_AVX2  VECTORCALL( const __m256d x)  {
     p = _mm256_fmadd_pd(p, f, exp_c8);
     p = _mm256_fmadd_pd(p, f, exp_c9);
     
-    REprintf("Before fast_ldexp \n");
-    R_FlushConsole();
-    // ALIGN32  __m256d const res = fast_ldexp_2(p, i);   /* exp(x) = 2^i * p */
-    ALIGN32  __m256d const res = fast_ldexp(p, i);   /* exp(x) = 2^i * p */
-    REprintf("After fast_ldexp \n");
-    R_FlushConsole();
-    _mm256_zeroupper();  // Reset AVX state
+    // REprintf("Before fast_ldexp \n");
+    // R_FlushConsole();
+    ALIGN32  __m256d const res = fast_ldexp_2(p, i);   /* exp(x) = 2^i * p */
+    // REprintf("After fast_ldexp \n");
+    // R_FlushConsole();
+    // _mm256_zeroupper();  // Reset AVX state
     return  res;  
   
 }
@@ -375,7 +372,7 @@ __m256d fast_exp_1_wo_checks_AVX2  VECTORCALL( const __m256d x)  {
 // see https://stackoverflow.com/questions/39587752/difference-between-ldexp1-x-and-exp2x
 __m256d fast_exp_1_AVX2  VECTORCALL(const __m256d a) {
   
-  _mm256_zeroupper();  // Reset AVX state
+  // _mm256_zeroupper();  // Reset AVX state
   
   ALIGN32  __m256d const   exp_bound  =   _mm256_set1_pd(708.4);
   ALIGN32  __m256d const   pos_inf  =    _mm256_set1_pd(INFINITY);
@@ -395,7 +392,7 @@ __m256d fast_exp_1_AVX2  VECTORCALL(const __m256d a) {
                                 _mm256_cmp_pd(_mm256_abs_pd(a), exp_bound, _CMP_LT_OQ)
                               );
   
-  _mm256_zeroupper();  // Reset AVX state
+  // _mm256_zeroupper();  // Reset AVX state
   return res;
   
 }
