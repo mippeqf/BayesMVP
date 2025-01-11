@@ -4,14 +4,20 @@
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(dqrng)]]
 
+
 // [[Rcpp::plugins(cpp17)]]
 // [[Rcpp::plugins(openmp)]]
 
+
 #define EIGEN_NO_DEBUG
 #define EIGEN_DONT_PARALLELIZE
- 
-#include <omp.h>
- 
+
+
+#if __has_include("omp.h")
+    #include "omp.h"
+#endif
+
+//// General includes 
 #include <iostream>
 #include <sstream>
 #include <stdexcept>    
@@ -23,32 +29,19 @@
 #include <stdio.h>  
 #include <algorithm>
 #include <cmath>
- 
- 
- 
+
+
 //// Stan includes
 #include <stan/math/prim.hpp>
 #include <stan/math/rev.hpp>
 #include <stan/math.hpp>
-
- 
-#include "eigen_config.hpp"
-
-#undef OUT
-#include <RcppEigen.h>
-#include <unsupported/Eigen/SpecialFunctions>
-#include <unsupported/Eigen/CXX11/Tensor>
- 
-
- 
+////
 #include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/math/prim/fun/typedefs.hpp>
 #include <stan/math/prim/fun/value_of_rec.hpp>
 #include <stan/math/prim/err/check_pos_definite.hpp>
 #include <stan/math/prim/err/check_square.hpp>
 #include <stan/math/prim/err/check_symmetric.hpp>
-
-
 #include <stan/math/prim/fun/cholesky_decompose.hpp>
 #include <stan/math/prim/fun/sqrt.hpp>
 #include <stan/math/prim/fun/log.hpp>
@@ -59,7 +52,6 @@
 #include <stan/math/prim/fun/cholesky_decompose.hpp>
 #include <stan/math/prim/fun/eigenvalues_sym.hpp>
 #include <stan/math/prim/fun/diag_post_multiply.hpp>
-
 #include <stan/math/prim/prob/multi_normal_cholesky_lpdf.hpp>
 #include <stan/math/prim/prob/lkj_corr_cholesky_lpdf.hpp>
 #include <stan/math/prim/prob/weibull_lpdf.hpp>
@@ -67,75 +59,45 @@
 #include <stan/math/prim/prob/beta_lpdf.hpp>
 
 
- 
-#include <immintrin.h>
- 
-  
-   
+//// Eigen C++ lib. includes
+#undef OUT
+#include <RcppEigen.h>
+#include <unsupported/Eigen/SpecialFunctions>
+#include <unsupported/Eigen/CXX11/Tensor>
 
 
-#if defined(__GNUC__) || defined(__clang__)
-    #define ALWAYS_INLINE __attribute__((always_inline)) inline
-#elif defined(_MSC_VER)
-    #define ALWAYS_INLINE __forceinline
-#else
-    #define ALWAYS_INLINE inline
-#endif
- 
- 
- 
-
-#if defined(_MSC_VER)
-    #define VECTORCALL __vectorcall
-#else
-    #define VECTORCALL
-#endif
- 
- 
- 
-typedef double (*FuncDouble)(const double);
+//// BayesMVP config. includes 
+#include "initial_config.hpp" //// Other config. 
+#include "SIMD_config.hpp"  ////  config. (must be included BEFORE eigen_config.hpp)
+#include "eigen_config.hpp" //// Eigen C++ lib. config.  
 
 
-#if defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__) // use AVX-512 if available 
-    typedef __m512d (*FuncAVX)(const __m512d); 
-#elif defined(__AVX2__) && ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX2
-    // typedef __m256d (*FuncAVX)(const __m256d) __attribute__((sysv_abi));  // forcing System V ABI
-    typedef __m256d (*FuncAVX)(const __m256d); 
-#elif defined(__AVX__) && !(defined(__AVX2__)) &&  ( !(defined(__AVX512VL__) && defined(__AVX512F__)  && defined(__AVX512DQ__)) ) // use AVX
-    typedef __m128d (*FuncAVX)(const __m128d); 
-#endif
  
+//// #include <immintrin.h>
 
-   
  
-     
+//// Other Stan includes  
 #include <stan/model/model_base.hpp>  
-  
 #include <stan/io/array_var_context.hpp> 
 #include <stan/io/var_context.hpp> 
 #include <stan/io/dump.hpp>  
-  
 #include <stan/io/json/json_data.hpp>
 #include <stan/io/json/json_data_handler.hpp>
 #include <stan/io/json/json_error.hpp>
 #include <stan/io/json/rapidjson_parser.hpp>   
 
+
+//// RNG (using dqrng) includes
 #include <dqrng_distribution.h>
 #include <dqrng_generator.h>
 #include <dqrng_sample.h>
 #include <xoshiro.h>
  
-//    
-// #if __has_include("omp.h")
-//     #include "omp.h"
-// #endif
-//     
- 
     
 #include <RcppParallel.h>
-    /// #include <RcppEigen.h>
+//// #include <RcppEigen.h>
 
-///// General functions (e.g. fast exp() and log() approximations). Most of these are not model-specific.
+//// BayesMVP includes - General functions (e.g. fast exp() and log() approximations). Most of these are not model-specific.
 #include "general_functions/var_fns.hpp"
 #include "general_functions/double_fns.hpp"
 
@@ -144,15 +106,13 @@ typedef double (*FuncDouble)(const double);
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Loop.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX2_fns.hpp" // will only compile if  AVX2 is available
 #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_fns.hpp" // will only compile if  AVX-512 is available
-
-#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available
+// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available
 //// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2_test.hpp" ///////////  FOR DEBUG ONLY
-
-#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available
+// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available
+#include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX_general.hpp" // will only compile if AVX-512 (1st choice) or AVX2 available
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_overall.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_dbl.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_SIMD.hpp"
-
 
 
 #include "general_functions/array_creators_Eigen_fns.hpp"
@@ -168,7 +128,7 @@ typedef double (*FuncDouble)(const double);
 
 //////// #include "BayesMVP_Stan_fast_approx_fns.hpp"
 
-////// Now load in MVP-specific (and MVP-LC) model functions
+//// BayesMVP includes - MVP-specific (and MVP-LC) model fns
 #include "MVP_functions/MVP_manual_grad_calc_fns.hpp"
 #include "MVP_functions/MVP_log_scale_grad_calc_fns.hpp"
 #include "MVP_functions/MVP_manual_trans_and_J_fns.hpp"
@@ -179,10 +139,8 @@ typedef double (*FuncDouble)(const double);
 //// #include "MVP_functions/MVP_manual_Hessian_calc_fns.hpp"
 
 
+//// BayesMVP includes - Latent trait model fns
 #define COMPILE_LATENT_TRAIT 0
-#define COMPILE_MCMC_MAIN 1
-
-////// Latent trait model functions
 #if COMPILE_LATENT_TRAIT
     #include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
     #include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
@@ -193,26 +151,26 @@ typedef double (*FuncDouble)(const double);
 #endif
 
     
-    
+//// BridgeStan includes 
 #include "bridgestan.h" 
 #include "version.hpp"
 #include "model_rng.hpp" 
-    
-    
-    
+
+
 #include "general_functions/Stan_model_helper_fns.hpp"
 #include "general_functions/Stan_model_helper_fns_parallel.hpp"
 
 
 #include "general_functions/lp_grad_model_selector.hpp"
 
-
-////////// ADAM / SNAPER-HMC general functions
+    
+//// BayesMVP includes - MCMC includes - ADAM / SNAPER-HMC fns (general)
 #include "MCMC/EHMC_adapt_eps_fn.hpp"
 #include "MCMC/EHMC_adapt_tau_fns.hpp"
 #include "MCMC/EHMC_adapt_M_Hessian_fns.hpp"
 
-////////// EHMC sampler functions
+//// BayesMVP includes - MCMC includes - Standard-HMC (EHMC) + Diffusion-space-HMC sampler fns
+#define COMPILE_MCMC_MAIN 1
 #if COMPILE_MCMC_MAIN
   #include "MCMC/EHMC_main_sampler_fns.hpp"
   #include "MCMC/EHMC_nuisance_sampler_fns.hpp"
@@ -511,12 +469,14 @@ Eigen::Matrix<double, -1, -1>     Rcpp_wrapper_EIGEN_double_mat(             con
     Eigen::Matrix<double, -1, -1> x_copy = x;
     Eigen::Ref<Eigen::Matrix<double, -1, -1>> x_copy_ref(x_copy);
     
-    if (fn == "test_simple_debug") {
-      // const std::string test_simple_string = "test_simple";
-      // TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
-    } else {
-      fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
-    }
+    #if (defined(USE_AVX2) || defined(USE_AVX_512))
+        if (fn == "test_simple_debug") {
+          // const std::string test_simple_string = "test_simple";
+          // TEST_fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
+        } else {
+          fn_process_Ref_double_AVX(x_copy_ref, fn, skip_checks);  // modify in-place
+        }
+    #endif
     
     return x_copy_ref;
 
@@ -552,13 +512,15 @@ Eigen::Matrix<double, -1, 1>     Rcpp_wrapper_EIGEN_double_colvec(           con
 
   Eigen::Matrix<double, -1, 1> x_copy = x;
   Eigen::Ref<Eigen::Matrix<double, -1, 1>> x_copy_ref(x_copy);
-
-  if (fn == "test_simple_debug") {
-    // const std::string test_simple_string = "test_simple";
-    // TEST_fn_process_Ref_double_AVX2(x_copy_ref, test_simple_string, skip_checks);  // modify in-place
-  } else {
-    fn_process_Ref_double_AVX2(x_copy_ref, fn, skip_checks);  // modify in-place
-  }
+  
+  #if (defined(HAS_AVX2) || defined(HAS_AVX_512))
+    if (fn == "test_simple_debug") {
+      // const std::string test_simple_string = "test_simple";
+      // TEST_fn_process_Ref_double_AVX2(x_copy_ref, test_simple_string, skip_checks);  // modify in-place
+    } else {
+      fn_process_Ref_double_AVX(x_copy_ref, fn, skip_checks);  // modify in-place
+    }
+  #endif
 
   return x_copy_ref;
 

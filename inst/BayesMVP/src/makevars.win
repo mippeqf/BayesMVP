@@ -1,37 +1,33 @@
 ##
-####### -----  Clear include and library paths -----
+####### -----  Clear include and library paths -------------------------------------------------------------------------------------
 INCLUDE_PATH=
 LIBRARY_PATH=
-##
-##
-####### -----  BayesMVP  paths -----
-$(info R_HOME is: $(R_HOME))
 ##
 # Get R library path (this will work for any R version)
 ## R_LIB_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(.libPaths()[grep('00LOCK|00new', .libPaths(), invert=TRUE)][1])")
 ## $(info R_LIB_PATH is: $(R_LIB_PATH))
 ##
-PKG_SRC_PATH=$(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(getwd())")
-PKG_PATH=$(patsubst %/src,%,$(PKG_SRC_PATH))
+####### -----  BayesMVP  paths -----------------------------------------------------------------------------------------------------
+$(info R_HOME is: $(R_HOME))
+##
+override PKG_SRC_PATH=$(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(getwd())")
+override PKG_PATH=$(patsubst %/src,%,$(PKG_SRC_PATH))
 ##
 $(info PKG_SRC_PATH is: $(PKG_SRC_PATH))
 $(info PKG_PATH is: $(PKG_PATH))
 ##
-PKG_LIB_PATH=$(PKG_PATH)/lib
-PKG_INST_PATH=$(PKG_PATH)/inst
-PKG_LIB_ARCH_PATH = $(PKG_PATH)/libs$(R_ARCH)
+override PKG_LIB_PATH=$(PKG_PATH)/lib
+override PKG_INST_PATH=$(PKG_PATH)/inst
+override PKG_LIB_ARCH_PATH = $(PKG_PATH)/libs$(R_ARCH)
 ##
 $(info PKG_LIB_PATH is: $(PKG_LIB_PATH))
 $(info PKG_INST_PATH is: $(PKG_INST_PATH))
 $(info PKG_LIB_ARCH_PATH is: $(PKG_LIB_ARCH_PATH))
 ##
-##
-####### ----- RTools path (root dir) - RTools path detection based on R version -----
-## PC_ARCH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(R.version$$arch)")
+####### ----- RTools path (root dir) - RTools path detection based on R version -------------------------------------------------------
 override PC_ARCH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(Sys.info()[['machine']])")
 $(info PC_ARCH is: $(PC_ARCH))
 ##
-## 
 # Get R version by extracting R version from R_HOME path (e.g., from "C:/PROGRA~1/R/R-44~1.2")
 override R_VERSION_STRING = $(lastword $(subst /, ,$(R_HOME)))# Gets "R-44~1.2"
 override R_VERSION_NUM = $(word 2,$(subst -, ,$(R_VERSION_STRING)))# Gets "44~1.2"
@@ -48,13 +44,11 @@ override RTOOLS_VERSION_HOME = $(RTOOLS_VERSION)_HOME
 $(info RTOOLS_VERSION_HOME is: $(RTOOLS_VERSION_HOME))
 ##
 ## override RTOOLS_PATH=C:/rtools44
-## $(info RTOOLS_PATH is: $(RTOOLS_PATH))
 override SYSTEM_DRIVE=$(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "system_drive <- Sys.getenv('SystemDrive'); cat(system_drive)")
 override RTOOLS_PATH=$(SYSTEM_DRIVE)/$(RTOOLS_VERSION)
 $(info RTOOLS_PATH is: $(RTOOLS_PATH))
 ##
-##
-####### ----- RTools paths (using MINGW64) -----
+####### ----- RTools paths (using MINGW64) -------------------------------------------------------------------------------------------
 # Verify that the "mingw64" dir. exists 
 ifeq (,$(wildcard $(RTOOLS_PATH)/mingw64))
   $(error RTools installation at $(RTOOLS_PATH) appears incomplete: missing mingw64 directory)
@@ -75,8 +69,8 @@ $(info RTOOLS_MINGW_LIBCXX_INCLUDE_PATH is: $(RTOOLS_MINGW_LIBCXX_INCLUDE_PATH))
 ## override RTOOLS_MINGW_GCC_INCLUDE_PATH = $(RTOOLS_MINGW_LIB_PATH)/gcc/x86_64-w64-mingw32/14.2.0/include
 ## $(info RTOOLS_MINGW_GCC_INCLUDE_PATH is: $(RTOOLS_MINGW_GCC_INCLUDE_PATH))
 ##
-####### ----- RTools paths (using CLANG64 i.e. *DIRECLTY* [i.e., not via gcc]  ------------------------------
-####### ----- using the clang toolchains  + clang as the COMPILER (NOT g++))   ------------------------------
+####### ----- RTools paths (using CLANG64 i.e. *DIRECLTY* [i.e., not via gcc]  -------------------------------------------------------
+####### ----- using the clang toolchains  + clang as the COMPILER (NOT g++))   -------------------------------------------------------
 # Verify that the "clang64" dir. exists 
 ifeq (,$(wildcard $(RTOOLS_PATH)/clang64))
   $(error RTools installation at $(RTOOLS_PATH) appears incomplete: missing clang64 directory)
@@ -93,14 +87,10 @@ $(info RTOOLS_CLANG64_INCLUDE_PATH is: $(RTOOLS_CLANG64_INCLUDE_PATH))
 override RTOOLS_CLANG64_LIBCXX_INCLUDE_PATH=$(RTOOLS_CLANG64_INCLUDE_PATH)/c++/v1
 $(info RTOOLS_CLANG64_LIBCXX_INCLUDE_PATH is: $(RTOOLS_CLANG64_LIBCXX_INCLUDE_PATH))
 ##
-##
-####### ----- ccache paths -----  ccache directory e.g.: "C:/rtools44/mingw64/bin/ccache.exe"
-## override CCACHE = "$(RTOOLS_MINGW_BIN_PATH)/ccache.exe"
-## $(info CCACHE is: $(CCACHE))
-##
-# Check for ccache
-CCACHE_PATH = "$(RTOOLS_MINGW_BIN_PATH)/ccache.exe"
-HAVE_CCACHE = $(wildcard $(CCACHE_PATH))
+####### ----- CCACHE / ccache path [e.g.: "C:/rtools44/mingw64/bin/ccache.exe"] ---------------------------------------------------------------  
+## Check for ccache
+override CCACHE_PATH = "$(RTOOLS_MINGW_BIN_PATH)/ccache.exe"
+override HAVE_CCACHE = $(wildcard $(CCACHE_PATH))
 ##
 # Set CCACHE prefix only if available
 ifneq (,$(HAVE_CCACHE))
@@ -110,8 +100,8 @@ else
 endif
 ##
 $(info CCACHE is: $(CCACHE))
-
-######## ----- Compiler settings (RTools-CLANG64 is preferred) -----   
+##
+######## ----- Compiler settings (RTools-CLANG64 is preferred) ----------------------------------------------------------------------   
 ## Check if clang++ is available in "clang64" folder, otherwise fall back to mingw64 (AVX features won't work with g++/gcc on Windows!!)
 override CLANG_CXX_COMPILER = $(RTOOLS_CLANG64_BIN_PATH)/clang++
 override CLANG_CPP_COMPILER = $(RTOOLS_CLANG64_BIN_PATH)/clang
@@ -122,21 +112,62 @@ override MINGW_CPP_COMPILER = $(RTOOLS_MINGW_BIN_PATH)/gcc
 ifneq (,$(wildcard $(CLANG_CXX_COMPILER))) ## if clang (RTools "clang64") is available
   override CXX_COMPILER_TYPE = $(CCACHE) $(CLANG_CXX_COMPILER)
   override CPP_COMPILER_TYPE = $(CCACHE) $(CLANG_CPP_COMPILER)
+  override CXX_STD = CXX17 # Use C++17
+  override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
 else
   override CXX_COMPILER_TYPE = $(CCACHE) $(MINGW_CXX_COMPILER)
   override CPP_COMPILER_TYPE = $(CCACHE) $(MINGW_CPP_COMPILER)
+  override CXX_STD = -std=gnu++17 # Use C++17
+  override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
 endif
 ## 
-override CXX_STD = CXX17 # Use C++17
 ##
+####### ----- CPU Feature Detection (i.e., AVX, FMA, etc) -------------------------------------------------------------------------
 ##
-####### ----- For MINGW GCC include additional path detection (needed for omp.h) -----
+override HAS_FMA = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" R_script_has_FMA.R)
+override HAS_AVX = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" R_script_has_AVX.R)
+override HAS_AVX2 = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" R_script_has_AVX2.R)
+override HAS_AVX512 = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" R_script_has_AVX_512.R)
+##
+$(info CPU Features detected:)
+$(info HAS_FMA: $(HAS_FMA))
+$(info HAS_AVX: $(HAS_AVX))
+$(info HAS_AVX2: $(HAS_AVX2))
+$(info HAS_AVX512: $(HAS_AVX512))
+##
+####### ----- CPU flags - FMA  ---------------------------------------------------------------------------------------------------
+##
+## Initialize empty flags
+override FMA_FLAGS =
+##
+ifeq ($(HAS_FMA),1)
+  override FMA_FLAGS += -mfma
+endif
+##
+####### ----- CPU flags - AVX  ---------------------------------------------------------------------------------------------------
+##
+## Initialize empty flags
+override AVX_FLAGS =
+##
+## Only set AVX flags if using Clang (not GCC)
+ifneq (,$(wildcard $(CLANG_CXX_COMPILER)))
+    ifeq ($(HAS_AVX512),1)
+        override AVX_FLAGS += -mavx -mavx2 -mavx512f -mavx512cd -mavx512bw -mavx512dq -mavx512vl
+    else ifeq ($(HAS_AVX2),1)
+        override AVX_FLAGS += -mavx -mavx2
+    else ifeq ($(HAS_AVX),1)
+        override AVX_FLAGS += -mavx
+    endif
+else
+    $(info GCC detected - disabling AVX features due to (unresolved) Windows GCC AVX bugs)
+endif
+##
+####### ----- For MINGW GCC include additional path detection (needed for omp.h) ---------------------------------------------------
 ## "C:\rtools44\ucrt64\lib\gcc\x86_64-w64-mingw32\14.2.0\include\omp.h"
-##
 ##
 ifeq (,$(wildcard $(CLANG_CXX_COMPILER))) # Only needed if using gcc/g++
   ## Find the gcc version directory dynamically
-  GCC_VERSION_DIR = $(shell ls -d "$(RTOOLS_MINGW_LIB_PATH)/gcc/$(PC_ARCH)-w64-mingw32/"* 2>/dev/null | sort -rV | head -n1)
+  override GCC_VERSION_DIR = $(shell ls -d "$(RTOOLS_MINGW_LIB_PATH)/gcc/$(PC_ARCH)-w64-mingw32/"* 2>/dev/null | sort -rV | head -n1)
   $(info GCC_VERSION_DIR is: $(GCC_VERSION_DIR))
   ##
   ifeq ($(strip $(GCC_VERSION_DIR)),)
@@ -152,8 +183,7 @@ ifeq (,$(wildcard $(CLANG_CXX_COMPILER))) # Only needed if using gcc/g++
   endif
 endif
 ##
-##
-####### ----- Final RTools paths (depends on whether compiler is RTools-Clang or RTools-gcc) -----
+####### ----- Final RTools paths (depends on whether compiler is RTools-Clang or RTools-gcc) ---------------------------------------
 ifneq (,$(wildcard $(CLANG_CXX_COMPILER))) ## if clang (RTools "clang64") is available
   override RTOOLS_COMPILER_PATH=$(RTOOLS_CLANG64_PATH) 
   override RTOOLS_COMPILER_LIB_PATH=$(RTOOLS_CLANG64_LIB_PATH)
@@ -174,124 +204,88 @@ $(info RTOOLS_COMPILER_PATH is: $(RTOOLS_COMPILER_PATH))
 $(info RTOOLS_COMPILER_PATH is: $(RTOOLS_COMPILER_PATH))
 $(info RTOOLS_COMPILER_PATH is: $(RTOOLS_COMPILER_PATH))
 ##
+####### ----- OpenMP flags ---------------------------------------------------------------------------------------------------------
 ##
-####### ----- OpenMP paths -----
 ifneq (,$(wildcard $(CLANG_CXX_COMPILER))) ## if clang (RTools "clang64") is available
   override OMP_FLAGS = -fopenmp=libomp
 else
   override OMP_FLAGS = -lgomp
 endif
 ##
+override OMP_LIB_FLAGS = $(OMP_FLAGS)
+##
 override SHLIB_OPENMP_CFLAGS = -I"$(RTOOLS_COMPILER_BIN_PATH)" $(OMP_FLAGS)
 override SHLIB_OPENMP_CXXFLAGS = $(SHLIB_OPENMP_CFLAGS)
 ##
+####### ----- set BASE_FLAGS -----------------------------------------------------------------------------------------------------
 ##
-####### ----- set BASE_FLAGS -----
-RTOOLS_INCLUDE_PATHS=-I"$(RTOOLS_COMPILER_LIBCXX_INCLUDE_PATH)"
-RTOOLS_INCLUDE_PATHS+=-I"$(RTOOLS_COMPILER_BIN_PATH)"
-RTOOLS_INCLUDE_PATHS+=-I"$(RTOOLS_COMPILER_INCLUDE_PATH)"
+override RTOOLS_INCLUDE_PATHS = -I"$(RTOOLS_COMPILER_LIBCXX_INCLUDE_PATH)" \
+                                -I"$(RTOOLS_COMPILER_BIN_PATH)" \
+                                -I"$(RTOOLS_COMPILER_INCLUDE_PATH)"
 ##
 ifneq (,$(wildcard $(MINGW_CXX_COMPILER))) ## if clang (RTools "clang64") is NOT available (so only g++/gcc)
   RTOOLS_INCLUDE_PATHS+=-I"$(RTOOLS_MINGW_GCC_INCLUDE_PATH)" ## this is needed for gcc/g++ as "omp.h" resides here 
 endif
 ##
-RTOOLS_INCLUDE_PATHS+=$(SHLIB_OPENMP_CFLAGS)
-$(info RTOOLS_INCLUDE_PATHS: $(RTOOLS_INCLUDE_PATHS))
+override CPU_FLAGS = $(CPU_BASE_FLAGS) $(FMA_FLAGS) $(AVX_FLAGS)
 ##
-override FMA_FLAGS = -mfma
-override AVX_FLAGS = -mavx -mavx2
-##
-override BASE_FLAGS =   -O3  -march=native  -mtune=native \
+override BASE_FLAGS =   $(CPU_FLAGS) \
                         -Wno-error=ignored-attributes \
                         -Wno-error=implicit-function-declaration \
                         -Wno-pragma-pack \
-                        $(RTOOLS_INCLUDE_PATHS) -nostdinc++ -stdlib=libc++ \
+                        -Wno-parentheses-equality \
+                        $(RTOOLS_INCLUDE_PATHS) -nostdinc++ \
+                        $(SHLIB_OPENMP_CFLAGS) \
                         -fPIC \
                         -D_REENTRANT -DSTAN_THREADS -pthread \
                         -fpermissive \
                         -DNDEBUG \
-                        $(FMA_FLAGS) \
-                        $(AVX_FLAGS)
-
+                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math
+##
 ## BASE_FLAGS += -V
 ##
+##### CmDStan / Stan path(s)  --------------------------------------------------------------------------------------------------
+## Find CmDStan path:
+override CMDSTAN_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" R_script_find_cmdstan_path.R)
 ##
-##### CmDStan / Stan path(s)  ------------------------------------------------------------------------------
-# Get Windows user profile directory directly
-HOME = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "cat(gsub('\\\\\\\\', '/', Sys.getenv('USERPROFILE')))")/
-$(info HOME is: $(HOME))
+## Set other CmDStan paths:
+override STAN_ROOT=$(CMDSTAN_PATH)/stan
+override STAN_SRC=$(CMDSTAN_PATH)/stan/src
+override STAN_BASE=$(CMDSTAN_PATH)/stan/src/stan
+override STAN_LIB=$(CMDSTAN_PATH)/stan/lib
+override STAN_MATH=$(CMDSTAN_PATH)/stan/lib/stan_math
+override STAN_MATH_LIB=$(CMDSTAN_PATH)/stan/lib/stan_math/lib
 ##
-# Find cmdstan path with debug output
-$(info Checking for .cmdstan in: $(HOME)/.cmdstan)
-$(info Checking for cmdstan in: $(HOME)/cmdstan)
-##
-CMDSTAN_DIR = $(shell \
-  if [ -d "$(HOME)/.cmdstan" ]; then \
-    ls -d "$(HOME)/.cmdstan/cmdstan-"* 2>/dev/null | sort -rV | head -n1; \
-  elif [ -d "$(HOME)/cmdstan" ]; then \
-    echo "$(HOME)/cmdstan"; \
-  fi)
-##
-CMDSTAN_PATH=$(CMDSTAN_DIR)
+## Print CmDStan paths:
 $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
-STAN_ROOT=$(CMDSTAN_PATH)/stan
 $(info STAN_ROOT is: $(STAN_ROOT))
-STAN_SRC=$(CMDSTAN_PATH)/stan/src
 $(info STAN_SRC is: $(STAN_SRC))
-STAN_BASE=$(CMDSTAN_PATH)/stan/src/stan
 $(info STAN_BASE is: $(STAN_BASE))
-STAN_LIB=$(CMDSTAN_PATH)/stan/lib
 $(info STAN_LIB is: $(STAN_LIB))
-STAN_MATH=$(CMDSTAN_PATH)/stan/lib/stan_math
 $(info STAN_MATH is: $(STAN_MATH))
-STAN_MATH_LIB=$(CMDSTAN_PATH)/stan/lib/stan_math/lib
 $(info STAN_MATH_LIB is: $(STAN_MATH_LIB))
 ##
-# Try alternative path finding
-CMDSTAN_ALT = $(shell echo "$$CMDSTAN")
-$(info CMDSTAN env var is: '$(CMDSTAN_ALT)')
+##### BridgeStan path(s)  -----------------------------------------------------------------------------------------------------
+## Find BridgeStan path:
+override BRIDGESTAN_PATH = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" R_script_find_bridgestan_path.R)
 ##
+## Set other BridgeStan paths:
+override BRIDGESTAN_SRC = $(BRIDGESTAN_PATH)/src
+## override BRIDGESTAN_STAN_MATH_LIB=$(BRIDGESTAN)/stan/lib/stan_math/lib
 ##
-##### BRIDGESTAN path(s)  ------------------------------------------------------------------------------
-HOME = $(subst \,/,$(USERPROFILE))
-BRIDGESTAN_PATH = $(shell \
-  if [ -d "$(HOME)/.bridgestan/bridgestan-2.5.0" ]; then \
-    echo "$(HOME)/.bridgestan/bridgestan-2.5.0"; \
-  else \
-    ls -d "$(HOME)/.bridgestan/bridgestan-"* 2>/dev/null | grep "bridgestan-[0-9]" | sort -r | head -n1; \
-  fi)
-##
-ifeq ($(strip $(BRIDGESTAN_PATH)),)
-BRIDGESTAN_PATH = $(shell \
-  if [ -d "C:/bridgestan-2.5.0" ]; then \
-    echo "C:/bridgestan-2.5.0"; \
-  else \
-    ls -d "C:/bridgestan-"* 2>/dev/null | grep "bridgestan-[0-9]" | sort -r | head -n1; \
-  fi)
-endif
-##
-ifeq ($(strip $(BRIDGESTAN_PATH)),)
-  $(warning BridgeStan not found in standard locations. Installation will proceed assuming BridgeStan is in system path.)
-endif
-##
-##
-BRIDGESTAN_SRC=$(BRIDGESTAN_PATH)/src
-BRIDGESTAN_STAN_MATH_LIB=$(BRIDGESTAN)/stan/lib/stan_math/lib
-##
+## Print BridgeStan paths:
 $(info BRIDGESTAN_PATH is: $(BRIDGESTAN_PATH))
 $(info BRIDGESTAN_SRC is: $(BRIDGESTAN_SRC))
-$(info BRIDGESTAN_STAN_MATH_LIB is: $(BRIDGESTAN_STAN_MATH_LIB))
 ##
+##### TBB path(s) [using cmdstan tbb] -----------------------------------------------------------------------------------------
 ##
-##### TBB path(s)  ----------------------------------------------------------------------------------------------------------------------
-## if using cmdstan tbb: 
 TBB_PATH=$(STAN_MATH_LIB)/tbb
 $(info TBB_PATH is: $(TBB_PATH))
-TBB_DLL="$(PKG_INST_PATH)/tbb_stan/tbb.dll"## using the tbb.dll bundled with the package (which is CmDStan's tbb.dll)
+##
+TBB_DLL="$(PKG_INST_PATH)/tbb_stan/tbb.dll"## using the tbb.dll bundled with the package (which is the same as CmDStan v2.35 tbb.dll)
 $(info TBB_DLL is: $(TBB_DLL))
 ##
-##
-##### PKG_CPPFLAGS / PKG_CXXFLAGS / CPPFLAGS / CXXFLAGS --------------------------------------------------------------------------------
+##### PKG_CPPFLAGS / PKG_CXXFLAGS / CPPFLAGS / CXXFLAGS -----------------------------------------------------------------------
 override  PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_MATH_LIB)/boost_1.84.0" \
     -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
@@ -310,15 +304,13 @@ override  PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_BASE)/mcmc" \
     -I"$(STAN_BASE)/analyze" \
     -I"$(BRIDGESTAN_SRC)"
-
+##
 override PKG_CXXFLAGS = $(PKG_CPPFLAGS)
 override CPPFLAGS = $(PKG_CPPFLAGS)
 override CXXFLAGS = $(PKG_CPPFLAGS)
 ##
-##
 override CC  =  $(CPP_COMPILER_TYPE) 
 override CXX =  $(CXX_COMPILER_TYPE) 
-##
 ##
 override CFLAGS =  $(CPPFLAGS)
 override CC14 = $(CC)
@@ -331,7 +323,6 @@ override CC90 =  $(CC)
 override C90FLAGS = $(CPPFLAGS)
 override CC99 =  $(CC)
 override 99FLAGS = $(CPPFLAGS)
-##
 ##
 override CXXPICFLAGS = -fpic
 override CXX11  =  $(CXX)
@@ -350,28 +341,20 @@ override CXX23  =  $(CXX)
 override CXX23FLAGS =   $(CXXFLAGS)
 override CXX23PICFLAGS = -fpic
 ##
-##
-##  ---------------------  Configure package libs (For RTools) ---------------------------------------------------------------------
-## override LD = $(RTOOLS_CLANG64_BIN_PATH)/clang++
+##  ---------------------  Configure package libs ---------------------------------------------------------------------
 override LD = $(CXX_COMPILER_TYPE)
-##
-## override SHLIB_LD = $(RTOOLS_CLANG64_BIN_PATH)/clang++
 override SHLIB_LD = $(CXX_COMPILER_TYPE)
 ##
-##
-## ---------------------  Initial link paths and libraries (PKG_LIBS) --------------
+## ---------------------  Initial link paths and libraries (PKG_LIBS) ------
 ## PKG_LIBS+=-L"$(LLVM_MINGW_LIB_PATH)" -lc++abi # libc++abi.a is static
-override PKG_LIBS=-L"$(RTOOLS_COMPILER_LIB_PATH)" -lR -lc++ -lpthread $(OMP_FLAGS)
+override PKG_LIBS=-L"$(RTOOLS_COMPILER_LIB_PATH)" -lR -lc++ -lpthread $(OMP_LIB_FLAGS)
 ##
-##
-## ---------------------  Linker settings (LDFLAGS) --------------
+## ---------------------  Linker settings (LDFLAGS) ------------------------
 override LDFLAGS+=-L"$(RTOOLS_COMPILER_LIB_PATH)" -fuse-ld=lld -stdlib=libc++ ## -nostdlib++
 ##
-##
-##  ---------------------  TBB libs --------------------------------
+##  ---------------------  TBB libs ----------------------------------------
 override PKG_LIBS+=$(TBB_DLL)# using the tbb.dll bundled with BayesMVP 
 override PKG_LIBS+=-L"$(TBB_PATH)" -ltbb -lpthread ## using cmdstan tbb lib
-##
 ##
 ##  ---------------------  Dummy model libs --------------------------------
 override DUMMY_MODEL_SO="$(PKG_INST_PATH)/dummy_stan_model_win_model.so"
@@ -382,28 +365,14 @@ override DUMMY_MODEL_DLL="$(PKG_INST_PATH)/dummy_stan_model_win_model.dll"
 $(info DUMMY_MODEL_DLL is: $(DUMMY_MODEL_DLL))
 override PKG_LIBS+=$(DUMMY_MODEL_DLL)
 ##
-##
-##  ---------------------  RTOOLS compiler (e.g., CLANG64) libc++ DLL --------------------------------
+##  ---------------------  RTOOLS compiler (e.g., CLANG64) libc++ DLL -------
 override RTOOLS_COMPILER_LIBCXX_DLL = "$(RTOOLS_COMPILER_BIN_PATH)/libc++.dll"
 $(info RTOOLS_COMPILER_LIBCXX_DLL is: $(RTOOLS_COMPILER_LIBCXX_DLL))
 ##
-##
-##  ---------------------  SHLIB linking --------------------------------
+##  ---------------------  SHLIB / linking ----------------------------------------------------------------------------
 .PHONY: $(SHLIB)
 $(SHLIB): $(OBJECTS)
 	-mkdir -p "$(PKG_LIB_ARCH_PATH)"
 	-cp $(RTOOLS_COMPILER_LIBCXX_DLL) "$(PKG_LIB_ARCH_PATH)"
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(DLLFLAGS) -o $@ $(OBJECTS) $(ALL_LIBS)
 ##
-##
-
-
-
-
-
-
-
-
-
-
-
