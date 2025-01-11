@@ -1,7 +1,7 @@
 #ifndef OTHER_CONFIG_H
 #define OTHER_CONFIG_H
- 
- 
+
+
 //// Define global custom-double's (i.e., non-vectorised / non-AVX) fn typedef
 typedef double (*FuncDouble)(const double);
 
@@ -15,7 +15,7 @@ typedef double (*FuncDouble)(const double);
     #else
         #define ALWAYS_INLINE inline
     #endif
-#elif
+#else
     #if defined(__GNUC__) || defined(__clang__)
         #define ALWAYS_INLINE __attribute__((always_inline)) inline
     #else
@@ -23,11 +23,11 @@ typedef double (*FuncDouble)(const double);
     #endif
 #endif
 
-    
+
 //// Define global inlining macro    
 #ifdef _WIN32
         #define MAYBE_INLINE inline // Don't force inlining on Windows as very slow compilation (+ questionable benefits)
-#elif //// If Linux or Mac OS (in which case we do some more aggressive inlining)
+#else //// If Linux or Mac OS (in which case we do some more aggressive inlining)
         #if defined(__GNUC__) || defined(__clang__)
             #define MAYBE_INLINE __attribute__((always_inline)) inline
         #else
@@ -36,11 +36,10 @@ typedef double (*FuncDouble)(const double);
 #endif 
 
  
-
- 
  
 
 
 
 #endif
+ 
  

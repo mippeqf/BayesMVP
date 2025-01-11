@@ -41,25 +41,57 @@
  
 //// Define frd-declaration for AVX wrapper fn (or dummy fn if neither AVX-512 or AVX2 are available)
 #if  (defined(USE_AVX2) || defined(USE_AVX_512))
-#pragma message "defining fwd. declaration for fn_process_Ref_double_AVX"
-
-template <typename T>
-MAYBE_INLINE void fn_process_Ref_double_AVX(   Eigen::Ref<T> x_Ref,
-                                               const std::string &fn,
-                                               const bool &skip_checks);
-#elif
-#pragma message "Defining dummy fn_process_Ref_double_AVX - since neither AVX2 nor AVX-512 are available"
-   
-template <typename T>
-MAYBE_INLINE  void       fn_process_Ref_double_AVX(         Eigen::Ref<T> x_Ref,
-                                                            const std::string &fn,
-                                                            const bool &skip_checks) {
- 
- 
-}
+    #pragma message "defining fwd. declaration for fn_process_Ref_double_AVX"
+    
+    template <typename T>
+    MAYBE_INLINE void fn_process_Ref_double_AVX(   Eigen::Ref<T> x_Ref,
+                                                   const std::string &fn,
+                                                   const bool &skip_checks);
+#else
+    #pragma message "Defining dummy fn_process_Ref_double_AVX - since neither AVX2 nor AVX-512 are available"
+       
+    template <typename T>
+    MAYBE_INLINE  void       fn_process_Ref_double_AVX(         Eigen::Ref<T> x_Ref,
+                                                                const std::string &fn,
+                                                                const bool &skip_checks) {
+     
+     
+    }
 #endif
  
  
+//// Macro's to force byte alignment on Windows (not needed on Linux)
+#ifdef _MSC_VER
+    #define ALIGN64 __declspec(align(64))
+    #define ALIGN32 __declspec(align(32))
+    #define ALIGN16 __declspec(align(16))
+#else
+    #define ALIGN64 alignas(64)
+    #define ALIGN32 alignas(32)
+    #define ALIGN16 alignas(16)
+#endif
  
+// //// Macro to force 32-byte alignment on Windows (not needed on Linux)
+// ///#if defined(__AVX2__) && ( !(defined(__AVX256VL__) && defined(__AVX256F__)  && defined(__AVX256DQ__)) ) // use AVX2 if AVX-512 not available 
+// #if defined(USE_AVX_512)
+//     #ifdef _MSC_VER
+//         #define ALIGN64 __declspec(align(64))
+//     #else
+//         #define ALIGN64 alignas(64)
+//     #endif
+// #elif defined(USE_AVX2)
+//     #ifdef _MSC_VER
+//         #define ALIGN32 __declspec(align(32))
+//     #else
+//         #define ALIGN32 alignas(32)
+//     #endif
+// #elif defined (USE_AVX)
+//     #ifdef _MSC_VER
+//         #define ALIGN32 __declspec(align(32))
+//     #else
+//         #define ALIGN32 alignas(32)
+//     #endif
+// #endif
+//  
 
 #endif
