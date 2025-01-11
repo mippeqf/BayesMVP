@@ -4,38 +4,38 @@
 #ifndef FAST_AND_APPROX_AVX2_FNS_HPP
 #define FAST_AND_APPROX_AVX2_FNS_HPP
 
- 
- 
- 
- 
- 
+
 #include <immintrin.h>
 #include <cmath>
   
   
-#include <R_ext/Print.h>  // For REprintf
-#include <R_ext/Utils.h>  // For R_FlushConsole
+// #include <R_ext/Print.h>  // For REprintf
+// #include <R_ext/Utils.h>  // For R_FlushConsole
   
   
 #if defined(__AVX2__) && ( !(defined(__AVX256VL__) && defined(__AVX256F__)  && defined(__AVX256DQ__)) ) // use AVX2 if AVX-512 not available 
  
  
 //// Macro to force 32-byte alignment on Windows (not needed on Linux)
-#ifdef _MSC_VER
-   #define ALIGN32 __declspec(align(32))
-#else
-   #define ALIGN32 alignas(32)
+#ifdef _WIN32
+  #ifdef _MSC_VER
+     #define ALIGN32 __declspec(align(32))
+  #else
+     #define ALIGN32 alignas(32)
+  #endif
+#elif // if Linux or Mac OS 
+     #define ALIGN32
 #endif
  
 
- //// -------------------------------------------------------------------------------------------------------------------------------------------------------------
+//// -------------------------------------------------------------------------------------------------------------------------------------------------------------
  
  
  
  
  
 // Simple test function that just multiplies vector by 2
-__m256d  test_simple_AVX2 VECTORCALL(const __m256d x) {
+inline __m256d  test_simple_AVX2 VECTORCALL(const __m256d x) {
    
    // // _mm256_zeroupper();  // Reset AVX state
    ALIGN32  __m256d const two = _mm256_set1_pd(2.0);
@@ -46,7 +46,7 @@ __m256d  test_simple_AVX2 VECTORCALL(const __m256d x) {
 }
  
 // The scalar version for comparison
-double test_simple_double(const double x) {
+inline double test_simple_double(const double x) {
    
    const double res = 2.0*x;
    return res;
@@ -64,7 +64,7 @@ double test_simple_double(const double x) {
  
  
 
-__m256d   _mm256_abs_pd  VECTORCALL(const __m256d x) {
+ inline __m256d   _mm256_abs_pd  VECTORCALL(const __m256d x) {
  
    // _mm256_zeroupper();  // Reset AVX state
    
@@ -82,7 +82,7 @@ __m256d   _mm256_abs_pd  VECTORCALL(const __m256d x) {
  
  
 // is_finite_mask and is_not_NaN_mask for AVX2
-__m256d  is_finite_mask VECTORCALL(const __m256d x) {
+inline __m256d  is_finite_mask VECTORCALL(const __m256d x) {
   
        // _mm256_zeroupper();  // Reset AVX state
   
@@ -99,7 +99,7 @@ __m256d  is_finite_mask VECTORCALL(const __m256d x) {
 
 
 
-__m256d is_not_NaN_mask VECTORCALL(const __m256d x) {
+inline __m256d is_not_NaN_mask VECTORCALL(const __m256d x) {
   
        // _mm256_zeroupper();  // Reset AVX state
   
@@ -130,7 +130,7 @@ __m256d is_not_NaN_mask VECTORCALL(const __m256d x) {
 ///////////////////  fns - exp   -----------------------------------------------------------------------------------------------------------------------------
  
 
-__m256d   fast_ldexp VECTORCALL(  const __m256d AVX_a,
+inline __m256d   fast_ldexp VECTORCALL(  const __m256d AVX_a,
                                   const __m256i AVX_i) {
   
     // _mm256_zeroupper();  // Reset AVX state
@@ -151,7 +151,7 @@ __m256d   fast_ldexp VECTORCALL(  const __m256d AVX_a,
 
  
 // Replace _mm256_srai_epi64 (AVX-512 fn) with this helper function (forAVX2)
-__m256i   avx2_srai_epi64 VECTORCALL(  const __m256i x, 
+inline __m256i   avx2_srai_epi64 VECTORCALL(  const __m256i x, 
                                        const int count) {
   
      // _mm256_zeroupper();  // Reset AVX state
@@ -259,7 +259,7 @@ inline __m256d fast_ldexp_2 VECTORCALL( const __m256d AVX_a,
 
 
 // Helper function for AVX2 64-bit conversion 
-__m256i avx2_cvtpd_epi64 VECTORCALL(const __m256d x) {
+inline __m256i avx2_cvtpd_epi64 VECTORCALL(const __m256d x) {
   
      ALIGN32  __m256d const x_aligned = x;
  
@@ -289,7 +289,7 @@ __m256i avx2_cvtpd_epi64 VECTORCALL(const __m256d x) {
 // Adapted from: https://stackoverflow.com/questions/48863719/fastest-implementation-of-exponential-function-using-avx
 // added   (optional) extra degree(s) for poly approx (oroginal float fn had 4 degrees) - using "minimaxApprox" R package to find coefficient terms
 // R code:    minimaxApprox::minimaxApprox(fn = exp, lower = -0.346573590279972643113, upper = 0.346573590279972643113, degree = 5, basis ="Chebyshev")
-__m256d fast_exp_1_wo_checks_AVX2  VECTORCALL( const __m256d x)  { 
+inline __m256d fast_exp_1_wo_checks_AVX2  VECTORCALL( const __m256d x)  { 
   
     // REprintf("Entering fast_exp_1_wo_checks_AVX2 \n");
     // R_FlushConsole();
@@ -370,7 +370,7 @@ __m256d fast_exp_1_wo_checks_AVX2  VECTORCALL( const __m256d x)  {
 
  
 // see https://stackoverflow.com/questions/39587752/difference-between-ldexp1-x-and-exp2x
-__m256d fast_exp_1_AVX2  VECTORCALL(const __m256d a) {
+inline __m256d fast_exp_1_AVX2  VECTORCALL(const __m256d a) {
   
   // _mm256_zeroupper();  // Reset AVX state
   
