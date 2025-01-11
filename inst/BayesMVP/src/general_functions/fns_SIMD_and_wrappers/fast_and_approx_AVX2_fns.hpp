@@ -14,26 +14,10 @@
   
   
 #if defined(__AVX2__) && ( !(defined(__AVX256VL__) && defined(__AVX256F__)  && defined(__AVX256DQ__)) ) // use AVX2 if AVX-512 not available 
- 
- 
-//// Macro to force 32-byte alignment on Windows (not needed on Linux)
-#ifdef _WIN32
-  #ifdef _MSC_VER
-     #define ALIGN32 __declspec(align(32))
-  #else
-     #define ALIGN32 alignas(32)
-  #endif
-#elif // if Linux or Mac OS 
-     #define ALIGN32
-#endif
- 
 
 //// -------------------------------------------------------------------------------------------------------------------------------------------------------------
- 
- 
- 
- 
- 
+
+
 // Simple test function that just multiplies vector by 2
 inline __m256d  test_simple_AVX2 VECTORCALL(const __m256d x) {
    
@@ -44,18 +28,6 @@ inline __m256d  test_simple_AVX2 VECTORCALL(const __m256d x) {
    return res; 
    
 }
- 
-// The scalar version for comparison
-inline double test_simple_double(const double x) {
-   
-   const double res = 2.0*x;
-   return res;
-   
-} 
- 
- 
- 
- 
  
  
 //// -------------------------------------------------------------------------------------------------------------------------------------------------------------

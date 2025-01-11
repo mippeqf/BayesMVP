@@ -118,7 +118,7 @@ MAYBE_INLINE  void fn_AVX_matrix(    Eigen::Ref<T> x_Ref,
  
 
 template <typename T>
-MAYBE_INLINE  void fn_AVX_dbl_Eigen(     Eigen::Ref<T> x_Ref, 
+inline  void fn_AVX_dbl_Eigen(     Eigen::Ref<T> x_Ref, 
                                          const FuncAVX &fn_AVX, 
                                          const FuncDouble &fn_double) {
      
@@ -150,7 +150,7 @@ MAYBE_INLINE  void fn_AVX_dbl_Eigen(     Eigen::Ref<T> x_Ref,
   
 
 template <typename T>
-MAYBE_INLINE void    fn_process_double_AVX_sub_function(      Eigen::Ref<T> x_Ref,  
+inline  void    fn_process_double_AVX_sub_function(      Eigen::Ref<T> x_Ref,  
                                                               const FuncAVX    &fn_fast_AVX_function,
                                                               const FuncDouble &fn_fast_double_function,
                                                               const FuncAVX    &fn_fast_AVX_function_wo_checks,
@@ -178,7 +178,7 @@ MAYBE_INLINE void    fn_process_double_AVX_sub_function(      Eigen::Ref<T> x_Re
 #pragma message "About to define AVX-512 mplementation of fn_process_Ref_double_AVX"
  
 template <typename T>
-MAYBE_INLINE  void       fn_process_Ref_double_AVX(       Eigen::Ref<T> x_Ref,
+inline  void       fn_process_Ref_double_AVX(       Eigen::Ref<T> x_Ref,
                                                           const std::string &fn,
                                                           const bool &skip_checks) {
   
@@ -186,10 +186,10 @@ MAYBE_INLINE  void       fn_process_Ref_double_AVX(       Eigen::Ref<T> x_Ref,
           std::cout << "Calling test_simple function" << std::endl;
           try { 
             // fn_process_double_AVX_sub_function(x_Ref, 
-            //                                     test_simple_AVX2,  test_simple_double,  
-            //                                     test_simple_AVX2,  test_simple_double, skip_checks) ;
-            fn_AVX_dbl_Eigen(x_Ref, test_simple_AVX2, test_simple_double);
-            // fn_process_double_AVX_sub_function(x_Ref, test_simple_AVX2,  test_simple_double,   test_simple_AVX2, test_simple_double, skip_checks) ;
+            //                                     test_simple_AVX512,  test_simple_double,  
+            //                                     test_simple_AVX512,  test_simple_double, skip_checks) ;
+            fn_AVX_dbl_Eigen(x_Ref, test_simple_AVX512, test_simple_double);
+            // fn_process_double_AVX_sub_function(x_Ref, test_simple_AVX512,  test_simple_double,   test_simple_AVX512, test_simple_double, skip_checks) ;
           } catch (const std::exception& e) { 
               std::cout << "Exception caught: " << e.what() << std::endl;
               throw;
@@ -200,7 +200,7 @@ MAYBE_INLINE  void       fn_process_Ref_double_AVX(       Eigen::Ref<T> x_Ref,
     } else if (fn == "exp") {    
           fn_process_double_AVX_sub_function( x_Ref, 
                                               fast_exp_1_AVX512, mvp_std_exp, 
-                                              fast_exp_1_wo_checks_AVX2, mvp_std_exp, skip_checks) ;
+                                              fast_exp_1_wo_checks_AVX512, mvp_std_exp, skip_checks) ;
     } else if (fn == "log") {   
           fn_process_double_AVX_sub_function( x_Ref, 
                                               fast_log_1_AVX512, mvp_std_log, 
@@ -262,7 +262,7 @@ MAYBE_INLINE  void       fn_process_Ref_double_AVX(       Eigen::Ref<T> x_Ref,
 #pragma message "About to define AVX2 implementation of fn_process_Ref_double_AVX"
  
 template <typename T>
-MAYBE_INLINE  void       fn_process_Ref_double_AVX(        Eigen::Ref<T> x_Ref,
+inline  void       fn_process_Ref_double_AVX(        Eigen::Ref<T> x_Ref,
                                                            const std::string &fn,
                                                            const bool &skip_checks) {
    
@@ -345,7 +345,7 @@ MAYBE_INLINE  void       fn_process_Ref_double_AVX(        Eigen::Ref<T> x_Ref,
 #pragma message "Defining dummy fn_process_Ref_double_AVX - since neither AVX2 nor AVX-512 are available"
  
 template <typename T>
-MAYBE_INLINE  void       fn_process_Ref_double_AVX(         Eigen::Ref<T> x_Ref,
+inline  void       fn_process_Ref_double_AVX(         Eigen::Ref<T> x_Ref,
                                                             const std::string &fn,
                                                             const bool &skip_checks) {
    
