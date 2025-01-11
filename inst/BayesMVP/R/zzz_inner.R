@@ -42,6 +42,8 @@ cmdstanr_path <- function() {
 
 
 
+
+
 #' bridgestan_path
 #' @export
 bridgestan_path <- function() {
@@ -92,14 +94,16 @@ bridgestan_path <- function() {
 
 
 
+
+
 #' setup_env_post_install
 #' @export
 setup_env_post_install <- function() {
   
   
           # Set brigestan and cmdstanr environment variables / directories
-          bs_dir <- bridgestan_path()
-          cmdstan_dir <- cmdstanr_path()
+          ## bs_dir <- bridgestan_path()
+          ## cmdstan_dir <- cmdstanr_path()
           
           mvp_user_dir <- file.path(Sys.getenv("USERPROFILE"), ".BayesMVP")
           
@@ -111,12 +115,12 @@ setup_env_post_install <- function() {
                     
                     cat("Preloading critical .DLLs / .SOs for BayesMVP package\n")
                     try({   TBB_STAN_DLL <- file.path(mvp_user_dir, "tbb.dll") })
-                    try({   TBB_CMDSTAN_DLL <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "tbb.dll") }) # prioritise user's installed tbb dll/so
+                    ## try({   TBB_CMDSTAN_DLL <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "tbb.dll") }) # prioritise user's installed tbb dll/so
                     try({   DUMMY_MODEL_SO <- file.path(mvp_user_dir, "dummy_stan_modeL_win_model.so") })
                     try({   DUMMY_MODEL_DLL <- file.path(mvp_user_dir, "dummy_stan_modeL_win_model.dll") })
                     
                     dll_paths <- c(TBB_STAN_DLL,
-                                   TBB_CMDSTAN_DLL,
+                                   ## TBB_CMDSTAN_DLL,
                                    DUMMY_MODEL_SO,
                                    DUMMY_MODEL_DLL)
             
@@ -128,11 +132,11 @@ setup_env_post_install <- function() {
                     
                     cat("Preloading critical .DLLs / .SOs for BayesMVP package\n")
                     try({  TBB_STAN_SO <- file.path(mvp_user_dir, "libtbb.so.2") })
-                    try({  TBB_CMDSTAN_SO <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "libtbb.so.2") })  # prioritise user's installed tbb dll/so
+                    ## try({  TBB_CMDSTAN_SO <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "libtbb.so.2") })  # prioritise user's installed tbb dll/so
                     try({  DUMMY_MODEL_SO <- file.path(mvp_user_dir, "dummy_stan_model_model.so") })
                     
                     dll_paths <- c(TBB_STAN_SO,
-                                   TBB_CMDSTAN_SO,
+                                   ## TBB_CMDSTAN_SO,
                                    DUMMY_MODEL_SO)
             
           }
@@ -160,60 +164,7 @@ setup_env_post_install <- function() {
 }
 
 
-#' .make_libs
-#' @export
-.make_libs <- function(libname, 
-                       pkgname) {
-  
-  
-            mvp_user_dir <- file.path(Sys.getenv("USERPROFILE"), ".BayesMVP")
-      
-     
-            is_windows <- .Platform$OS.type == "windows"
-            arch <- Sys.getenv("R_ARCH")  # On Linux, this is typically empty
-            
-           
-            lib_path <- if (is_windows) {
-              file.path(libname, "libs", arch)
-            } else {
-              file.path(libname, "libs")
-            }
-            
-            if (.Platform$OS.type == "windows") {
-     
-                  # Copy TBB DLL
-                  file.copy(  from = file.path(mvp_user_dir, "tbb.dll"),
-                              to = file.path(lib_path, "tbb.dll"),
-                              overwrite = TRUE)
-                  
-                  # Copy dummy model SO
-                  file.copy(  from = file.path(mvp_user_dir, "dummy_stan_model_win_model.so"),
-                              to = file.path(lib_path, "dummy_stan_model_win_model.so"),
-                              overwrite = TRUE)
-                  
-                  # Copy dummy model DLL
-                  file.copy(  from = file.path(mvp_user_dir, "dummy_stan_model_win_model.dll"),
-                              to = file.path(lib_path, "dummy_stan_model_win_model.dll"),
-                              overwrite = TRUE)
-            
-            } else {  ### if Linux or Mac
-              
-                  # Copy TBB DLL
-                  file.copy(  from = file.path(mvp_user_dir, "libtbb.so"),
-                              to = file.path(lib_path, "libtbb.so"),
-                              overwrite = TRUE)
-                  
-                  # Copy dummy model SO
-                  file.copy(  from = file.path(mvp_user_dir, "dummy_stan_model_model.so"),
-                              to = file.path(lib_path, "dummy_stan_model_model.so"),
-                              overwrite = TRUE)
-              
-            }
-            
-     
 
-        
-}
 
 
 
@@ -222,9 +173,29 @@ setup_env_post_install <- function() {
 #' @export
 .onLoad <- function(libname, 
                     pkgname) {
- 
-   setup_env_post_install() 
-  try({  .make_libs(libname, pkgname) }, silent = TRUE)
+  
+      is_windows <- .Platform$OS.type == "windows"
+      
+      dll_path <- file.path(libname, pkgname)
+      
+      try({  comment(print(paste(dll_path))) })
+      try({  comment(print(dll_path)) })
+      
+      if (is_windows == TRUE) {
+        
+       ## try({ dyn.load(file.path(dll_path, "tbb.dll")) })
+        try({ dyn.load(file.path(dll_path, "dummy_stan_model_win_model.so")) })
+        try({ dyn.load(file.path(dll_path, "dummy_stan_model_win_model.dll")) })
+        ## try({ dyn.load(file.path(dll_path, "R.dll")) })
+        try({ dyn.load(file.path(dll_path, "BayesMVP.dll")) })
+        
+      } else { 
+        # dyn.load(file.path(dll_path, "dummy_stan_model_model.so"))
+        ##    setup_env_post_install() 
+        ##   try({  .make_libs(libname, pkgname) }, silent = TRUE)
+      }
+      
+
   
 }
 
@@ -236,7 +207,6 @@ setup_env_post_install <- function() {
                       pkgname) {
 
    setup_env_post_install()  
-  # .make_libs(libname, pkgname)
   
 }
 
@@ -247,7 +217,6 @@ setup_env_post_install <- function() {
                        pkgname) {
  
    setup_env_post_install()  
-  #.make_libs(libname, pkgname)
   
 }
 
