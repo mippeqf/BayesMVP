@@ -18,7 +18,7 @@ cmdstanr_path <- function() {
                   return(cmdstan_dir_using_cmdstanr) # Use the value from the environment variable
                 }
             }, silent = TRUE)
-
+ 
             # Get the user's home directory
             home_dir <- Sys.getenv(if (.Platform$OS.type == "windows") "USERPROFILE" else "HOME")
 

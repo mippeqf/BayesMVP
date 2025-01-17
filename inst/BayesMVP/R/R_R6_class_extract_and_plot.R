@@ -6,7 +6,7 @@ require(R6)
 #'  
 #' 
 #' @details 
-#' This class is called via the main "MVP_model" R6 class.
+#' This class is called via the main "MVP_model" R6 class. 
 #' 
 #' @section Model Types:
 #' * MVP: Multivariate probit model

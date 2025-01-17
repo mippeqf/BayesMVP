@@ -12,9 +12,9 @@
 #' @export
 init_model <- function(Model_type,
                        y,
-                       N,
-                       n_params_main,
-                       n_nuisance,
+                       N, 
+                       n_params_main = NULL,
+                       n_nuisance = NULL,
                        X = NULL,
                        model_args_list,
                        Stan_model_file_path,
@@ -24,15 +24,12 @@ init_model <- function(Model_type,
   
   
   
-  hard_coded_models_vec <- c("LC_MVP", "MVP", "LC_LT", "latent_trait")
+  hard_coded_models_vec <- c("LC_MVP", "MVP", "latent_trait")
   models_vec <- c("Stan", hard_coded_models_vec)
   
   if (!(Model_type %in% models_vec)) { 
     stop("Model_type must be set and be one of the following: 'Stan' 'LC_MVP', 'MVP', 'latent_trait'")
   }
-  
- 
-  
   
   #### load hard-coded model args 
   if (Model_type  %in% hard_coded_models_vec) {
@@ -44,7 +41,11 @@ init_model <- function(Model_type,
                                                                   model_args_list = model_args_list,
                                                                   ...)
              
-             ## load fn args from list
+             #### load fn args from list
+             n_nuisance <- outs_init_hard_coded_model$n_nuisance
+             n_params_main <- outs_init_hard_coded_model$n_params_main
+             n_params <- outs_init_hard_coded_model$n_params
+             ####
              n_covariates_per_outcome_mat <- outs_init_hard_coded_model$n_covariates_per_outcome_mat
              prior_only <- outs_init_hard_coded_model$prior_only
              prior_coeffs_mean_mat <- outs_init_hard_coded_model$prior_coeffs_mean_mat
@@ -90,24 +91,6 @@ init_model <- function(Model_type,
 
     
             Model_args_as_Rcpp_List <- list()
-    
-            # Stan_model <- file.path(Stan_model_file_path)  ## user-supplied
-            # 
-            # # convert data to JSON format (use cmdstanr::write_stan_json NOT jsonlite::toJSON)
-            # ## r_data_JSON <- tempfile(fileext = ".json")
-            # # make a models directory in the user's workspace
-            # r_data_JSON <- "~/.BayesMVP/compiled_models"
-            # if (!dir.exists(r_data_JSON)) dir.create(r_data_JSON, recursive = TRUE)
-            # 
-            # cmdstanr::write_stan_json(Stan_data_list, r_data_JSON)
-            # json_file_path <- r_data_JSON
-            # Model_args_as_Rcpp_List$json_file_path <- json_file_path  ### add to list for C++ struct
-            # 
-            # Sys.setenv(STAN_THREADS="true")
-            # 
-            # bs_model <- bridgestan::StanModel$new(lib = Stan_model, 
-            #                                       data = r_data_JSON, 
-            #                                       seed = 123) # creates the .so file 
             
             Stan_model <- NULL
             
@@ -147,9 +130,5 @@ init_model <- function(Model_type,
 
 
 
-
-
-
-  
 
 

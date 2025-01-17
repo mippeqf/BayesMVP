@@ -11,12 +11,13 @@ init_inits    <- function(init_model_outs,
                           cmdstanr_model_fit_obj,
                           n_chains_burnin,
                           n_params_main,
-                          n_nuisance,
+                          n_nuisance, 
                           N,
+                          sample_nuisance,
                           Stan_model_file_path,
                           Stan_data_list,
                           Stan_cpp_user_header,
-                          sample_nuisance,
+                          Stan_cpp_flags,
                           ...) {
   
   
@@ -101,15 +102,16 @@ init_inits    <- function(init_model_outs,
                         
                         mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
                                                        compile_model_methods = TRUE,
-                                                       force_recompile = force_recompile
-                        )
+                                                       force_recompile = force_recompile,
+                                                       cpp_options = Stan_cpp_flags)
                         
                       } else {
                         
                         mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
                                                        compile_model_methods = TRUE,
                                                        force_recompile = force_recompile,
-                                                       user_header =  Stan_cpp_user_header)  
+                                                       user_header =  Stan_cpp_user_header, 
+                                                       cpp_options = Stan_cpp_flags)
                       }
 
               
@@ -406,20 +408,28 @@ init_inits    <- function(init_model_outs,
     
     if (compile == TRUE) {  # re-compile the user-supplied Stan model to extract model methods and make init's  
       
-            if (is.null(Stan_cpp_user_header)) {
-              
-              mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
-                                             compile_model_methods = TRUE,
-                                             force_recompile = force_recompile
-              )
-              
-            } else {
-              
-              mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
-                                             compile_model_methods = TRUE,
-                                             force_recompile = force_recompile,
-                                             user_header =  Stan_cpp_user_header)  
-            }
+            mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
+                                           compile_model_methods = TRUE,
+                                           force_recompile = force_recompile
+                                           ## user_header =  Stan_cpp_user_header, 
+                                           ## cpp_options = Stan_cpp_flags
+                                           )
+      
+            # if (is.null(Stan_cpp_user_header)) {
+            #   
+            #   mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
+            #                                  compile_model_methods = TRUE,
+            #                                  force_recompile = force_recompile,
+            #                                  cpp_options = Stan_cpp_flags)
+            #   
+            # } else {
+            #   
+            #   mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
+            #                                  compile_model_methods = TRUE,
+            #                                  force_recompile = force_recompile,
+            #                                  user_header =  Stan_cpp_user_header, 
+            #                                  cpp_options = Stan_cpp_flags)
+            # }
 
       
     } else {  ### use the inputted cmdstanr_model_fit_obj to re-initialise the model
@@ -453,7 +463,7 @@ init_inits    <- function(init_model_outs,
           bs_model <- init_model_outs$bs_model
     
     
-  }
+  } ### /// end of "if not Stan model [else]" block
   
   
    model_so_file <- transform_stan_path(Stan_model_file_path)

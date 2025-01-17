@@ -100,9 +100,11 @@ init_hard_coded_model <- function(Model_type,
   
   if ((is.null(X)) || (is.null(n_covariates_per_outcome_mat))) { 
           
-          warning("No covariates supplied - will assume intercept-only")
+          warning("No covariates (i.e., X) supplied - will assume intercept-only")
+    
+          n_covariates_per_outcome_mat <- array(1, dim = c(n_class, n_tests))
           
-          ## make dummy (intercept-only) X 
+          ## then make dummy (intercept-only) X
           X_per_class <- array(1, dim = c(n_tests, 1, N))
           X_list <- list()
           
@@ -121,14 +123,12 @@ init_hard_coded_model <- function(Model_type,
           
           X <- X_list
           
-          n_covariates_per_outcome_mat <- array(1, dim = c(n_class, n_tests))
+       
           
           
   }
   
-  
-  
-  
+
   if (is.null(overflow_threshold)) { 
     overflow_threshold <- +5
   }
@@ -234,10 +234,28 @@ init_hard_coded_model <- function(Model_type,
     
     n_covariates_max <- max(unlist(n_covariates_per_outcome_mat))
     n_covariates_total <- sum(unlist(n_covariates_per_outcome_mat))
-    n_params_main <- (n_class - 1)  +   n_class * choose(n_tests, 2)   +  n_covariates_total 
+    
+    if (Model_type == "LC_MVP") {
+      
+          n_corrs <- n_class * 0.5 * n_tests * (n_tests - 1)
+          n_params_main <- (n_class - 1)  +  n_corrs +  n_covariates_total 
+      
+    } else if (Model_type == "MVP") {
+      
+          n_corrs <- 0.5 * n_tests * (n_tests - 1)
+          n_params_main <- n_corrs +  n_covariates_total 
+      
+    } else if (Model_type == "latent_trait") {
+      
+          LT_n_bs <- n_tests * n_class
+          n_corrs <- LT_n_bs
+          n_params_main <- (n_class - 1)  +   n_corrs   +  n_covariates_total 
+      
+    }
+      
+      
     n_nuisance <-  N * n_tests 
     n_params <- n_params_main + n_nuisance 
-    n_corrs <- n_class * 0.5 * n_tests * (n_tests - 1)
     index_us <- 1:n_nuisance
     index_main <- (n_nuisance+1):n_params
     index_corrs <- (n_nuisance+1):(n_nuisance+n_corrs)
@@ -610,12 +628,14 @@ init_hard_coded_model <- function(Model_type,
     Model_args_mats_int[[1]] <- n_covariates_per_outcome_mat
     
     if (is.matrix(n_covariates_per_outcome_mat) == FALSE) {
-      n_covariates_per_outcome_mat <- matrix(n_covariates_per_outcome_mat)
+       n_covariates_per_outcome_mat <- matrix(n_covariates_per_outcome_mat)
        Model_args_mats_int[[1]] <- n_covariates_per_outcome_mat
     }
     
-    if (is.matrix(lkj_cholesky_eta) == FALSE) {
-      lkj_cholesky_eta <- matrix(lkj_cholesky_eta)
+    if (Model_type  %in% c("MVP", "LC_MVP")) {
+        if (is.matrix(lkj_cholesky_eta) == FALSE) {
+          lkj_cholesky_eta <- matrix(lkj_cholesky_eta)
+        }
     }
     
     ### ---------------------------------------------- Put all in a big list

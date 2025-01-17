@@ -1,5 +1,7 @@
  
 
+#' R_fn_avg_matrix_columns
+#' @export
 R_fn_avg_matrix_columns <- function(matrix,
                                     n_chains_per_superchain) {
   
@@ -34,7 +36,8 @@ R_fn_avg_matrix_columns <- function(matrix,
 
 
 
-
+#' R_fn_post_burnin_prep_for_sampling
+#' @export
 R_fn_post_burnin_prep_for_sampling <- function(n_chains_sampling, 
                                                n_superchains, 
                                                n_params_main, 

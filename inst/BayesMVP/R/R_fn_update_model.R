@@ -19,7 +19,7 @@ update_model    <- function(init_object, ### this is the object to update
     Model_type_old <- init_object$Model_type
   # 
   # y_old <- init_object$y
-  # 
+  #  
   # init_lists_per_chain_old <- init_object$init_lists_per_chain
   # 
   # Stan_data_list_old <- init_object$Stan_data_list
@@ -94,7 +94,7 @@ update_model    <- function(init_object, ### this is the object to update
    
 
   ### now re-initialise but WITHOUT re-compiling the model
-    init_object <- BayesMVP::initialise_model(   Model_type = Model_type,
+    init_object <- BayesMVP:::initialise_model(   Model_type = Model_type,
                                                  compile = FALSE,
                                                  force_recompile = force_recompile,
                                                  cmdstanr_model_fit_obj = init_object$cmdstanr_model_fit_obj,
@@ -109,6 +109,7 @@ update_model    <- function(init_object, ### this is the object to update
                                                  Stan_data_list = Stan_data_list,
                                                  Stan_model_file_path = init_object$Stan_model_file_path,
                                                  Stan_cpp_user_header = init_object$Stan_cpp_user_header,
+                                                 Stan_cpp_flags = init_object$Stan_cpp_flags,
                                                  ...)
   
   message(  cat(colourise(     (paste(Model_type, "Model updated!"))         , "green"), "\n") )

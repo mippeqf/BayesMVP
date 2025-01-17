@@ -19,6 +19,7 @@ initialise_model  <-    function(     Model_type,
                                       Stan_data_list,
                                       Stan_model_file_path,
                                       Stan_cpp_user_header,
+                                      Stan_cpp_flags,
                                       ...) { 
   
   
@@ -53,6 +54,7 @@ initialise_model  <-    function(     Model_type,
                                                          N = N,
                                                          n_params_main = n_params_main,
                                                          n_nuisance = n_nuisance,
+                                                         Stan_cpp_flags = Stan_cpp_flags,
                                                          ...)
     
                 param_names <- init_vals_object$param_names
@@ -98,6 +100,7 @@ initialise_model  <-    function(     Model_type,
                                      dummy_json_file_path = dummy_json_file_path,
                                      Stan_model_file_path = Stan_model_file_path,
                                      Stan_cpp_user_header = Stan_cpp_user_header,
+                                     Stan_cpp_flags = Stan_cpp_flags,
                                      cmdstanr_model_fit_obj = cmdstanr_model_fit_obj)
  
   

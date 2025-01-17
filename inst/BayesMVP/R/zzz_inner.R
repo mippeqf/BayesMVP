@@ -123,40 +123,43 @@ setup_env_post_install <- function() {
                                    ## TBB_CMDSTAN_DLL,
                                    DUMMY_MODEL_SO,
                                    DUMMY_MODEL_DLL)
+                    
+                    
+                    # Attempt to load each DLL
+                    for (dll in dll_paths) {
+                      
+                      tryCatch(
+                        {
+                          dyn.load(dll)
+                          cat("  Loaded:", dll, "\n")
+                        },
+                        error = function(e) {
+                          cat("  Failed to load:", dll, "\n  Error:", e$message, "\n")
+                        }
+                      )
+                      
+                    }
+                    
+                    
             
           }  else {  ### if Linux or Mac
             
-                    TBB_STAN_SO <- TBB_CMDSTAN_SO <- DUMMY_MODEL_SO <- NULL
-                    
-                    cat("Setting up BayesMVP Environment for Linux / Mac OS:\n")
-                    
-                    cat("Preloading critical .DLLs / .SOs for BayesMVP package\n")
-                    try({  TBB_STAN_SO <- file.path(mvp_user_dir, "libtbb.so.2") })
-                    ## try({  TBB_CMDSTAN_SO <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "libtbb.so.2") })  # prioritise user's installed tbb dll/so
-                    try({  DUMMY_MODEL_SO <- file.path(mvp_user_dir, "dummy_stan_model_model.so") })
-                    
-                    dll_paths <- c(TBB_STAN_SO,
-                                   ## TBB_CMDSTAN_SO,
-                                   DUMMY_MODEL_SO)
+                    # TBB_STAN_SO <- TBB_CMDSTAN_SO <- DUMMY_MODEL_SO <- NULL
+                    # 
+                    # cat("Setting up BayesMVP Environment for Linux / Mac OS:\n")
+                    # 
+                    # cat("Preloading critical .DLLs / .SOs for BayesMVP package\n")
+                    # try({  TBB_STAN_SO <- file.path(mvp_user_dir, "libtbb.so.2") })
+                    # ## try({  TBB_CMDSTAN_SO <- file.path(cmdstan_dir, "stan", "lib", "stan_math", "lib", "tbb", "libtbb.so.2") })  # prioritise user's installed tbb dll/so
+                    # try({  DUMMY_MODEL_SO <- file.path(mvp_user_dir, "dummy_stan_model_model.so") })
+                    # 
+                    # dll_paths <- c(TBB_STAN_SO,
+                    #                ## TBB_CMDSTAN_SO,
+                    #                DUMMY_MODEL_SO)
             
           }
   
-  
-          # Attempt to load each DLL
-          for (dll in dll_paths) {
-            
-                  tryCatch(
-                    {
-                      dyn.load(dll)
-                      cat("  Loaded:", dll, "\n")
-                    },
-                    error = function(e) {
-                      cat("  Failed to load:", dll, "\n  Error:", e$message, "\n")
-                    }
-                  )
-                  
-          }
-          
+
 
           
           

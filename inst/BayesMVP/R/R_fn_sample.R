@@ -114,7 +114,7 @@ sample_model  <-    function(     Model_type,
 
                 RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
                 
-                init_burnin_object <-                           init_and_run_burnin( Model_type = Model_type,
+                init_burnin_object <-                BayesMVP:::init_and_run_burnin( Model_type = Model_type,
                                                                                      sample_nuisance = sample_nuisance,
                                                                                      parallel_method = parallel_method,
                                                                                      y = y,
@@ -177,12 +177,12 @@ sample_model  <-    function(     Model_type,
                 {
 
 
-                  post_burnin_prep_inits <-  R_fn_post_burnin_prep_for_sampling(n_chains_sampling = n_chains_sampling,
-                                                                                n_superchains = n_superchains,
-                                                                                n_params_main = n_params_main,
-                                                                                n_nuisance = n_nuisance,
-                                                                                theta_main_vectors_all_chains_input_from_R,
-                                                                                theta_us_vectors_all_chains_input_from_R)
+                  post_burnin_prep_inits <-  BayesMVP:::R_fn_post_burnin_prep_for_sampling( n_chains_sampling = n_chains_sampling,
+                                                                                            n_superchains = n_superchains,
+                                                                                            n_params_main = n_params_main,
+                                                                                            n_nuisance = n_nuisance,
+                                                                                            theta_main_vectors_all_chains_input_from_R,
+                                                                                            theta_us_vectors_all_chains_input_from_R)
 
                   theta_main_vectors_all_chains_input_from_R <- post_burnin_prep_inits$theta_main_vectors_all_chains_input_from_R
                   theta_us_vectors_all_chains_input_from_R <- post_burnin_prep_inits$theta_us_vectors_all_chains_input_from_R
@@ -216,9 +216,9 @@ sample_model  <-    function(     Model_type,
                   # }
 
                   if (parallel_method == "OpenMP") { 
-                    fn <- Rcpp_fn_OpenMP_EHMC_sampling
+                    fn <- BayesMVP:::Rcpp_fn_OpenMP_EHMC_sampling
                   } else { ###  use RcppParallel
-                    fn <- Rcpp_fn_RcppParallel_EHMC_sampling
+                    fn <- BayesMVP:::Rcpp_fn_RcppParallel_EHMC_sampling
                   }
                   
                   ### Call C++ parallel sampling function
