@@ -136,8 +136,103 @@ setup_env_post_install <- function() {
 
 #' install_BayesMVP
 #' @export
-install_BayesMVP <- function() {
+#' @param CUSTOM_FLAGS An (optional) R list containing user-supplied C++ flags. The possible allowed flags one can supply to this function are the following:
+#' * \code{CCACHE_PATH}: Note that this variable is passed onto the standard "CC" and "CXX" flags It is the path to your ccache file, if installed on your system. E.g., this may be ""/usr/bin/ccache" on 
+#' Linux and "C:/rtools44/mingw64/bin/ccache.exe" on Windows. 
+#' * \code{CXX_COMPILER}: Note that this variable is passed onto the standard "CXX" flag The C++ compiler to use. E.g. "g++" or "clang++" or "C:/rtools44/clang64/bin/clang++.exe", etc.
+#' * \code{CPP_COMPILER}: Note that this variable is passed onto the standard "CC" flag The C compiler to use. E.g. "gcc" or "clang" or "C:/rtools44/clang64/bin/clang.exe", etc.
+#' * \code{CXX_STD}: This is the standard "CXX_STD" macro, and it tells the compiler which C++ standard to use. Default is C++17 i.e. "CXX_STD = CXX17" or ""-std=gnu++17", depending on compiler used. 
+#' * \code{CPU_BASE_FLAGS}: Note that this variable is passed onto the standard "PKG_CPPFLAGS", "PKG_CXXFLAGS", "CPPFLAGS", and "CXXFLAGS" flags It is the "base" C/C++ CPU flags to use. 
+#'   The default is "CPU_BASE_FLAGS = -O3  -march=native  -mtune=native".
+#' * \code{FMA_FLAGS}: Note that this variable is passed onto the standard "PKG_CPPFLAGS", "PKG_CXXFLAGS", "CPPFLAGS", and "CXXFLAGS" flags It specifies the FMA flags to use. 
+#'   The default is "FMA_FLAGS = -mfma", if the CPU supports FMA instructions.
+#' * \code{AVX_FLAGS}: Note that this variable is passed onto the standard "PKG_CPPFLAGS", "PKG_CXXFLAGS", "CPPFLAGS", and "CXXFLAGS" flags It specifies the AVX flags to use. 
+#'   The default is: "AVX_FLAGS = "-mavx", if the CPU supports AVX," AVX_FLAGS = "-mavx -mavx2", if the CPU supports AVX-2, and "AVX_FLAGS = "-mavx -mavx2 -mavx512f -mavx512cd -mavx512bw 
+#'   -mavx512dq -mavx512vl", if the CPU (fully) supports AVX-512. 
+#' * \code{OMP_FLAGS}: Note that this variable is passed onto the standard "SHLIB_OPENMP_CFLAGS" and "SHLIB_OPENMP_CXXFLAGS" macros, and is then passed onto the standard "PKG_CPPFLAGS", "PKG_CXXFLAGS", "CPPFLAGS", and 
+#'   "CXXFLAGS" flags It specifies the OpenMP flags to use (for parallel computations using the OpenMP backend). E.g.: "OMP_FLAGS = -fopenmp". Defaults depend on compiler and operating system.
+#'   Also note that BayesMVP will search for OpenMP paths during package installation, and should be able to correctly determine the appropriate flags / libraries to use.
+#' * \code{OMP_LIB_PATH}: Note that this variable is passed onto the standard "CC" flag 
+#'   Also note that BayesMVP will search for OpenMP paths during package installation, and should be able to correctly determine the appropriate flags / libraries to use.
+#' * \code{OMP_LIB_FLAGS}: Note that this variable is passed onto the standard "PKG_LIBS" flag 
+#'   This variable specifies the OpenMP flags to use for the OpenMP library path (i.e. the \code{OMP_LIB_PATH} variable - see above). E.g., "OMP_LIB_FLAGS = -L"$(OMP_LIB_PATH)" -lomp".
+#'   Also note that BayesMVP will search for OpenMP paths during package installation, and should be able to correctly determine the appropriate flags / libraries to use. 
+#' * \code{PKG_CPPFLAGS}: A standard C++/C flag 
+#' * \code{PKG_CXXFLAGS}: A standard C++/C flag 
+#' * \code{CPPFLAGS}: A standard C++/C flag 
+#' * \code{CXXFLAGS}: A standard C++/C flag 
+#' * \code{PKG_LIBS}: A standard C++/C flag 
+install_BayesMVP <- function(CUSTOM_FLAGS = NULL) {
+        
   
+        if (!is.null(CUSTOM_FLAGS)) {  ##  -----  Validate CUSTOM_FLAGS if provided
+          if (!is.list(CUSTOM_FLAGS)) {
+            stop("CUSTOM_FLAGS must be a list")
+          }
+
+          
+          # Define allowed flag names
+          allowed_flags <- c(
+            "CCACHE_PATH",
+            "CXX_COMPILER",
+            "CPP_COMPILER", 
+            "CXX_STD",
+            "CPU_BASE_FLAGS",
+            "FMA_FLAGS",
+            "AVX_FLAGS",
+            "OMP_FLAGS",
+            "OMP_LIB_PATH",
+            "OMP_LIB_FLAGS",
+            "PKG_CPPFLAGS",
+            "PKG_CXXFLAGS",
+            "CPPFLAGS",
+            "CXXFLAGS",
+            "PKG_LIBS"
+          )
+          
+          ## Append "USER_SUPPLIED_" at the start of the flags to be passed onto makevars/makrvars.win. 
+          CUSTOM_FLAGS <- paste0("USER_SUPPLIED_", FLAGS)
+          
+          # Validate flag names
+          invalid_flags <- setdiff(names(CUSTOM_FLAGS), allowed_flags)
+          if (length(invalid_flags) > 0) {
+            stop("Invalid custom flags provided: ", paste(invalid_flags, collapse = ", "),
+                 "\nAllowed flags are: ", paste(allowed_flags, collapse = ", "))
+          }
+          
+          # Create temporary directory for modified package
+          temp_dir <- tempfile("BayesMVP_temp_")
+          dir.create(temp_dir)
+          
+          # Copy package files to temporary directory
+          pkg_files <- list.files(system.file(package = "BayesMVP"), 
+                                  recursive = TRUE, 
+                                  full.names = TRUE)
+          file.copy(pkg_files, temp_dir, recursive = TRUE)
+          
+          # Modify Makevars files to include custom flags
+          makevars_files <- c(
+            file.path(temp_dir, "src", "Makevars"),
+            file.path(temp_dir, "src", "Makevars.win")
+          )
+          
+          for (makevars_file in makevars_files) {
+            if (file.exists(makevars_file)) {
+              # Read existing content
+              lines <- readLines(makevars_file)
+              
+              # Add custom flags at the beginning of the file
+              custom_lines <- sapply(names(CUSTOM_FLAGS), function(flag) {
+                sprintf('%s = "%s"', flag, CUSTOM_FLAGS[[flag]])
+              })
+              
+              # Write modified content
+              writeLines(c(custom_lines, lines), makevars_file)
+            }
+          }
+          
+        } else { ##   -------------- standard installation without custom user-supplied flags 
+          
           mvp_user_dir <- file.path(Sys.getenv("USERPROFILE"), ".BayesMVP")
           dir.create(mvp_user_dir, showWarnings = FALSE, recursive = TRUE)
           
@@ -241,6 +336,7 @@ install_BayesMVP <- function() {
         try({   setup_env_post_install()  }) # setup env again before loading 
         
  
+        }
   
 }
 
