@@ -146,10 +146,9 @@ corr_normal_prior_sd[[2]] <-  array(0.25, dim = c(n_tests, n_tests))
           
           
          if (Model_type == "latent_trait")  {
+           
             LT_b_priors_shape <- array(1, dim = c(n_class, n_tests))
             LT_b_priors_scale <- array(1, dim = c(n_class, n_tests))
-
-
 
               LT_b_priors_shape[1, ] <-    prior_b_shape_nd
               LT_b_priors_scale[1, ] <-    prior_b_scale_nd

@@ -42,7 +42,6 @@ source(file.path(pkg_dir, "examples/BayesMVP_LC_MVP_prep.R"))
 
 
 Stan_Model_Type <- "latent_trait"
-# Stan_Model_Type <- "LC_MVP"
 
 
 ## select N to use 
@@ -70,11 +69,11 @@ N <- 500
   n_covariates <- 1
   n_nuisance <- N * n_tests
   
-  if (Stan_Model_Type == "latent_trait") {
+  # if (Stan_Model_Type == "latent_trait") {
     n_params_main <- n_tests * 2 + 1 + n_tests * n_covariates * 2
-  } else if (Stan_Model_Type == "LC_MVP") {
-    n_params_main <-  choose(n_tests, 2) * 2 + 1 + n_tests * n_covariates * 2
-  }
+  # } else if (Stan_Model_Type == "LC_MVP") {
+  #   n_params_main <-  choose(n_tests, 2) * 2 + 1 + n_tests * n_covariates * 2
+  # }
   
   ###  model_type <- "LC_MVP"
   fully_vectorised <- 1  ;   GHK_comp_method <- 2 ;       handle_numerical_issues <- 1 ;     overflow_threshold <- +5 ;    underflow_threshold <- -5  #  MAIN MODEL SETTINGS 
@@ -229,22 +228,22 @@ N <- 500
         }
         
         theta_main_vec <- rep(NA, n_params_main)
-      
-        if (Stan_Model_Type == "latent_trait") {
+ 
+        # if (Stan_Model_Type == "latent_trait") {
           
               theta_main_vec[1:(2*n_tests)] <- 0 # corrs inits
               theta_main_vec[(2*n_tests + 1):(2*n_tests + n_tests)] <- rep(-1, n_tests) # intercepts in D- class inits
               theta_main_vec[(2*n_tests + n_tests + 1):(4*n_tests)] <- rep(+1, n_tests) # intercepts in D+ class inits
               theta_main_vec[n_params_main] <-  2*atanh(0.20) - 1 #  -0.6931472 # raw prev init
           
-        } else if (Stan_Model_Type == "LC_MVP") {
-          
-              theta_main_vec[1:(2*k_choose_2)] <- rep(0.01, 2*k_choose_2) # corrs inits
-              theta_main_vec[(2*k_choose_2 + 1):(2*k_choose_2 + n_tests)] <- rep(-1, n_tests) # intercepts in D- class inits
-              theta_main_vec[(2*k_choose_2 + n_tests + 1):(2*k_choose_2 + 2*n_tests)] <- rep(+1, n_tests) # intercepts in D+ class inits
-              theta_main_vec[n_params_main] <-  2*atanh(0.20) - 1 #  -0.6931472 # raw prev init
-          
-        }
+        # } else if (Stan_Model_Type == "LC_MVP") {
+        #   
+        #       theta_main_vec[1:(2*k_choose_2)] <- rep(0.01, 2*k_choose_2) # corrs inits
+        #       theta_main_vec[(2*k_choose_2 + 1):(2*k_choose_2 + n_tests)] <- rep(-1, n_tests) # intercepts in D- class inits
+        #       theta_main_vec[(2*k_choose_2 + n_tests + 1):(2*k_choose_2 + 2*n_tests)] <- rep(+1, n_tests) # intercepts in D+ class inits
+        #       theta_main_vec[n_params_main] <-  2*atanh(0.20) - 1 #  -0.6931472 # raw prev init
+        #   
+        # }
         
         
 
@@ -269,10 +268,10 @@ N <- 500
     ##  /inst/BayesMVP/inst/stan_models/LC_MVP_bin_w_mnl_cpp_grad_v1.stan
     
     # OR using the version w/ fast math C++ functions:
-    file <- (file.path(pkg_dir, "inst/BayesMVP/inst/stan_models/LC_MVP_bin_w_mnl_cpp_grad_v1.stan"))
+    file <- (file.path(pkg_dir, "inst/BayesMVP/inst/stan_models/latent_trait_w_mnl_cpp_grad_v1.stan"))
     
     ## and then input the path to the corresponding C++ files:
-    path_to_cpp_user_header <- file.path(pkg_dir, "inst/BayesMVP/src/LC_MVP_lp_grad_fn_for_Stan.hpp")
+    path_to_cpp_user_header <- file.path(pkg_dir, "inst/BayesMVP/src/latent_trait_lp_grad_fn_for_Stan.hpp")
     
     ## Set C++ flags (optional)
     ## CXX_COMPILER <- "/opt/AMD/aocc-compiler-5.0.0/bin/clang++"
@@ -353,55 +352,7 @@ N <- 500
       "-ltbb"
     )
     
- 
-    # TBB_PATH <- "/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb"
-    # PKG_LIBS = paste0("-L ", TBB_PATH, " -ltbb") ## -L /home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb -ltbb" 
-    # PKG_LIBS
-    # 
-    # $(TBB_SO) -Wl,- ,$(TBB_PATH)  
-    # 
 
-    # -include /home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP/src/lp_grad_fn_for_Stan.hpp
-    # -x c++ -o /tmp/RtmpGPjgLP/model-316f769e292c5.o /tmp/RtmpGPjgLP/model-316f769e292c5.hpp
-    # 
-    # 
-    # -Wl,-L,"/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb" 
-    # -Wl,-rpath,"/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb"     
-    # /tmp/RtmpGPjgLP/model-316f769e292c5.o src/cmdstan/main.o     
-    # -ltbb  
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_nvecserial.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_cvodes.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_idas.a
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_kinsol.a 
-    # stan/lib/stan_math/lib/tbb/libtbb.so.2 
-    # -o /tmp/RtmpGPjgLP/model-316f769e292c5
-    # 
-    # rm /tmp/RtmpGPjgLP/model-316f769e292c5.o /tmp/RtmpGPjgLP/model-316f769e292c5.hpp
-    # 
-    #   
-    
-    # -- Linking model ---
-    # 
-    #   
-    # 
-    # 
-    #   
-    # -I stan/lib/stan_math/lib/tbb_2020.3/include -I src -I stan/lib/rapidjson_1.1.0/ -I lib/CLI11-1.9.1/ 
-    #   -I stan/lib/stan_math/ -I stan/lib/stan_math/lib/eigen_3.4.0 -I stan/lib/stan_math/lib/boost_1.84.0 
-    # -I stan/lib/stan_math/lib/sundials_6.1.1/include -I stan/lib/stan_math/lib/sundials_6.1.1/src/sundial 
-    # -I stan/src -I stan/src    -DBOOST_DISABLE_ASSERTS      
-    # 
-    # -Wl,-L,"/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb" 
-    # -Wl,-rpath,"/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb"   
-    # /tmp/RtmpGPjgLP/model-316f766bef74d7.o src/cmdstan/main.o 
-    # -lpthread     -ltbb  
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_nvecserial.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_cvodes.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_idas.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_kinsol.a  
-    # stan/lib/stan_math/lib/tbb/libtbb.so.2 -o /tmp/RtmpGPjgLP/model-316f766bef74d7
-
-    
     
     
     cmdstan_cpp_flags <- list(  paste0("CC = ", CC),
@@ -434,7 +385,7 @@ N <- 500
   {
     
     stan_data$multi_attempts_int   <- 0 
-    stan_data$force_autodiff_int   <- 0 
+    stan_data$force_autodiff_int   <- 1
     stan_data$force_PartialLog_int <- 1
     
         n_iter <- 500
