@@ -5,69 +5,43 @@
  
  
 
-#include <stan/math/rev.hpp>
-
-
-#include <stan/math/prim/fun/Eigen.hpp>
-#include <stan/math/prim/fun/typedefs.hpp>
-#include <stan/math/prim/fun/value_of_rec.hpp>
-#include <stan/math/prim/err/check_pos_definite.hpp>
-#include <stan/math/prim/err/check_square.hpp>
-#include <stan/math/prim/err/check_symmetric.hpp>
-
-
-#include <stan/math/prim/fun/cholesky_decompose.hpp>
-#include <stan/math/prim/fun/sqrt.hpp>
-#include <stan/math/prim/fun/log.hpp>
-#include <stan/math/prim/fun/transpose.hpp>
-#include <stan/math/prim/fun/dot_product.hpp>
-#include <stan/math/prim/fun/norm2.hpp>
-#include <stan/math/prim/fun/diagonal.hpp>
-#include <stan/math/prim/fun/cholesky_decompose.hpp>
-#include <stan/math/prim/fun/eigenvalues_sym.hpp>
-#include <stan/math/prim/fun/diag_post_multiply.hpp>
-
-
-
-
-#include <stan/math/prim/prob/multi_normal_cholesky_lpdf.hpp>
-#include <stan/math/prim/prob/lkj_corr_cholesky_lpdf.hpp>
-#include <stan/math/prim/prob/weibull_lpdf.hpp>
-#include <stan/math/prim/prob/gamma_lpdf.hpp>
-#include <stan/math/prim/prob/beta_lpdf.hpp>
+// #include <stan/math/rev.hpp>
+// ////
+// #include <stan/math/prim/fun/Eigen.hpp>
+// #include <stan/math/prim/fun/typedefs.hpp>
+// #include <stan/math/prim/fun/value_of_rec.hpp>
+// #include <stan/math/prim/err/check_pos_definite.hpp>
+// #include <stan/math/prim/err/check_square.hpp>
+// #include <stan/math/prim/err/check_symmetric.hpp>
+// ////
+// #include <stan/math/prim/fun/cholesky_decompose.hpp>
+// #include <stan/math/prim/fun/sqrt.hpp>
+// #include <stan/math/prim/fun/log.hpp>
+// #include <stan/math/prim/fun/transpose.hpp>
+// #include <stan/math/prim/fun/dot_product.hpp>
+// #include <stan/math/prim/fun/norm2.hpp>
+// #include <stan/math/prim/fun/diagonal.hpp>
+// #include <stan/math/prim/fun/cholesky_decompose.hpp>
+// #include <stan/math/prim/fun/eigenvalues_sym.hpp>
+// #include <stan/math/prim/fun/diag_post_multiply.hpp>
+// ////
+// #include <stan/math/prim/prob/multi_normal_cholesky_lpdf.hpp>
+// #include <stan/math/prim/prob/lkj_corr_cholesky_lpdf.hpp>
+// #include <stan/math/prim/prob/weibull_lpdf.hpp>
+// #include <stan/math/prim/prob/gamma_lpdf.hpp>
+// #include <stan/math/prim/prob/beta_lpdf.hpp>
+// 
 
 
 
-
-
-
-/// #include <RcppEigen.h>
 #include <Eigen/Dense>
  
-
-
-
+ 
 #include <unsupported/Eigen/SpecialFunctions>
 
 
  
-#if defined(__AVX2__) || defined(__AVX512F__)
-#include <immintrin.h>
-#endif
-
  
- 
-
- 
-using namespace Eigen;
-
-
-
-
-
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
-
 
 
 using std_vec_of_EigenVecs_dbl = std::vector<Eigen::Matrix<double, -1, 1>>;
@@ -103,13 +77,12 @@ using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector
 //////////////////////////////////////////////////----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace_process(    Eigen::Ref<Eigen::Matrix<double, -1, 1>> out_mat ,
+inline  void                   fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace_process(      Eigen::Ref<Eigen::Matrix<double, -1, 1>> out_mat ,
                                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_main_vec_ref,
                                                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
                                                                                                const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                                                                const std::string &grad_option,
                                                                                                const Model_fn_args_struct &Model_args_as_cpp_struct
-                                                                                               //MVP_ThreadLocalWorkspace &MVP_workspace
 ) { 
   
   
@@ -215,32 +188,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   const double b = 1.5976;
   const double a_times_3 = 3.0 * 0.07056;
   const double s = 1.0 / 1.702;
-
-  // //// ---- determine chunk size --------------------------------------------------
-  // const int desired_n_chunks = n_chunks;
-  // 
-  // int vec_size;
-  // if (vect_type == "AVX512") {
-  //   vec_size = 8;
-  // } else  if (vect_type == "AVX2") {
-  //   vec_size = 4;
-  // } else  if (vect_type == "AVX") {
-  //   vec_size = 2;
-  // } else {
-  //   vec_size = 1;
-  // }
-  // 
-  // ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
-  // 
-  // int chunk_size = chunk_size_info.chunk_size;
-  // int chunk_size_orig = chunk_size_info.chunk_size_orig;
-  // int normal_chunk_size = chunk_size_info.normal_chunk_size;
-  // int last_chunk_size = chunk_size_info.last_chunk_size;
-  // int n_total_chunks = chunk_size_info.n_total_chunks;
-  // int n_full_chunks = chunk_size_info.n_full_chunks;
+  const double Inf = std::numeric_limits<double>::infinity();
   
-  
-  //// ---- determine chunk size --------------------------
+  //// ---- determine chunk size --------------------------------------------------
   const int desired_n_chunks = n_chunks;
 
   int vec_size;
@@ -254,39 +204,20 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
     vec_size = 1;
   }
 
-  const double N_double = static_cast<double>(N);
-  const double vec_size_double =   static_cast<double>(vec_size);
-  const double desired_n_chunks_double = static_cast<double>(desired_n_chunks);
+  ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
 
-  int normal_chunk_size = vec_size_double * std::floor(N_double / (vec_size_double * desired_n_chunks_double));    // Make sure main chunks are divisible by 8
-  int n_full_chunks = std::floor(N_double / static_cast<double>(normal_chunk_size));    ///  How many complete chunks we can have
-  int last_chunk_size = N_double - (static_cast<double>(n_full_chunks) * static_cast<double>(normal_chunk_size));  //// remainder
+  int chunk_size = chunk_size_info.chunk_size;
+  const int chunk_size_orig = chunk_size_info.chunk_size_orig;
+  const int normal_chunk_size = chunk_size_info.normal_chunk_size;
+  const int last_chunk_size = chunk_size_info.last_chunk_size;
+  const int n_total_chunks = chunk_size_info.n_total_chunks;
+  const int n_full_chunks = chunk_size_info.n_full_chunks;
 
-  int n_total_chunks;
-  if (last_chunk_size == 0) {
-    n_total_chunks = n_full_chunks;
-  } else {
-    n_total_chunks = n_full_chunks + 1;
-  }
+  //////////////  -----------------------------------------------------------------------------------------------------------------------------------------------------------
+  //// corrs
+  const Eigen::Matrix<double, -1, 1>  Omega_raw_vec_double = theta_main_vec_ref.head(n_corrs); 
 
-  int chunk_size = normal_chunk_size; // set initial chunk_size (this may be modified later so non-const)
-  int chunk_size_orig = normal_chunk_size;     // store original chunk size for indexing
-
-  if (desired_n_chunks == 1) {
-    chunk_size = N;
-    chunk_size_orig = N;
-    normal_chunk_size = N;
-    last_chunk_size = N;
-    n_total_chunks = 1;
-    n_full_chunks = 1;
-  }
-  
-  
-  //////////////  ---------------------------------------------------------------------------------------------------------------------------------
-  // corrs
-  const Eigen::Matrix<double, -1, 1>  Omega_raw_vec_double = theta_main_vec_ref.head(n_corrs); // .cast<double>();
-
-  // coeffs
+  //// coeffs
   std::vector<Eigen::Matrix<double, -1, -1>> beta_double_array = vec_of_mats_double(n_covariates_max, n_tests, n_class);
 
   {
@@ -301,10 +232,10 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
     }
   }
 
-  // prev
-  double u_prev_diseased = theta_main_vec_ref(n_params_main - 1);
+  //// prev
+  const double u_prev_diseased = theta_main_vec_ref(n_params_main - 1);
 
-  /////// for autodiff
+  //// 
   double prior_densities_L_Omega_double = 0.0;
   double log_det_J_L_Omega_double = 0.0;
   Eigen::Matrix<double, -1, 1>  grad_Omega_raw_priors_and_log_det_J(n_corrs);
@@ -320,17 +251,19 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   
   {
  
-  {     ////////////////////////// local AD block
+  {    ///////////   -------------------  start of AD block  ------------------------------------------------------------------------------------------------------------------
 
           stan::math::start_nested();  ////////////////////////
 
-          //// these need to be outside the AD block
+          ////
+          stan::math::var target_AD = 0.0;
+          
+          //// L_Omega /  correlation params  ---------------------------------------------------------------------------------------------------------------------- 
           Eigen::Matrix<stan::math::var, -1, 1  >  Omega_raw_vec_var =  stan::math::to_var(Omega_raw_vec_double) ;
           std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_unconstrained_var = fn_convert_std_vec_of_corrs_to_3d_array_var(Eigen_vec_to_std_vec_var(Omega_raw_vec_var),  n_tests, n_class);
           std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  L_Omega_var = vec_of_mats_var(n_tests, n_tests, n_class);
-          stan::math::var target_AD = 0.0;
           std::vector<Eigen::Matrix<stan::math::var, -1, -1 > >  Omega_var   = vec_of_mats_var(n_tests, n_tests, n_class);
-
+          
           {
 
                 stan::math::var log_det_J_L_Omega = 0.0;
@@ -342,7 +275,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                       Eigen::Matrix<stan::math::var, -1, -1>  Chol_Schur_outs =  Pinkney_LDL_bounds_opt(n_tests, lb, ub, Omega_unconstrained_var[c], known_values_indicator[c], known_values[c]) ;
                       L_Omega_var[c]   =  Chol_Schur_outs.block(1, 0, n_tests, n_tests);
                       Omega_var[c] =   L_Omega_var[c] * L_Omega_var[c].transpose() ;
-
                       log_det_J_L_Omega +=   Chol_Schur_outs(0, 0); // now can set prior directly on Omega (as this is Jacobian adjustment)
 
                 }
@@ -389,10 +321,10 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
             }
 
             {
-                ///////////////////////
+                ////////////////////////////////////////////////////////////
                 target_AD.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
-                grad_Omega_raw_priors_and_log_det_J =  Omega_raw_vec_var.adj();    // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
-                out_mat.segment(1 + n_us, n_corrs) =  grad_Omega_raw_priors_and_log_det_J ;   //// add grad constribution to output vec
+                grad_Omega_raw_priors_and_log_det_J =  Omega_raw_vec_var.adj();    // differentiating WRT this
+                out_mat.segment(1 + n_us, n_corrs) =  grad_Omega_raw_priors_and_log_det_J ;   //// add grad constribution to output
                 stan::math::set_zero_all_adjoints();
                 ////////////////////////////////////////////////////////////
             }
@@ -436,11 +368,12 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
               //  target_AD_prev += log_det_J_prev_var ; /// done manually later
               target_AD  +=  prior_densities_prev;
 
-              ///////////////////////
+              ////////////////////////////////////////////////////////////
               prior_densities_prev.grad() ;   // differentiating this (i.e. NOT wrt this!! - this is the subject)
               grad_prev_raw_priors_and_log_det_J  =  u_prev_var_vec_var[1].adj() - u_prev_var_vec_var[0].adj();     // differentiating WRT this - Note: theta_var_std is the parameter vector - a std::vector of stan::math::var's
               out_mat(1 + n_us + n_corrs + n_covariates_total) = grad_prev_raw_priors_and_log_det_J; //// add grad constribution to output vec
               stan::math::set_zero_all_adjoints();
+              ////////////////////////////////////////////////////////////
 
             }
         }
@@ -531,12 +464,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
 
   }
 
-  ////////  ------- likelihood ("inner") function  --------------------------------------------------------------------------------------------------------------------------
+  ////////  ------- likelihood function  ---------------------------------------------------------------------------------------------------------------------------------------------------
+  double log_prob_out = 0.0;
+  
   // Jacobian adjustments (none needed for coeffs as unconstrained - so only for L_Omega -> Omega and u_prev -> prev, and the one for u's is computed in the likelihood)
   const double log_det_J_main = log_det_J_prev_double + log_det_J_L_Omega_double;
-
-  double log_prob_out = 0.0;
-  double log_prob = 0.0;
 
   const Eigen::Matrix<double, -1, -1>  log_prev = stan::math::log(prev);
 
@@ -544,14 +476,17 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> u_unc_vec = theta_us_vec_ref;
   
   ///////////////////////////////////////////////
+  //// coeffs:
   Eigen::Matrix<double , -1, 1>   beta_grad_vec   =  Eigen::Matrix<double, -1, 1>::Zero(n_covariates_total);  //
   std::vector<Eigen::Matrix<double, -1, -1>> beta_grad_array =     vec_of_mats<double>(n_covariates_max, n_tests, n_class);
-  std::vector<Eigen::Matrix<double, -1, -1>> U_Omega_grad_array =  vec_of_mats<double>(n_tests, n_tests, n_class);
-  Eigen::Matrix<double, -1, 1> L_Omega_grad_vec(n_corrs + (2 * n_tests));
-  Eigen::Matrix<double, -1, 1> U_Omega_grad_vec(n_corrs);
+  //// prev:
   Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(n_class); //
   Eigen::Matrix<double, -1, 1>  prev_grad_vec =   Eigen::Matrix<double, -1, 1>::Zero(n_class); //
   Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec_out = Eigen::Matrix<double, -1, 1>::Zero(n_class - 1); //
+  //// correlations:
+  std::vector<Eigen::Matrix<double, -1, -1>> U_Omega_grad_array =  vec_of_mats<double>(n_tests, n_tests, n_class);
+  Eigen::Matrix<double, -1, 1> L_Omega_grad_vec(n_corrs + (2 * n_tests));
+  Eigen::Matrix<double, -1, 1> U_Omega_grad_vec(n_corrs);
   ////////////////////////////////////////////////
    
   {
@@ -611,7 +546,8 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
     ///////////////////////////////////////////////
     Eigen::Matrix<double, -1, -1> prob_recip =   Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
     ///////////////////////////////////////////////
-
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     { // start of big local block
        
       for (int nc = 0; nc < n_total_chunks; nc++) {
@@ -688,6 +624,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                           //#endif
                           ///////////////////////////////////////////////
                           prob_recip.resize(last_chunk_size, n_tests);
+                          ///////////////////////////////////////////////
   
           }
         
@@ -698,7 +635,6 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
 
         //// Nuisance parameter transformation step
         u_unc_vec_chunk = u_unc_vec.segment( chunk_size_orig * n_tests * chunk_counter, chunk_size * n_tests);
-
         fn_MVP_compute_nuisance( u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
         log_jac_u += fn_MVP_compute_nuisance_log_jac_u( u_vec_chunk, u_unc_vec_chunk, Model_args_as_cpp_struct);
         
@@ -725,32 +661,28 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                               Bound_Z[c].col(t).array() =     L_Omega_recip_double[c](t, t) * (  -1.0*( beta_double_array[c](0, t) + prod_container_or_inc_array.array()   )  ) ;
                           }
                           ////-----------------------------------------------
-                          
                           ////-----------------------------------------------
                           //// compute/update important log-lik quantities for GHK-MVP
                           fn_MVP_compute_lp_GHK_cols(  t,
-                                                       Bound_U_Phi_Bound_Z[c],
-                                                       Phi_Z[c],
-                                                       Z_std_norm[c],
-                                                       prob[c],
-                                                       y1_log_prob,
+                                                       Bound_U_Phi_Bound_Z[c],  // computing this
+                                                       Phi_Z[c],  // computing this
+                                                       Z_std_norm[c],  // computing this
+                                                       prob[c],  // computing this
+                                                       y1_log_prob,  // computing this
                                                        Bound_Z[c],
                                                        y_chunk,
                                                        u_array,
                                                        Model_args_as_cpp_struct);
                           ////-----------------------------------------------
-                          
                           ////-----------------------------------------------
                           if (t < n_tests - 1) {
                                auto L_Omega_row = L_Omega_double[c].row(t + 1);
                                prod_container_or_inc_array = Z_std_norm[c].leftCols(t + 1)  *   L_Omega_row.head(t+1).transpose();
                           }
                           ////-----------------------------------------------
-      
+                          
                   }   //// end of t loop
                   
-                
-      
                   ////-----------------------------------------------
                   if (n_class > 1) { // if latent class
                       rowwise_sum = y1_log_prob.rowwise().sum();
@@ -766,7 +698,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
 
         }
       
-        //-----------------------------------------------  
+        ////-----------------------------------------------  
         if (n_class > 1) {
 
                 log_sum_exp_general(lp_array,
@@ -776,16 +708,13 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
                                     container_max_logs);
                 const int index_start = 1 + n_params + chunk_size_orig * chunk_counter;
                 out_mat.segment(index_start, chunk_size) = log_sum_result;
-                // out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size)   = fn_log_sum_exp_2d_double(lp_array,  vect_type_lse) ;
 
         } else {
 
                 out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size)  = lp_array.col(0);
 
         }
-        //-----------------------------------------------  
-        
-        //// OK up to here
+        ////-----------------------------------------------  
         
         ////-----------------------------------------------
         log_lik_chunk = out_mat.tail(N).segment(chunk_size_orig * chunk_counter, chunk_size);
@@ -796,10 +725,9 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
         /////////////////  ------------------------- compute grad  ---------------------------------------------------------------------------------
         for (int c = 0; c < n_class; c++) {
           
-              // ////-----------------------------------------------
-              // const Eigen::Matrix<double, -1, -1> &prob_recip = stan::math::inv(prob[c]);  // this should be fine since prob[c] isn't a temporary(?)
-              prob_recip = stan::math::inv(prob[c]);  // this should be fine since prob[c] isn't a temporary(?)
-              // ////-----------------------------------------------
+              ////-----------------------------------------------
+              prob_recip = stan::math::inv(prob[c]);  
+              ////-----------------------------------------------
               
               ////-----------------------------------------------
               //// compute/update important log-lik quantities for GHK-MVP
@@ -815,7 +743,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
               }
               ////-----------------------------------------------
               
-              if (grad_option != "none") { // not the issue
+              if (grad_option != "none") {  
     
                     fn_MVP_grad_prep(       prob[c],
                                             y_sign,
@@ -836,7 +764,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
     
               }
               
-              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Grad of nuisance parameters / u's (manual)
+              ////////////////////////////////////////////////////////////////////////////////////  Grad of nuisance parameters / u's (manual)
               if ( (grad_option == "us_only") || (grad_option == "all") ) {
         
                     u_grad_array_CM_chunk_block =  u_grad_array_CM_chunk.block(0, 0, chunk_size, n_tests);
@@ -929,21 +857,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
     
                 if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "prev_only" ) ) {
                     
-                      // // #ifdef _WIN32
-                      //       //// const Eigen::Matrix<double, -1, -1> &log_prob = fn_EIGEN_double(prob[c] , "log",  vect_type_log);
-                      //       //// Eigen::Matrix<double, -1, -1> log_prob = fn_EIGEN_double(prob[c], "log",  vect_type_log);
-                      //       rowwise_log_sum =  y1_log_prob.rowwise().sum();
-                      //       rowwise_prod =  fn_EIGEN_double(rowwise_log_sum, "exp",  vect_type_exp);
-                      //       auto prod = prob_n_recip.array() * rowwise_prod.array();
-                      //       double prev_grad = prod.sum();
-                      //       prev_grad_vec(c)  +=  prev_grad;
-                      // // #else
-                      // //       prev_grad_vec(c)  +=  (  prob_n_recip.array()  *  fn_EIGEN_double( fn_EIGEN_double(prob[c] , "log",  vect_type_log).rowwise().sum(), "exp",  vect_type_exp).array() ).sum();
-                      // // #endif
                       rowwise_prod = prob[c].rowwise().prod();
                       rowwise_prod.array() = prob_n_recip.array() * rowwise_prod.array();
                       double prev_grad = rowwise_prod.sum();
                       prev_grad_vec(c)  +=  prev_grad;
+                      
                 }
     
               }
@@ -956,7 +874,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
     
     
 
-    //////////////////////// gradients for latent class membership probabilitie(s) (i.e. disease prevalence)
+    ////////////////////////  --------------------------------------------------------------------------
     if (n_class > 1) {
       for (int c = 0; c < n_class; c++) {
         prev_unconstrained_grad_vec(c)  =   prev_grad_vec(c) * deriv_p_wrt_pu_double ;
@@ -965,12 +883,11 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
       prev_unconstrained_grad_vec_out(0) = prev_unconstrained_grad_vec(0);
     }
 
-    log_prob_out +=  out_mat.tail(N).sum();       //  log_lik
+    ////////////////////////  --------------------------------------------------------------------------
+    log_prob_out +=  out_mat.tail(N).sum();  ////  log_lik
     log_prob_out +=  log_jac_u;
     if (exclude_priors == false)  log_prob_out += prior_densities;
     log_prob_out +=  log_det_J_main ; // log_jac_p_double;
-
-    log_prob = (double) log_prob_out;
     
     {
 
@@ -1017,7 +934,7 @@ void                             fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inpla
   
 
   {   ////////////////////////////  outputs // add log grad and sign stuff';///////////////
-    out_mat(0) =  log_prob;
+    out_mat(0) =  log_prob_out;
     out_mat.segment(1 + n_us, n_corrs) += U_Omega_grad_vec ;
     out_mat.segment(1 + n_us + n_corrs, n_covariates_total) += beta_grad_vec ;  /// no Jacobian needed
     out_mat(1 + n_us + n_corrs + n_covariates_total) += prev_unconstrained_grad_vec_out(0) ;  

@@ -10,146 +10,17 @@
 
  
  
-using namespace Eigen;
+//// using namespace Eigen;
 
  
-
  
-
-
 
 #define EIGEN_NO_DEBUG
 #define EIGEN_DONT_PARALLELIZE
 
-
-
-
- 
-// 
-// void printVectorContents(const std::string& name, 
-//                         const Eigen::VectorXi& vec) {
-//  
-//  std::cout << name << " (size=" << vec.size() << "): ";
-//  for(int i = 0; i < vec.size(); i++) {
-//    std::cout << vec(i) << " ";
-//  }
-//  std::cout << "\n";
-//  
-// }
-// 
-//  
-//  
-//  
-//  
-// auto bound_log(const double log_x) { 
-//   
-//   return  (log_x > 700.0) ? 700.0 : ( (log_x < -700.0) ? -700.0 : log_x )  ;
-//    
-//   
-// }
-//  
-//  
-//  
-// auto bound_log(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_x) { 
-//  
-//  return log_x.array().min(700.0).max(-700.0);
-//  
-// }
-//  
-//  
-//  
-// template <typename T, int n_rows = Eigen::Dynamic, int n_cols = Eigen::Dynamic>
-// auto bound_log(const Eigen::Ref<const Eigen::Block<T, n_rows, n_cols>> log_x) { 
-//  
-//  return  log_x.array().min(700.0).max(-700.0);
-//  
-// }
-// 
-//  
-//  
-// // For indexed expressions specifically
-// template <typename Derived>
-// auto bound_log(const Eigen::DenseBase<Derived> &log_x) {
-//   
-//   return log_x.array().min(700.0).max(-700.0);
-//   
-// }
-//  
-// 
-// 
-//  
-// template <typename Derived>
-// auto bound_log(const Eigen::VectorBlock<Derived> &log_x) {
-//  
-//  using T = Eigen::Matrix<typename Derived::Scalar, 
-//                          Derived::RowsAtCompileTime, 
-//                          Derived::ColsAtCompileTime>; 
-//   
-//   T log_x_copy = log_x;
-//   log_x_copy.array() =  log_x_copy.array().min(700.0).max(-700.0);
-//   return log_x_copy;
-//    
-// }
-// 
-// 
-//  
-// template <typename Derived>
-// auto bound_log(const Eigen::EigenBase<Derived> &log_x) { 
-//   
-//   using T = Eigen::Matrix<typename Derived::Scalar, 
-//                           Derived::RowsAtCompileTime, 
-//                           Derived::ColsAtCompileTime>; 
-//  
-//   T log_x_copy = log_x;
-//   log_x_copy.array() =  log_x_copy.array().min(700.0).max(-700.0);
-//   return log_x_copy;
-//  
-// }
-//  
-//  
-//  
-// template <typename Derived>
-// auto bound_log(const Eigen::MatrixBase<Derived> &log_x) { 
-//   
-//   using T = Eigen::Matrix<typename Derived::Scalar, 
-//                           Derived::RowsAtCompileTime, 
-//                           Derived::ColsAtCompileTime>; 
-//  
-//   T log_x_copy = log_x;
-//   log_x_copy.array() =  log_x_copy.array().min(700.0).max(-700.0);
-//   return log_x_copy;
-//  
-// }
-// 
-// 
-// 
-// template <typename Derived>
-// auto bound_log(const Eigen::ArrayBase<Derived> &log_x) { 
-//   
-//   using T = Eigen::Matrix<typename Derived::Scalar, 
-//                           Derived::RowsAtCompileTime, 
-//                           Derived::ColsAtCompileTime>; 
-//  
-//   T log_x_copy = log_x;
-//   log_x_copy.array() =  log_x_copy.array().min(700.0).max(-700.0);
-//   return  log_x_copy;
-//  
-// }
-// 
-//  
-//  
-//  
- 
-
  
  
-
-
  
-
-
-
-
 
 
 

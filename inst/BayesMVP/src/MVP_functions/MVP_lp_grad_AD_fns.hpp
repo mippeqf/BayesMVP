@@ -47,20 +47,6 @@
  
  
 
- 
-using namespace Eigen;
- 
- 
- 
-
- 
- 
-  
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
-
-
-
 
 inline stan::math::var  inv_Phi_approx_var( stan::math::var x )  {
   stan::math::var m_logit_p =   stan::math::log( 1.0/x  - 1.0)  ;
@@ -130,18 +116,10 @@ void                             fn_lp_and_grad_MVP_Pinkney_AD_log_scale_InPlace
                                                                                              const Model_fn_args_struct Model_args_as_cpp_struct
 ) {
   
-  
 
-
- 
-//  stan::math::ChainableStack ad_tape;
- // stan::math::nested_rev_autodiff nested;
-  
-   
   //// important params
   const int N = y_ref.rows();
   const int n_tests = y_ref.cols();
-  
   const int n_us = theta_us_vec_ref.rows()  ; 
   const int n_params_main =  theta_main_vec_ref.rows()  ; 
   const int n_params = n_params_main + n_us;
@@ -241,57 +219,53 @@ void                             fn_lp_and_grad_MVP_Pinkney_AD_log_scale_InPlace
   const double s = 1.0 / 1.702;
   const double Inf = std::numeric_limits<double>::infinity();
   
-  //// ---- determine chunk size ---------------------------------------------- 
+  //// ---- determine chunk size --------------------------------------------------
   const int desired_n_chunks = n_chunks;
   
   int vec_size;
-  if (vect_type == "AVX512") { 
+  if (vect_type == "AVX512") {
     vec_size = 8;
-  } else  if (vect_type == "AVX2") {  
+  } else  if (vect_type == "AVX2") { 
     vec_size = 4;
-  } else  if (vect_type == "AVX") {  
+  } else  if (vect_type == "AVX") { 
     vec_size = 2;
-  } else {  
+  } else { 
     vec_size = 1;
   }
    
-  const double N_double = static_cast<double>(N);
-  const double vec_size_double =   static_cast<double>(vec_size);
-  const double desired_n_chunks_double = static_cast<double>(desired_n_chunks);
+  ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks); 
   
-  const int normal_chunk_size = vec_size_double * std::floor(N_double / (vec_size_double * desired_n_chunks_double));    // Make sure main chunks are divisible by 8
-  const int n_full_chunks = std::floor(N_double / static_cast<double>(normal_chunk_size));    ///  How many complete chunks we can have
-  const int last_chunk_size = N_double - (static_cast<double>(n_full_chunks) * static_cast<double>(normal_chunk_size));  //// remainder
+  int chunk_size = chunk_size_info.chunk_size;
+  int chunk_size_orig = chunk_size_info.chunk_size_orig;
+  int normal_chunk_size = chunk_size_info.normal_chunk_size;
+  int last_chunk_size = chunk_size_info.last_chunk_size;
+  int n_total_chunks = chunk_size_info.n_total_chunks;
+  int n_full_chunks = chunk_size_info.n_full_chunks;
   
-  int n_total_chunks;
-  if (last_chunk_size == 0) { 
-    n_total_chunks = n_full_chunks;
-  } else {  
-    n_total_chunks = n_full_chunks + 1;
-  }
-  
-  int chunk_size = normal_chunk_size; // set initial chunk_size (this may be modified later so non-const)
-  const int chunk_size_orig = normal_chunk_size;     // store original chunk size for indexing
-   
-   
-  //////////////// 
+  /////////////////  ------------------------------------------------------------ 
   using namespace stan::math;
  
   stan::math::start_nested();
   
-  Eigen::Matrix<double, -1, 1> theta(n_params);
-  theta.head(n_us) = theta_us_vec_ref;
-  theta.tail(n_params_main) = theta_main_vec_ref;
+  Eigen::Matrix<stan::math::var, -1, 1  >  theta_var(n_params);
 
-  stan::math::var target = 0.0;
+  {
+    Eigen::Matrix<double, -1, 1> theta(n_params);
+    theta.head(n_us) = theta_us_vec_ref;
+    theta.tail(n_params_main) = theta_main_vec_ref;
+    theta_var = stan::math::to_var(theta);
+  }
+  
 
-  Eigen::Matrix<stan::math::var, -1, 1>    theta_var = stan::math::to_var(theta);
   Eigen::Matrix<stan::math::var, -1, 1>    u_unconstrained_vec_var = theta_var.head(n_us);   // u's
-
+  
+  //////////////
+  //// corrs  
   Eigen::Matrix<stan::math::var, -1, 1> theta_corrs_var = theta_var.segment(n_us, n_corrs);  // corrs
   std::vector<stan::math::var>  Omega_unconstrained_vec_var(n_corrs, 0.0);
   Omega_unconstrained_vec_var = Eigen_vec_to_std_vec_var(theta_corrs_var);
 
+  //// coeffs
   std::vector<Eigen::Matrix<stan::math::var, -1, -1>> beta_all_tests_class_var = vec_of_mats_var(n_covariates_max, n_tests,  n_class); // coeffs
 
   {
@@ -307,6 +281,8 @@ void                             fn_lp_and_grad_MVP_Pinkney_AD_log_scale_InPlace
   }
 
   stan::math::var  u_prev_diseased = theta_var(n_params - 1);
+  
+  stan::math::var target = 0.0;
 
   /////////////  prev stuff  (only if latent class, otherwise just initialise and leave empty) -------------------------------------------------------------
   Eigen::Matrix<stan::math::var, -1, -1>	 prev_var = Eigen::Matrix<stan::math::var, -1, -1>::Zero(1, 2);
