@@ -32,7 +32,7 @@
 
 
 #include <Eigen/Dense>
-#include <RcppParallel.h>
+//// #include <RcppParallel.h>
  
 
  

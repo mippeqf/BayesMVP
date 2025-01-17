@@ -1,11 +1,5 @@
-
 #pragma once
 
- 
-  
- 
- 
- 
  
 #include <stan/model/model_base.hpp>  
  
@@ -63,7 +57,7 @@
  
  
  
-using namespace Eigen;
+/// using namespace Eigen;
   
 
 using std_vec_of_EigenVecs_dbl = std::vector<Eigen::Matrix<double, -1, 1>>;
