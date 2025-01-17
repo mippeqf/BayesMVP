@@ -175,7 +175,7 @@ inline  void    fn_process_double_AVX_sub_function(      Eigen::Ref<T> x_Ref,
  
 
 #if defined(USE_AVX_512)
-#pragma message "About to define AVX-512 mplementation of fn_process_Ref_double_AVX"
+//// #pragma message "About to define AVX-512 mplementation of fn_process_Ref_double_AVX"
  
 template <typename T>
 inline  void       fn_process_Ref_double_AVX(       Eigen::Ref<T> x_Ref,
@@ -259,7 +259,7 @@ inline  void       fn_process_Ref_double_AVX(       Eigen::Ref<T> x_Ref,
  
 
 #elif defined(USE_AVX2)
-#pragma message "About to define AVX2 implementation of fn_process_Ref_double_AVX"
+//// #pragma message "About to define AVX2 implementation of fn_process_Ref_double_AVX"
  
 template <typename T>
 inline  void       fn_process_Ref_double_AVX(        Eigen::Ref<T> x_Ref,
@@ -342,7 +342,7 @@ inline  void       fn_process_Ref_double_AVX(        Eigen::Ref<T> x_Ref,
  }
  
 #else 
-#pragma message "Defining dummy fn_process_Ref_double_AVX - since neither AVX2 nor AVX-512 are available"
+//// #pragma message "Defining dummy fn_process_Ref_double_AVX - since neither AVX2 nor AVX-512 are available"
  
 template <typename T>
 inline  void       fn_process_Ref_double_AVX(         Eigen::Ref<T> x_Ref,
