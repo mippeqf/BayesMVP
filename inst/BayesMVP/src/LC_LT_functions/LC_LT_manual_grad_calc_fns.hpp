@@ -10,16 +10,6 @@
  
 
 
-
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
-
-
-
-
-
- 
- 
  
  
 
@@ -80,10 +70,10 @@ inline void fn_LC_LT_compute_bs_grad_v1(      Eigen::Ref<Eigen::Matrix<double, -
     deriv_Bound_Z_x_L.col(0).array()   = deriv_a -     deriv_Bound_Z_x_L.col(0).array();
     
     grad_bound_z.col(0).array() =   deriv_L_T_T_inv * (Bound_Z.col(t1).array() * L_Omega_double(t1,t1)  ) +  (1 / L_Omega_double(t1, t1)) *   deriv_Bound_Z_x_L.col(0).array()  ;
-    grad_Phi_bound_z.col(0)  =  ( phi_Bound_Z.col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
-    A_grad_prob.col(0)   =  (   - y_sign_chunk.col(t1).array()  *   grad_Phi_bound_z.col(0).array() ).matrix() ;     // correct  (standard form)
+    grad_Phi_bound_z.col(0)  =  ( phi_Bound_Z.col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   
+    A_grad_prob.col(0)   =  (   - y_sign_chunk.col(t1).array()  *   grad_Phi_bound_z.col(0).array() ).matrix() ;     
     
-    grad_pi_wrt_b_raw(c, t1)  +=   (   A_common_grad_term_1.col(t1).array()    *            A_grad_prob.col(0).array()    ).matrix().sum()   ; // correct  (standard form)
+    grad_pi_wrt_b_raw(c, t1)  +=   (   A_common_grad_term_1.col(t1).array()    *            A_grad_prob.col(0).array()    ).matrix().sum()   ; 
     
   }
   
@@ -103,18 +93,18 @@ inline void fn_LC_LT_compute_bs_grad_v1(      Eigen::Ref<Eigen::Matrix<double, -
     deriv_Bound_Z_x_L.col(0).array()   = deriv_a -     deriv_Bound_Z_x_L.col(0).array();
     
     grad_bound_z.col(0).array() =  deriv_L_T_T_inv * (Bound_Z.col(t1).array() * L_Omega_double(t1,t1)  ) +  (1.0 / L_Omega_double(t1, t1)) *     deriv_Bound_Z_x_L.col(0).array()  ;
-    grad_Phi_bound_z.col(0)  =  ( phi_Bound_Z.col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
-    A_grad_prob.col(0)   =  (   - y_sign_chunk.col(t1).array()  *   grad_Phi_bound_z.col(0).array() ).matrix() ;     // correct  (standard form)
+    grad_Phi_bound_z.col(0)  =  ( phi_Bound_Z.col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   
+    A_grad_prob.col(0)   =  (   - y_sign_chunk.col(t1).array()  *   grad_Phi_bound_z.col(0).array() ).matrix() ;     
     
-    A_z_grad_term.col(0).array()  =      (  ( (  y_m_y_sign_x_u.col(t1).array()  * phi_Z_recip.col(t1).array()  ).array()    * phi_Bound_Z.col(t1).array() *   grad_bound_z.col(0).array()  ).array() ).matrix()  ;  // correct  (standard form)
+    A_z_grad_term.col(0).array()  =      (  ( (  y_m_y_sign_x_u.col(t1).array()  * phi_Z_recip.col(t1).array()  ).array()    * phi_Bound_Z.col(t1).array() *   grad_bound_z.col(0).array()  ).array() ).matrix()  ; 
     ////////
     
     deriv_L_T_T_inv =  ( - 1 /  ( L_Omega_double(t1 + 1, t1 + 1)  * L_Omega_double(t1 + 1, t1 + 1)  )  )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[t1](t1 + 1, t1 + 1)  ;
     deriv_Bound_Z_x_L.col(1).array()  =    L_Omega_double(t1+1,t1) *   A_z_grad_term.col(0).array()     +   Z_std_norm.col(t1).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[t1](t1+1, t1);
     grad_bound_z.col(1).array() =  deriv_L_T_T_inv * (Bound_Z.col(t1+1).array() * L_Omega_double(t1+1,t1+1)  ) +  (1.0 / L_Omega_double(t1+1, t1+1)) * -   deriv_Bound_Z_x_L.col(1).array()  ;
     
-    grad_Phi_bound_z.col(1) =   ( phi_Bound_Z.col(t1 + 1).array() *  (    grad_bound_z.col(1).array()   ) ).matrix();   // correct  (standard form)
-    A_grad_prob.col(1)   =   (  - y_sign_chunk.col(t1 + 1).array()  *     grad_Phi_bound_z.col(1).array()  ).array().matrix() ;    // correct   (standard form)
+    grad_Phi_bound_z.col(1) =   ( phi_Bound_Z.col(t1 + 1).array() *  (    grad_bound_z.col(1).array()   ) ).matrix();   
+    A_grad_prob.col(1)   =   (  - y_sign_chunk.col(t1 + 1).array()  *     grad_Phi_bound_z.col(1).array()  ).array().matrix() ;    
     
     grad_pi_wrt_b_raw(c, t1) +=   ( ( A_common_grad_term_1.col(t1).array() )    *   ( prob.col(t1 + 1).array()  *      A_grad_prob.col(0).array()  +   prob.col(t1).array()  *         A_grad_prob.col(1).array()   ) ).sum() ;
     
@@ -142,10 +132,10 @@ inline void fn_LC_LT_compute_bs_grad_v1(      Eigen::Ref<Eigen::Matrix<double, -
       deriv_Bound_Z_x_L.col(0).array()   = deriv_a -     deriv_Bound_Z_x_L.col(0).array();
       
       grad_bound_z.col(0).array() =  deriv_L_T_T_inv * (Bound_Z.col(t1).array() * L_Omega_double(t1,t1)  ) +  (1 / L_Omega_double(t1, t1)) *    deriv_Bound_Z_x_L.col(0).array()  ;
-      grad_Phi_bound_z.col(0)  =  ( phi_Bound_Z.col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   // correct  (standard form)
-      A_grad_prob.col(0)   =  (   - y_sign_chunk.col(t1).array()  *   grad_Phi_bound_z.col(0).array() ).matrix() ;     // correct  (standard form)
+      grad_Phi_bound_z.col(0)  =  ( phi_Bound_Z.col(t1).array() *  (  grad_bound_z.col(0).array() )  ) .matrix();   
+      A_grad_prob.col(0)   =  (   - y_sign_chunk.col(t1).array()  *   grad_Phi_bound_z.col(0).array() ).matrix() ;     
       
-      A_z_grad_term.col(0).array()  =      (  ( (  y_m_y_sign_x_u.col(t1).array()  * phi_Z_recip.col(t1).array()  ).array()    * phi_Bound_Z.col(t1).array() *   grad_bound_z.col(0).array()  ).array() ).matrix()  ;  // correct  (standard form)
+      A_z_grad_term.col(0).array()  =      (  ( (  y_m_y_sign_x_u.col(t1).array()  * phi_Z_recip.col(t1).array()  ).array()    * phi_Bound_Z.col(t1).array() *   grad_bound_z.col(0).array()  ).array() ).matrix()  ;
       //////
       
       
@@ -154,12 +144,12 @@ inline void fn_LC_LT_compute_bs_grad_v1(      Eigen::Ref<Eigen::Matrix<double, -
       deriv_Bound_Z_x_L.col(1).array()  =    L_Omega_double(t1+1,t1) *   A_z_grad_term.col(0).array()     +   Z_std_norm.col(t1).array() *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[t1](t1+1, t1);
       grad_bound_z.col(1).array() =  deriv_L_T_T_inv * (Bound_Z.col(t1+1).array() * L_Omega_double(t1+1,t1+1)  ) +  (1 / L_Omega_double(t1+1, t1+1)) * -  deriv_Bound_Z_x_L.col(1).array()  ;
       
-      grad_Phi_bound_z.col(1) =   ( phi_Bound_Z.col(t1 + 1).array() *  (    grad_bound_z.col(1).array()   ) ).matrix();   // correct  (standard form)
-      A_grad_prob.col(1)  =   (  - y_sign_chunk.col(t1 + 1).array()  *     grad_Phi_bound_z.col(1).array()  ).array().matrix() ;    // correct   (standard form)
+      grad_Phi_bound_z.col(1) =   ( phi_Bound_Z.col(t1 + 1).array() *  (    grad_bound_z.col(1).array()   ) ).matrix();   
+      A_grad_prob.col(1)  =   (  - y_sign_chunk.col(t1 + 1).array()  *     grad_Phi_bound_z.col(1).array()  ).array().matrix() ;  
       
       
       for (int ii = 1; ii < i - 1; ii++) {
-        A_z_grad_term.col(ii).array()  =    (  ( (  y_m_y_sign_x_u.col(t1 + ii).array()  * phi_Z_recip.col(t1 + ii).array()  ).array()    * phi_Bound_Z.col(t1 + ii).array() *   grad_bound_z.col(ii).array()  ).array() ).matrix() ;     // correct  (standard form)
+        A_z_grad_term.col(ii).array()  =    (  ( (  y_m_y_sign_x_u.col(t1 + ii).array()  * phi_Z_recip.col(t1 + ii).array()  ).array()    * phi_Bound_Z.col(t1 + ii).array() *   grad_bound_z.col(ii).array()  ).array() ).matrix() ;     
         
         deriv_L_T_T_inv =  ( - 1 /  (  L_Omega_double(t1 + ii + 1, t1 + ii + 1)  * L_Omega_double(t1 + ii + 1, t1 + ii + 1) )  )  * Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[t1](t1 + ii + 1, t1 + ii + 1)  ;
         
@@ -168,8 +158,8 @@ inline void fn_LC_LT_compute_bs_grad_v1(      Eigen::Ref<Eigen::Matrix<double, -
           deriv_Bound_Z_x_L.col(ii + 1).array()  +=    L_Omega_double(t1 + ii + 1,t1 + jj)     *   A_z_grad_term.col(jj).array()     +   Z_std_norm.col(t1 + jj).array()     *  Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[t1](t1 + ii + 1, t1 + jj) ;// +
         }
         grad_bound_z.col(ii + 1).array() =  deriv_L_T_T_inv * (Bound_Z.col(t1 + ii + 1).array() * L_Omega_double(t1 + ii + 1,t1 + ii + 1)  ) +  (1 / L_Omega_double(t1 + ii + 1, t1 + ii + 1)) * -   deriv_Bound_Z_x_L.col(ii + 1).array()  ;
-        grad_Phi_bound_z.col(ii + 1).array()  =     phi_Bound_Z.col(t1 + ii + 1).array()  *   grad_bound_z.col(ii + 1).array() ;   // correct  (standard form)
-        A_grad_prob.col(ii + 1).array()  =   ( - y_sign_chunk.col(t1 + ii + 1).array()  ) *    grad_Phi_bound_z.col(ii + 1).array() ;  // correct  (standard form)
+        grad_Phi_bound_z.col(ii + 1).array()  =     phi_Bound_Z.col(t1 + ii + 1).array()  *   grad_bound_z.col(ii + 1).array() ;   
+        A_grad_prob.col(ii + 1).array()  =   ( - y_sign_chunk.col(t1 + ii + 1).array()  ) *    grad_Phi_bound_z.col(ii + 1).array() ;  
         
       }
       
@@ -177,7 +167,7 @@ inline void fn_LC_LT_compute_bs_grad_v1(      Eigen::Ref<Eigen::Matrix<double, -
       
       ///// attempt at vectorising  // bookmark
       for (int iii = 0; iii <  i; iii++) {
-        A_derivs_chain_container_vec.array() +=  (    A_grad_prob.col(iii).array()  * (   prob.block(0, t1 + 0, chunk_size, i).rowwise().prod().array()  /  prob.col(t1 + iii).array()  ).array() ).array() ; // correct  (standard form)
+        A_derivs_chain_container_vec.array() +=  (    A_grad_prob.col(iii).array()  * (   prob.block(0, t1 + 0, chunk_size, i).rowwise().prod().array()  /  prob.col(t1 + iii).array()  ).array() ).array() ; 
       }
       
       grad_pi_wrt_b_raw(c, t1) +=        ( A_common_grad_term_1.col(t1).array()   *  A_derivs_chain_container_vec.array() ).sum();

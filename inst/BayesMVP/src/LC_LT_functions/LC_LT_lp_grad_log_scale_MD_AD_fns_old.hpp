@@ -511,15 +511,15 @@ inline  void         fn_lp_grad_LT_LC_PartialLog_MD_and_AD_InPlace_process(    E
   Eigen::Matrix<double, -1, 1>  log_abs_prev_grad_array_col_for_each_n =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
   Eigen::Matrix<double, -1, 1>  sign_prev_grad_array_col_for_each_n =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
   ///////////////////////////////////////////////
-  Eigen::Matrix<double, -1, 1>  log_abs_a  =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-  Eigen::Matrix<double, -1, 1>  sign_a =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
-  Eigen::Matrix<double, -1, 1>  log_abs_b =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-  Eigen::Matrix<double, -1, 1>  sign_b =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+  Eigen::Matrix<double, -1, 1>  log_abs_a  =       Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+  Eigen::Matrix<double, -1, 1>  sign_a =           Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+  Eigen::Matrix<double, -1, 1>  log_abs_b =        Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+  Eigen::Matrix<double, -1, 1>  sign_b =           Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
   Eigen::Matrix<double, -1, 1>  sign_sum_result =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
-  Eigen::Matrix<double, -1, -1> log_terms =  Eigen::Matrix<double, -1, -1>::Constant(chunk_size, n_tests, -700.0);
-  Eigen::Matrix<double, -1, -1> sign_terms =  Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
-  Eigen::Matrix<double, -1, 1>  final_log_sum =  Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
-  Eigen::Matrix<double, -1, 1>  final_sign =  Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
+  Eigen::Matrix<double, -1, -1> log_terms =        Eigen::Matrix<double, -1, -1>::Constant(chunk_size, n_tests, -700.0);
+  Eigen::Matrix<double, -1, -1> sign_terms =       Eigen::Matrix<double, -1, -1>::Ones(chunk_size, n_tests);
+  Eigen::Matrix<double, -1, 1>  final_log_sum =    Eigen::Matrix<double, -1, 1>::Constant(chunk_size, -700.0);
+  Eigen::Matrix<double, -1, 1>  final_sign =       Eigen::Matrix<double, -1, 1>::Ones(chunk_size);
   ///////////////////////////////////////////////
   Eigen::VectorXi overflow_mask(chunk_size);
   Eigen::VectorXi underflow_mask(chunk_size);
@@ -915,20 +915,20 @@ inline  void         fn_lp_grad_LT_LC_PartialLog_MD_and_AD_InPlace_process(    E
       
       if (n_class > 1) {  /// if latent class 
         
-              //// -----------------------------------------------   
-              log_sum_exp_general(   lp_array,
-                                     vect_type_exp,
-                                     vect_type_log,
-                                     log_sum_result,
-                                     container_max_logs);
-              const int index_start = 1 + n_params + chunk_size_orig * chunk_counter;
-              out_mat.segment(index_start, chunk_size) = log_sum_result;
-              //// -----------------------------------------------   
+        //// -----------------------------------------------   
+        log_sum_exp_general(   lp_array,
+                               vect_type_exp,
+                               vect_type_log,
+                               log_sum_result,
+                               container_max_logs);
+        const int index_start = 1 + n_params + chunk_size_orig * chunk_counter;
+        out_mat.segment(index_start, chunk_size) = log_sum_result;
+        //// -----------------------------------------------   
         
       } else {
-              
-              const int index_start = 1 + n_params + chunk_size_orig * chunk_counter;
-              out_mat.segment(index_start, chunk_size) = lp_array.col(0);
+        
+        const int index_start = 1 + n_params + chunk_size_orig * chunk_counter;
+        out_mat.segment(index_start, chunk_size) = lp_array.col(0);
         
       }
       
@@ -1294,47 +1294,58 @@ inline  void         fn_lp_grad_LT_LC_PartialLog_MD_and_AD_InPlace_process(    E
             
           }
       
-          //////////////////////////////////////////////////////////////////  ---------------- Grad of b's (corr parameters)  --------------------------------------------------------------------------------
+          //////////////////////////////////////////////////////////////////  ---------------- Grad of b's (corr parameters)  ------------------------------------------------------------------------
           if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "corr_only") ) {
             
              {  /// entire b-grad computed on log-scale (partial-log-scale not yet implemented)
- 
-              /////////////////////// TEMP - TEST GRAD OF LT_b's on NON-LOG SCALE:
-              Eigen::Matrix<double, -1, -1> prob_rowwise_prod_temp = stan::math::exp(log_prob_rowwise_prod_temp);
-              Eigen::Matrix<double, -1, -1> common_grad_term_1 = stan::math::exp(log_common_grad_term_1);
-              ///////////////////////////////////////////////daq
-              Eigen::Matrix<double, -1, -1> grad_bound_z = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-              Eigen::Matrix<double, -1, -1> grad_Phi_bound_z = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
-              ///////////////////////////////////////////////
-              std::vector<Eigen::Matrix<double, -1, -1>>  deriv_Bound_Z_x_L = vec_of_mats(chunk_size, n_tests*n_class, n_class) ;   
-              for (int c = 0; c < n_class; ++c) {
-                  deriv_Bound_Z_x_L[c].array() = stan::math::exp(log_abs_deriv_Bound_Z_x_L).array() * sign_deriv_Bound_Z_x_L.array();
-              }
-              ///////////////////////////////////////////////
-              
-              fn_LC_LT_compute_bs_grad_v1(  grad_pi_wrt_b_raw,  //// ---- correct
-                                            deriv_Bound_Z_x_L[c],   //// ?????????????????????
-                                            c,   //// ---- correct
-                                            Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c], 
-                                            common_grad_term_1,  //// ---- correct
-                                            L_Omega_double[c],   //// ---- correct
-                                            prob[c],    //// ---- correct
-                                            prob_recip,   //// ---- correct
-                                            Bound_Z[c],    //// ---- correct
-                                            Z_std_norm[c],   //// ---- correct
-                                            phi_Bound_Z[c],     //// ?????????????????????
-                                            phi_Z_recip[c],    //// ---- correct
-                                            y_sign_chunk,    //// ---- correct
-                                            y_m_y_sign_x_u,      //// ---- correct
-                                            prob_rowwise_prod_temp,    //// ---- correct
-                                            grad_bound_z,   //// ---- correct
-                                            grad_Phi_bound_z,   //// ---- correct
-                                            sign_z_grad_term,  //// ---- correct
-                                            sign_grad_prob,   //// ---- correct
-                                            sign_prod_container_or_inc_array,  //// ---- correct
-                                            sign_derivs_chain_container_vec,   //// ---- correct
-                                            true,  ///   compute_final_scalar_grad,   //// ---- correct
-                                            Model_args_as_cpp_struct);    //// ---- correct
+
+               Eigen::Matrix<double, -1, -1> log_abs_grad_bound_z = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+               Eigen::Matrix<double, -1, -1> sign_grad_bound_z = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+               Eigen::Matrix<double, -1, -1> log_abs_grad_Phi_bound_z = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+               Eigen::Matrix<double, -1, -1> sign_grad_Phi_bound_z = Eigen::Matrix<double, -1, -1>::Zero(chunk_size, n_tests);
+               
+              fn_latent_trait_compute_bs_grad_log_scale(  grad_pi_wrt_b_raw,
+                                                          log_abs_bs_grad_array_col_for_each_n,  ////////
+                                                          sign_bs_grad_array_col_for_each_n,  ////////
+                                                          log_abs_deriv_Bound_Z_x_L,  ////////
+                                                          sign_deriv_Bound_Z_x_L,  ////////
+                                                          log_abs_deriv_Bound_Z_x_L_comp,  ////////
+                                                          sign_deriv_Bound_Z_x_L_comp,  ////////
+                                                          c,
+                                                          log_abs_Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c], ////////
+                                                          sign_Jacobian_d_L_Sigma_wrt_b_3d_arrays_double[c],   ////////
+                                                          log_abs_Bound_Z[c],
+                                                          sign_Bound_Z[c],
+                                                          log_Z_std_norm[c],
+                                                          sign_Z_std_norm,
+                                                          L_Omega_double[c],
+                                                          log_abs_L_Omega_double[c],
+                                                          log_phi_Bound_Z[c],  ////////
+                                                          log_phi_Z_recip[c],
+                                                          log_abs_y_sign_chunk,
+                                                          y_sign_chunk,
+                                                          log_abs_y_m_y_sign_x_u,
+                                                          sign_y_m_y_sign_x_u,
+                                                          y1_log_prob[c],
+                                                          log_prob_rowwise_prod_temp,
+                                                          log_common_grad_term_1,
+                                                          log_abs_grad_bound_z, ////////
+                                                          sign_grad_bound_z, ////////
+                                                          log_abs_grad_Phi_bound_z, ////////
+                                                          sign_grad_Phi_bound_z,  ////////
+                                                          log_abs_z_grad_term,
+                                                          sign_z_grad_term,
+                                                          log_abs_grad_prob,
+                                                          sign_grad_prob,
+                                                          log_abs_derivs_chain_container_vec_comp,
+                                                          sign_derivs_chain_container_vec_comp,
+                                                          log_sum_result,
+                                                          sign_sum_result,
+                                                          log_terms,
+                                                          sign_terms,
+                                                          container_max_logs,
+                                                          container_sum_exp_signed,
+                                                          Model_args_as_cpp_struct);
               
             }
             

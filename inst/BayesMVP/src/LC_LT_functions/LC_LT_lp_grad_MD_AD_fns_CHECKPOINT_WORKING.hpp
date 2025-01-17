@@ -22,12 +22,12 @@ using namespace Eigen;
 
 
  
-inline  void         fn_lp_grad_LT_LC_NoLog_MD_and_AD_InPlace_process(   Eigen::Ref<Eigen::Matrix<double, -1, 1>> out_mat ,
-                                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_main_vec_ref,
-                                                                         const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
-                                                                         const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
-                                                                         const std::string &grad_option,
-                                                                         const Model_fn_args_struct &Model_args_as_cpp_struct
+void         fn_lp_grad_LT_LC_NoLog_MD_and_AD_InPlace_process(     Eigen::Ref<Eigen::Matrix<double, -1, 1>> out_mat ,
+                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_main_vec_ref,
+                                                                   const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
+                                                                   const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
+                                                                   const std::string &grad_option,
+                                                                   const Model_fn_args_struct &Model_args_as_cpp_struct
 ) { 
   
   
@@ -788,7 +788,7 @@ inline  void         fn_lp_grad_LT_LC_NoLog_MD_and_AD_InPlace_process(   Eigen::
           if ( (grad_option == "main_only") || (grad_option == "all") || (grad_option == "coeff_only") ) {
 
             fn_MVP_compute_coefficients_grad_v3(      c,
-                                                      beta_grad_array[c], 
+                                                      beta_grad_array[c],
                                                       chunk_counter,
                                                       n_covariates_max,
                                                       common_grad_term_1,
