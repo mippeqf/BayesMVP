@@ -1,3 +1,6 @@
+#pragma once 
+
+
 #ifndef OTHER_CONFIG_H
 #define OTHER_CONFIG_H
 

@@ -17,7 +17,8 @@
     #include "omp.h"
 #endif
 
-//// General includes 
+
+//// ---------  General includes 
 #include <iostream>
 #include <sstream>
 #include <stdexcept>    
@@ -31,7 +32,7 @@
 #include <cmath>
 
 
-//// Stan includes
+//// ---------  Stan includes
 #include <stan/math/prim.hpp>
 #include <stan/math/rev.hpp>
 #include <stan/math.hpp>
@@ -59,24 +60,20 @@
 #include <stan/math/prim/prob/beta_lpdf.hpp>
 
 
-//// Eigen C++ lib. includes
+//// ---------  Eigen C++ lib. includes
 #undef OUT
 #include <RcppEigen.h>
 #include <unsupported/Eigen/SpecialFunctions>
 #include <unsupported/Eigen/CXX11/Tensor>
 
-
-//// BayesMVP config. includes 
+ 
+//// --------- BayesMVP config. include
 #include "initial_config.hpp" //// Other config. 
 #include "SIMD_config.hpp"  ////  config. (must be included BEFORE eigen_config.hpp)
 #include "eigen_config.hpp" //// Eigen C++ lib. config.  
 
 
- 
-//// #include <immintrin.h>
-
- 
-//// Other Stan includes  
+//// ---------  Other Stan includes  
 #include <stan/model/model_base.hpp>  
 #include <stan/io/array_var_context.hpp> 
 #include <stan/io/var_context.hpp> 
@@ -87,7 +84,7 @@
 #include <stan/io/json/rapidjson_parser.hpp>   
 
 
-//// RNG (using dqrng) includes
+//// --------- RNG (using dqrng) includes
 #include <dqrng_distribution.h>
 #include <dqrng_generator.h>
 #include <dqrng_sample.h>
@@ -97,11 +94,12 @@
 #include <RcppParallel.h>
 //// #include <RcppEigen.h>
 
-//// BayesMVP includes - General functions (e.g. fast exp() and log() approximations). Most of these are not model-specific.
+//// --------- BayesMVP includes - General functions (e.g. fast exp() and log() approximations). Most of these are not model-specific.
 #include "general_functions/var_fns.hpp"
 #include "general_functions/double_fns.hpp"
 
 
+//// --------- BayesMVP includes - General functions
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Stan.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Loop.hpp"
 #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX2_fns.hpp" // will only compile if  AVX2 is available
@@ -115,20 +113,23 @@
 #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_SIMD.hpp"
 
 
+//// --------- BayesMVP includes - General functions
 #include "general_functions/array_creators_Eigen_fns.hpp"
 #include "general_functions/array_creators_other_fns.hpp"
 #include "general_functions/structures.hpp"
 #include "general_functions/classes.hpp"
 
+
 #include <Rcpp.h>
 
+//// --------- BayesMVP includes - General functions
 #include "general_functions/misc_helper_fns_1.hpp"
 #include "general_functions/misc_helper_fns_2.hpp" /// needs Rcpp.h
 #include "general_functions/compute_diagnostics.hpp"
 
 //////// #include "BayesMVP_Stan_fast_approx_fns.hpp"
 
-//// BayesMVP includes - MVP-specific (and MVP-LC) model fns
+//// --------- BayesMVP includes - MVP-specific (and MVP-LC) model fns
 #include "MVP_functions/MVP_manual_grad_calc_fns.hpp"
 #include "MVP_functions/MVP_log_scale_grad_calc_fns.hpp"
 #include "MVP_functions/MVP_manual_trans_and_J_fns.hpp"
@@ -139,37 +140,34 @@
 //// #include "MVP_functions/MVP_manual_Hessian_calc_fns.hpp"
 
 
-//// BayesMVP includes - Latent trait model fns
-#define COMPILE_LATENT_TRAIT 0
-#if COMPILE_LATENT_TRAIT
-    #include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
-    #include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
-    #include "LC_LT_functions/LC_LT_lp_grad_AD_fns.hpp"
-    #include "LC_LT_functions/LC_LT_lp_grad_MD_AD_fns.hpp"
-    #include "LC_LT_functions/LC_LT_lp_grad_log_scale_MD_AD_fns.hpp"
-    #include "LC_LT_functions/LT_LC_lp_grad_multi_attempts.hpp"
-#endif
+//// --------- BayesMVP includes - Latent trait model fns
+#include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
+#include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
+#include "LC_LT_functions/LC_LT_lp_grad_AD_fns.hpp"
+#include "LC_LT_functions/LC_LT_lp_grad_MD_AD_fns.hpp"
+//// #include "LC_LT_functions/LC_LT_lp_grad_log_scale_MD_AD_fns.hpp" //// bookmark - (LT_b's not currently working)
+#include "LC_LT_functions/LT_LC_lp_grad_multi_attempts.hpp"
 
     
-//// BridgeStan includes 
+//// ---------  BridgeStan includes 
 #include "bridgestan.h" 
 #include "version.hpp"
 #include "model_rng.hpp" 
 
-
+//// --------- BayesMVP includes - Stan model helper functions
 #include "general_functions/Stan_model_helper_fns.hpp"
 #include "general_functions/Stan_model_helper_fns_parallel.hpp"
 
-
+//// --------- BayesMVP includes - general lp_grad fns
 #include "general_functions/lp_grad_model_selector.hpp"
 
     
-//// BayesMVP includes - MCMC includes - ADAM / SNAPER-HMC fns (general)
+//// --------- BayesMVP includes - MCMC includes - ADAM / SNAPER-HMC fns (general)
 #include "MCMC/EHMC_adapt_eps_fn.hpp"
 #include "MCMC/EHMC_adapt_tau_fns.hpp"
 #include "MCMC/EHMC_adapt_M_Hessian_fns.hpp"
 
-//// BayesMVP includes - MCMC includes - Standard-HMC (EHMC) + Diffusion-space-HMC sampler fns
+//// --------- BayesMVP includes - MCMC includes - Standard-HMC (EHMC) + Diffusion-space-HMC sampler fns
 #define COMPILE_MCMC_MAIN 1
 #if COMPILE_MCMC_MAIN
   #include "MCMC/EHMC_main_sampler_fns.hpp"

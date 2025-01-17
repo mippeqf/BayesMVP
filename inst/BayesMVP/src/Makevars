@@ -22,13 +22,13 @@ $(info PKG_LIB_ARCH_PATH is: $(PKG_LIB_ARCH_PATH))
 ##
 ####### ----- CCACHE / ccache path -------------------------------------------------------------------------------------------------  
 ##
-# Find ccache path
+## Find ccache path:
 override CCACHE_PATH=$(shell which ccache 2>/dev/null)
 override HAVE_CCACHE=$(if $(CCACHE_PATH),YES,)
 ##
 ## Set CCACHE prefix only if available
 ifneq (,$(HAVE_CCACHE))
-  override CCACHE="$(CCACHE_PATH)"
+  override CCACHE=$(CCACHE_PATH)
 else
   override CCACHE =
 endif
@@ -42,8 +42,7 @@ $(info CCACHE is: $(CCACHE))
 ##
 ####### ----- Compiler settings (clang preffered [AMD AOCC clang if available], then gcc/g++ [2nd or 3rd choice] --------------------
 ## First, check if AMD AOCC-clang compiler is availabnle (AMD CPU's only), otherwise use "standard" clang, and if not then use gcc/g++:
-override AMD_AOCC_PATH = $(shell \
-  ls -d /opt/AMD/aocc-compiler-* 2>/dev/null | sort -rV | head -n1)
+override AMD_AOCC_PATH = $(shell ls -d /opt/AMD/aocc-compiler-* 2>/dev/null | sort -rV | head -n1)
 ##
 ifneq ($(AMD_AOCC_PATH),)
   override AMD_AOCC_CXX_COMPILER=$(AMD_AOCC_PATH)/bin/clang++
@@ -151,12 +150,12 @@ endif
 override OMP_FLAGS =
 override OMP_LIB_PATH =
 override OMP_LIB_FLAGS =
-ifneq (,$(wildcard $(AMD_AOCC_CXX_COMPILER))) ## if using AOCC-clang (AMD only)
+ifneq (,$(wildcard $(AMD_AOCC_CXX_COMPILER))) ## if using AOCC-clang (AMD only) (1st choice)
   override OMP_LIB_PATH = $(AMD_AOCC_PATH)/lib
   override OMP_FLAGS = -fopenmp
   override OMP_LIB_FLAGS += -L"$(OMP_LIB_PATH)" -lomp
   override OMP_LIB_FLAGS += $(OMP_LIB_PATH)/libomp.so
-else ifneq (,$(wildcard $(CLANG_CXX_COMPILER))) ## if using clang
+else ifneq (,$(wildcard $(CLANG_CXX_COMPILER))) ## if using "standard" clang (2nd choice)
   # Try to find system libomp:
   override OMP_LIB_PATH = $(shell \
     for p in /usr/lib /usr/lib64 /usr/local/lib; do \
@@ -184,8 +183,17 @@ ifneq ($(USER_SUPPLIED_OMP_LIB_FLAGS),) ## i.e. if user-supplied variable is ava
 	override OMP_LIB_FLAGS="$(USER_SUPPLIED_OMP_LIB_FLAGS)"
 endif
 ##
-override SHLIB_OPENMP_CFLAGS = -I"$(RTOOLS_COMPILER_BIN_PATH)" $(OMP_FLAGS)
+override SHLIB_OPENMP_CFLAGS = $(OMP_FLAGS)
 override SHLIB_OPENMP_CXXFLAGS = $(SHLIB_OPENMP_CFLAGS)
+##
+####### ----- set MATH_FLAGS ---------------------------------------------------------------------------------------------------------
+##
+override MATH_FLAGS = -fno-math-errno  -fno-signed-zeros  -fno-trapping-math
+$(info MATH_FLAGS: $(MATH_FLAGS))
+##
+####### ----- set UNIX_FLAGS  (if any) ---------------------------------------------------------------------------------------------------------
+##
+override UNIX_FLAGS = -ftls-model=global-dynamic
 ##
 ####### ----- set BASE_FLAGS -----------------------------------------------------------------------------------------------------
 ##
@@ -196,16 +204,17 @@ override SHLIB_OPENMP_CXXFLAGS = $(SHLIB_OPENMP_CFLAGS)
 override CPU_FLAGS = $(CPU_BASE_FLAGS) $(FMA_FLAGS) $(AVX_FLAGS)
 ##
 override BASE_FLAGS =   $(CPU_FLAGS) \
+                        $(SHLIB_OPENMP_CFLAGS) \
+                        $(MATH_FLAGS) \
+                        $(UNIX_FLAGS) \
                         -Wno-error=ignored-attributes \
                         -Wno-error=implicit-function-declaration \
                         -Wno-pragma-pack \
                         -Wno-parentheses-equality \
-                        $(SHLIB_OPENMP_CFLAGS) \
                         -fPIC \
                         -D_REENTRANT -DSTAN_THREADS -pthread \
                         -fpermissive \
-                        -DNDEBUG \
-                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math
+                        -DNDEBUG
 ##
 #### -fno-math-errno    -fno-signed-zeros  -fno-trapping-math  ### oordered from safest ( -fno-math-errno ) tto least-safe ( -fno-trapping-math)
 ## BASE_FLAGS += -DEIGEN_VECTORIZE
@@ -246,7 +255,7 @@ override PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
     -I"$(STAN_MATH_LIB)/boost_1.84.0" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
-    -I"$(STAN_MATH_LIB)/sundials_6.1.1" \
+    -I"$(STAN_MATH_LIB)/sundials_6.1.1/src/sundials" \
     -I"$(STAN_MATH_LIB)/tbb/include" \
     -I"$(STAN_LIB)/rapidjson_1.1.0" \
     -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
@@ -351,6 +360,6 @@ $(info DUMMY_MODEL_SO is: $(USER_HOME_DUMMY_MODEL_SO))
 override PKG_LIBS+=$(USER_HOME_DUMMY_MODEL_SO)
 ##
 ## Link to permanent location:
-PKG_LIBS+=$(USER_HOME_DUMMY_MODEL_SO) -Wl,-rpath,$(HOME)/.BayesMVP -Wl,-rpath,$(TBB_PATH)
+PKG_LIBS+=$(USER_HOME_DUMMY_MODEL_SO) -Wl,-rpath,$(HOME)/.BayesMVP -Wl,-rpath,$(TBB_PATH),--no-as-needed
 ##
 ##

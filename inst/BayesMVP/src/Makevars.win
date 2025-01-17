@@ -75,7 +75,7 @@ $(info RTOOLS_MINGW_LIBCXX_INCLUDE_PATH is: $(RTOOLS_MINGW_LIBCXX_INCLUDE_PATH))
 ifeq (,$(wildcard $(RTOOLS_PATH)/clang64))
   $(error RTools installation at $(RTOOLS_PATH) appears incomplete: missing clang64 directory)
 endif
-##
+## 
 override RTOOLS_CLANG64_PATH=$(RTOOLS_PATH)/clang64
 $(info RTOOLS_CLANG64_PATH is: $(RTOOLS_CLANG64_PATH))
 override RTOOLS_CLANG64_LIB_PATH=$(RTOOLS_CLANG64_PATH)/lib
@@ -217,6 +217,14 @@ override OMP_LIB_FLAGS = $(OMP_FLAGS)
 override SHLIB_OPENMP_CFLAGS = -I"$(RTOOLS_COMPILER_BIN_PATH)" $(OMP_FLAGS)
 override SHLIB_OPENMP_CXXFLAGS = $(SHLIB_OPENMP_CFLAGS)
 ##
+####### ----- set MATH_FLAGS ---------------------------------------------------------------------------------------------------------
+## 
+override MATH_FLAGS = -fno-math-errno  -fno-signed-zeros  -fno-trapping-math
+$(info MATH_FLAGS: $(MATH_FLAGS))
+##
+####### ----- set WINDOWS_FLAGS (if any) ---------------------------------------------------------------------------------------------------------
+##
+override WINDOWS_FLAGS =
 ####### ----- set BASE_FLAGS -----------------------------------------------------------------------------------------------------
 ##
 override RTOOLS_INCLUDE_PATHS = -I"$(RTOOLS_COMPILER_LIBCXX_INCLUDE_PATH)" \
@@ -230,6 +238,8 @@ endif
 override CPU_FLAGS = $(CPU_BASE_FLAGS) $(FMA_FLAGS) $(AVX_FLAGS)
 ##
 override BASE_FLAGS =   $(CPU_FLAGS) \
+                        $(MATH_FLAGS) \
+                        $(WINDOWS_FLAGS) \
                         -Wno-error=ignored-attributes \
                         -Wno-error=implicit-function-declaration \
                         -Wno-pragma-pack \
@@ -239,8 +249,7 @@ override BASE_FLAGS =   $(CPU_FLAGS) \
                         -fPIC \
                         -D_REENTRANT -DSTAN_THREADS -pthread \
                         -fpermissive \
-                        -DNDEBUG \
-                        -fno-math-errno  -fno-signed-zeros  -fno-trapping-math
+                        -DNDEBUG
 ##
 ## BASE_FLAGS += -V
 ##
