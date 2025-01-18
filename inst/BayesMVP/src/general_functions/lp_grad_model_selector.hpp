@@ -89,8 +89,8 @@ inline  Eigen::Matrix<double, -1, 1>  fn_lp_grad_Return(    const std::string  M
                        //// #if COMPILE_LATENT_TRAIT
                        if (force_PartialLog == true) {
                          //// fn_lp_grad_LT_LC_PartialLog_MD_and_AD_InPlace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct);
-                         //// bookmark
-                         std::cout << "ERROR: For the latent_trait model, the MANUAL-LOG-SCALE lp_grad function isn't yet working fully, so please set force_PartialLog = FALSE"" << std::endl; 
+                         //// bookmark:
+                         std::cout << "ERROR: For the latent_trait model, the MANUAL-LOG-SCALE lp_grad function isn't yet working fully, so please set force_PartialLog = FALSE" << std::endl;  
                        } else { 
                          fn_lp_grad_LT_LC_NoLog_MD_and_AD_InPlace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct);
                        } 
@@ -230,7 +230,7 @@ inline void  fn_lp_grad_InPlace(         Eigen::Ref<Eigen::Matrix<double, -1, 1>
                                             
                                            //// fn_lp_grad_LT_LC_PartialLog_MD_and_AD_InPlace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct);
                                            //// bookmark
-                                           std::cout << "ERROR: For the latent_trait model, the MANUAL-LOG-SCALE lp_grad function isn't yet working fully, so please set force_PartialLog = FALSE"" << std::endl; 
+                                           std::cout << "ERROR: For the latent_trait model, the MANUAL-LOG-SCALE lp_grad function isn't yet working fully, so please set force_PartialLog = FALSE" << std::endl; 
                                    } else { 
                                            fn_lp_grad_LT_LC_NoLog_MD_and_AD_InPlace_process(lp_and_grad_outs, theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct);
                                    } 
@@ -392,7 +392,7 @@ inline  void  fn_lp_only_InPlace(      double &lp,
                         if (force_PartialLog == true) {  
                           //// lp = (   fn_lp_grad_LT_LC_PartialLog_MD_and_AD(theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct)  ).head(1).eval()(0);
                           //// bookmark
-                          std::cout << "ERROR: For the latent_trait model, the MANUAL-LOG-SCALE lp_grad function isn't yet working fully, so please set force_PartialLog = FALSE"" << std::endl; 
+                          std::cout << "ERROR: For the latent_trait model, the MANUAL-LOG-SCALE lp_grad function isn't yet working fully, so please set force_PartialLog = FALSE" << std::endl; 
                         } else { 
                           lp =  (  fn_lp_grad_LT_LC_NoLog_MD_and_AD(theta_main_vec_ref, theta_us_vec_ref, y_ref, grad_option, Model_args_as_cpp_struct) ).head(1).eval()(0);
                         }
