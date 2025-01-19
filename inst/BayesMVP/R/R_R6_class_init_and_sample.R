@@ -211,6 +211,10 @@ MVP_model <- R6Class("MVP_model",
                                     self$Stan_data_list <- Stan_data_list
                                     self$sample_nuisance <- sample_nuisance
                                     self$n_chains_burnin <- n_chains_burnin
+                                    
+                                    ## set bs environment variable
+                                    bs_path <- BayesMVP:::bridgestan_path()
+                                    Sys.setenv(BRIDGESTAN = bs_path)
                                           
                                     # -----------  call initialising fn -------------------------------------------------------------------------------------------------------------------
                                     self$init_object <-   BayesMVP:::initialise_model(  Model_type = Model_type,
