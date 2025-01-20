@@ -102,8 +102,8 @@ inline std::string windows_error_str() {
      }
    }
    
-   std::cout << "Original path: " << path << std::endl;
-   std::cout << "Normalized path: " << result << std::endl;
+   //// std::cout << "Original path: " << path << std::endl;
+   //// std::cout << "Normalized path: " << result << std::endl;
    
    return result;
    
@@ -155,7 +155,7 @@ bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
                                              const std::string  &json_file, 
                                              unsigned int seed) {
   
-         std::cout << "Converting JSON data from: " << json_file << std::endl;
+         //// std::cout << "Converting JSON data from: " << json_file << std::endl;
      
          // Load the Stan model from the .so or .dll file using BridgeStan
          char* error_msg = nullptr;
@@ -171,10 +171,10 @@ bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
          
          
          if (bs_model_ptr) {
-           std::cout << "Model constructed successfully. Pointer: " << bs_model_ptr << std::endl;
+            //// std::cout << "Model constructed successfully. Pointer: " << bs_model_ptr << std::endl;
            // Add any model info/dimension queries that bridgestan provides
          } else {
-           std::cout << "Model construction failed: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+            std::cout << "Model construction failed: " << (error_msg ? error_msg : "Unknown error") << std::endl;
          }
          
          if (!bs_model_ptr) {
@@ -187,7 +187,7 @@ bs_model* fn_convert_JSON_data_to_BridgeStan(ModelHandle_struct &model_handle,
            std::cout << "Failed to construct model. Error: " << 
              (error_msg ? error_msg : "Unknown error") << std::endl;
          } else {
-           std::cout << "Successfully constructed model" << std::endl;
+            //// std::cout << "Successfully constructed model" << std::endl;
          }
          
          if (!bs_model_ptr) {
@@ -207,12 +207,12 @@ Stan_model_struct fn_load_Stan_model_and_data( const std::string &model_so_file,
                                                const std::string &json_file,
                                                unsigned int seed) {
   
-           std::cout << "Loading model from: " << model_so_file << std::endl;
+           //// std::cout << "Loading model from: " << model_so_file << std::endl;
    
            // Load the .so or .dll file
            #ifdef _WIN32
                std::string normalized_path = normalize_windows_path(model_so_file);
-               std::cout << "Attempting to load from normalized path: " << normalized_path << std::endl;
+               //// std::cout << "Attempting to load from normalized path: " << normalized_path << std::endl;
                
                // // Add the DLL's directory to the search path
                // std::string dll_dir = normalized_path.substr(0, normalized_path.find_last_of('\\'));
@@ -230,7 +230,7 @@ Stan_model_struct fn_load_Stan_model_and_data( const std::string &model_so_file,
                  // std::cout << "Trying full path: " << full_path << std::endl;
                  // bs_handle = LoadLibraryA(full_path.c_str());
                } else {
-                 std::cout << "Successfully loaded library" << std::endl;
+                  //// std::cout << "Successfully loaded library" << std::endl;
                }
            #else
                void* bs_handle = dlopen(model_so_file.c_str(), RTLD_LAZY);

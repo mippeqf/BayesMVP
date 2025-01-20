@@ -107,7 +107,7 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
     // Thread-local processing
     void operator()(std::size_t begin, std::size_t end) {
       
-      std::cout << "Starting worker for chains " << begin << " to " << end << std::endl;
+      //// std::cout << "Starting worker for chains " << begin << " to " << end << std::endl;
       
       // Process assigned chains
       std::size_t kk = begin;
@@ -136,13 +136,13 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
               }
               
               if (!bs_rng_object) {
-                std::cout << "Failed to create RNG object: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+                ////  std::cout << "Failed to create RNG object: " << (error_msg ? error_msg : "Unknown error") << std::endl;
               }
               
               if (!Stan_model_as_cpp_struct.bs_model_ptr) {
-                std::cout << "Model pointer is null!" << std::endl;
+                ////  std::cout << "Model pointer is null!" << std::endl;
               } else {
-                std::cout << "Model pointer is valid" << std::endl;
+                ////  std::cout << "Model pointer is valid" << std::endl;
               }
               
               for (int ii = 0; ii < n_iter; ii++) {
