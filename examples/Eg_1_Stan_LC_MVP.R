@@ -1,68 +1,78 @@
 
 
 
+########## -------- EXAMPLE 1 --------------------------------------------------------------------------------------------------------- 
+## Running the Stan (i.e. autodiff gradients) LC-MVP model (e.g., for the analysis of test accuracy data without a gold standard).
+## Uses simulated data.
+## Uses .stan model file. 
 
+
+
+
+####  ---- 1. Install BayesMVP (from GitHub) - SKIP THIS STEP IF INSTALLED: -----------------------------------------------------------
+## First remove any possible package fragments:
+## Find user_pkg_install_dir:
+user_pkg_install_dir <- Sys.getenv("R_LIBS_USER")
+print(paste("user_pkg_install_dir = ", user_pkg_install_dir))
+##
+## Find pkg_install_path + pkg_temp_install_path:
+pkg_install_path <- file.path(user_pkg_install_dir, "BayesMVP")
+pkg_temp_install_path <- file.path(user_pkg_install_dir, "00LOCK-BayesMVP") 
+##
+## Remove any (possible) BayesMVP package fragments:
+remove.packages("BayesMVP")
+unlink(pkg_install_path, recursive = TRUE, force = TRUE)
+unlink(pkg_temp_install_path, recursive = TRUE, force = TRUE)
+##
+## First install OUTER package:
+remotes::install_github("https://github.com/CerulloE1996/BayesMVP", force = TRUE, upgrade = "never")
+## Then restart R session:
 rstudioapi::restartSession()
-
-         
-{
-  
-  rstan::rstan_options(auto_write = TRUE)
-  options(scipen = 99999)
-  options(max.print = 1000000000)
-  #  rstan_options(auto_write = TRUE)
-  options(mc.cores = parallel::detectCores())
-  
-}
-
-
-if (.Platform$OS.type == "windows") {
-  
-  # Sys.setenv(CCACHE_DIR = "C:\\rtools44\\x86_64-w64-mingw32.static.posix\\installed")
-  # Sys.setenv(CCACHE_MAXSIZE = "10G")  # Set cache size limit
-  
-  try({  setwd("C:/users/enzoc/Documents/BayesMVP/examples")    }, silent = TRUE)
-  pkg_dir <- "C:/users/enzoc/Documents/BayesMVP"
-  
-} else { 
-  
-  try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")   }, silent = TRUE)
-  try({  setwd("/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")    }, silent = TRUE)
-  pkg_dir <- "~/Documents/Work/PhD_work/R_packages/BayesMVP"
-  
-}
-
-
-
-## Install
-devtools::clean_dll(pkg_dir)
-Rcpp::compileAttributes(pkg_dir)
-devtools::install(pkg_dir)
+## Then install INNTER (i.e. the "real") package:
 require(BayesMVP)
 BayesMVP::install_BayesMVP()
-require(BayesMVP) # this works (after installation using "--no-test-load" flag)
-
-
-
-
-remotes::install_github("https://github.com/CerulloE1996/BayesMVP", force = TRUE)
 require(BayesMVP)
-BayesMVP::install_BayesMVP()
-require(BayesMVP) # this works (after installation using "--no-test-load" flag)
+
+# require(BayesMVP)
+# CUSTOM_FLAGS <- list()
+# install_BayesMVP(CUSTOM_FLAGS = list())
+# require(BayesMVP) 
+
+
+
+####  ---- 2. Set BayesMVP example path and set working directory:  --------------------------------------------------------------------
+user_dir_outs <- BayesMVP:::set_pkg_example_path_and_wd()
+## Set paths:
+user_root_dir <- user_dir_outs$user_root_dir
+user_BayesMVP_dir <- user_dir_outs$user_BayesMVP_dir
+pkg_example_path <- user_dir_outs$pkg_example_path
 
 
 
 
+####  ---- 3. Set options   ------------------------------------------------------------------------------------------------------------
+options(scipen = 99999)
+options(max.print = 1000000000)
+options(mc.cores = parallel::detectCores())
 
-# Run LC-MVP model (manual-gradients using SNAPER-diffusion-space HMC)   --------------------------------------------------------------------------------------------------------------------------------------------------
-      
- # pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP"
+
+
+
+####  ---- 4. Now run the example:   ---------------------------------------------------------------------------------------------------
+require(BayesMVP)
+
+## Function to check BayesMVP AVX support 
+BayesMVP::detect_vectorization_support()
+
+
+
+     
    
 ## first sprecify model type (for Stan models see other Stan example file)
 Model_type <- "Stan"
 
  
-source(file.path(pkg_dir, "examples/BayesMVP_LC_MVP_prep.R"))
+source(file.path(pkg_example_path, "BayesMVP_LC_MVP_prep.R"))
  
 
 # 

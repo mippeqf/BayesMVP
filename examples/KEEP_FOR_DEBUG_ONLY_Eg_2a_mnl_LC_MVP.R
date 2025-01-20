@@ -1,16 +1,8 @@
 
-########## -------- EXAMPLE 2 -------------------------------------------------------------------------------------------------------------------------------- 
-######### Running the BUILT-IN (i.e. manual gradients) LC-MVP and/or 
-######### latent trait models for the analysis of test accuracy data 
-######### without a gold standard (using simulated data). 
-         
-
+########## -------- EXAMPLE 2(a) --------------------------------------------------------------------------------------------------------- 
+## Running the BUILT-IN (i.e. manual gradients) LC-MVP model (e.g., for the analysis of test accuracy data without a gold standard).
+## Uses simulated data.
  
- 
-
-
-
-
 
 
  
@@ -43,12 +35,16 @@ require(BayesMVP)
 # install_BayesMVP(CUSTOM_FLAGS = list())
 # require(BayesMVP) 
 
+
+
 ####  ---- 2. Set BayesMVP example path and set working directory:  --------------------------------------------------------------------
 user_dir_outs <- BayesMVP:::set_pkg_example_path_and_wd()
 ## Set paths:
 user_root_dir <- user_dir_outs$user_root_dir
 user_BayesMVP_dir <- user_dir_outs$user_BayesMVP_dir
 pkg_example_path <- user_dir_outs$pkg_example_path
+
+
 
 
 ####  ---- 3. Set options   ------------------------------------------------------------------------------------------------------------
@@ -60,7 +56,7 @@ options(mc.cores = parallel::detectCores())
  
   
 ####  ---- 4. Now run the example:   ---------------------------------------------------------------------------------------------------
- 
+require(BayesMVP)
 
 ## Function to check BayesMVP AVX support 
 BayesMVP::detect_vectorization_support()
@@ -68,16 +64,11 @@ BayesMVP::detect_vectorization_support()
 
  
 
-require(BayesMVP)
-
-
  
 
+Model_type <- "LC_MVP"
 
-## Model_type <- "LC_MVP"
-Model_type <- "latent_trait"
-
-source(file.path(pkg_dir, "examples/BayesMVP_LC_MVP_prep.R"))
+source(file.path(pkg_example_path, "BayesMVP_LC_MVP_prep.R"))
 
 
 
@@ -133,17 +124,6 @@ N <- 500
   # X <- X_list
   # # check X right format 
   # str(X)
-  #  
-  
-  
-  if (Model_type == "latent_trait") { 
-    n_params_main <- (n_class - 1) + sum(unlist(n_covariates_per_outcome_mat)) + n_class * n_tests 
-  } else if (Model_type != "latent_trait")  { 
-    n_params_main <- (n_class - 1) + sum(unlist(n_covariates_per_outcome_mat)) + n_class * choose(n_tests, 2)
-  }
-  
-  
-  
   
   prior_a_mean  <-  vector("list", length = n_class)
   prior_a_sd <-  vector("list", length = n_class)
@@ -171,6 +151,7 @@ N <- 500
   beta_vec_init[1:n_tests] <- - 1   # tests 1-T, class 1 (D-)
   beta_vec_init[(n_tests + 1):(2*n_tests)] <- + 1   # tests 1-T, class 1 (D+)
   
+  ## Set inits
   n_obs <- N * n_tests
   prev_est <- sum(y) / (n_obs)
   p_raw <- atanh(2*prev_est - 1) 
@@ -183,80 +164,45 @@ N <- 500
   }
   
   u_raw <- array(0.01, dim = c(N, n_tests))
-  
-  
-  if (Model_type == "LC_MVP") {
       
-          init = list(
-            u_raw = (u_raw),
-            p_raw =  (-0.6931472), # equiv to 0.20 on p
-            beta_vec = beta_vec_init,
-            off_raw = off_raw,
-            col_one_raw =  col_one_raw
-          )
-        
-  } else if (Model_type == "latent_trait") { 
-    
-          LT_a_vec_init <- rep(0, n_class * n_tests)
-          LT_a_vec_init[1:n_tests] <- - 1   # tests 1-T, class 1 (D-)
-          LT_a_vec_init[(n_tests + 1):(2*n_tests)] <- + 1   # tests 1-T, class 1 (D+)
-          
-          init = list(
-            u_raw = (u_raw),
-            p_raw =  (-0.6931472), # equiv to 0.20 on p
-            LT_a_vec = LT_a_vec_init,
-            LT_b_raw_vec = rep(-3.00, n_class * n_tests) 
-          )
-        
-  }
-  
-  
-  
-  
+
+  init = list(
+    u_raw = (u_raw),
+    p_raw =  (-0.6931472), # equiv to 0.20 on p
+    beta_vec = beta_vec_init,
+    off_raw = off_raw,
+    col_one_raw =  col_one_raw
+  )
+       
+  ## Set n_params_main
+  n_params_main <- (n_class - 1) + sum(unlist(n_covariates_per_outcome_mat)) + n_class * choose(n_tests, 2) 
+ 
 }
 
   
 
 
 
-## -----------  initialise model / inits etc
-# based on (informal) testing, more than 8 burnin chains seems unnecessary 
-# and probably not worth the extra overhead (even on a 96-core AMD EPYC Genoa CPU)
+  ## -----------  initialise model / inits etc
+  # based on (informal) testing, more than 8 burnin chains seems unnecessary 
+  # and probably not worth the extra overhead (even on a 96-core AMD EPYC Genoa CPU)
   n_chains_burnin <- 8
   init_lists_per_chain <- rep(list(init), n_chains_burnin) 
   
    
   
   ## make model_args_list (note: Stan models don't need this)
-  if (Model_type == "LC_MVP") {
-    
-      model_args_list  <- list(       lkj_cholesky_eta = c(12, 3), 
-                                      n_covariates_per_outcome_mat = n_covariates_per_outcome_mat,  
-                                      #X = X, # only needed if want to include covariates
-                                      num_chunks =   BayesMVP:::find_num_chunks_MVP(N, n_tests),
-                                      prior_coeffs_mean_mat = prior_a_mean,
-                                      prior_coeffs_sd_mat =    prior_a_sd, 
-                                      prev_prior_a = 1, # show how to change this later
-                                      prev_prior_b = 1  # show how to change this later
-                               )
+  model_args_list  <- list(       lkj_cholesky_eta = c(12, 3), 
+                                  n_covariates_per_outcome_mat = n_covariates_per_outcome_mat,  
+                                  #X = X, # only needed if want to include covariates
+                                  num_chunks =   BayesMVP:::find_num_chunks_MVP(N, n_tests),
+                                  prior_coeffs_mean_mat = prior_a_mean,
+                                  prior_coeffs_sd_mat =    prior_a_sd, 
+                                  prev_prior_a = 1, # show how to change this later
+                                  prev_prior_b = 1  # show how to change this later
+                           )
   
-  } else if (Model_type == "latent_trait") { 
-    
-    # prior_a_mean[[1]][,] <- 0
-    # prior_a_mean[[2]][,] <- 0
-    # prior_a_sd[[2]][,] <- 1
-    # prior_a_sd[[2]][,] <- 1
-    
-    model_args_list <- list(         n_covariates_per_outcome_mat = n_covariates_per_outcome_mat,  
-                                     num_chunks =   BayesMVP:::find_num_chunks_MVP(N, n_tests),
-                                     LT_b_priors_shape = LT_b_priors_shape,
-                                     LT_b_priors_scale = LT_b_priors_scale,
-                                     prior_coeffs_mean_mat = prior_a_mean,
-                                     prior_coeffs_sd_mat =    prior_a_sd, 
-                                     prev_prior_a = 1,  # show how to change this later
-                                     prev_prior_b = 1   # show how to change this later
-                            ) 
-  }
+
   
   
   
@@ -283,14 +229,10 @@ N <- 500
   ## ----------- Set soe basic sampler settings
   {
     ### seed <- 123
-    n_chains_sampling <- 64
-    n_superchains <- 8 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
+    n_chains_sampling <- max(64, parallel::detectCores() / 2)
+    n_superchains <- min(8, parallel::detectCores() / 2)  ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
     n_iter <- 1000                                 
     n_burnin <- 500
-    adapt_delta <- 0.80
-    learning_rate <- 0.05
-    diffusion_HMC <- TRUE
-    partitioned_HMC = TRUE
     n_nuisance_to_track <- 10 # set to some small number (< 10) if don't care about making inference on nuisance params (which is most of the time!)
   }
   
@@ -298,65 +240,57 @@ N <- 500
   
   #### ------ sample model using "  model_obj$sample()" --------- 
   ##  NOTE: You can also use "model_obj$sample()" to update the model.
-  ## For example, if using the same model but a new/different dataset
-  ## (so new y and N, and n_nuisance needed), you can do:
-  ## model_obj$sample(y = y, N = N, n_nuisance = n_nuisance, ...)
-  ## You can also update model_args_list. 
-  ##  for example, let's say I wanted to change the prior for disease prevalence
-  ## to be informative s.t. prev ~ beta(5, 10). 
+  ##
+  ##  For example, if using the same model but a new/different dataset (so new y and N, and n_nuisance needed), you can do:
+  ##  model_obj$sample(y = y, N = N, n_nuisance = n_nuisance, ...)
+  ##
+  ##  You can also update model_args_list. 
+  ##  for example, let's say I wanted to change the prior for disease prevalence to be informative s.t. prev ~ beta(5, 10). 
   ##  I could do this by modifying model_args_list:
   model_args_list$prev_prior_a <-  5
   model_args_list$prev_prior_b <-  10
   
- #   model_obj$init_object$Model_args_as_Rcpp_List$Model_args_ints
-  
-  ###  parallel::mcparallel  
-  # then update model if needed parameters changed
-  
-  
-  RcppParallel::setThreadOptions(numThreads = n_chains_sampling);
+ 
   
 
                                                     
- model_samples <-  model_obj$sample(  seed = 1,
-                                      interval_width_main = 50,
-                                      n_iter = n_iter,
-                                      clip_iter = 25,
-                                      y = y,
-                                      N = N,
-                                      tau_mult = 2.0,
-                                #     force_recompile = force_recompile,
-                                      init_lists_per_chain = init_lists_per_chain,
-                                      n_params_main = n_params_main,
-                                      n_nuisance = n_nuisance,
-                                      model_args_list = model_args_list,
-                                      partitioned_HMC = partitioned_HMC,
-                                     vect_type = "Stan",
-                                     ## vect_type = "AVX512",
-                                     #  vect_type = "AVX2",
-                                      ratio_M_us = 0.25,
-                                      ratio_M_main = 0.25,
-                                      parallel_method = "RcppParallel",
+ model_samples <-  model_obj$sample(  partitioned_HMC = TRUE,
+                                      diffusion_HMC = TRUE,
+                                      seed = 1,
                                       n_burnin = n_burnin,
-                                      n_chains_burnin = n_chains_burnin,
-                                      sample_nuisance = TRUE,
+                                      n_iter = n_iter,
                                       n_chains_sampling = n_chains_sampling,
                                       n_superchains = n_superchains,
-                                      diffusion_HMC = diffusion_HMC,
-                                      adapt_delta = adapt_delta,
-                                      learning_rate = learning_rate,
-                                      force_autodiff = FALSE,
-                                      force_PartialLog = FALSE,
-                                      multi_attempts = TRUE,
-                                      metric_shape_main = "dense",
-                                      metric_type_main = "Hessian",
+                                      ## Optional arguments:
+                                      # y = y,
+                                      # N = N,
+                                      # n_params_main = n_params_main,
+                                      # n_nuisance = n_nuisance,
+                                      # init_lists_per_chain = init_lists_per_chain,
+                                      # n_chains_burnin = n_chains_burnin,
+                                      model_args_list = model_args_list,
+                                      ## Optional SAMPLER / MCMC arguments:
+                                      # sample_nuisance = TRUE,
+                                      # force_autodiff = FALSE,
+                                      # force_PartialLog = FALSE,
+                                      # multi_attempts = TRUE,
+                                      adapt_delta = 0.80,
+                                      learning_rate = 0.05,
+                                      # metric_shape_main = "dense",
+                                      # metric_type_main = "Hessian",
+                                      # tau_mult = 2.0,
+                                      # clip_iter = 25,
+                                      # interval_width_main = 50,
+                                      # ratio_M_us = 0.25,
+                                      # ratio_M_main = 0.25,
+                                      # parallel_method = "RcppParallel",
+                                      # vect_type = "Stan",
+                                      # vect_type = "AVX512",
+                                      # vect_type = "AVX2",
                                       n_nuisance_to_track = n_nuisance_to_track)   
-  
-  model_samples
-  
-       ## model_samples <- parallel::mccollect(model_samples)
-  
-  ##    source(file.path(pkg_dir, "examples/load_R_packages.R"))
+
+
+ 
   
   #### --- MODEL RESULTS SUMMARY + DIAGNOSTICS -------------------------------------------------------------
   # after fitting, call the "summary()" method to compute + extract e.g. model summaries + traces + plotting methods 
