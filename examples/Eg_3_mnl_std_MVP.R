@@ -1,31 +1,70 @@
 
 
 ########## -------- EXAMPLE 3 -------------------------------------------------------------------------------------------------------------------------------- 
-######### Running the BUILT-IN (i.e. manual gradients) MVP model
+## Running the BUILT-IN (i.e. manual gradients) MVP model
+## Uses simulated data.
 
 
-{
-  
-  # Set working direcory ---------------
-  try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")   }, silent = TRUE)
-  try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")    }, silent = TRUE)
-  #  options(repos = c(CRAN = "http://cran.rstudio.com"))
-  
-  # options ------------------------------------------------------------------- 
-  #  totalCores = 8
-  rstan::rstan_options(auto_write = TRUE)
-  options(scipen = 999999)
-  options(max.print = 1000000000)
-  
-  #  rstan_options(auto_write = TRUE)
-  options(mc.cores = parallel::detectCores())
-  
-}
 
 
-source("load_R_packages.R")
 
-pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP" # ## TEMP - remove for final version of file 
+####  ---- 1. Install BayesMVP (from GitHub) - SKIP THIS STEP IF INSTALLED: -----------------------------------------------------------
+## First remove any possible package fragments:
+## Find user_pkg_install_dir:
+user_pkg_install_dir <- Sys.getenv("R_LIBS_USER")
+print(paste("user_pkg_install_dir = ", user_pkg_install_dir))
+##
+## Find pkg_install_path + pkg_temp_install_path:
+pkg_install_path <- file.path(user_pkg_install_dir, "BayesMVP")
+pkg_temp_install_path <- file.path(user_pkg_install_dir, "00LOCK-BayesMVP") 
+##
+## Remove any (possible) BayesMVP package fragments:
+remove.packages("BayesMVP")
+unlink(pkg_install_path, recursive = TRUE, force = TRUE)
+unlink(pkg_temp_install_path, recursive = TRUE, force = TRUE)
+##
+## First install OUTER package:
+remotes::install_github("https://github.com/CerulloE1996/BayesMVP", force = TRUE, upgrade = "never")
+## Then restart R session:
+rstudioapi::restartSession()
+## Then install INNTER (i.e. the "real") package:
+require(BayesMVP)
+BayesMVP::install_BayesMVP()
+require(BayesMVP)
+
+# require(BayesMVP)
+# CUSTOM_FLAGS <- list()
+# install_BayesMVP(CUSTOM_FLAGS = list())
+# require(BayesMVP) 
+
+
+
+####  ---- 2. Set BayesMVP example path and set working directory:  --------------------------------------------------------------------
+user_dir_outs <- BayesMVP:::set_pkg_example_path_and_wd()
+## Set paths:
+user_root_dir <- user_dir_outs$user_root_dir
+user_BayesMVP_dir <- user_dir_outs$user_BayesMVP_dir
+pkg_example_path <- user_dir_outs$pkg_example_path
+
+
+
+
+####  ---- 3. Set options   ------------------------------------------------------------------------------------------------------------
+options(scipen = 99999)
+options(max.print = 1000000000)
+options(mc.cores = parallel::detectCores())
+
+
+
+
+####  ---- 4. Now run the example:   ---------------------------------------------------------------------------------------------------
+require(BayesMVP)
+
+## Function to check BayesMVP AVX support 
+BayesMVP::detect_vectorization_support()
+
+
+
 
  
 Model_type <- "MVP"
@@ -194,11 +233,14 @@ str(X)
 # -------------------------------  Set PRIORS
 # any priors not specified will be set to defaults. 
 {
-  beta_prior_mean_vec <- beta_prior_sd_vec <-  vector("list", length = n_class)
-  beta_prior_mean_vec[[1]] <- array(0, dim = c(n_covariates_max, n_tests))
-  beta_prior_sd_vec[[1]] <- array(5, dim = c(n_covariates_max, n_tests))
   
-  lkj_cholesky_eta = 2  ;  corr_force_positive = 0
+  beta_prior_mean <- beta_prior_sd  <-  vector("list", length = n_class)
+  beta_prior_mean[[1]] <- array(0, dim = c(n_covariates_max, n_tests))
+  beta_prior_sd[[1]] <- array(5, dim = c(n_covariates_max, n_tests))
+  
+  lkj_cholesky_eta <- 2
+  corr_force_positive <- FALSE
+  
 }
 
 
@@ -263,20 +305,48 @@ n_nuisance <- N * n_tests
 
 
 
-# ------------------------------ initialise + run model  ------------------------------------------------------------------------------------
 
-Rcpp::sourceCpp("~/Documents/Work/PhD_work/R_packages/BayesMVP/src/main_v9.cpp")# , verbose = TRUE)
+## -----------  initialise model / inits etc
+# based on (informal) testing, more than 8 burnin chains seems unnecessary 
+# and probably not worth the extra overhead (even on a 96-core AMD EPYC Genoa CPU)
+n_chains_burnin <- 8
+init_lists_per_chain <- rep(list(init), n_chains_burnin) 
 
 
-### model args / inputs 
-model_args_list  <- list(n_covariates_per_outcome_vec = (n_covariates_per_outcome_vec),
-                         lkj_cholesky_eta = lkj_cholesky_eta,
-                         X = X,
-                         prior_coeffs_mean_vec = beta_prior_mean_vec,
-                         prior_coeffs_sd_vec =    beta_prior_sd_vec)
+model_args_list <- list(         n_covariates_per_outcome_mat = n_covariates_per_outcome_vec,  
+                                 num_chunks =   BayesMVP:::find_num_chunks_MVP(N, n_tests),
+                                 X = X,
+                                 lkj_cholesky_eta = lkj_cholesky_eta,
+                                 prior_coeffs_mean_mat = beta_prior_mean,
+                                 prior_coeffs_sd_mat =    beta_prior_sd)
+
+
+
+
+# ### model args / inputs 
+# model_args_list  <- list(n_covariates_per_outcome_vec = (n_covariates_per_outcome_vec),
+#                          lkj_cholesky_eta = lkj_cholesky_eta,
+#                          X = X,
+#                          prior_coeffs_mean_vec = beta_prior_mean,
+#                          prior_coeffs_sd_vec =    beta_prior_sd)
 
 
  
+
+###  -----------  Compile + initialise the model using "MVP_model$new(...)" 
+model_obj <- BayesMVP::MVP_model$new(   Model_type = Model_type,
+                                        y = y,
+                                        N = N,
+                                        model_args_list = model_args_list, # this arg is only needed for BUILT-IN (not Stan) models
+                                        init_lists_per_chain = init_lists_per_chain,
+                                        sample_nuisance = TRUE,
+                                        n_chains_burnin = n_chains_burnin,
+                                        n_params_main = n_params_main,
+                                        n_nuisance = n_nuisance)
+
+
+
+
 ### initialise the model using "initialise_model" function
 n_chains_burnin <- 8 # based on (informal) testing, more than 8 burnin chains seems unnecessary and probably not worth the extra overhead. 
 init_lists_per_chain <- rep(list(init), n_chains_burnin) 

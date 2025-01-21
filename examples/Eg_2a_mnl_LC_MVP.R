@@ -205,12 +205,7 @@ N <- 500
 
   
   
-  
  
-  
- #   source(file.path(pkg_dir, "examples/load_R_packages.R"))
-  
-  #  setup_env()
   
   ###  -----------  Compile + initialise the model using "MVP_model$new(...)" 
   model_obj <- BayesMVP::MVP_model$new(   Model_type = Model_type,
@@ -245,7 +240,7 @@ N <- 500
   ##  model_obj$sample(y = y, N = N, n_nuisance = n_nuisance, ...)
   ##
   ##  You can also update model_args_list. 
-  ##  for example, let's say I wanted to change the prior for disease prevalence to be informative s.t. prev ~ beta(5, 10). 
+  ##  For example, let's say I wanted to change the prior for disease prevalence to be informative s.t. prev ~ beta(5, 10). 
   ##  I could do this by modifying model_args_list:
   model_args_list$prev_prior_a <-  5
   model_args_list$prev_prior_b <-  10
@@ -261,7 +256,7 @@ N <- 500
                                       n_iter = n_iter,
                                       n_chains_sampling = n_chains_sampling,
                                       n_superchains = n_superchains,
-                                      ## Optional arguments:
+                                      ## Some other arguments:
                                       # y = y,
                                       # N = N,
                                       # n_params_main = n_params_main,
@@ -269,7 +264,7 @@ N <- 500
                                       # init_lists_per_chain = init_lists_per_chain,
                                       # n_chains_burnin = n_chains_burnin,
                                       model_args_list = model_args_list,
-                                      ## Optional SAMPLER / MCMC arguments:
+                                      ## Some other SAMPLER / MCMC arguments:
                                       # sample_nuisance = TRUE,
                                       # force_autodiff = FALSE,
                                       # force_PartialLog = FALSE,
