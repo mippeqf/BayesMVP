@@ -39,8 +39,7 @@ This class handles:
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
-\item{\code{Model_type}}{Type of model to fit (can be one of: "MVP", "LC_MVP", "latent_trait" for built-in models, or "Stan" for fitting any Stan model
-via BayesMVP).}
+\item{\code{Model_type}}{Type of model to fit (can be one of: "MVP", "LC_MVP", "latent_trait" for built-in models, or "Stan" for fitting any Stan model via BayesMVP).}
 
 \item{\code{init_object}}{Initialization object.}
 
@@ -50,20 +49,17 @@ via BayesMVP).}
 
 \item{\code{y}}{The dataset. Note that for built-in models (i.e., MVP, LC_MVP, or latent_trait) y should be an  N x n_outcomes matrix.}
 
-\item{\code{N}}{The total sample size. Note that for built-in models (i.e., MVP, LC_MVP, or latent_trait) this should be equal to:
-\eqn{N = nrow(y)}.}
+\item{\code{N}}{The total sample size. Note that for built-in models (i.e., MVP, LC_MVP, or latent_trait) this should be equal to: \eqn{N = nrow(y)}.}
 
-\item{\code{n_params_main}}{The total number of main model parameters (i.e., excluding nuisance parameters / high-dimensional latent variables).
-For Stan models (i.e., if "Model_type" is set to "Stan" and you are running a Stan model), this should equal the number of parameters that you
-define in the "parameters" block of the Stan model, EXCEPT for any nuisance parameters (i.e., high-dimensional latent variables).}
+\item{\code{n_params_main}}{The total number of main model parameters (i.e., excluding nuisance parameters / high-dimensional latent variables). For Stan models (i.e., if "Model_type" is set to "Stan" and you
+are running a Stan model), this should equal the number of parameters that you define in the "parameters" block of the Stan model, EXCEPT for any nuisance parameters (i.e., high-dimensional latent
+variables).}
 
-\item{\code{n_nuisance}}{The total number of nuisance parameters, i.e. the dimension of the high-dimensional latent variable vector.
-For built-in models (i.e., MVP, LC_MVP, or latent_trait), this should be equal to:
-\eqn{n_nuisance = N \cdot n_outcomes = nrow(y) \cdot ncol(y) }.}
+\item{\code{n_nuisance}}{The total number of nuisance parameters, i.e. the dimension of the high-dimensional latent variable vector. For built-in models (i.e., MVP, LC_MVP, or latent_trait), this should be
+equal to: \eqn{n_nuisance = N \cdot n_outcomes = nrow(y) \cdot ncol(y) }.}
 
-\item{\code{init_lists_per_chain}}{A list of dimension n_chains_burnin (NOT n_chains_sampling, unless n_chains_sampling = n_chains_burnin), where each
-element of the list is another list which contains the initial values for the chain. Note that this is the same format for initial values that
-Stan (both rstan and cmdstanr) uses.}
+\item{\code{init_lists_per_chain}}{A list of dimension n_chains_burnin (NOT n_chains_sampling, unless n_chains_sampling = n_chains_burnin), where each element of the list is another list which contains the #
+initial values for the chain. Note that this is the same format for initial values that Stan (both rstan and cmdstanr) uses.}
 
 \item{\code{model_args_list}}{List containing model-specific arguments. This is only relevant for built-in models (i.e., MVP, LC_MVP, or latent_trait).
 All arguments in this list are optional.
@@ -71,74 +67,54 @@ All arguments in this list are optional.
 Arguments which are relevant to all three of the built-in models include:
 \itemize{
 \item \code{n_covariates_per_outcome}:
-A matrix of dimension \code{n_class} x \code{n_outcomes},  which contains the
-number of covariates per outcome.
-If your model has no covariates (which is often the case for the LC_MVP or latent_trait), this does not need to be included, and
-it just be a matrix of 1's (since each outcome has 1 intercept).
-Also note that n_class = 1 for the MVP, and for the LC_MVP and latent_trait n_class = 2.
+A matrix of dimension \code{n_class} x \code{n_outcomes},  which contains the number of covariates per outcome. If your model has no covariates (which is often the case for the LC_MVP or
+latent_trait), this does not need to be included, and it just be a matrix of 1's (since each outcome has 1 intercept). Also note that n_class = 1 for the MVP, and for the LC_MVP and latent_trait
+n_class = 2.
 \item \code{prior_coeffs_mean}:
-An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_covariates_max},
-where \code{n_covariates_max} is equal to the number of covariates which are contained in the outcome which has the most covariates.
-This matrix contains the prior mean of each coefficient parameter. In other words, if:
-\eqn{\beta_{c, t, k} \sim \text{N}\left(\mu_{c, t, k}, \sigma_{c, t, k} \right)},
-then element \eqn{(c, t, k)} in the matrix corresponds to \eqn{\mu_{c, t, k}},
-where \eqn{c} is an index for class, \eqn{t} is an index for outcome, and \eqn{k} is an index for the coefficient for outcome \eqn{t}.
-The default is an array of zeros.
+An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_covariates_max}, where \code{n_covariates_max} is equal to the number of covariates which are contained in the outcome which has the
+most covariates. This matrix contains the prior mean of each coefficient parameter. In other words, if: \eqn{\beta_{c, t, k} \sim \text{N}\left(\mu_{c, t, k}, \sigma_{c, t, k} \right)},
+then element \eqn{(c, t, k)} in the matrix corresponds to \eqn{\mu_{c, t, k}},  where \eqn{c} is an index for class, \eqn{t} is an index for outcome, and \eqn{k} is an index for the coefficient for
+outcome \eqn{t}. The default is an array of zeros.
 \item \code{prior_coeffs_sd}:
-This is the same as  \code{prior_coeffs_mean}, except that each element in thr array corresponds to the prior SD.
-In other words, each element in the array corresponds to:  \eqn{ \sigma_{c, t, k} }, where:
-\eqn{\beta_{c, t, k} \sim \text{N}\left(\mu_{c, t, k}, \sigma_{c, t, k} \right)}.
-The default is an array of ones.
+This is the same as  \code{prior_coeffs_mean}, except that each element in thr array corresponds to the prior SD. In other words, each element in the array corresponds to:  \eqn{ \sigma_{c, t, k} },
+where: \eqn{\beta_{c, t, k} \sim \text{N}\left(\mu_{c, t, k}, \sigma_{c, t, k} \right)}. The default is an array of ones.
 \item \code{vect_type}:
-The SIMD (single-instruction, multiple-data) vectorisation type to use for math functions (such as log, exp, Phi, etc).
-The default is AVX-512 if available, then AVX2 if not, and if neither AVX-512 nor AVX2 are available
-(e.g., on ARM-based CPU's such as Apple systems), then BayesMVP will use the Stan C++ math library functions, and they will decide what
-vectorisation type to use. More vectorisation types will be supported in the future.
+The SIMD (single-instruction, multiple-data) vectorisation type to use for math functions (such as log, exp, Phi, etc). The default is AVX-512 if available, then AVX2 if not, and if neither AVX-512
+nor AVX2 are available (e.g., on ARM-based CPU's such as Apple systems), then BayesMVP will use the Stan C++ math library functions, and they will decide what vectorisation type to use. More
+vectorisation types will be supported in the future.
 \item \code{num_chunks}:
-The number of chunks to use in the log-probability and gradient function.
-By default, the number selected will depend on your CPU.
+The number of chunks to use in the log-probability and gradient function. By default, the number selected will depend on your CPU.
 \item \code{Phi_type}:
-Type of \eqn{\Phi()} function implementation to use, where \eqn{\Phi()} is the standard normal CDF.
-Can be either "Phi" (the default) or "Phi_approx".
-The default is "Phi". Note that \eqn{\Phi()} will use a fast, highly accurate polynomial approximation of \eqn{\Phi()} if
-\code{vect_type} is either AVX-512 or AVX2. Otherwise, it will use the Phi function from the Stan math C++ library.
+Type of \eqn{\Phi()} function implementation to use, where \eqn{\Phi()} is the standard normal CDF. Can be either "Phi" (the default) or "Phi_approx". The default is "Phi". Note that \eqn{\Phi()}
+will use a fast, highly accurate polynomial approximation of \eqn{\Phi()} if \code{vect_type} is either AVX-512 or AVX2. Otherwise, it will use the Phi function from the Stan math C++ library.
 }
 
 Arguments which are only relevant to the MVP and LC_MVP include:
 \itemize{
 \item \code{corr_force_positive}:
-This will force all elements in the correlation matrix (or matrices if LC_MVP) to be positive.
-Uses the method proposed by Pinkney et al, 2024.
+This will force all elements in the correlation matrix (or matrices if LC_MVP) to be positive. Uses the method proposed by Pinkney et al, 2024.
 \item \code{lkj_cholesky_eta}:
-This is a vector of length \code{n_class}, where each element corresponds to the LKJ prior parameter \eqn{\eta_{c}} corresponding
-to latent class \eqn{c}. For non-latent class models (i.e., the MVP), this will just be a vector with 1 element e.g. c(4) corresponds
-to:
-\eqn{\Omega \sim \text{LKJ}\left(4\right)}.
-For latent class models (i.e. the LC_MVP and the latent_trait models), the first element corresponds to the first latent class
-(for test accuracy applications this will be the NON-diseased class) and the second element corresponds to the second latent class
-(for test accuracy applications this will be the diseased class).
+This is a vector of length \code{n_class}, where each element corresponds to the LKJ prior parameter \eqn{\eta_{c}} corresponding  to latent class \eqn{c}. For non-latent class models (i.e., the MVP),
+this will just be a vector with 1 element e.g. c(4) corresponds to:
+\eqn{\Omega \sim \text{LKJ}\left(4\right)}. For latent class models (i.e. the LC_MVP and the latent_trait models), the first element corresponds to the first latent class
+(for test accuracy applications this will be the NON-diseased class) and the second element corresponds to the second latent class (for test accuracy applications this will be the diseased class).
 \item \code{ub_corr}:
-An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_outcomes}, which contains the upper-bounds for the correlations.
-Note that only the lower-triangular elements of each of the supplied \code{n_class} matrices are used, and the default is a matrix
-with lower-triangular part all equal to 1.
+An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_outcomes}, which contains the upper-bounds for the correlations. Note that only the lower-triangular elements of each of the
+supplied \code{n_class} matrices are used, and the default is a matrix with lower-triangular part all equal to 1.
 \item \code{lb_corr}:
-An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_outcomes}, which contains the lower-bounds for the correlations.
-Note that only the lower-triangular elements of each of the supplied \code{n_class} matrices are used, and the default is a matrix
-with lower-triangular part all equal to 0.
+An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_outcomes}, which contains the lower-bounds for the correlations. Note that only the lower-triangular elements of each of the
+supplied \code{n_class} matrices are used, and the default is a matrix with lower-triangular part all equal to 0.
 \item \code{known_values_indicator}:
-An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_outcomes}, which contains elements that are either 1 or 0, such
-that: if element \eqn{(c, t_1, t_2)} is 0, then correlation \eqn{(c, t_1, t_2)} is unknown and will be estimated, however if element
-\eqn{(c, t_1, t_2)} is 1, then we know correlation \eqn{(c, t_1, t_2)} a priori and hence it will be fixed -
-specifically it will be set equal to the corresponding value in \code{known_values} (see below).
-In other words, if any correlations are known a priori, they can be passed onto the model via this argument.
-Note that only the lower-triangular elements of each of the supplied \code{n_class} matrices are used, and the default is a matrix
-with lower-triangular part all equal to 0 (i.e., assumes no correlations are known/fixed).
+An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_outcomes}, which contains elements that are either 1 or 0, such that: if element \eqn{(c, t_1, t_2)} is 0, then correlation
+\eqn{(c, t_1, t_2)} is unknown and will be estimated, however if element \eqn{(c, t_1, t_2)} is 1, then we know correlation \eqn{(c, t_1, t_2)} a priori and hence it will be fixed - specifically
+it will be set equal to the corresponding value in \code{known_values} (see below). In other words, if any correlations are known a priori, they can be passed onto the model via this argument.
+Note that only the lower-triangular elements of each of the supplied \code{n_class} matrices are used, and the default is a matrix with lower-triangular part all equal to 0 (i.e., assumes no #
+correlations are known/fixed).
 \item \code{known_values}:
-An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_outcomes}, which contains any known values for the correlations.
-In other words, if any correlations are known a priori, they can be passed onto the model via this argument.
-Note that only the lower-triangular elements of each of the supplied \code{n_class} matrices are used, and the default is a matrix
-with lower-triangular part all equal to 0 (note that these values are arbitrary since the elements in known_values_indicator are all
-equal to zero, so they will be ignored unless one or more elements in known_values_indicator is non-zero).
+An array of dimension \code{n_class} x \code{n_outcomes} x \code{n_outcomes}, which contains any known values for the correlations. In other words, if any correlations are known a priori, they can
+be passed onto the model via this argument. Note that only the lower-triangular elements of each of the supplied \code{n_class} matrices are used, and the default is a matrix with lower-triangular
+part all equal to 0 (note that these values are arbitrary since the elements in known_values_indicator are all equal to zero, so they will be ignored unless one or more elements in
+known_values_indicator is non-zero).
 }
 
 Arguments which are only relevant to latent class models (i.e. the LC_MVP and latent_trait models):
@@ -152,32 +128,24 @@ Shape parameter 2 for prevalence beta prior. Only relevant for latent-class mode
 Arguments which are only relevant to the latent trait model (i.e., if \code{Model_type} = \code{"latent_trait"}) include:
 \itemize{
 \item \code{LT_b_priors_shape}:
-A matrix of dimension \code{n_class} x \code{n_outcomes}, where each element corresponds to the prior Weibull shape parameter
-of the "b" parameters in the latent trait model - which are denoted as \code{LT_b}.
-The default is a matrix with with every value equal to 1.33.
-Please see LT_b_priors_scale below for a justification of this default choice.
+A matrix of dimension \code{n_class} x \code{n_outcomes}, where each element corresponds to the prior Weibull shape parameter of the "b" parameters in the latent trait model - which are denoted
+as \code{LT_b}. The default is a matrix with with every value equal to 1.33. Please see LT_b_priors_scale below for a justification of this default choice.
 \item \code{LT_b_priors_scale}:
-A matrix of dimension \code{n_class} x \code{n_outcomes}, where each element corresponds to the prior Weibull scale parameter
-of the "b" parameters in the latent trait model - which are denoted as \code{LT_b}.
-The default is a matrix with every value equal to 1.25.
-Together with the default choice \code{LT_b_priors_shape} (please see description above), these priors correspond to the following
-Weibull priors:
-\eqn{b_{c, t} \sim \text{Weibull}\left(1.33, 1.250\right)}.
-We chose these as default values because they are equivalent to setting \eqn{\text{truncated-LKJ}\left(1.5\right)} priors in the
-LC_MVP model, which are very weakly informative, especially if the dimension (i.e. number of outcomes/tests) is small.
+A matrix of dimension \code{n_class} x \code{n_outcomes}, where each element corresponds to the prior Weibull scale parameter of the "b" parameters in the latent trait model - which are denoted
+as \code{LT_b}. The default is a matrix with every value equal to 1.25. Together with the default choice \code{LT_b_priors_shape} (please see description above), these priors correspond to the
+following Weibull priors: \eqn{b_{c, t} \sim \text{Weibull}\left(1.33, 1.250\right)}. We chose these as default values because they are equivalent to setting \eqn{\text{truncated-LKJ}\left(1.5\right)}
+priors in the LC_MVP model, which are very weakly informative, especially if the dimension (i.e. number of outcomes/tests) is small.
 \item \code{LT_known_bs_indicator}:
-A matrix of dimension \code{n_class} x \code{n_outcomes}, which contains elements that are either 1 or 0, such
-that: if element \eqn{(c, t)} is 0, then the corresponding  \code{LT_b} parameter is unknown and will be estimated;
-however, if element \eqn{(c, t)} is 1, then we know the corresponding  \code{LT_b} parameter a priori and hence it
-will be fixed - specifically it will be set equal to the corresponding value in \code{LT_known_bs_values}.
-In other words, if any \code{LT_b} are known a priori, they can be passed onto the model via this argument.
+A matrix of dimension \code{n_class} x \code{n_outcomes}, which contains elements that are either 1 or 0, such that: if element \eqn{(c, t)} is 0, then the corresponding  \code{LT_b} parameter is
+unknown and will be estimated; however, if element \eqn{(c, t)} is 1, then we know the corresponding  \code{LT_b} parameter a priori and hence it will be fixed - specifically it will be set equal
+to the corresponding value in \code{LT_known_bs_values}. In other words, if any \code{LT_b} are known a priori, they can be passed onto the model via this argument.
 \item \code{LT_known_bs_values}:
-A matrix of dimension \code{n_class} x \code{n_outcomes}, which contains any known values for the \code{LT_b} parameters.
-In other words, if any \code{LT_b} are known a priori, they can be passed onto the model via this argument.
+A matrix of dimension \code{n_class} x \code{n_outcomes}, which contains any known values for the \code{LT_b} parameters. In other words, if any \code{LT_b} are known a priori, they can be passed
+onto the model via this argument.
 }}
 
-\item{\code{Stan_data_list}}{List containing data for Stan models (only relevant if "Model_type" is set to "Stan"). The elements of the list should
-correspond to the variables defined in the "data" block of your Stan model.}
+\item{\code{Stan_data_list}}{List containing data for Stan models (only relevant if "Model_type" is set to "Stan"). The elements of the list should correspond to the variables defined in the "data" block of
+your Stan model.}
 
 \item{\code{sample_nuisance}}{Whether or not to sample the high-dimensional nuisance/latent variable vector.}
 
@@ -215,6 +183,7 @@ Create a new MVP model object
   sample_nuisance = NULL,
   Stan_model_file_path = NULL,
   Stan_cpp_user_header = NULL,
+  Stan_cpp_flags = NULL,
   ...
 )}\if{html}{\out{</div>}}
 }
@@ -248,9 +217,12 @@ Create a new MVP model object
 
 \item{\code{Stan_model_file_path}}{The file path to the Stan model, only needed if \code{Model_type = "Stan"}.}
 
-\item{\code{Stan_cpp_user_header}}{The file path to a C++ .hpp file to be compiled together with the Stan model.
-This is optional and only needed if you want to use custom C++ functions in your Stan model.
-Only relvant if \code{Model_type = "Stan"}.}
+\item{\code{Stan_cpp_user_header}}{The file path to a user-supplied C++ .hpp file to be compiled together with the Stan model. This is optional and only needed if you want to use custom C++ functions in your
+Stan model, and is only relvant if \code{Model_type = "Stan"}.}
+
+\item{\code{Stan_cpp_flags}}{User-supplied R list containing comma-separated values of compiler flags (e.g. CXX_FLAGS, etc) to be passed on
+to cmdstanr - the Stan model will then be compiled using these flags. This is optional and only needed if you want to use custom C++ functions in your Stan model.
+Only relevant if \code{Model_type = "Stan"}.}
 
 \item{\code{...}}{Additional arguments passed to BayesMVP::initialise_model.}
 }

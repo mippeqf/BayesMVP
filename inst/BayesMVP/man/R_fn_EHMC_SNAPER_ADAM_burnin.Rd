@@ -7,6 +7,7 @@
 R_fn_EHMC_SNAPER_ADAM_burnin(
   Model_type,
   vect_type,
+  parallel_method,
   y,
   N,
   sample_nuisance,

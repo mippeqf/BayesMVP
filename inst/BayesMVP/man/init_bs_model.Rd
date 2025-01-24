@@ -4,7 +4,7 @@
 \alias{init_bs_model}
 \title{init_bs_model}
 \usage{
-init_bs_model(Stan_data_list, Stan_model_name, ...)
+init_bs_model(Stan_data_list, Stan_model_name)
 }
 \description{
 init_bs_model

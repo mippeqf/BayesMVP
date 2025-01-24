@@ -10,7 +10,7 @@ create_summary_and_traces(
   n_nuisance,
   compute_main_params = TRUE,
   compute_transformed_parameters = TRUE,
-  compute_generated_quantities = TRUE,
+  compute_generated_quantities = FALSE,
   save_log_lik_trace = TRUE,
   save_nuisance_trace = FALSE,
   compute_nested_rhat = NULL,

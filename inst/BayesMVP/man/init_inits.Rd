@@ -14,10 +14,11 @@ init_inits(
   n_params_main,
   n_nuisance,
   N,
+  sample_nuisance,
   Stan_model_file_path,
   Stan_data_list,
   Stan_cpp_user_header,
-  sample_nuisance,
+  Stan_cpp_flags,
   ...
 )
 }

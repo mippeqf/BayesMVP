@@ -20,6 +20,7 @@ initialise_model(
   Stan_data_list,
   Stan_model_file_path,
   Stan_cpp_user_header,
+  Stan_cpp_flags,
   ...
 )
 }

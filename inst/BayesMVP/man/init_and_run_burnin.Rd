@@ -8,6 +8,7 @@ init_and_run_burnin(
   init_object,
   y,
   N,
+  parallel_method,
   n_chains_burnin,
   Model_type,
   sample_nuisance,
