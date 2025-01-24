@@ -28,10 +28,9 @@ init_hard_coded_model <- function(Model_type,
          However, if using a Stan model, then please do not use 'init_hard_coded_model()' - use 'init_Stan_model()' instead")
   }
   
-  if (Model_type == "latent_trait") { 
-    Model_type <- "latent_trait"
-  }
-  
+  # if (Model_type == "latent_trait") { 
+  #   Model_type <- "latent_trait"
+  # }
   
   if (is.null(y)) { 
     stop("no data (y) supplied.")
@@ -62,8 +61,8 @@ init_hard_coded_model <- function(Model_type,
   num_chunks <-  model_args_list$num_chunks
   Phi_type <- model_args_list$Phi_type
   
-  overflow_threshold <-  +5 #  model_args_list$overflow_threshold  # not modifiable
-  underflow_threshold <-  -5 # model_args_list$underflow_threshold # not modifiable
+  overflow_threshold <-   model_args_list$overflow_threshold  # not modifiable
+  underflow_threshold <-  model_args_list$underflow_threshold # not modifiable
   
   ### Correlation matrix (Omega) args - for LC_MVP and MVP only. 
   corr_force_positive <- model_args_list$corr_force_positive
@@ -147,19 +146,19 @@ init_hard_coded_model <- function(Model_type,
   
   ### call C++ function to detect is user has AVX-2 or AVX-512 vectorisation support 
   if (is.null(vect_type)) { 
-    vect_type <-  detect_vectorization_support()
+    vect_type <-  BayesMVP:::detect_vectorization_support()
   }
   
   
   ### find "optimal" number of chunks (at the moment only looks at number of cores, but should ideally also look at L3 cache and memory bandwidth)
   if (is.null(num_chunks)) { 
-    num_chunks <- find_num_chunks_MVP(N, n_tests)
+    num_chunks <- BayesMVP:::find_num_chunks_MVP(N, n_tests)
   }
   
   
   if ( (Model_type == "LC_MVP") || (Model_type == "latent_trait") ) { 
     n_class = 2
-  } else { 
+  } else if (Model_type == "MVP") { 
     n_class = 1
   }
    
@@ -208,18 +207,13 @@ init_hard_coded_model <- function(Model_type,
   
   
 
-  # 
-  # if ( (is.null(n_covariates_per_outcome_mat)) && (Model_type != "Stan") ) { 
-  #   
-  #   stop("error: n_covariates_per_outcome_mat not supplied but not using Stan model")
-  #   
-  # } else
     
-    if ( (is.null(n_covariates_per_outcome_mat)) && (Model_type == "Stan") ) {  # if Stan model used, then make dummy variable
-    
-    n_covariates_per_outcome_mat <- c(array(1, dim = c(n_tests, 1)))
-    
+  if ( (is.null(n_covariates_per_outcome_mat)) && (Model_type == "Stan") ) {  # if Stan model used, then make dummy variable
+  
+      n_covariates_per_outcome_mat <- c(array(1, dim = c(n_tests, 1)))
+  
   }
+
   
   
   if (is.null(prior_only)) { 
@@ -231,72 +225,64 @@ init_hard_coded_model <- function(Model_type,
   # set lp_and_grad function arguments needed and put them in a list, so that they can be passed on to the generic EHMC-ADAM functions
   
   {
-    
-    n_covariates_max <- max(unlist(n_covariates_per_outcome_mat))
-    n_covariates_total <- sum(unlist(n_covariates_per_outcome_mat))
-    
-    if (Model_type == "LC_MVP") {
-      
-          n_corrs <- n_class * 0.5 * n_tests * (n_tests - 1)
-          n_params_main <- (n_class - 1)  +  n_corrs +  n_covariates_total 
-      
-    } else if (Model_type == "MVP") {
-      
-          n_corrs <- 0.5 * n_tests * (n_tests - 1)
-          n_params_main <- n_corrs +  n_covariates_total 
-      
-    } else if (Model_type == "latent_trait") {
-      
-          LT_n_bs <- n_tests * n_class
-          n_corrs <- LT_n_bs
-          n_params_main <- (n_class - 1)  +   n_corrs   +  n_covariates_total 
-      
-    }
-      
-      
-    n_nuisance <-  N * n_tests 
-    n_params <- n_params_main + n_nuisance 
-    index_us <- 1:n_nuisance
-    index_main <- (n_nuisance+1):n_params
-    index_corrs <- (n_nuisance+1):(n_nuisance+n_corrs)
-    n_us <- n_nuisance
+        
+        n_covariates_max <- max(unlist(n_covariates_per_outcome_mat))
+        n_covariates_total <- sum(unlist(n_covariates_per_outcome_mat))
+        
+        if (Model_type == "LC_MVP") {
+          
+              n_corrs <- n_class * 0.5 * n_tests * (n_tests - 1)
+              n_params_main <- (n_class - 1)  +  n_corrs +  n_covariates_total 
+          
+        } else if (Model_type == "MVP") {
+          
+              n_corrs <- 0.5 * n_tests * (n_tests - 1)
+              n_params_main <- n_corrs +  n_covariates_total 
+          
+        } else if (Model_type == "latent_trait") {
+          
+              LT_n_bs <- n_tests * n_class
+              n_corrs <- LT_n_bs
+              n_params_main <- (n_class - 1)  +   n_corrs   +  n_covariates_total 
+          
+        }
+          
+          
+        n_nuisance <-  N * n_tests 
+        n_params <- n_params_main + n_nuisance 
+        index_us <- 1:n_nuisance
+        index_main <- (n_nuisance+1):n_params
+        index_corrs <- (n_nuisance+1):(n_nuisance+n_corrs)
+        n_us <- n_nuisance
     
   }
   
+ 
   
   
   if (is.null(prior_coeffs_mean_mat)) { 
-    prior_coeffs_mean_mat <-  list() 
-    mat_1 <- array(-1, dim = c(n_covariates_max, n_tests))
-    mat_2 <- array(+1, dim = c(n_covariates_max, n_tests))
-    if (n_class == 2) { 
-      for (k in 1:n_covariates_per_outcome_mat[1, t]) {
-        prior_coeffs_mean_mat[[1]]  <- mat_1
-      }
-      for (k in 1:n_covariates_per_outcome_mat[2, t]) {
-        prior_coeffs_mean_mat[[2]]  <- mat_2
-      }
-    } else { 
-      prior_coeffs_mean_mat[[1]] <- array(0, dim = c(n_covariates_max, n_tests))
-    }
+        prior_coeffs_mean_mat <-  list() 
+        mat_1 <- array(-1, dim = c(n_covariates_max, n_tests))
+        mat_2 <- array(+1, dim = c(n_covariates_max, n_tests))
+        if (n_class == 2) { 
+          for (k in 1:n_covariates_per_outcome_mat[1, t]) {
+            prior_coeffs_mean_mat[[1]]  <- mat_1
+          }
+          for (k in 1:n_covariates_per_outcome_mat[2, t]) {
+            prior_coeffs_mean_mat[[2]]  <- mat_2
+          }
+        } else { 
+          prior_coeffs_mean_mat[[1]] <- array(0, dim = c(n_covariates_max, n_tests))
+        }
   }
   
-  # n_covariates_per_outcome_vec_list <- list()
-  # 
-  # for (c in 1:n_class) {
-  #   n_covariates_per_outcome_vec_list[[c]]  <- c()
-  #   n_covariates_per_outcome_vec_list[[c]]   <- n_covariates_per_outcome_mat[c, ]
-  # }
-  #                                           
-  # 
-  # n_covariates_per_outcome_mat <- n_covariates_per_outcome_vec_list
-                                            
+
                                            
   if (is.null(prior_coeffs_sd_mat)) { 
-    prior_coeffs_sd_mat <- list() #  array(1, dim = c(n_class, n_tests, n_covariates_max))
-    for (c in 1:n_class) { 
-      prior_coeffs_sd_mat[[c]] <- array(1, dim = c(n_covariates_max, n_tests))
-    }
+        prior_coeffs_sd_mat <- list() #  array(1, dim = c(n_class, n_tests, n_covariates_max))
+        for (c in 1:n_class) { 
+          prior_coeffs_sd_mat[[c]] <- array(1, dim = c(n_covariates_max, n_tests))
+        }
   }
   
   
@@ -429,25 +415,25 @@ init_hard_coded_model <- function(Model_type,
     
     
     
-    if (n_class == 1) { 
-      
+    if (n_class == 1) {
+
       try({
         if (length(lkj_cholesky_eta) > 1)  lkj_cholesky_eta = array(lkj_cholesky_eta[1])
         if (length(known_values_indicator_list) > 1)  known_values_indicator_list  = list(known_values_indicator_list[[1]])
         if (length(known_values_list) > 1)  known_values_list  = list(known_values_list[[1]])
         prev_prior_a = 999999
         prev_prior_b = 999999
-        
+
         if (dim(LT_b_priors_shape)[1] > 1) LT_b_priors_shape = LT_b_priors_shape[1,]
         if (dim(LT_b_priors_scale)[1] > 1) LT_b_priors_scale = LT_b_priors_scale[1,]
         if (dim(LT_known_bs_indicator)[1] > 1) LT_known_bs_indicator = LT_known_bs_indicator[1,]
         if (dim(LT_known_bs_values)[1] > 1) LT_known_bs_values = LT_known_bs_values[1,]
       })
-      
-    } else { 
-      
+
+    } else {
+
     }
-    
+
 
     
     

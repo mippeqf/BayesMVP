@@ -212,7 +212,7 @@ MVP_model <- R6Class("MVP_model",
                                     self$sample_nuisance <- sample_nuisance
                                     self$n_chains_burnin <- n_chains_burnin
                                     
-                                    ## set bs environment variable
+                                    ## set bs environment variable (otherwise it'll try downloading it even if already installed...)
                                     bs_path <- BayesMVP:::bridgestan_path()
                                     Sys.setenv(BRIDGESTAN = bs_path)
                                           
@@ -286,7 +286,7 @@ MVP_model <- R6Class("MVP_model",
                           #'\code{"Empirical"}, where the former uses second derivative information and the latter uses the SD of the posterior computed whilst sampling. The default
                           #'is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwise. 
                           #'@param metric_shape_main The shape of the metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"diag"} or 
-                          #'\code{"dense"}. The default is \code{"dense"} if \code{n_params_main < 250} and \code{"diag"} otherwise. 
+                          #'\code{"dense"}. The default is \code{"diag"} (i.e. a diagonal metric).
                           #'@param ratio_M_main Ratio to use for the metric. Main parameters. 
                           #'@param ratio_M_us Ratio to use for the metric. Nuisance parameters. 
                           #'@param n_nuisance_to_track The number of nuisance parameters to track (i.e. to generate a trace for). By default the first 5 nuisance parameters are tracked.
@@ -321,9 +321,9 @@ MVP_model <- R6Class("MVP_model",
                                               force_PartialLog = FALSE,
                                               multi_attempts = TRUE,
                                               max_L = 1024,
-                                              tau_mult = 1.60,
+                                              tau_mult = 2.00,
                                               metric_type_main = "Hessian",
-                                              metric_shape_main = "dense",
+                                              metric_shape_main = "diag",
                                               ratio_M_main = 0.25,
                                               ratio_M_us = 0.25,
                                               n_nuisance_to_track = 5,
@@ -335,12 +335,10 @@ MVP_model <- R6Class("MVP_model",
                                                     gap <- NULL
                                                    ##  clip_iter <- NULL
                                                     
-                                                    # ratio_M_us <- 0.25
-                                                    # ratio_M_main <- 0.25
-                                                    
                                                     n_adapt <- NULL
                                                     max_eps_main <- 1.00
                                                     max_eps_us <- 1.00
+                                                    
                                                     #### Currently for nuisance sampling only diagonal-Euclidean metric is available 
                                                     metric_type_nuisance = "Euclidean"
                                                     metric_shape_nuisance = "diag"
@@ -367,6 +365,16 @@ MVP_model <- R6Class("MVP_model",
                                                     }
                                                     
                                                     params_same <- 1
+                                                    
+                                                    if (partitioned_HMC == FALSE) { 
+                                                      if (diffusion_HMC == TRUE) { 
+                                                        stop("Diffusion-pathspace HMC is only allowed if partitioned_HMC is set to TRUE - \n
+                                                             since we can only sample the nuisance parameters using diffusion-pathspace HMC; \n
+                                                             also, ensure that your model has latent variables/ nuisasnce parameters wich \n
+                                                             are (approximately) normaly distributed on the raw (unconstrained) scale")
+                                                      }
+                                                    }
+                                                    
                                                     
                                                     # first update class members if new values provided
                                                     if (!identical(self$y, y))  { self$y <- y ; params_same <- 0 }
@@ -434,18 +442,18 @@ MVP_model <- R6Class("MVP_model",
                                                     }
                                                     
                                                     if (is.null(diffusion_HMC)) {
-                                                      warning("'diffusion_HMC' not specificed (either TRUE of FALSE) - using default (diffusion HMC)")
+                                                      warning("'diffusion_HMC' not specificed (either TRUE of FALSE) - using default (standard, non-diffusion HMC)")
+                                                      diffusion_HMC <- FALSE 
                                                     }
                                                     
-                                                    if (is.null(metric_shape_main)) { 
-                                                      warning("metric_shape_main not supplied - using default (dense if n_params_main < 250, otherwise diagonal")
-                                                      if (n_params_main > 250) {
-                                                        metric_shape_main <- "dense"
-                                                      } else { 
-                                                        metric_shape_main <- "diag"
-                                                      }
-                                                    }
-                                                    
+                                                    # if (is.null(metric_shape_main)) { 
+                                                    #   warning("metric_shape_main not supplied - using default (dense if n_params_main < 250, otherwise diagonal")
+                                                    #   if (n_params_main > 250) {
+                                                    #     metric_shape_main <- "dense"
+                                                    #   } else { 
+                                                    #     metric_shape_main <- "diag"
+                                                    #   }
+                                                    # }
                                                     
                                                     
                                                     if (is.null(n_adapt)) { 
@@ -485,7 +493,7 @@ MVP_model <- R6Class("MVP_model",
 
                
                                                     # -----------  call sample_model fn ---------------------------------------------------------------------------------------------------
-                                                    self$result <-           sample_model(  Model_type = Model_type,
+                                                    self$result <-       BayesMVP:::sample_model(  Model_type = Model_type,
                                                                                             init_object = self$init_object ,
                                                                                             vect_type = vect_type,
                                                                                             parallel_method = parallel_method,
@@ -580,7 +588,7 @@ MVP_model <- R6Class("MVP_model",
                                 }
                                 
                                 # create model fit object (includes model summary tables + traces + divergence info) by calling "BayesMVP::create_summary_and_traces" ----------------------
-                                self$model_fit_object <-           create_summary_and_traces(   model_results = result,
+                                self$model_fit_object <-           BayesMVP:::create_summary_and_traces(   model_results = result,
                                                                                                 init_object = init_object,
                                                                                                 n_nuisance = n_nuisance,
                                                                                                 compute_main_params = compute_main_params,

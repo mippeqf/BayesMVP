@@ -58,16 +58,13 @@ init_and_run_burnin   <- function(  init_object,
 
   if (n_nuisance > 0) {
     index_us <- 1:n_nuisance
-  } else { 
-    index_us <- 1:5 # dummy vars
   }
   
-  index_main <- (n_nuisance + 1):n_params
+  # else { 
+  #   index_us <- 1:5 
+  # }
   
-  # Model_args_as_Rcpp_List$n_nuisance <- n_nuisance
-  # Model_args_as_Rcpp_List$n_params_main <- n_params_main
-  # 
-  #  #  theta_vec <- rnorm(n = n_nuisance + n_params_main, mean = 0, sd = 0.10)
+  index_main <- (n_nuisance + 1):n_params
   
   print(paste("n_params_main = ",  n_params_main))
   print(paste("n_nuisance = ",  n_nuisance))

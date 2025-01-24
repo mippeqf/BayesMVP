@@ -38,6 +38,8 @@ init_inits    <- function(init_model_outs,
     warning("initial values per chain (init_lists_per_chain) not supplied - using defaults")
   }
   
+  
+  n_covariates_per_outcome_mat <- init_model_outs$model_args_list$model_args_list$n_covariates_per_outcome_mat
    
   
   if (Model_type == "latent_trait") { 
@@ -210,11 +212,11 @@ init_inits    <- function(init_model_outs,
                   print(prior_coeffs_sd_mat)
                   
                  #  print(X)
-                  for (c in 1:n_class) {
-                    for (t in 1:n_tests) {
-                       print( is.numeric(X[[c]][[t]]))
-                    }
-                  }
+                  # for (c in 1:n_class) {
+                  #   for (t in 1:n_tests) {
+                  #      print( is.numeric(X[[c]][[t]]))
+                  #   }
+                  # }
                   
                   Stan_data_list <- list(N = N,
                                          n_tests = n_tests,
@@ -247,8 +249,8 @@ init_inits    <- function(init_model_outs,
  
                   
                   
-                  outs_init_bs_model <- init_bs_model(Stan_data_list = Stan_data_list,
-                                                      Stan_model_name = "PO_LC_MVP_bin.stan")
+                  outs_init_bs_model <- BayesMVP:::init_bs_model(   Stan_data_list = Stan_data_list,
+                                                                    Stan_model_name = "PO_LC_MVP_bin.stan")
                   
                   bs_model <- outs_init_bs_model$bs_model
                   json_file_path <- outs_init_bs_model$json_file_path         
@@ -258,9 +260,6 @@ init_inits    <- function(init_model_outs,
                   dummy_model_so_file <- transform_stan_path(Stan_model_file_path)
                   
         } else if (Model_type == "MVP") {
-          
-                  # prior_for_corr_a <- init_model_outs$prior_for_corr_a
-                  # prior_for_corr_b <- init_model_outs$prior_for_corr_b
                   
                   X <- init_model_outs$X
                   n_covariates_per_outcome_mat <- init_model_outs$model_args_list$model_args_list$n_covariates_per_outcome_mat
@@ -299,6 +298,9 @@ init_inits    <- function(init_model_outs,
                   # }
                   
                   n_pops <- 1 
+                  
+                  print(prior_coeffs_mean_mat)
+                  print(prior_coeffs_sd_mat)
  
                   Stan_data_list <- list(N = N,
                                          n_tests = n_tests,
@@ -323,8 +325,8 @@ init_inits    <- function(init_model_outs,
                   
                   
                   
-                  outs_init_bs_model <- init_bs_model(Stan_data_list = Stan_data_list,
-                                                      Stan_model_name = "PO_MVP_bin.stan")
+                  outs_init_bs_model <- BayesMVP:::init_bs_model( Stan_data_list = Stan_data_list,
+                                                                  Stan_model_name = "PO_MVP_bin.stan")
                   
                   bs_model <- outs_init_bs_model$bs_model
                   json_file_path <- outs_init_bs_model$json_file_path         

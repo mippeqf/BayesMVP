@@ -355,14 +355,14 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                       
                                                     if (is.null(params)) { # plot all params
                                                       
-                                                          bayesplot::mcmc_trace(draws_array)
+                                                           bayesplot::mcmc_trace(draws_array)
                                                       
                                                     } else {   # plot specific params using custom "plot_multiple_params_batched" fn - mimics Stan's method but uses bayesplot 
-                                                      
-                                                                    plot_multiple_params_batched( draws_array = draws_array, 
-                                                                                                  param_prefixes = params, 
-                                                                                                  plot_type = "trace", 
-                                                                                                  batch_size = batch_size)
+                                                    
+                                                           BayesMVP:::plot_multiple_params_batched( draws_array = draws_array, 
+                                                                                                    param_prefixes = params, 
+                                                                                                    plot_type = "trace", 
+                                                                                                    batch_size = batch_size)
                                                     }
                                       
                                     },
@@ -399,10 +399,10 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                                         
                                                       } else {   # plot specific params using custom "plot_multiple_params_batched" fn - mimics Stan's method but uses bayesplot
                                                             
-                                                                      plot_multiple_params_batched( draws_array = draws_array, 
-                                                                                                    param_prefixes = params, 
-                                                                                                    plot_type = "density", 
-                                                                                                    batch_size = batch_size)
+                                                            BayesMVP:::plot_multiple_params_batched(    draws_array = draws_array, 
+                                                                                                        param_prefixes = params, 
+                                                                                                        plot_type = "density", 
+                                                                                                        batch_size = batch_size)
                                                       }
                                                         
                                     }

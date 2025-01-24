@@ -47,30 +47,30 @@ generate_summary_tibble <- function(n_threads = NULL,
               if (n_params < n_threads) { n_threads = n_params }
               
               #### Compute summary stats using custom Rcpp/C++ functions
-              outs <-  (Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
+              outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "mean",
                                                     n_threads = n_threads))
               means_between_chains <- outs$statistics[, 1]
 
-              outs <-  (Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
+              outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "sd",
                                                     n_threads = n_threads))
               SDs_between_chains <- outs$statistics[, 1]
 
-              outs <-  (Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
+              outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "quantiles",
                                                     n_threads = n_threads))
               quantiles_between_chains <- outs$statistics
               
               
               #### Compute Effective Sample Size (ESS) and Rhat using custom Rcpp/C++ functions 
-              outs <-  (Rcpp_compute_MCMC_diagnostics(  posterior_draws_as_std_vec_of_mats,
+              outs <-  (BayesMVP:::Rcpp_compute_MCMC_diagnostics(  posterior_draws_as_std_vec_of_mats,
                                                         diagnostic = "split_ESS",
                                                         n_threads = n_threads))
               ess_vec <- outs$diagnostics[, 1]
               # ess_tail_vec <- outs$diagnostics[, 2]
               
-              outs <-  (Rcpp_compute_MCMC_diagnostics(  posterior_draws_as_std_vec_of_mats,
+              outs <-  (BayesMVP:::Rcpp_compute_MCMC_diagnostics(  posterior_draws_as_std_vec_of_mats,
                                                         diagnostic = "split_rhat",
                                                         n_threads = n_threads))
               rhat_vec <- outs$diagnostics[, 1]
@@ -145,7 +145,7 @@ create_summary_and_traces <- function(    model_results,
                                           n_nuisance, 
                                           compute_main_params = TRUE, # excludes nuisance params. and log-lik 
                                           compute_transformed_parameters = TRUE,
-                                          compute_generated_quantities = TRUE,
+                                          compute_generated_quantities = FALSE,
                                           save_log_lik_trace = TRUE, 
                                           save_nuisance_trace = FALSE,
                                           compute_nested_rhat = NULL,
@@ -155,18 +155,26 @@ create_summary_and_traces <- function(    model_results,
   
 
   
+  ## Extract essential model info from "init_object" object
+  Model_type <- init_object$Model_type
+  y <- init_object$y
+  sample_nuisance <- init_object$sample_nuisance
+  #### N <- nrow(y) 
   
+  ## Extract traces 
   main_trace <- model_results$result[[1]]
   div_trace <- model_results$result[[2]]
   nuisance_trace <- model_results$result[[3]]
   
-  ##log_lik_trace_mnl_models <-  model_results$result[[6]]
+  if (Model_type != "Stan") {
+    log_lik_trace_mnl_models <-  model_results$result[[6]] 
+  }
   
   time_burnin <- model_results$time_burnin
   time_sampling <- model_results$time_sampling
   time_total_wo_summaries <- time_burnin + time_sampling
   
-  #### Other HMC info
+  #### Other MCMC / HMC info
   n_chains_burnin <- model_results$n_chains_burnin
   n_burnin <- model_results$n_burnin
   
@@ -193,11 +201,13 @@ create_summary_and_traces <- function(    model_results,
 
   tictoc::tic()
     
-  Model_type <- init_object$Model_type
-  y <- init_object$y
-  N <- nrow(y) 
-  
-  n_nuisance_tracked <- dim(nuisance_trace[[1]])[1]
+  if (sample_nuisance == TRUE) {
+      n_nuisance <- n_nuisance
+      n_nuisance_tracked <- dim(nuisance_trace[[1]])[1]
+  } else { 
+      n_nuisance <- 0
+      n_nuisance_tracked <- 0
+  }
   
   n_divs <- sum(unlist(div_trace))
   pct_divs <- 100 * n_divs / length(unlist(div_trace))
@@ -215,13 +225,45 @@ create_summary_and_traces <- function(    model_results,
   
   n_params_main <- dim(main_trace[[1]])[1]
   
-  print(n_params_main)
+  print(paste("n_params_main = ", n_params_main))
   
   if (is.null(n_superchains)) {
     n_superchains <- round(n_chains / n_chains_burnin)
   }
   
+  # Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))  ### TEMP
+  Stan_model_file_path <- init_object$Stan_model_file_path
+  
+  if (Model_type == "Stan") {
+    json_file_path <- init_object$json_file_path
+    model_so_file <- init_object$model_so_file
+  } else { 
+    json_file_path <- init_object$dummy_json_file_path
+    model_so_file <- init_object$dummy_model_so_file
+  }
+  
+  
+  
+  Sys.setenv(STAN_THREADS = "true")
+  bs_model <- StanModel$new(Stan_model_file_path, data = json_file_path, 1234) # creates .so fil
+  bs_names  <-  (bs_model$param_names())
+  
+  comment(print(paste("bs_names - head = ", head(bs_names))))
+  comment(print(paste("bs_names - tail = ", tail(bs_names))))
+  
+  bs_names_inc_tp <-  (bs_model$param_names(include_tp = TRUE))
+  bs_names_inc_tp_and_gq <-  (bs_model$param_names(include_tp = TRUE, include_gq = TRUE))
+  
+  
+  
+  ## pars_names <- bs_names_inc_tp_and_gq
   pars_names <- init_object$param_names
+  
+  if (model_obj$init_object$param_names[1] == "lp__") { 
+    pars_names <- pars_names[-1]
+  }
+  
+  
   comment(print(paste("pars_names - head = ", head(pars_names))))
   comment(print(paste("pars_names - tail = ", tail(pars_names))))
   
@@ -234,14 +276,7 @@ create_summary_and_traces <- function(    model_results,
   # }
   # 
   
-  if (Model_type == "Stan") {
-      json_file_path <- init_object$json_file_path
-      model_so_file <- init_object$model_so_file
-  } else { 
-      json_file_path <- init_object$dummy_json_file_path
-      model_so_file <- init_object$dummy_model_so_file
-  }
-  
+
  #  pars_names <- bs_model$param_names(  include_tp = TRUE, include_gq = TRUE)
  #   pars_names <- init_object$init_vals_object$param_names
   n_par_inc_tp_and_gq <- length(pars_names) 
@@ -256,23 +291,6 @@ create_summary_and_traces <- function(    model_results,
       warning("No log_lik parameter found in Stan model. Log_lik will not be computed even if save_log_lik = TRUE")
     }
   } 
-  
-  ## N <- length(index_log_lik)
-  
- 
-  # Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))  ### TEMP
-  Stan_model_file_path <- init_object$Stan_model_file_path
-  
-  Sys.setenv(STAN_THREADS = "true")
-  bs_model <- StanModel$new(Stan_model_file_path, data = json_file_path, 1234) # creates .so file
-  
-  bs_names  <-  (bs_model$param_names())
-  
-  comment(print(paste("bs_names - head = ", head(bs_names))))
-  comment(print(paste("bs_names - tail = ", tail(bs_names))))
-  
-  bs_names_inc_tp <-  (bs_model$param_names(include_tp = TRUE))
-  bs_names_inc_tp_and_gq <-  (bs_model$param_names(include_tp = TRUE, include_gq = TRUE))
   
   n_params  <- length(bs_names)
   n_params_inc_tp <- length(bs_names_inc_tp)
@@ -307,19 +325,24 @@ create_summary_and_traces <- function(    model_results,
   n_params_wo_nuisance_and_log_lik <- length(index_wo_nuisance_and_log_lik)
   
   index_params_main <- index_wo_nuisance_and_log_lik[1]:( index_wo_nuisance_and_log_lik[1] + n_params_main - 1)
-  trace_params_main <- array(dim = c(n_params_main, n_iter, n_chains))
- 
-  # print(n_nuisance_tracked)
-  # print(n_nuisance)
+
+  if (sample_nuisance == TRUE) {
+    
+       try({  
+          if (n_nuisance_tracked == n_nuisance) {
+            include_nuisance <- TRUE
+          } else { 
+            include_nuisance <- FALSE
+            warning("assumed all nuisance params = 0 as not all nuisance params were tracked during sampling. Hence some outputs (e.g. log_lik) won't be correct.")
+          }
+       })
+    
+  } else { 
+    
+       include_nuisance <- FALSE
+     
+  }
   
-   try({  
-      if (n_nuisance_tracked == n_nuisance) {
-        include_nuisance <- TRUE
-      } else { 
-        include_nuisance <- FALSE
-        warning("assumed all nuisance params = 0 as not all nuisance params were tracked during sampling. Hence some outputs (e.g. log_lik) won't be correct.")
-      }
-   })
   
   # if (include_nuisance == TRUE)  {
   #   include_log_lik <- TRUE
@@ -358,19 +381,38 @@ create_summary_and_traces <- function(    model_results,
    comment(print(paste("index_tp (head) = ", head(index_tp))))
    comment(print(paste("index_gq (head) = ", head(index_gq))))
    
-   if (index_lp == 1) { 
-     offset <- 1
-   } else { 
-     offset <- 0
-   }
+   # if (index_lp == 1) { 
+   #   offset <- 1
+   # } else { 
+   #   offset <- 0
+   # }
+   
+   offset <- 0
    
    comment(print(paste("offset = ", offset)))
+   
+
+   comment(print(paste("n_chains = ", n_chains)))
+   comment(print(paste("n_iter = ", n_iter)))
+   comment(print(paste("n_params_main = ", n_params_main)))
+   
+   comment(print(paste("length(all_param_outs_trace) = ", length(all_param_outs_trace))))
+   comment(print(paste("length(index_params_main) = ", length(index_params_main))))
+   
+   comment(print(paste("index_params_main = ", index_params_main)))
+   
+   trace_params_main <- array(dim = c(n_params_main, n_iter, n_chains))
+   
+   comment(print(str(all_param_outs_trace)))
   
    if (compute_main_params == TRUE) {
+     kk <- 1
+     all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter] 
+    ##   trace_params_main[1:n_params_main, 1:n_iter, kk] <- all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter] 
       for (kk in 1:n_chains) {
         try({ 
            trace_params_main[1:n_params_main, 1:n_iter, kk] <- all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter] 
-        })
+        }, silent = TRUE)
       }
    }
      
@@ -397,36 +439,20 @@ create_summary_and_traces <- function(    model_results,
    try({ 
      log_lik_trace <- NULL
      if (save_log_lik_trace == TRUE) {
-       log_lik_trace <- array(dim = c(N, n_iter, n_chains))
-       if (Model_type == "Stan") {
-            for (kk in 1:n_chains) {
-                log_lik_trace[1:N,  1:n_iter, kk] <- all_param_outs_trace[[kk]][index_log_lik - offset, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
-            }
-       } else {  ## if built-in / manual model
-         # log_lik_trace <- array(dim = c(N, n_iter, n_chains)) # [1:N,  1:n_iter, kk]
-         # for (kk in 1:n_chains) {
-         # #  log_lik_trace[1:N,  1:n_iter, kk] <- log_lik_trace_mnl_models[[kk]][1:N, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
-         #   
-         #       for (i in 1:n_iter) {
-         #         
-         #         log_lik_outs <- BayesMVP::Rcpp_wrapper_fn_lp_grad(  Model_type = Model_type, 
-         #                                                             force_autodiff = FALSE,
-         #                                                             force_PartialLog = FALSE,
-         #                                                             multi_attempts = TRUE,
-         #                                                             theta_main_vec = trace_params_main[, i, kk], 
-         #                                                             theta_us_vec = theta[index_nuisance, i, kk], 
-         #                                                             y = y,
-         #                                                             grad_option = "none", 
-         #                                                             Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)
-         #       
-         #         log_lik_trace[, i, kk] <- tail(log_lik_outs, N)
-         #         
-         #         
-         #       }
-         #   
-         #   
-         # }
-       }
+       
+           log_lik_trace <- array(dim = c(N, n_iter, n_chains))
+       
+           if (Model_type == "Stan") {
+             
+                  for (kk in 1:n_chains) {
+                      log_lik_trace[1:N,  1:n_iter, kk] <- all_param_outs_trace[[kk]][index_log_lik - offset, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
+                  }
+             
+           } else {  ## if built-in / manual model
+             
+                 log_lik_trace <- log_lik_trace_mnl_models
+               
+           }
        
      }
    })
@@ -453,7 +479,7 @@ create_summary_and_traces <- function(    model_results,
   
   if (compute_main_params == TRUE) { 
     
-        summary_tibble_main_params <- generate_summary_tibble(  n_threads = n_cores,
+        summary_tibble_main_params <- BayesMVP:::generate_summary_tibble(  n_threads = n_cores,
                                                                 trace = trace_params_main,
                                                                 param_names = names_main,
                                                                 n_to_compute = n_params_main,
@@ -472,7 +498,7 @@ create_summary_and_traces <- function(    model_results,
   
   if  ((compute_generated_quantities == TRUE) && (n_gq > 0))  { 
             
-        summary_tibble_generated_quantities <- generate_summary_tibble(   n_threads = n_cores,
+        summary_tibble_generated_quantities <- BayesMVP:::generate_summary_tibble(   n_threads = n_cores,
                                                                           trace = trace_gq,
                                                                           param_names = names_gq,
                                                                           n_to_compute = n_gq,
@@ -488,7 +514,7 @@ create_summary_and_traces <- function(    model_results,
   summary_tibble_transformed_parameters <- NULL
   if ((compute_transformed_parameters == TRUE) && (n_tp > 0)) {
         
-        summary_tibble_transformed_parameters <- generate_summary_tibble(     n_threads = n_cores,
+        summary_tibble_transformed_parameters <- BayesMVP:::generate_summary_tibble(     n_threads = n_cores,
                                                                               trace = trace_tp,
                                                                               param_names = names_tp,
                                                                               n_to_compute = n_tp,

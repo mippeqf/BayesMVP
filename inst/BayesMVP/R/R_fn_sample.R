@@ -53,12 +53,10 @@ sample_model  <-    function(     Model_type,
                                   n_nuisance_to_track) { 
   
   
-                if (sample_nuisance == FALSE) { 
+                # bookmark
+                if (sample_nuisance == FALSE) {
                   n_nuisance <- 9 # dummy
                 }
- 
-                # init_model_object <- init_object$init_model_object
-                # init_vals_object <- init_object$init_vals_object
  
                 Model_args_as_Rcpp_List <- init_object$Model_args_as_Rcpp_List
                 
@@ -76,13 +74,9 @@ sample_model  <-    function(     Model_type,
                 
                  if (Model_type != "Stan") {
 
-                                 # nuisance transformation
+                                 # nuisance transformation (bookmark - currently fixed to "Phi")
                                  Model_args_as_Rcpp_List$Model_args_strings[13, 1] <- "Phi"
-                   
-                                  # try({
-                                  # Model_args_as_Rcpp_List$Model_args_strings[2,1] <-    "Phi"
-                                  # Model_args_as_Rcpp_List$Model_args_strings[3,1] <-    "inv_Phi"
-                                 
+
                                   try({
                                     Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,6,7,8,9,10,11),1] <-     vect_type
                                     Model_args_as_Rcpp_List$Model_args_strings[6,1] <-  vect_type
@@ -110,7 +104,11 @@ sample_model  <-    function(     Model_type,
                             Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]] <- lkj_cholesky_eta
                            # Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]] <-  (Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]])
                             
+                            print(paste("lkj_cholesky_eta = ", lkj_cholesky_eta))
+                            
                       }
+                      
+                      
 
                 RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
                 
@@ -145,16 +143,11 @@ sample_model  <-    function(     Model_type,
                                                                                      interval_width_main = interval_width_main,
                                                                                      interval_width_nuisance = interval_width_nuisance,
                                                                                      tau_mult = tau_mult,
-                                                                                     n_nuisance_to_track = 10,
+                                                                                     n_nuisance_to_track = min(n_nuisance, 10),
                                                                                      force_autodiff = force_autodiff,
                                                                                      force_PartialLog = force_PartialLog,
                                                                                      multi_attempts = multi_attempts,
                                                                                      Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)
-                
-              ##  gc(reset = TRUE)
-                
-                
-               ## print(paste("hello 2"))
         
 
                 {
@@ -214,7 +207,7 @@ sample_model  <-    function(     Model_type,
                   # if (Model_type != "Stan")  {
                   #      Model_args_as_Rcpp_List$Model_args_ints[4, 1] <- num_chunks
                   # }
-
+                  
                   if (parallel_method == "OpenMP") { 
                     fn <- BayesMVP:::Rcpp_fn_OpenMP_EHMC_sampling
                   } else { ###  use RcppParallel
