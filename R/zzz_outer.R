@@ -46,10 +46,10 @@
                         tryCatch(
                           {
                             dyn.load(dll)
-                            cat("  Loaded:", dll, "\n")
+                          ##  cat("  Loaded:", dll, "\n")
                           },
                           error = function(e) {
-                            cat("  Failed to load:", dll, "\n  Error:", e$message, "\n")
+                           ## cat("  Failed to load:", dll, "\n  Error:", e$message, "\n")
                           }
                         )
                         })
@@ -65,12 +65,16 @@
 
 
 
+
+
 #' .onLoad
 #' @export
 .onLoad <- function(libname, 
                     pkgname) {
 
+  # try({ (.make_user_dir(libname, pkgname)) })
   try({ (.setup_env_onload(libname, pkgname)) })
+
   
 }
 
@@ -80,8 +84,8 @@
 #' @export
 .onAttach <- function(libname, 
                       pkgname) {
-  
  
+  ## try({ (.make_user_dir(libname, pkgname)) })
   try({ (.setup_env_onload(libname, pkgname)) })
   
 }
@@ -91,8 +95,8 @@
 #' @export
 .First.lib <- function(libname, 
                        pkgname) {
-  
  
+  ## try({ (.make_user_dir(libname, pkgname)) })
   try({ (.setup_env_onload(libname, pkgname)) })
   
 }
