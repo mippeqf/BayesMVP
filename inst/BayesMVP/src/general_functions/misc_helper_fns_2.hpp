@@ -27,11 +27,6 @@ using namespace Rcpp;
 
 
 
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
-
-
-
 
 
  
@@ -441,7 +436,7 @@ ALWAYS_INLINE Rcpp::NumericMatrix::Column                  fn_convert_EigenColVe
   
   // Ensure the size of the Eigen column vector matches the size of the RMatrix column
   if (eigen_col_vec.rows() != r_matrix_col.size()) {
-    throw std::invalid_argument("Eigen column vector and RMatrix column must have the same number of rows.");
+    throw std::invalid_argument("Eigen column vector and Rcpp::NumericMatrix column must have the same number of rows.");
   }
   
   // Copy data from Eigen column vector to RMatrix column

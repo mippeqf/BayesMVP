@@ -28,6 +28,8 @@ class HMCResult {
            double us_p_jump_;
            int us_div_;
            
+           int N_;
+           
          /////////// --------------- PUBLIC members (accessible from OUTSIDE this class [e.g. can do: "class.public_member"])
          public:
            //// Constructor 
@@ -52,12 +54,18 @@ class HMCResult {
            , us_velocity_vec_proposed_(Eigen::Matrix<double, -1, 1>::Zero(n_us))
            , us_velocity_vec_(Eigen::Matrix<double, -1, 1>::Zero(n_us))
            , us_p_jump_(0.0)
-           , us_div_(0) 
+           , us_div_(0),
+           N_(N)
            {}
            
            //// "getters"/"setters" to access the private members
            Eigen::Matrix<double, -1, 1> &lp_and_grad_outs() { return lp_and_grad_outs_; }
            // const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs() const { return lp_and_grad_outs_; }
+           Eigen::Matrix<double, -1, 1> &log_lik() { 
+               Eigen::Matrix<double, -1, 1>  log_lik_vec = lp_and_grad_outs_.tail(N_);
+               return log_lik_vec;
+           }
+           ////
            //// main
            Eigen::Matrix<double, -1, 1> &main_theta_vec_0() { return main_theta_vec_0_; }
            //const Eigen::Matrix<double, -1, 1> &main_theta_vec_0() const { return main_theta_vec_0_; }
@@ -75,6 +83,7 @@ class HMCResult {
            //const double &main_p_jump() const { return main_p_jump_; }
            int &main_div() { return main_div_; }
            //const int &main_div() const { return main_div_; }
+           ////
            //// nuisance
            Eigen::Matrix<double, -1, 1> &us_theta_vec_0() { return us_theta_vec_0_; }
            //const Eigen::Matrix<double, -1, 1> &us_theta_vec_0() const { return us_theta_vec_0_; }
@@ -201,11 +210,11 @@ class HMC_output_single_chain {
           , diagnostics_(n_iter) 
           {}
           
-          // Getters for result_input
+          //// Getters for result_input
           HMCResult &result_input() { return result_input_; }
           //const HMCResult &result_input() const { return result_input_; }
           
-          // Getters for traces
+          //// Getters for traces
           Eigen::Matrix<double, -1, -1> &trace_main() { return traces_.main; }
           //const Eigen::Matrix<double, -1, -1> &trace_main() const { return traces_.main; }
           Eigen::Matrix<double, -1, -1> &trace_div() { return traces_.div; }
@@ -215,7 +224,7 @@ class HMC_output_single_chain {
           Eigen::Matrix<double, -1, -1> &trace_log_lik() { return traces_.log_lik; }
           //const Eigen::Matrix<double, -1, -1> &trace_log_lik() const { return traces_.log_lik; }
           
-          // Getters for diagnostics
+          //// Getters for diagnostics
           Eigen::Matrix<int, -1, 1> &diagnostics_div_us() { return diagnostics_.div_us; }
           //const Eigen::Matrix<int, -1, 1> &diagnostics_div_us() const { return diagnostics_.div_us; }
           Eigen::Matrix<int, -1, 1> &diagnostics_div_main() { return diagnostics_.div_main; }
@@ -241,16 +250,19 @@ class HMC_output_single_chain {
                 trace_div()(0, ii) = result_input().main_div();
               }
               
-              // Store diagnostics
+              //// Store diagnostics
               diagnostics_div_us()(ii) = result_input().us_div();
               diagnostics_div_main()(ii) = result_input().main_div();
               diagnostics_p_jump_us()(ii) = result_input().us_p_jump();
               diagnostics_p_jump_main()(ii) = result_input().main_p_jump();
+              
+              //// Store log-lik 
+              trace_log_lik().col(ii) = result_input().log_lik();
             
           }
           
           
-          // Function to check if storage is valid
+          //// Function to check if storage is valid
           bool check_storage_valid() const {
             
               return traces_.main.allFinite() &&
