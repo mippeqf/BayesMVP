@@ -38,19 +38,23 @@ require(BayesMVP)
 
 
 ####  ---- 2. Set BayesMVP example path and set working directory:  --------------------------------------------------------------------
-user_dir_outs <- BayesMVP:::set_pkg_example_path_and_wd()
-## Set paths:
-user_root_dir <- user_dir_outs$user_root_dir
-user_BayesMVP_dir <- user_dir_outs$user_BayesMVP_dir
-pkg_example_path <- user_dir_outs$pkg_example_path
+{
+  user_dir_outs <- BayesMVP:::set_pkg_example_path_and_wd()
+  ## Set paths:
+  user_root_dir <- user_dir_outs$user_root_dir
+  user_BayesMVP_dir <- user_dir_outs$user_BayesMVP_dir
+  pkg_example_path <- user_dir_outs$pkg_example_path
+}
 
 
 
 
 ####  ---- 3. Set options   ------------------------------------------------------------------------------------------------------------
-options(scipen = 99999)
-options(max.print = 1000000000)
-options(mc.cores = parallel::detectCores())
+{
+  options(scipen = 99999)
+  options(max.print = 1000000000)
+  options(mc.cores = parallel::detectCores())
+}
 
 
  
@@ -245,12 +249,18 @@ N <- 500
   model_args_list$prev_prior_a <-  5
   model_args_list$prev_prior_b <-  10
   
- 
+  
+  ## To run standard HMC, do:
+  partitioned_HMC <- FALSE ;    diffusion_HMC <- FALSE
+  ## To run * partitioned * HMC (i.e. sample nuisance and main params. seperately), do:
+  # partitioned_HMC <- TRUE ;     diffusion_HMC <- FALSE # fine
+  ## To run partitioned * and * diffusion HMC (i.e., nuisance params. sampled using diffusion-pathspace HMC), do:
+  # partitioned_HMC <- TRUE ;    diffusion_HMC <- TRUE  # fine
   
 
                                                     
- model_samples <-  model_obj$sample(  partitioned_HMC = TRUE,
-                                      diffusion_HMC = TRUE,
+ model_samples <-  model_obj$sample(  partitioned_HMC = partitioned_HMC,
+                                      diffusion_HMC = diffusion_HMC,
                                       seed = 1,
                                       n_burnin = n_burnin,
                                       n_iter = n_iter,
@@ -274,14 +284,15 @@ N <- 500
                                       # metric_shape_main = "dense",
                                       # metric_type_main = "Hessian",
                                       # tau_mult = 2.0,
-                                      # clip_iter = 25,
-                                      # interval_width_main = 50,
+                                      clip_iter = 25,
+                                      interval_width_main = 50,
                                       # ratio_M_us = 0.25,
                                       # ratio_M_main = 0.25,
                                       # parallel_method = "RcppParallel",
-                                      # vect_type = "Stan",
+                                      # #### parallel_method = "OpenMP",
                                       # vect_type = "AVX512",
-                                      # vect_type = "AVX2",
+                                      # ## vect_type = "AVX2",
+                                      # ## vect_type = "Stan",
                                       n_nuisance_to_track = n_nuisance_to_track)   
 
 
@@ -297,31 +308,10 @@ N <- 500
                                      ) 
   
   
-  # x <- matrix(runif(n = 100, min = 0, max = 1))
-  # BayesMVP:::Rcpp_wrapper_EIGEN_double(x = x, fn = "log", vect_type = "AVX2", skip_checks = FALSE) - 
-  # BayesMVP:::Rcpp_wrapper_EIGEN_double(x = x, fn = "log", vect_type = "AVX512", skip_checks = FALSE)
-  # 
-  # 
+
    
   # extract # divergences + % of sampling iterations which have divergences
   model_fit$get_divergences()
-  
-  # HMC_info <- model_fit$get_HMC_info()
-  # L_main <- HMC_info$tau_main/HMC_info$eps_main
-  # L_us <- HMC_info$tau_us/HMC_info$eps_us
-  # 
-  # n_grad_evals_main_sampling <- n_iter * n_chains_sampling * L_main
-  # n_grad_evals_us_sampling <- n_iter * n_chains_sampling * L_us
-  # n_grad_evals_total_sampling <- n_grad_evals_us_sampling + n_grad_evals_main_sampling
-  # 
-  # Min_ESS <- model_fit$get_efficiency_metrics()$Min_ESS_main
-  # 
-  # 
-  # 
-  # ESS_per_grad_total_sampling <- Min_ESS / (n_grad_evals_total_sampling / 2) ; ESS_per_grad_total_sampling
-  # 1.32 / (ESS_per_grad_total_sampling * 1000)
-  # 
-  
 
   ###### --- TRACE PLOTS  ----------------------------------------------------------------------------------
   # trace_plots_all <- model_samples$plot_traces() # if want the trace for all parameters 

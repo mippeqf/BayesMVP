@@ -252,10 +252,16 @@ N <- 500
   
  
   
+  ## To run standard HMC, do:
+  partitioned_HMC <- FALSE ;    diffusion_HMC <- FALSE
+  ## To run * partitioned * HMC (i.e. sample nuisance and main params. seperately), do:
+  # partitioned_HMC <- TRUE ;     diffusion_HMC <- FALSE # fine
+  ## To run partitioned * and * diffusion HMC (i.e., nuisance params. sampled using diffusion-pathspace HMC), do:
+  # partitioned_HMC <- TRUE ;    diffusion_HMC <- TRUE  # fine
 
                                                     
- model_samples <-  model_obj$sample(  partitioned_HMC = TRUE,
-                                      diffusion_HMC = TRUE,
+ model_samples <-  model_obj$sample(  partitioned_HMC = partitioned_HMC,
+                                      diffusion_HMC = diffusion_HMC,
                                       seed = 1,
                                       n_burnin = n_burnin,
                                       n_iter = n_iter,
@@ -301,31 +307,10 @@ N <- 500
                                     # compute_transformed_parameters = FALSE
                                      ) 
   
-  
-  # x <- matrix(runif(n = 100, min = 0, max = 1))
-  # BayesMVP:::Rcpp_wrapper_EIGEN_double(x = x, fn = "log", vect_type = "AVX2", skip_checks = FALSE) - 
-  # BayesMVP:::Rcpp_wrapper_EIGEN_double(x = x, fn = "log", vect_type = "AVX512", skip_checks = FALSE)
-  # 
-  # 
+
    
   # extract # divergences + % of sampling iterations which have divergences
   model_fit$get_divergences()
-  
-  # HMC_info <- model_fit$get_HMC_info()
-  # L_main <- HMC_info$tau_main/HMC_info$eps_main
-  # L_us <- HMC_info$tau_us/HMC_info$eps_us
-  # 
-  # n_grad_evals_main_sampling <- n_iter * n_chains_sampling * L_main
-  # n_grad_evals_us_sampling <- n_iter * n_chains_sampling * L_us
-  # n_grad_evals_total_sampling <- n_grad_evals_us_sampling + n_grad_evals_main_sampling
-  # 
-  # Min_ESS <- model_fit$get_efficiency_metrics()$Min_ESS_main
-  # 
-  # 
-  # 
-  # ESS_per_grad_total_sampling <- Min_ESS / (n_grad_evals_total_sampling / 2) ; ESS_per_grad_total_sampling
-  # 1.32 / (ESS_per_grad_total_sampling * 1000)
-  # 
   
 
   ###### --- TRACE PLOTS  ----------------------------------------------------------------------------------

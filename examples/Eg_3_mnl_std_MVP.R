@@ -39,20 +39,26 @@ require(BayesMVP)
 
 
 
+
+
 ####  ---- 2. Set BayesMVP example path and set working directory:  --------------------------------------------------------------------
-user_dir_outs <- BayesMVP:::set_pkg_example_path_and_wd()
-## Set paths:
-user_root_dir <- user_dir_outs$user_root_dir
-user_BayesMVP_dir <- user_dir_outs$user_BayesMVP_dir
-pkg_example_path <- user_dir_outs$pkg_example_path
+{
+  user_dir_outs <- BayesMVP:::set_pkg_example_path_and_wd()
+  ## Set paths:
+  user_root_dir <- user_dir_outs$user_root_dir
+  user_BayesMVP_dir <- user_dir_outs$user_BayesMVP_dir
+  pkg_example_path <- user_dir_outs$pkg_example_path
+}
 
 
 
 
 ####  ---- 3. Set options   ------------------------------------------------------------------------------------------------------------
-options(scipen = 99999)
-options(max.print = 1000000000)
-options(mc.cores = parallel::detectCores())
+{
+  options(scipen = 99999)
+  options(max.print = 1000000000)
+  options(mc.cores = parallel::detectCores())
+}
 
 
 
@@ -61,12 +67,9 @@ options(mc.cores = parallel::detectCores())
 require(BayesMVP)
 
 ## Function to check BayesMVP AVX support 
-BayesMVP::detect_vectorization_support()
+BayesMVP:::detect_vectorization_support()
 
 
-
-
- 
 Model_type <- "MVP"
 
 
@@ -100,7 +103,7 @@ Model_type <- "MVP"
   
 # n_covariates_per_outcome_vec <-  vector("list", length = n_class)
 # n_covariates_per_outcome_vec[[1]] <- rep(NA, n_outcomes)
-n_covariates_per_outcome_vec <- array(NA, dim = c(n_class, n_outcomes))
+n_covariates_per_outcome_vec <- array(0, dim = c(n_class, n_outcomes))
 # first 3 outcomes have SINGLE BINARY COVARIATE and a SINGLE CONTINUOUS COVARIATE  [put cts covs FIRST and then binary covs SECOND and then cat covs THIRD]
 n_covariates_per_outcome_vec[1, 1:3] <-  2
 X_for_outcomes_w_single_bin_and_single_cts_cov <-  array(dim  = c(3, N, n_covariates_per_outcome_vec[1, 1]))
@@ -175,7 +178,7 @@ for (t in 1:n_tests) {
  
 }
 
-str(X)
+## str(X)
 
 
 
@@ -252,6 +255,9 @@ str(X)
 
 # ------------------------------  Set INITIAL VALUES ("inits") -----------------------------------------------------------------------
 # any inits not specified will be set to defaults. 
+
+{
+  
 {
   
   init_vals_beta <-  vector("list", length = n_class)
@@ -299,8 +305,7 @@ init = list(
 n_params_main <-   sum(n_covariates_per_outcome_vec) + choose(n_tests, 2)
 n_nuisance <- N * n_tests
 
- 
-
+}
 
 
 
@@ -309,31 +314,22 @@ n_nuisance <- N * n_tests
 ## -----------  initialise model / inits etc
 # based on (informal) testing, more than 8 burnin chains seems unnecessary 
 # and probably not worth the extra overhead (even on a 96-core AMD EPYC Genoa CPU)
-n_chains_burnin <- 8
+n_chains_burnin <- min(8, parallel::detectCores())
 init_lists_per_chain <- rep(list(init), n_chains_burnin) 
 
 
 model_args_list <- list(         n_covariates_per_outcome_mat = n_covariates_per_outcome_vec,  
-                                 num_chunks =   BayesMVP:::find_num_chunks_MVP(N, n_tests),
+                                 num_chunks =  1,# BayesMVP:::find_num_chunks_MVP(N, n_tests),
                                  X = X,
                                  lkj_cholesky_eta = lkj_cholesky_eta,
+                                 corr_force_positive= corr_force_positive,
                                  prior_coeffs_mean_mat = beta_prior_mean,
                                  prior_coeffs_sd_mat =    beta_prior_sd)
 
-
-
-
-# ### model args / inputs 
-# model_args_list  <- list(n_covariates_per_outcome_vec = (n_covariates_per_outcome_vec),
-#                          lkj_cholesky_eta = lkj_cholesky_eta,
-#                          X = X,
-#                          prior_coeffs_mean_vec = beta_prior_mean,
-#                          prior_coeffs_sd_vec =    beta_prior_sd)
-
-
- 
+model_args_list$prior_coeffs_mean_mat
 
 ###  -----------  Compile + initialise the model using "MVP_model$new(...)" 
+# ?BayesMVP::MVP_model
 model_obj <- BayesMVP::MVP_model$new(   Model_type = Model_type,
                                         y = y,
                                         N = N,
@@ -346,19 +342,6 @@ model_obj <- BayesMVP::MVP_model$new(   Model_type = Model_type,
 
 
 
-
-### initialise the model using "initialise_model" function
-n_chains_burnin <- 8 # based on (informal) testing, more than 8 burnin chains seems unnecessary and probably not worth the extra overhead. 
-init_lists_per_chain <- rep(list(init), n_chains_burnin) 
-
-init_model_and_vals_object <- initialise_model(  init_lists_per_chain = init_lists_per_chain, 
-                                                 Model_type = Model_type,
-                                                 model_args_list = model_args_list, # this arg is only for MANUAL models
-                                                 y = y,
-                                                 n_chains_burnin = n_chains_burnin,
-                                                 n_params_main = n_params_main,
-                                                 n_nuisance = n_nuisance)
-
 # mat <- init_model_and_vals_object$init_model_object$Model_args_as_Rcpp_List$Model_args_mats_int[[1]]
 # is.matrix(mat)
    
@@ -367,104 +350,74 @@ init_model_and_vals_object <- initialise_model(  init_lists_per_chain = init_lis
 ## ----------- Set basic sampler settings
 {
   ### seed <- 123
-  n_chains_sampling <- 64 
-  n_superchains <- 4 ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
-  n_iter = 1000
+  n_chains_sampling <- max(64, parallel::detectCores() / 2)
+  n_superchains <- min(8, parallel::detectCores() / 2)  ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
+  n_iter <- 1000                         
   n_burnin <- 500
-  adapt_delta <- 0.80
-  LR_main <- 0.05
-  LR_us <- 0.05
-  n_nuisance_to_track <- 5
+  n_nuisance_to_track <- 10 # set to some small number (< 10) if don't care about making inference on nuisance params (which is most of the time!)
 }
 
+#### ------ sample model using "  model_obj$sample()" --------- 
+##  NOTE: You can also use "model_obj$sample()" to update the model.
+##
+##  For example, if using the same model but a new/different dataset (so new y and N, and n_nuisance needed), you can do:
+##  model_obj$sample(y = y, N = N, n_nuisance = n_nuisance, ...)
+##
+##  You can also update model_args_list. 
+##  For example, say you wanted to force correlations to be positive:
+model_args_list$corr_force_positive <- FALSE
+
+
+# lkj_cholesky_eta_mat <- matrix(lkj_cholesky_eta)
+# model_args_list$lkj_cholesky_eta <- lkj_cholesky_eta
+
+n_tests
+choose(4, 2)
 
 
 
-Rcpp::sourceCpp("~/Documents/Work/PhD_work/R_packages/BayesMVP/src/main_v9.cpp") # , verbose = TRUE)
+## To run standard HMC, do:
+partitioned_HMC <- FALSE ;    diffusion_HMC <- FALSE
+## To run * partitioned * HMC (i.e. sample nuisance and main params. seperately), do:
+# partitioned_HMC <- TRUE ;     diffusion_HMC <- FALSE # fine
+## To run partitioned * and * diffusion HMC (i.e., nuisance params. sampled using diffusion-pathspace HMC), do:
+# partitioned_HMC <- TRUE ;    diffusion_HMC <- TRUE  # fine
 
 
-# 
-# init_model_and_vals_object$init_model_object$Model_args_as_Rcpp_List$Model_args_ints[4, 1] <- 1 # num_chunks
-# 
-# init_model_and_vals_object$init_model_object$Model_args_as_Rcpp_List$Model_args_mats_int[[1]]
-# 
-# str(init_model_and_vals_object$init_model_object$Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double )
-# 
-# init_model_and_vals_object$y <- y
-
-# str(X)
-# 
-# init_model_and_vals_object$init_model_object$Model_args_as_Rcpp_List$Model_args_strings
-
-###  parallel::mcparallel 
-
-sample_obj <-        (sample_model(   init_model_and_vals_object = init_model_and_vals_object,
-                                      Model_type = Model_type,
-                                      n_iter = n_iter,
-                                      n_burnin = n_burnin,
-                                      seed = 2,
-                                      y = y,
-                                      n_chains_burnin = n_chains_burnin,
-                                      n_chains_sampling = n_chains_sampling,
-                                      n_superchains = n_superchains,
-                                      diffusion_HMC = TRUE,
-                                      adapt_delta = adapt_delta,
-                                      LR_main = LR_main,
-                                      LR_us = LR_us,
-                                      # metric_shape_main = "diag",
-                                      metric_shape_main = "dense",
-                                      metric_type_main = "Hessian",
-                                      #  metric_type_main = "Emprical",
-                                      n_params_main = n_params_main,
-                                      force_autodiff = FALSE,
-                                      force_PartialLog = FALSE,
-                                      multi_attempts = FALSE,
-                                      n_nuisance = n_nuisance, 
-                                      n_nuisance_to_track = n_nuisance_to_track))
-
-
-str(sample_obj$result[[1]])
-
-trace_main <- sample_obj$result[[1]]
-
-trace_main_2 <- array(dim = c(n_params_main, n_iter, n_chains_sampling))
-for (kk in 1:n_chains) {
-  trace_main_2[,,kk] <- trace_main[[kk]]
-}
-
-str(trace_main_2)
-
-trace_main_2_between_chains <- apply(trace_main_2, FUN = mean, c(1,2), na.rm = TRUE)
-trace_main_2_posterior_summary <- apply(trace_main_2_between_chains, FUN = mean, 1, na.rm = TRUE)
-
-str(trace_main_2_posterior_summary)
-
-n_corrs <- choose(n_tests, 2)
-
-signif(trace_main_2_posterior_summary, 3)[(n_corrs + 1):n_params_main]
-true_betas_all_outcomes_vec
-
-
-signif(trace_main_2_posterior_summary, 3)[(n_corrs + 1):n_params_main] - true_betas_all_outcomes_vec
-
-
-trace_main_2_posterior_summary[(n_corrs + 1):(n_corrs + sum(n_covariates_per_outcome_vec))]
-
- 
- #####  ---------------- model summary  
-  model_summary_outs <-    create_stan_summary(   model_results = sample_obj, 
-                                                  init_model_and_vals_object = init_model_and_vals_object,
-                                                  n_nuisance = n_nuisance, 
-                                                  compute_main_params = TRUE, 
-                                                  compute_generated_quantities = FALSE, 
-                                                  compute_transformed_parameters = TRUE, 
-                                                  save_log_lik_trace = FALSE, 
-                                                  save_nuisance_trace = FALSE)
-  
-  
-  print(model_summary_outs$ESS_per_sec_samp / (1000 * model_summary_outs$Min_ess_per_grad_samp_weighted) )
-  
- 
+model_samples <-  model_obj$sample(  partitioned_HMC = partitioned_HMC,
+                                     diffusion_HMC = diffusion_HMC,
+                                     seed = 1,
+                                     n_burnin = n_burnin,
+                                     n_iter = n_iter,
+                                     n_chains_sampling = n_chains_sampling,
+                                     n_superchains = n_superchains,
+                                     ## Some other arguments:
+                                     # y = y,
+                                     # N = N,
+                                     # n_params_main = n_params_main,
+                                     # n_nuisance = n_nuisance,
+                                     # init_lists_per_chain = init_lists_per_chain,
+                                     # n_chains_burnin = n_chains_burnin,
+                                     model_args_list = model_args_list,
+                                     ## Some other SAMPLER / MCMC arguments:
+                                     # sample_nuisance = TRUE,
+                                     force_autodiff = FALSE,
+                                     force_PartialLog = FALSE,
+                                     multi_attempts = FALSE,
+                                     adapt_delta = 0.80,
+                                     learning_rate = 0.05,
+                                     # metric_shape_main = "dense",
+                                     # metric_type_main = "Hessian",
+                                     # tau_mult = 2.0,
+                                     # clip_iter = 25,
+                                     # interval_width_main = 50,
+                                     # ratio_M_us = 0.25,
+                                     # ratio_M_main = 0.25,
+                                      parallel_method = "RcppParallel",
+                                      vect_type = "Stan",
+                                     # vect_type = "AVX512",
+                                     # vect_type = "AVX2",
+                                     n_nuisance_to_track = n_nuisance_to_track)   
 
 
 
@@ -472,6 +425,140 @@ trace_main_2_posterior_summary[(n_corrs + 1):(n_corrs + sum(n_covariates_per_out
 
 
 
+#### --- MODEL RESULTS SUMMARY + DIAGNOSTICS -------------------------------------------------------------
+# after fitting, call the "summary()" method to compute + extract e.g. model summaries + traces + plotting methods 
+# model_fit <- model_samples$summary() # to call "summary()" w/ default options json_file_path
+require(bridgestan)
+model_fit <- model_samples$summary(save_log_lik_trace = TRUE, 
+                                   # compute_nested_rhat = FALSE,
+                                   compute_generated_quantities = FALSE, ## We don't have any gen_quantities for std-MVP
+                                   # compute_transformed_parameters = FALSE
+) 
+
+
+# ?BayesMVP::MVP_model
+
+
+# extract # divergences + % of sampling iterations which have divergences
+model_fit$get_divergences()
+
+# HMC_info <- model_fit$get_HMC_info()
+# L_main <- HMC_info$tau_main/HMC_info$eps_main
+# L_us <- HMC_info$tau_us/HMC_info$eps_us
+# 
+# n_grad_evals_main_sampling <- n_iter * n_chains_sampling * L_main
+# n_grad_evals_us_sampling <- n_iter * n_chains_sampling * L_us
+# n_grad_evals_total_sampling <- n_grad_evals_us_sampling + n_grad_evals_main_sampling
+# 
+# Min_ESS <- model_fit$get_efficiency_metrics()$Min_ESS_main
+# 
+# 
+# 
+# ESS_per_grad_total_sampling <- Min_ESS / (n_grad_evals_total_sampling / 2) ; ESS_per_grad_total_sampling
+# 1.32 / (ESS_per_grad_total_sampling * 1000)
+# 
+
+
+###### --- TRACE PLOTS  ----------------------------------------------------------------------------------
+# trace_plots_all <- model_samples$plot_traces() # if want the trace for all parameters 
+trace_plots <- model_fit$plot_traces(params = c("beta", "Omega"), 
+                                     batch_size = 6)
+
+# you can extract parameters by doing: "trace_plots$param_name()". 
+# For example:
+# display each panel for beta and Omega ("batch_size" controls the # of plots per panel. Default = 9)
+trace_plots$beta[[1]] # 1st panel
+trace_plots$beta[[2]] # 2nd panel
+trace_plots$beta[[3]] # 3rd (and last) panel
+
+# display each panel for Omega ("batch_size" controls the # of plots per panel.  Default = 9)
+trace_plots$Omega[[1]] # 1st panel
+trace_plots$Omega[[2]] # 2nd panel
+trace_plots$Omega[[3]] # 3rd (and last) panel
+
+
+
+###### --- POSTERIOR DENSITY PLOTS -------------------------------------------------------------------------
+# density_plots_all <- model_samples$plot_densities() # if want the densities for all parameters 
+# Let's plot the densities for: sensitivity, specificity, and prevalence 
+density_plots <- model_fit$plot_densities( params = c("beta", "Omega"), 
+                                         batch_size = 6)
+
+# you can extract parameters by doing: "density_plots$param_name()". 
+# For example:
+# display each panel for beta and Omega ("batch_size" controls the # of plots per panel. Default = 9)
+density_plots$beta[[1]] # 1st panel
+density_plots$beta[[2]] # 2nd panel
+density_plots$beta[[3]] # 3rd (and last) panel
+
+# display each panel for Omega ("batch_size" controls the # of plots per panel.  Default = 9)
+density_plots$Omega[[1]] # 1st panel
+density_plots$Omega[[2]] # 2nd panel
+density_plots$Omega[[3]] # 3rd (and last) panel
+
+
+
+
+###### --- OTHER FEATURES -------------------------------------------------------------------------
+## The "model_summary" object (created using the "$summary()" method) contains many useful objects. 
+## For example:
+require(dplyr)
+# nice summary tibble for main parameters, includes ESS/Rhat, etc
+model_fit$get_summary_main() %>% print(n = 50) 
+# nice summary tibble for transformed parameters, includes ESS/Rhat, etc
+model_fit$get_summary_transformed() %>% print(n = 150) 
+# nice summary tibble for generated quantities, includes ESS/Rhat, etc (for LC-MVP this includes Se/Sp/prevalence)
+model_fit$get_summary_generated_quantities () %>% print(n = 150) 
+
+## users can also easily use the "posterior" R package to compute their own statistics. 
+## For example:
+# let's say we want to compute something not included in the default
+# "$summary()" method of BayesMVP, such as tail-ESS.
+# We can just use the posterior R package to compute this:
+require(posterior)  
+## first extract the trace array object (note: already in a posterior-compatible format!)
+posterior_draws <- model_fit$get_posterior_draws()
+# then compute tail-ESS using posterior::ess_tail:
+posterior::ess_tail(posterior_draws[,,"beta[1,1]"])
+
+## You can also get the traces as tibbles (stored in seperate tibbles for main params, 
+## transformed params, and generates quantities) using the "$get_posterior_draws_as_tibbles()" method:
+tibble_traces  <- model_fit$get_posterior_draws_as_tibbles()
+tibble_trace_main <- tibble_traces$trace_as_tibble_main_params
+tibble_trace_transformed_params <- tibble_traces$trace_as_tibble_transformed_params
+tibble_trace_generated_quantities <- tibble_traces$trace_as_tibble_generated_quantities
+
+## You can also easily extract model run time / efficiency information using the "$get_efficiency_metrics()" method:
+model_efficiency_metrics <- model_fit$get_efficiency_metrics()
+time_burnin <- model_efficiency_metrics$time_burnin  ; time_burnin
+time_sampling <- model_efficiency_metrics$time_sampling ; time_sampling
+time_total_MCMC <- model_efficiency_metrics$time_total_MCMC  ; time_total_MCMC
+time_total_inc_summaries <- model_efficiency_metrics$time_total_inc_summaries ; time_total_inc_summaries # note this includes time to compute R-hat, etc 
+
+# We can also extract some more specific efficiency info, again using the "$get_efficiency_metrics()" method:
+Min_ESS_main_params <- model_efficiency_metrics$Min_ESS_main   ; Min_ESS_main_params
+Min_ESS_per_sec_sampling <- model_efficiency_metrics$Min_ESS_per_sec_samp ; Min_ESS_per_sec_sampling
+Min_ESS_per_sec_overall <- model_efficiency_metrics$Min_ESS_per_sec_total ; Min_ESS_per_sec_overall
+
+Min_ESS_per_grad <- model_efficiency_metrics$Min_ESS_per_grad_sampling ; Min_ESS_per_grad
+grad_evals_per_sec <- model_efficiency_metrics$grad_evals_per_sec ; grad_evals_per_sec
+
+## extract the "time to X ESS" - these are very useful for knowing how long to
+#  run your model for. 
+est_time_to_100_ESS <- model_efficiency_metrics$est_time_to_100_ESS_inc_summaries ; est_time_to_100_ESS
+est_time_to_1000_ESS <- model_efficiency_metrics$est_time_to_1000_ESS_inc_summaries ; est_time_to_1000_ESS
+est_time_to_10000_ESS <- model_efficiency_metrics$est_time_to_10000_ESS_inc_summaries; est_time_to_10000_ESS
+
+##  You can also use the "model_samples$time_to_ESS()" method to estimate 
+## "time to X ESS" for general X:
+##  For example let's say we determined our target (min) ESS to be ~5000:
+est_time_5000_ESS <- model_fit$time_to_target_ESS(target_ESS = 5000) ; est_time_5000_ESS
+est_time_5000_ESS
+
+### You can also extract the log_lik trace (note: for Stan models this will only work )
+log_lik_trace <- model_fit$get_log_lik_trace()
+str(log_lik_trace) # will be NULL unless you specify  "save_log_lik_trace = TRUE" in the "$summary()" method
+## can then use log_lik_trace e.g. to compute LOO-IC using the loo package 
 
 
 
@@ -488,168 +575,3 @@ trace_main_2_posterior_summary[(n_corrs + 1):(n_corrs + sum(n_covariates_per_out
 
 
 
-
-
- 
-# 
-# 
-# 
-# 
-# n_us <- N*n_tests
-# n_params <- n_us + n_params_main
-# index_us <- 1:n_us
-# index_main <- (1 + n_us):n_params
-# 
-# if (Model_type == "latent_trait") {
-#   n_corrs <- n_tests * 2
-# } else { 
-#   n_corrs <- 2 * choose(n_tests, 2)
-# }
-# 
-# 
-# theta_vec <- rep(0.01, n_params)
-# 
-# 
-# init_model_object <- init_model_and_vals_object$init_model_object
-# init_vals_object <- init_model_and_vals_object$init_vals_object
-# 
-# Model_args_as_Rcpp_List <- init_vals_object$Model_args_as_Rcpp_List
-# 
-# 
-# 
-# 
-# 
-# 
-# num_chunks <- 1
-# Model_args_as_Rcpp_List$Model_args_ints[4, 1] <- num_chunks
-# Model_args_as_Rcpp_List$Model_args_ints
-# Model_args_as_Rcpp_List$Model_args_doubles
-# Model_args_as_Rcpp_List$Model_args_strings
-# Model_args_as_Rcpp_List$Model_args_bools
-# 
-# Model_args_as_Rcpp_List$Model_args_doubles[3, 1] <- +0.5
-# Model_args_as_Rcpp_List$Model_args_doubles[4, 1] <- -0.5
-# 
-# Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,7,8,9,10,11), 1]  <- "Stan"
-# 
-# Model_args_as_Rcpp_List$Model_args_strings[2, 1] <- "Phi"
-# Model_args_as_Rcpp_List$Model_args_strings[3, 1] <- "inv_Phi"
-# 
-# Model_args_as_Rcpp_List$Model_args_strings[13,1] <- "Phi"
-# 
-# # Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]] <- matrix(Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]])
-# Model_args_as_Rcpp_List$Model_args_vecs_of_mats_double
-# 
-# Model_args_as_Rcpp_List$Model_args_vecs_of_mats_int
-# Model_args_as_Rcpp_List$Model_args_vecs_of_col_vecs_int
-# 
-# # theta_vec <- rnorm(n = n_params, mean = 0, sd = 0.10)
-# 
-# # theta_vec[2501:2520] <-   0.01 ## corrs
-# # theta_vec[2521:2530] <-   0.0001 ## coeffs
-# 
-# 
-# ### Rcpp::sourceCpp("~/Documents/Work/PhD_work/R_packages/BayesMVP/src/main_v9.cpp")
-# 
-# theta_vec[(n_us + 1):n_params] <- rnorm(n = n_params_main, mean = 0, sd = 0.25)
-# 
-# Model_args_as_Rcpp_List$Model_args_doubles[3, 1] <- 5
-# Model_args_as_Rcpp_List$Model_args_doubles[4, 1] <- -5
-# 
-# 
-# 
-# 
-# Rcpp::sourceCpp("~/Documents/Work/PhD_work/R_packages/BayesMVP/src/main_v9.cpp") # , verbose = TRUE)
-# 
-# 
-# tic()
-# # for (i in 1:1000)
-# lp_grad_outs <-   parallel::mcparallel (fn_Rcpp_wrapper_fn_lp_grad( Model_type = Model_type,
-#                                                                     force_autodiff = TRUE,
-#                                                                     force_PartialLog = TRUE,
-#                                                                     theta_main_vec = theta_vec[index_main],
-#                                                                     theta_us_vec = theta_vec[index_us],
-#                                                                     y = y,
-#                                                                     grad_option = "all",
-#                                                                     Model_args_as_Rcpp_List = Model_args_as_Rcpp_List))
-# toc()
-# 
-# 
-# 
-# outs_AD <- parallel::mccollect(lp_grad_outs)
-# 
-# 
-# 
-# 
-# # parallel::mcparallel
-# Model_args_as_Rcpp_List$Model_args_doubles[3, 1] <- +5
-# Model_args_as_Rcpp_List$Model_args_doubles[4, 1] <- -5
-# lp_grad_outs <-   parallel::mcparallel(fn_Rcpp_wrapper_fn_lp_grad( Model_type = Model_type,
-#                                                                    force_autodiff = FALSE,
-#                                                                    force_PartialLog = FALSE,
-#                                                                    theta_main_vec = theta_vec[index_main],
-#                                                                    theta_us_vec = theta_vec[index_us],
-#                                                                    y = y,
-#                                                                    grad_option = "all",
-#                                                                    Model_args_as_Rcpp_List = Model_args_as_Rcpp_List))
-# 
-# 
-# 
-# 
-# out <- parallel::mccollect(lp_grad_outs)
-# #out
-# ###  head(out[[1]][-1], 2500)
-# 
-# out[[1]][1]
-# outs_AD[[1]][1]
-# 
-# 
-# out[[1]][1] - outs_AD[[1]][1] # log_prob diff
-# 
-# abs(out[[1]][1] ) > abs( outs_AD[[1]][1] )
-# 
-# sum(  head(out[[1]][-1], 25000)  -  head(outs_AD[[1]][-1], 25000)   )  # u'#s grad diff (sum)
-# 
-# head(out[[1]][-1], 5000)  -  head(outs_AD[[1]][-1], 5000)
-# 
-# grad_us_manual <- head(out[[1]][-1], n_us)
-# grad_us_AD <- head(outs_AD[[1]][-1], n_us)
-# 
-# vec_1 <-   head(grad_us_manual, 12500)
-# vec_2 <-   head(grad_us_AD, 12500)
-# 
-# vec_1 - vec_2
-# 
-# tail(out[[1]][-1], 11)[1:10]  -  tail(outs_AD[[1]][-1], 11)[1:10] # coeffs grad diffs
-# tail(out[[1]][-1], n_params_main)[1:n_corrs]  -  tail(outs_AD[[1]][-1], n_params_main)[1:n_corrs] # corrs grad diffs
-# tail(out[[1]][-1], 1)   -  tail(outs_AD[[1]][-1], 1) # prevelance grad diff
-# 
-# tail(out[[1]][-1], 11)[1:10]
-# tail(outs_AD[[1]][-1], 11)[1:10]
-# 
-# tail(out[[1]][-1], n_params_main)
-# tail(outs_AD[[1]][-1], n_params_main)
-# 
-# tail(out[[1]][-1], n_params_main) - 
-# tail(outs_AD[[1]][-1], n_params_main)
-# 
-# n_params_main
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 

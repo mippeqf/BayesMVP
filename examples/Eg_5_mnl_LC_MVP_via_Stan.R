@@ -1,49 +1,83 @@
 
- 
+
+########## -------- EXAMPLE 5 --------------------------------------------------------------------------------------------------------- 
+## Running the BUILT-IN (i.e. manual gradients) LC-MVP model (e.g., for the analysis of test accuracy data without a gold standard).
+## Uses simulated data.
+## Running * VIA STAN (i.e. NOT via the BayesMVP R package) * but using MANUAL GRADIENTS 
+## (i.e. custom user-supplied .cpp files - which uses functions from BayesMVP!).
+## NOTE: you can run this example without installing BayesMVP. However, you need to download the necessary files to run this. 
 
 
 
+
+####  ---- 1. Install BayesMVP (from GitHub) - SKIP THIS STEP IF INSTALLED: -----------------------------------------------------------
+## First remove any possible package fragments:
+## Find user_pkg_install_dir:
+user_pkg_install_dir <- Sys.getenv("R_LIBS_USER")
+print(paste("user_pkg_install_dir = ", user_pkg_install_dir))
+##
+## Find pkg_install_path + pkg_temp_install_path:
+pkg_install_path <- file.path(user_pkg_install_dir, "BayesMVP")
+pkg_temp_install_path <- file.path(user_pkg_install_dir, "00LOCK-BayesMVP") 
+##
+## Remove any (possible) BayesMVP package fragments:
+remove.packages("BayesMVP")
+unlink(pkg_install_path, recursive = TRUE, force = TRUE)
+unlink(pkg_temp_install_path, recursive = TRUE, force = TRUE)
+##
+## First install OUTER package:
+remotes::install_github("https://github.com/CerulloE1996/BayesMVP", force = TRUE, upgrade = "never")
+## Then restart R session:
+rstudioapi::restartSession()
+## Then install INNTER (i.e. the "real") package:
+require(BayesMVP)
+BayesMVP::install_BayesMVP()
+require(BayesMVP)
+
+# require(BayesMVP)
+# CUSTOM_FLAGS <- list()
+# install_BayesMVP(CUSTOM_FLAGS = list())
+# require(BayesMVP) 
+
+
+
+####  ---- 2. Set BayesMVP example path and set working directory:  --------------------------------------------------------------------
 {
-  
-  # Set working direcory ---------------
-  try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")   }, silent = TRUE)
-  try({  setwd("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/examples")    }, silent = TRUE)
-  #  options(repos = c(CRAN = "http://cran.rstudio.com"))
-  
-  # options ------------------------------------------------------------------- 
-  #  totalCores = 8
-  rstan::rstan_options(auto_write = TRUE)
-  options(scipen = 99999)
-  options(max.print = 1000000000)
-  #  rstan_options(auto_write = TRUE)
-  options(mc.cores = parallel::detectCores())
-  
+  user_dir_outs <- BayesMVP:::set_pkg_example_path_and_wd()
+  ## Set paths:
+  user_root_dir <- user_dir_outs$user_root_dir
+  user_BayesMVP_dir <- user_dir_outs$user_BayesMVP_dir
+  pkg_example_path <- user_dir_outs$pkg_example_path
 }
 
 
 
 
-## Run LC-MVP model (manual-gradients using SNAPER-diffusion-space HMC)   --------------------------------------------------------------------------------------------------------------------------------------------------
+####  ---- 3. Set options   ------------------------------------------------------------------------------------------------------------
+{
+  options(scipen = 99999)
+  options(max.print = 1000000000)
+  options(mc.cores = parallel::detectCores())
+}
 
 
 
-pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP"
 
-## first specify model type (for "Stan" models see other Stan example file)
-Model_type <- "Stan_w_manual_grad"
+####  ---- 4. Now run the example:   ---------------------------------------------------------------------------------------------------
+require(BayesMVP)
 
-# Source file that generates data 
-source(file.path(pkg_dir, "examples/BayesMVP_LC_MVP_prep.R"))
+## Function to check BayesMVP AVX support 
+BayesMVP:::detect_vectorization_support()
+
  
-## - | ----------  prepare Stan data and inits --------------------------------------------------------------------
+  
+## Model_Type <- "latent_trait_via_Stan"
+Model_type <- "LC_MVP_via_Stan"
+
+source(file.path(pkg_example_path, "BayesMVP_LC_MVP_prep.R"))
 
 
-## ### source(file.path(pkg_dir, "examples/Stan_LC_MVP_prepare_data.R"))
-
-
-Stan_Model_Type <- "latent_trait"
-# Stan_Model_Type <- "LC_MVP"
-
+ 
 
 ## select N to use 
 N <- 500
@@ -66,17 +100,20 @@ N <- 500
   
   ## Set important variables
   n_tests <- ncol(y)
-  n_class <- 2
-  n_covariates <- 1
   n_nuisance <- N * n_tests
+  n_covariates <- 1
   
-  if (Stan_Model_Type == "latent_trait") {
-    n_params_main <- n_tests * 2 + 1 + n_tests * n_covariates * 2
-  } else if (Stan_Model_Type == "LC_MVP") {
-    n_params_main <-  choose(n_tests, 2) * 2 + 1 + n_tests * n_covariates * 2
+  if (Model_Type == "latent_trait_via_Stan") {
+    n_class <- 2
+    n_params_main <- n_tests * n_class + n_tests * n_covariates * n_class  + (n_class - 1)
+    Model_type_int <- 3 # 1 for MVP, 2 for LC_MVP, and 3 for latent_trait 
+  } else if (Model_Type == "LC_MVP_via_Stan") {
+    n_class <- 2
+    n_params_main <- n_class*choose(n_tests, 2) + n_tests*n_covariates*n_class + (n_class - 1)
+    Model_type_int <- 2 # 1 for MVP, 2 for LC_MVP, and 3 for latent_trait 
   }
   
-  ###  model_type <- "LC_MVP"
+  ###  model_type <- "LC_MVP_via_Stan"
   fully_vectorised <- 1  ;   GHK_comp_method <- 2 ;       handle_numerical_issues <- 1 ;     overflow_threshold <- +5 ;    underflow_threshold <- -5  #  MAIN MODEL SETTINGS 
   
    # Phi_type <- 2 # using Phi_approx and inv_Phi_approx - in  Stan these are slower than Phi() and inv_Phi() !!!!!!!! (as log/exp are slow)
@@ -189,7 +226,7 @@ N <- 500
                        multi_attempts_int = 0,
                        force_autodiff_int = 1,
                        force_PartialLog_int = 1,
-                       Model_type_int = 3, # 1 for MVP, 2 for LC_MVP, and 3 for latent_trait 
+                       Model_type_int = Model_type_int, # 1 for MVP, 2 for LC_MVP, and 3 for latent_trait 
                        LT_b_priors_shape = LT_b_priors_shape,
                        LT_b_priors_scale = LT_b_priors_scale,
                        LT_known_bs_indicator = LT_known_bs_indicator,
@@ -206,60 +243,6 @@ N <- 500
   
   
 
-
-  ##  | ------  Initial values  -------------------------------------------------------------------------
-  {
-        
-        u_raw <- array(0.01, dim = c(N, n_tests))
-        
-        k_choose_2 = 0.5 * (n_tests - 1) * (n_tests - 0)
-        km1_choose_2 = 0.5 * (n_tests - 2) * (n_tests - 1)
-        known_num = 0
-        
-        beta_vec_init <- rep(0.01, n_class * n_tests)
-        beta_vec_init[1:n_tests] <- - 1   # tests 1-T, class 1 (D-)
-        beta_vec_init[(n_tests + 1):(2*n_tests)] <- + 1   # tests 1-T, class 1 (D+)
-        
-        off_raw <- list()
-        col_one_raw <- list()
-        
-        for (i in 1:2) {
-          off_raw[[i]] <-  (c(rep(0.01, km1_choose_2 - known_num)))
-          col_one_raw[[i]] <-  (c(rep(0.01, n_tests - 1)))
-        }
-        
-        theta_main_vec <- rep(NA, n_params_main)
-      
-        if (Stan_Model_Type == "latent_trait") {
-          
-              theta_main_vec[1:(2*n_tests)] <- 0 # corrs inits
-              theta_main_vec[(2*n_tests + 1):(2*n_tests + n_tests)] <- rep(-1, n_tests) # intercepts in D- class inits
-              theta_main_vec[(2*n_tests + n_tests + 1):(4*n_tests)] <- rep(+1, n_tests) # intercepts in D+ class inits
-              theta_main_vec[n_params_main] <-  2*atanh(0.20) - 1 #  -0.6931472 # raw prev init
-          
-        } else if (Stan_Model_Type == "LC_MVP") {
-          
-              theta_main_vec[1:(2*k_choose_2)] <- rep(0.01, 2*k_choose_2) # corrs inits
-              theta_main_vec[(2*k_choose_2 + 1):(2*k_choose_2 + n_tests)] <- rep(-1, n_tests) # intercepts in D- class inits
-              theta_main_vec[(2*k_choose_2 + n_tests + 1):(2*k_choose_2 + 2*n_tests)] <- rep(+1, n_tests) # intercepts in D+ class inits
-              theta_main_vec[n_params_main] <-  2*atanh(0.20) - 1 #  -0.6931472 # raw prev init
-          
-        }
-        
-        
-
-        init = list(
-          theta_nuisance_vec = c(u_raw),
-          theta_main_vec = theta_main_vec
-        )
-        
-        Stan_init_list <- init
-        
-        n_chains <- 8
-        init_lists_per_chain <- rep(list(Stan_init_list), n_chains) 
-  
-  }
-  
   
   
   
@@ -269,10 +252,13 @@ N <- 500
     ##  /inst/BayesMVP/inst/stan_models/LC_MVP_bin_w_mnl_cpp_grad_v1.stan
     
     # OR using the version w/ fast math C++ functions:
-    file <- (file.path(pkg_dir, "inst/BayesMVP/inst/stan_models/LC_MVP_bin_w_mnl_cpp_grad_v1.stan"))
+    user_home_dir <- Sys.getenv("HOME")
+    user_BayesMVP_dir <- file.path(user_home_dir, "BayesMVP")
+    ### file <- (file.path(user_BayesMVP_dir, "inst/BayesMVP/inst/stan_models/LC_MVP_bin_w_mnl_cpp_grad_v1.stan"))
+    file <- (file.path(user_BayesMVP_dir, "stan_models/LC_MVP_bin_w_mnl_cpp_grad_v1.stan"))
     
     ## and then input the path to the corresponding C++ files:
-    path_to_cpp_user_header <- file.path(pkg_dir, "inst/BayesMVP/src/LC_MVP_lp_grad_fn_for_Stan.hpp")
+    path_to_cpp_user_header <- file.path(user_BayesMVP_dir, "src/LC_MVP_lp_grad_fn_for_Stan.hpp")
     
     ## Set C++ flags (optional)
     ## CXX_COMPILER <- "/opt/AMD/aocc-compiler-5.0.0/bin/clang++"
@@ -286,8 +272,8 @@ N <- 500
     CXX_STD <- "CXX17"
     CPU_BASE_FLAGS <- "-O3  -march=native  -mtune=native"
     FMA_FLAGS <- "-mfma"
-    AVX_FLAGS <- "-mavx512f -mavx512vl -mavx512dq" ## for AVX-512
-    ## AVX_FLAGS <- "-mavx -mavx2"
+    AVX_FLAGS <- "-mavx512f -mavx512vl -mavx512dq" ## for AVX-512 - ONLY USE IF YOUR PC SUPPORTS AVX-512 (MANY DONT!) - ELSE COMMENT OUT!
+    ## AVX_FLAGS <- "-mavx2" ## for AVX2 - ONLY USE IF YOUR PC SUPPORTS AVX2 - ELSE COMMENT OUT!
     CPU_FLAGS <- paste(CPU_BASE_FLAGS, FMA_FLAGS, AVX_FLAGS)
     MATH_FLAGS <- "-fno-math-errno  -fno-signed-zeros  -fno-trapping-math"
     ##
@@ -301,9 +287,9 @@ N <- 500
     OTHER_FLAGS <- paste(OTHER_FLAGS, "-DNDEBUG -fpermissive ")  
     OTHER_FLAGS <- paste(OTHER_FLAGS, "-DBOOST_DISABLE_ASSERTS")
     OTHER_FLAGS <- paste(OTHER_FLAGS, "-Wno-sign-compare -Wno-ignored-attributes -Wno-class-memaccess -Wno-class-varargs") 
-    # OTHER_FLAGS <- paste0(OTHER_FLAGHS, " -ftls-model=global-dynamic") # doesnt fix issue
-    # OTHER_FLAGS <- paste(OTHER_FLAGS, "-fno-gnu-unique") # doesnt fix issue
-    ##OTHER_FLAGS <- paste(OTHER_FLAGS, "-ftls-model=initial-exec")  # doesnt fix issue
+    # OTHER_FLAGS <- paste0(OTHER_FLAGHS, " -ftls-model=global-dynamic") # doesnt fix clang issue
+    # OTHER_FLAGS <- paste(OTHER_FLAGS, "-fno-gnu-unique") # doesnt fix clang issue
+    ##OTHER_FLAGS <- paste(OTHER_FLAGS, "-ftls-model=initial-exec")  # doesnt fix clang issue
      # OTHER_FLAGS <-  " "
     ##
     # LINKER_FLAGS <- " "
@@ -352,57 +338,7 @@ N <- 500
       ##  "-lpthread",
       "-ltbb"
     )
-    
- 
-    # TBB_PATH <- "/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb"
-    # PKG_LIBS = paste0("-L ", TBB_PATH, " -ltbb") ## -L /home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb -ltbb" 
-    # PKG_LIBS
-    # 
-    # $(TBB_SO) -Wl,- ,$(TBB_PATH)  
-    # 
-
-    # -include /home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP/src/lp_grad_fn_for_Stan.hpp
-    # -x c++ -o /tmp/RtmpGPjgLP/model-316f769e292c5.o /tmp/RtmpGPjgLP/model-316f769e292c5.hpp
-    # 
-    # 
-    # -Wl,-L,"/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb" 
-    # -Wl,-rpath,"/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb"     
-    # /tmp/RtmpGPjgLP/model-316f769e292c5.o src/cmdstan/main.o     
-    # -ltbb  
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_nvecserial.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_cvodes.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_idas.a
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_kinsol.a 
-    # stan/lib/stan_math/lib/tbb/libtbb.so.2 
-    # -o /tmp/RtmpGPjgLP/model-316f769e292c5
-    # 
-    # rm /tmp/RtmpGPjgLP/model-316f769e292c5.o /tmp/RtmpGPjgLP/model-316f769e292c5.hpp
-    # 
-    #   
-    
-    # -- Linking model ---
-    # 
-    #   
-    # 
-    # 
-    #   
-    # -I stan/lib/stan_math/lib/tbb_2020.3/include -I src -I stan/lib/rapidjson_1.1.0/ -I lib/CLI11-1.9.1/ 
-    #   -I stan/lib/stan_math/ -I stan/lib/stan_math/lib/eigen_3.4.0 -I stan/lib/stan_math/lib/boost_1.84.0 
-    # -I stan/lib/stan_math/lib/sundials_6.1.1/include -I stan/lib/stan_math/lib/sundials_6.1.1/src/sundial 
-    # -I stan/src -I stan/src    -DBOOST_DISABLE_ASSERTS      
-    # 
-    # -Wl,-L,"/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb" 
-    # -Wl,-rpath,"/home/enzocerullo/.cmdstan/cmdstan-2.35.0/stan/lib/stan_math/lib/tbb"   
-    # /tmp/RtmpGPjgLP/model-316f766bef74d7.o src/cmdstan/main.o 
-    # -lpthread     -ltbb  
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_nvecserial.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_cvodes.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_idas.a 
-    # stan/lib/stan_math/lib/sundials_6.1.1/lib/libsundials_kinsol.a  
-    # stan/lib/stan_math/lib/tbb/libtbb.so.2 -o /tmp/RtmpGPjgLP/model-316f766bef74d7
-
-    
-    
+  
     
     cmdstan_cpp_flags <- list(  paste0("CC = ", CC),
                                 paste0("CXX = ", CXX),
@@ -429,19 +365,83 @@ N <- 500
 
   
 
+  
+  ##  | ------  Initial values  -------------------------------------------------------------------------
+  {
+    
+        u_raw <- array(0.01, dim = c(N, n_tests))
+        
+        k_choose_2 = 0.5 * (n_tests - 1) * (n_tests - 0)
+        km1_choose_2 = 0.5 * (n_tests - 2) * (n_tests - 1)
+        known_num = 0
+        
+        beta_vec_init <- rep(0.01, n_class * n_tests)
+        beta_vec_init[1:n_tests] <- - 1   # tests 1-T, class 1 (D-)
+        beta_vec_init[(n_tests + 1):(2*n_tests)] <- + 1   # tests 1-T, class 1 (D+)
+        
+        off_raw <- list()
+        col_one_raw <- list()
+        
+        for (i in 1:2) {
+          off_raw[[i]] <-  (c(rep(0.01, km1_choose_2 - known_num)))
+          col_one_raw[[i]] <-  (c(rep(0.01, n_tests - 1)))
+        }
+        
+        theta_main_vec <- rep(NA, n_params_main)
+        
+        if (Model_Type == "latent_trait_via_Stan") {
+          
+          theta_main_vec[1:(2*n_tests)] <- 0 # corrs inits
+          theta_main_vec[(2*n_tests + 1):(2*n_tests + n_tests)] <- rep(-1, n_tests) # intercepts in D- class inits
+          theta_main_vec[(2*n_tests + n_tests + 1):(4*n_tests)] <- rep(+1, n_tests) # intercepts in D+ class inits
+          theta_main_vec[n_params_main] <-  2*atanh(0.20) - 1 #  -0.6931472 # raw prev init
+          
+        } else if (Model_Type == "LC_MVP_via_Stan") {
+          
+          theta_main_vec[1:(2*k_choose_2)] <- rep(0.01, 2*k_choose_2) # corrs inits
+          theta_main_vec[(2*k_choose_2 + 1):(2*k_choose_2 + n_tests)] <- rep(-1, n_tests) # intercepts in D- class inits
+          theta_main_vec[(2*k_choose_2 + n_tests + 1):(2*k_choose_2 + 2*n_tests)] <- rep(+1, n_tests) # intercepts in D+ class inits
+          theta_main_vec[n_params_main] <-  2*atanh(0.20) - 1 #  -0.6931472 # raw prev init
+          
+        }
+        
+        
+        
+        init = list(
+          theta_nuisance_vec = c(u_raw),
+          theta_main_vec = theta_main_vec
+        )
+        
+        Stan_init_list <- init
+    
+  }
+
+
 
   ## | ------  Run model - using Stan  -------------------------------------------------------------------------
   {
     
-    stan_data$multi_attempts_int   <- 0 
-    stan_data$force_autodiff_int   <- 0 
-    stan_data$force_PartialLog_int <- 1
+        ## DON'T FORCE AUTODIFF AND/OR PARTIAL_LOG_SCALE:
+        stan_data$force_autodiff_int   <- 0 ; stan_data$force_PartialLog_int <- 0
+        ## However, use AD and/or partial_log_scale if std. scale diverges:
+        stan_data$multi_attempts_int   <- 1
+        
+        seed <- 123
+        
+        if (parallel::detectCores() > 63) { 
+          n_chains <- 64
+        } else { 
+          n_chains <- 8
+        }
+        
+        init_lists_per_chain <- rep(list(Stan_init_list), n_chains) 
     
         n_iter <- 500
     
         tictoc::tic()
           
-        Stan_mod_sample <- mod$sample( data = stan_data,
+        Stan_mod_sample <- mod$sample( seed = seed,
+                                       data = stan_data,
                                        init =   init_lists_per_chain, 
                                        chains = n_chains,
                                        parallel_chains = n_chains, 

@@ -298,16 +298,11 @@ N <- 500
     }
     
     
-    ## To run standard HMC, do:
-    partitioned_HMC <- FALSE ;    diffusion_HMC <- FALSE
-    ## To run * partitioned * HMC (i.e. sample nuisance and main params. seperately), do:
-    # partitioned_HMC <- TRUE ;     diffusion_HMC <- FALSE # fine
-    ## To run partitioned * and * diffusion HMC (i.e., nuisance params. sampled using diffusion-pathspace HMC), do:
-    # partitioned_HMC <- TRUE ;    diffusion_HMC <- TRUE  # fine
+
     
     ## sample / run model
-    model_samples <-  model_obj$sample(  partitioned_HMC = partitioned_HMC,
-                                         diffusion_HMC = diffusion_HMC,
+    model_samples <-  model_obj$sample(  partitioned_HMC = TRUE,
+                                         diffusion_HMC = TRUE,
                                          seed = 1,
                                          n_burnin = n_burnin,
                                          n_iter = n_iter,
@@ -343,11 +338,30 @@ N <- 500
     ) 
     
     
-
+    # x <- matrix(runif(n = 100, min = 0, max = 1))
+    # BayesMVP:::Rcpp_wrapper_EIGEN_double(x = x, fn = "log", vect_type = "AVX2", skip_checks = FALSE) - 
+    # BayesMVP:::Rcpp_wrapper_EIGEN_double(x = x, fn = "log", vect_type = "AVX512", skip_checks = FALSE)
+    # 
+    # 
+    
     # extract # divergences + % of sampling iterations which have divergences
     model_fit$get_divergences()
     
-
+    # HMC_info <- model_fit$get_HMC_info()
+    # L_main <- HMC_info$tau_main/HMC_info$eps_main
+    # L_us <- HMC_info$tau_us/HMC_info$eps_us
+    # 
+    # n_grad_evals_main_sampling <- n_iter * n_chains_sampling * L_main
+    # n_grad_evals_us_sampling <- n_iter * n_chains_sampling * L_us
+    # n_grad_evals_total_sampling <- n_grad_evals_us_sampling + n_grad_evals_main_sampling
+    # 
+    # Min_ESS <- model_fit$get_efficiency_metrics()$Min_ESS_main
+    # 
+    # 
+    # 
+    # ESS_per_grad_total_sampling <- Min_ESS / (n_grad_evals_total_sampling / 2) ; ESS_per_grad_total_sampling
+    # 1.32 / (ESS_per_grad_total_sampling * 1000)
+    # 
     
     
     ###### --- TRACE PLOTS  ----------------------------------------------------------------------------------
@@ -453,6 +467,106 @@ N <- 500
     
     
     
+    
+    
+    
+    
+    # {
+    #   
+    #   set.seed(1)
+    #   
+    #   init_model_and_vals_object <- model_obj$init_object
+    #   
+    #   
+    #   {
+    #     # sample_obj <- model_samples$model_results
+    #     #model_results = sample_obj
+    #     init_object <- model_obj$init_object
+    #     compute_main_params = TRUE
+    #     compute_generated_quantities = TRUE
+    #     compute_transformed_parameters = TRUE
+    #     save_log_lik_trace = TRUE
+    #     save_nuisance_trace = FALSE
+    #   }
+    #   
+    #   options(scipen = 99999)
+    #   
+    #   
+    #   
+    #   
+    #   n_us <- N*n_tests
+    #   n_params <- n_us + n_params_main
+    #   index_us <- 1:n_us
+    #   index_main <- (1 + n_us):n_params
+    #   
+    #   if (Model_type == "latent_trait") {
+    #     n_corrs <- n_tests * 2
+    #   } else {
+    #     n_corrs <- 2 * choose(n_tests, 2)
+    #   }
+    #   
+    #   theta_vec <- rep(0.01, n_params)
+    #   
+    #   Model_args_as_Rcpp_List <- init_model_and_vals_object$Model_args_as_Rcpp_List
+    # 
+    #   
+    # }
+    # 
+    # 
+    # 
+    # 
+    # ## Rcpp::sourceCpp("~/Documents/Work/PhD_work/R_packages/BayesMVP/src/main.cpp")
+    # 
+    # ##  dyn.load("C:\\Users\\enzoc\\Documents\\BayesMVP\\inst\\dummy_stan_model_win_model.dll")
+    # 
+    # #   tic()
+    # # # for (i in 1:1000)
+    # # 
+    # # init_model_and_vals_object$model_so_file
+    # # 
+    # # Model_args_as_Rcpp_List$model_so_file <-   "C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5_model.so"
+    # # Model_args_as_Rcpp_List$json_file_path <- init_model_and_vals_object$json_file_path# "C:\\Users\\enzoc\\AppData\\Local\\R\\win-library\\4.4\\BayesMVP\\stan_models\\LC_MVP_bin_PartialLog_v5_model.dll"
+    # #   
+    # 
+    # Model_args_as_Rcpp_List$model_so_file
+    # Model_args_as_Rcpp_List$json_file_path
+    # 
+    # BayesMVP::detect_vectorization_support()
+    # 
+    # 
+    # require(BayesMVP)
+    # 
+    # lp_grad_outs <-   BayesMVP:::safe_test_wrapper_1 ( theta_vec = theta_vec,
+    #                                         index_main = index_main,
+    #                                         index_us = index_us,
+    #                                         y = y,
+    #                                         Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+    #                                         
+    #                                         expr = {
+    #                                           
+    #                                           require(BayesMVP)
+    # 
+    #                                           
+    #                                           
+    #                                           BayesMVP::Rcpp_wrapper_fn_lp_grad( Model_type = "Stan",
+    #                                                                              force_autodiff = TRUE,
+    #                                                                              force_PartialLog = TRUE,
+    #                                                                              multi_attempts = FALSE,
+    #                                                                              theta_main_vec = theta_vec[index_main],
+    #                                                                              theta_us_vec = theta_vec[index_us],
+    #                                                                              y = y,
+    #                                                                              grad_option = "all",
+    #                                                                              Model_args_as_Rcpp_List = Model_args_as_Rcpp_List) 
+    #                                           
+    #                                         } )
+    # 
+    # 
+    # 
+    # lp_grad_outs
+    # # lp_grad_outs$job
+    # 
+    # 
+    # 
     
     
     
