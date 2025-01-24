@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LP_GRAD_FN_FOR_STAN_PRIM_HPP
 #define LP_GRAD_FN_FOR_STAN_PRIM_HPP
 
@@ -32,9 +34,9 @@
 
 
 
-#if __has_include("omp.h")
-#include "omp.h"
-#endif
+// #if __has_include("omp.h")
+// #include "omp.h"
+// #endif
 
 //// General includes 
 #include <iostream>
@@ -149,19 +151,15 @@
 #include "MVP_functions/MVP_lp_grad_MD_AD_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_log_scale_MD_AD_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_multi_attempts.hpp"
-//// #include "MVP_functions/MVP_manual_Hessian_calc_fns.hpp"
 
 
 //// BayesMVP includes - Latent trait model fns
-#define COMPILE_LATENT_TRAIT 0
-#if COMPILE_LATENT_TRAIT
 #include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
 #include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
 #include "LC_LT_functions/LC_LT_lp_grad_AD_fns.hpp"
 #include "LC_LT_functions/LC_LT_lp_grad_MD_AD_fns.hpp"
 #include "LC_LT_functions/LC_LT_lp_grad_log_scale_MD_AD_fns.hpp"
 #include "LC_LT_functions/LT_LC_lp_grad_multi_attempts.hpp"
-#endif
 
 
 //  //// BridgeStan includes 
@@ -177,88 +175,36 @@
 //// #include "general_functions/lp_grad_model_selector.hpp"   //// exclude for cmdstan-cpp file (i.e. if using manual-gradient models via Stan)
 #include "general_functions/CMDSTAN_lp_grad_model_selector.hpp"
 
-// #if defined(__AVX2__) || defined(__AVX512F__)
-// #include <immintrin.h>
-// #endif
-//  
-//  
-//  
-//  
-// #include "eigen_config.hpp"
-// 
-// 
-// #include "general_functions/var_fns.hpp"
-// #include "general_functions/double_fns.hpp" 
-//  
-// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Stan.hpp"
-// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_Loop.hpp"
-// #include "general_functions/fns_SIMD_and_wrappers/fast_and_approx_AVX512_AVX2_fns.hpp" // will only compile if AVX2 or AVX-512 is available 
-// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX2.hpp" // will only compile if AVX2 is available 
-// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_SIMD_AVX512.hpp" // will only compile if AVX-512 is available 
-// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_overall.hpp" 
-// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_dbl.hpp"
-// #include "general_functions/fns_SIMD_and_wrappers/fn_wrappers_log_sum_exp_SIMD.hpp"
-//  
-// #include "general_functions/structures.hpp"
-// #include "general_functions/array_creators_Eigen_fns.hpp"
-// #include "general_functions/misc_helper_fns_1.hpp"
-//  
-// ////// Now load in (mostly) MVP-specific (and MVP-LC) model functions
-// #include "MVP_functions/MVP_manual_grad_calc_fns.hpp" 
-// #include "MVP_functions/MVP_log_scale_grad_calc_fns.hpp"
-// #include "MVP_functions/MVP_manual_trans_and_J_fns.hpp"
-// #include "MVP_functions/MVP_lp_grad_AD_fns.hpp"
-// #include "MVP_functions/MVP_lp_grad_MD_AD_fns.hpp"
-// #include "MVP_functions/MVP_lp_grad_log_scale_MD_AD_fns.hpp"
-// ////// #include "MVP_functions/MVP_manual_Hessian_calc_fns.hpp"
-// #include "MVP_functions/MVP_lp_grad_multi_attempts.hpp"
-//  
-// // ////// Latent trait stuff
-// // #include "LC_LT_functions/LC_LT_manual_grad_calc_fns.hpp"
-// // #include "LC_LT_functions/LC_LT_log_scale_grad_calc_fns.hpp"
-// // #include "LC_LT_functions/LC_LT_lp_grad_AD_fns.hpp"
-// // #include "LC_LT_functions/LC_LT_lp_grad_MD_AD_fns.hpp"
-// // #include "LC_LT_functions/LC_LT_lp_grad_log_scale_MD_AD_fns.hpp"
-//  
-// ////// general lp_grad fn  
-// #if __has_include("bridgestan.h")
-// #define HAS_BRIDGESTAN_H 1
-//     #include "bridgestan.h" 
-//     #include "version.hpp"
-//     #include "model_rng.hpp" 
-// #else 
-//     #define HAS_BRIDGESTAN_H 0 
-// #endif
-// 
-// 
-// #if HAS_BRIDGESTAN_H
-//     #include "general_functions/Stan_model_helper_fns.hpp" 
-// #endif
-// 
-// #include "general_functions/lp_grad_model_selector.hpp"  
-// 
 
 
 
-////////////////-------- first determine SIMD (i.e. vectorisation) type to use as global static variable - will add more in future -------------------------------------------
-// static const std::string vect_type = [] {
-//       #ifdef __AVX512F__
-//        return "AVX512"; 
-//       #elif defined(__AVX2__) && (!(defined(__AVX512F__)))
-//        return "AVX2";
-//       #else 
-//        return "Stan";
-//       #endif
-// }();
-//  
-// 
-//  
-//  
+
+
+
+
+//////////////-------- first determine SIMD (i.e. vectorisation) type to use as global static variable - will add more in future -------------------------------------------
+static const std::string vect_type = [] {
+      #ifdef __AVX512F__
+       return "AVX512";
+      #elif defined(__AVX2__) && (!(defined(__AVX512F__)))
+       return "AVX2";
+      #else
+       return "Stan";
+      #endif
+}();
+
+
+
+
 
 
 
 // //////////////  ---------  LC-MVP manual-gradient lp_grad function  --------------------------------------------------------------------------------------------------------------------
 
+// const Eigen::Matrix<double, -1, -1> &LT_b_priors_shape,
+// const Eigen::Matrix<double, -1, -1> &LT_b_priors_scale,
+// const Eigen::Matrix<double, -1, -1> &LT_known_bs_indicator,
+// const Eigen::Matrix<double, -1, -1> &LT_known_bs_values,
 
 
 namespace stan {
@@ -288,10 +234,6 @@ double                           Stan_wrapper_lp_fn_LC_MVP_var(                 
                                                                                  const std::vector<Eigen::Matrix<double, -1, -1>> &known_values,
                                                                                  const std::vector<Eigen::Matrix<double, -1, -1>> &known_values_indicator,
                                                                                  const std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>  &X,
-                                                                                 const Eigen::Matrix<double, -1, -1> &LT_b_priors_shape,
-                                                                                 const Eigen::Matrix<double, -1, -1> &LT_b_priors_scale,
-                                                                                 const Eigen::Matrix<double, -1, -1> &LT_known_bs_indicator,
-                                                                                 const Eigen::Matrix<double, -1, -1> &LT_known_bs_values,
                                                                                  std::ostream* pstream__ = nullptr
 ) {
   
@@ -372,7 +314,7 @@ double                           Stan_wrapper_lp_fn_LC_MVP_var(                 
   const std::string inv_Phi_type = "inv_Phi";
   const std::string nuisance_transformation = "Phi";
   
-  const std::string vect_type = "Stan";  ////////////////  TEMP
+  //// const std::string vect_type = "Stan";  ////////////////  TEMP / bookmark
   
   Model_args_as_cpp_struct.Model_args_strings(0) = vect_type; // vect_type
   Model_args_as_cpp_struct.Model_args_strings(1) = Phi_type; // Phi_type
@@ -408,11 +350,11 @@ double                           Stan_wrapper_lp_fn_LC_MVP_var(                 
   
   Model_args_as_cpp_struct.Model_args_2_layer_vecs_of_mats_double[0] = X;
   
-  //// For latent-trait only (if not using latent_trait then these are dummy variables): 
-  Model_args_as_cpp_struct.Model_args_mats_double[0] = LT_b_priors_shape;
-  Model_args_as_cpp_struct.Model_args_mats_double[1] = LT_b_priors_scale;
-  Model_args_as_cpp_struct.Model_args_mats_double[2] = LT_known_bs_indicator;
-  Model_args_as_cpp_struct.Model_args_mats_double[3] = LT_known_bs_values;
+  // //// For latent-trait only (if not using latent_trait then these are dummy variables): 
+  // Model_args_as_cpp_struct.Model_args_mats_double[0] = LT_b_priors_shape;
+  // Model_args_as_cpp_struct.Model_args_mats_double[1] = LT_b_priors_scale;
+  // Model_args_as_cpp_struct.Model_args_mats_double[2] = LT_known_bs_indicator;
+  // Model_args_as_cpp_struct.Model_args_mats_double[3] = LT_known_bs_values;
   
   /////  --------  call lp_grad function  --------------------------------
   Eigen::Matrix<double, -1, 1> lp_grad_outs = Eigen::Matrix<double, -1, 1>::Zero(1 + N + n_params);

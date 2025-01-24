@@ -133,6 +133,7 @@
 #include "MVP_functions/MVP_manual_grad_calc_fns.hpp"
 #include "MVP_functions/MVP_log_scale_grad_calc_fns.hpp"
 #include "MVP_functions/MVP_manual_trans_and_J_fns.hpp"
+#include "MVP_functions/std_MVP_lp_grad_AD_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_AD_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_MD_AD_fns.hpp"
 #include "MVP_functions/MVP_lp_grad_log_scale_MD_AD_fns.hpp"
@@ -176,7 +177,7 @@
   #include "MCMC/EHMC_find_initial_eps_fns.hpp"
   #include "MCMC/EHMC_single_threaded_samp_fns.hpp"
   #include "MCMC/EHMC_multi_threaded_samp_fns_RCPP.hpp"
-  //// #include "MCMC/EHMC_multi_threaded_samp_fns_OMP.hpp" //// needs OpenMP
+  #include "MCMC/EHMC_multi_threaded_samp_fns_OMP.hpp" //// needs OpenMP
 #endif
 
 
@@ -763,6 +764,7 @@ Rcpp::List    fn_Rcpp_wrapper_update_M_dense_main_Hessian(            Eigen::Mat
 // [[Rcpp::export]]
 Rcpp::List                         fn_find_initial_eps_main_and_us(           Eigen::Matrix<double, -1, 1> theta_main_vec_initial_ref,
                                                                               Eigen::Matrix<double, -1, 1> theta_us_vec_initial_ref,
+                                                                              const bool partitioned_HMC,
                                                                               const double seed,
                                                                               const std::string Model_type,
                                                                               const bool  force_autodiff,
@@ -794,16 +796,8 @@ Rcpp::List                         fn_find_initial_eps_main_and_us(           Ei
       EHMC_fn_args_struct  EHMC_args_as_cpp_struct =  convert_R_List_EHMC_fn_args_struct(EHMC_args_as_Rcpp_List);
       const EHMC_Metric_struct   EHMC_Metric_as_cpp_struct =  convert_R_List_EHMC_Metric_struct(EHMC_Metric_as_Rcpp_List);
 
-      const int n_class = Model_args_as_cpp_struct.Model_args_ints(1);
-      const int desired_n_chunks = Model_args_as_cpp_struct.Model_args_ints(3);
-      const int vec_size = 8;
-      ChunkSizeInfo chunk_size_info = calculate_chunk_sizes(N, vec_size, desired_n_chunks);
-      int chunk_size = chunk_size_info.chunk_size;
-      const int n_tests = y_ref.cols();
-
-     // MVP_ThreadLocalWorkspace MVP_workspace(chunk_size, n_tests, n_class);
-
       std::vector<double> eps_pair =  fn_find_initial_eps_main_and_us(   result_input,
+                                                                         partitioned_HMC,
                                                                          seed, burnin,  Model_type,
                                                                          force_autodiff, force_PartialLog, multi_attempts,
                                                                          y_ref,

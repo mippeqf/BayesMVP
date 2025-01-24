@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LP_GRAD_FN_FOR_STAN_REV_HPP
 #define LP_GRAD_FN_FOR_STAN_REV_HPP
 
@@ -38,14 +40,19 @@
 //////////////  ---------  LC-MVP manual-gradient lp_grad function  --------------------------------------------------------------------------------------------------------------------
 
 
- 
+// const Eigen::Matrix<double, -1, -1> &LT_b_priors_shape,
+// const Eigen::Matrix<double, -1, -1> &LT_b_priors_scale,
+// const Eigen::Matrix<double, -1, -1> &LT_known_bs_indicator,
+// const Eigen::Matrix<double, -1, -1> &LT_known_bs_values,
+
+
 namespace stan {
 namespace math {
 
  
  
  
-double                                         Stan_wrapper_lp_fn_LC_MVP_var(         const int Model_type_int,
+double                                         Stan_wrapper_lp_fn_LC_MVP_var(          const int Model_type_int,
                                                                                        const int force_autodiff_int,
                                                                                        const int force_PartialLog_int,
                                                                                        const int multi_attempts_int,
@@ -68,10 +75,6 @@ double                                         Stan_wrapper_lp_fn_LC_MVP_var(   
                                                                                        const std::vector<Eigen::Matrix<double, -1, -1>> &known_values,
                                                                                        const std::vector<Eigen::Matrix<double, -1, -1>> &known_values_indicator,
                                                                                        const std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>  &X,
-                                                                                       const Eigen::Matrix<double, -1, -1> &LT_b_priors_shape,
-                                                                                       const Eigen::Matrix<double, -1, -1> &LT_b_priors_scale,
-                                                                                       const Eigen::Matrix<double, -1, -1> &LT_known_bs_indicator,
-                                                                                       const Eigen::Matrix<double, -1, -1> &LT_known_bs_values,
                                                                                        std::ostream* pstream__ = nullptr) {
    
    const int N = y.rows();
@@ -150,7 +153,7 @@ double                                         Stan_wrapper_lp_fn_LC_MVP_var(   
    const std::string inv_Phi_type = "inv_Phi";
    const std::string nuisance_transformation = "Phi";
    
-   const std::string vect_type = "Stan";  ////////////////  TEMP
+   //// const std::string vect_type = "Stan";  ////////////////  TEMP / bookmark
    
    Model_args_as_cpp_struct.Model_args_strings(0) = vect_type; // vect_type
    Model_args_as_cpp_struct.Model_args_strings(1) = Phi_type; // Phi_type
@@ -187,11 +190,11 @@ double                                         Stan_wrapper_lp_fn_LC_MVP_var(   
    
    Model_args_as_cpp_struct.Model_args_2_layer_vecs_of_mats_double[0] = X;
    
-   //// For latent-trait only (if not using latent_trait then these are dummy variables): 
-   Model_args_as_cpp_struct.Model_args_mats_double[0] = LT_b_priors_shape;
-   Model_args_as_cpp_struct.Model_args_mats_double[1] = LT_b_priors_scale;
-   Model_args_as_cpp_struct.Model_args_mats_double[2] = LT_known_bs_indicator;
-   Model_args_as_cpp_struct.Model_args_mats_double[3] = LT_known_bs_values;
+   // //// For latent-trait only (if not using latent_trait then these are dummy variables): 
+   // Model_args_as_cpp_struct.Model_args_mats_double[0] = LT_b_priors_shape;
+   // Model_args_as_cpp_struct.Model_args_mats_double[1] = LT_b_priors_scale;
+   // Model_args_as_cpp_struct.Model_args_mats_double[2] = LT_known_bs_indicator;
+   // Model_args_as_cpp_struct.Model_args_mats_double[3] = LT_known_bs_values;
    
    /////  --------  call lp_grad function  --------------------------------
    // stan::arena_t<Eigen::Matrix<double, -1, 1>> theta_main_double = value_of(theta_main_vec);

@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LP_GRAD_FN_FOR_STAN_HPP
 #define LP_GRAD_FN_FOR_STAN_HPP
 

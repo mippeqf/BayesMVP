@@ -154,7 +154,8 @@ ifneq (,$(wildcard $(AMD_AOCC_CXX_COMPILER))) ## if using AOCC-clang (AMD only) 
   override OMP_LIB_PATH = $(AMD_AOCC_PATH)/lib
   override OMP_FLAGS = -fopenmp
   override OMP_LIB_FLAGS += -L"$(OMP_LIB_PATH)" -lomp
-  override OMP_LIB_FLAGS += $(OMP_LIB_PATH)/libomp.so
+  override OMP_LIB_FLAGS += -Wl,-rpath,"$(OMP_LIB_PATH)" $(OMP_LIB_PATH)/libomp.so
+    ## override OMP_LIB_FLAGS += $(OMP_LIB_PATH)/libomp.so
 else ifneq (,$(wildcard $(CLANG_CXX_COMPILER))) ## if using "standard" clang (2nd choice)
   # Try to find system libomp:
   override OMP_LIB_PATH = $(shell \
@@ -350,9 +351,10 @@ $(info DUMMY_MODEL_SO is: $(DUMMY_MODEL_SO))
 ##
 ##  ---------------------  SHLIB / linking ----------------------------------------------------------------------------
 ## First, create .BayesMVP directory and copy model file in users' home directory:
-override COPY_DIR_PATH=$(HOME)/.BayesMVP
+override COPY_DIR_PATH=$(HOME)/BayesMVP
 $(info COPY_DIR_PATH is: $(COPY_DIR_PATH))
 $(shell mkdir -p $(COPY_DIR_PATH))
+##
 $(shell cp -f $(DUMMY_MODEL_SO) $(COPY_DIR_PATH) 2>/dev/null || true)
 ##
 override USER_HOME_DUMMY_MODEL_SO=$(COPY_DIR_PATH)/dummy_stan_model_model.so
@@ -360,6 +362,6 @@ $(info DUMMY_MODEL_SO is: $(USER_HOME_DUMMY_MODEL_SO))
 override PKG_LIBS+=$(USER_HOME_DUMMY_MODEL_SO)
 ##
 ## Link to permanent location:
-PKG_LIBS+=$(USER_HOME_DUMMY_MODEL_SO) -Wl,-rpath,$(HOME)/.BayesMVP -Wl,-rpath,$(TBB_PATH),--no-as-needed
+PKG_LIBS+=$(USER_HOME_DUMMY_MODEL_SO) -Wl,-rpath,$(COPY_DIR_PATH) -Wl,-rpath,$(TBB_PATH),--no-as-needed
 ##
 ##
