@@ -302,7 +302,7 @@ public:
               
               /////////////////////////////////////////// end of iteration(s)
               if (sample_nuisance == true)  {
-                //////// Write results back to the shared array once half-iteration completed
+                //////// Write results back to the shared array once half-iteration completed   //// fn_convert_EigenColVec_to_RMatrixColumn - error c
                 theta_us_vectors_all_chains_output_to_R_RcppPar.column(i) =         fn_convert_EigenColVec_to_RMatrixColumn(  HMC_inputs[i].us_theta_vec() ,  theta_us_vectors_all_chains_output_to_R_RcppPar.column(i));
                 ///// for burnin / ADAM-tau adaptation only
                 theta_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i) = fn_convert_EigenColVec_to_RMatrixColumn( HMC_inputs[i].us_theta_vec_0(),      theta_us_0_burnin_tau_adapt_all_chains_output_to_R_RcppPar.column(i));
@@ -425,7 +425,6 @@ public:
           std::vector<Rcpp::NumericMatrix> &R_trace_divs;
           const int n_nuisance_to_track;
           std::vector<Rcpp::NumericMatrix> &R_trace_nuisance;
-          
           //// this only gets used for built-in models, for Stan models log_lik must be defined in the "transformed parameters" block.
           std::vector<Rcpp::NumericMatrix> &R_trace_log_lik;     
           

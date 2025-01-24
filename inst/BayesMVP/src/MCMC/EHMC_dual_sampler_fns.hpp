@@ -292,22 +292,37 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
           //////////////////////////////////////////////////////////////////    M-H acceptance step  (i.e, Accept/Reject step)
           if (metric_shape_main == "dense") {
        
-              const Eigen::Matrix<double, 1, -1>  velocity_0_x_M_dense_main = result_input.main_velocity_0_vec().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
-              energy_old = U_x_initial ;
-              energy_old  +=  0.5 * ( velocity_0_x_M_dense_main * result_input.main_velocity_0_vec() ).eval()(0, 0) ; // for main
-              energy_old  +=  0.5 * (  result_input.us_velocity_0_vec().array()  *  result_input.us_velocity_0_vec().array() * ( EHMC_Metric_struct_as_cpp_struct.M_us_vec ).array() ).sum() ; // for nuisance
-            
-              
-              const Eigen::Matrix<double, 1, -1>  velocity_prop_x_M_dense_main =  result_input.main_velocity_vec_proposed().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
-              energy_new  =  U_x_prop;  
-              energy_new  +=  0.5 * ( velocity_prop_x_M_dense_main *  result_input.main_velocity_vec_proposed()  ).eval()(0, 0) ; // for main
-              energy_new  +=  0.5 * (  result_input.us_velocity_vec_proposed().array()  *  result_input.us_velocity_vec_proposed().array() * ( EHMC_Metric_struct_as_cpp_struct.M_us_vec ).array() ).sum() ; // for nuisance
-    
-              log_ratio = - energy_new + energy_old;
+                    const Eigen::Matrix<double, 1, -1>  velocity_0_x_M_dense_main = result_input.main_velocity_0_vec().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
+                    energy_old = U_x_initial ;
+                    energy_old  +=  0.5 * ( velocity_0_x_M_dense_main * result_input.main_velocity_0_vec() ).eval()(0, 0) ; // for main
+                    //// for nuisance:
+                    energy_old  +=  0.5 * (  result_input.us_velocity_0_vec().array()  *  result_input.us_velocity_0_vec().array() * ( EHMC_Metric_struct_as_cpp_struct.M_us_vec ).array() ).sum() ;  
+                  
+                    
+                    const Eigen::Matrix<double, 1, -1>  velocity_prop_x_M_dense_main =  result_input.main_velocity_vec_proposed().transpose() * EHMC_Metric_struct_as_cpp_struct.M_dense_main; // row-vec
+                    energy_new  =  U_x_prop;  
+                    energy_new  +=  0.5 * ( velocity_prop_x_M_dense_main *  result_input.main_velocity_vec_proposed()  ).eval()(0, 0) ; // for main
+                    //// for nuisance:
+                    energy_new  +=  0.5 * (  result_input.us_velocity_vec_proposed().array()  *  result_input.us_velocity_vec_proposed().array() * ( EHMC_Metric_struct_as_cpp_struct.M_us_vec ).array() ).sum() ;  
+          
+                    log_ratio = - energy_new + energy_old;
               
           } else if (metric_shape_main == "diag") {
             
-             /////////////////////// 
+                    energy_old = U_x_initial ;
+                    //// for main:
+                    energy_old  +=  0.5 * (  result_input.main_velocity_0_vec().array()  *  result_input.main_velocity_0_vec().array() * ( stan::math::inv(EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array() ).array() ).sum() ; 
+                    //// for nuisance:
+                    energy_old  +=  0.5 * (  result_input.us_velocity_0_vec().array()  *  result_input.us_velocity_0_vec().array() * ( EHMC_Metric_struct_as_cpp_struct.M_us_vec ).array() ).sum() ; 
+                    
+                    
+                    energy_new  =  U_x_prop;  
+                    //// for main:
+                    energy_new  +=  0.5 * (  result_input.main_velocity_vec_proposed().array()  *  result_input.main_velocity_vec_proposed().array() * ( stan::math::inv(EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array() ).array() ).sum() ; 
+                    //// for nuisance:
+                    energy_new  +=  0.5 * (  result_input.us_velocity_vec_proposed().array()  *  result_input.us_velocity_vec_proposed().array() * ( EHMC_Metric_struct_as_cpp_struct.M_us_vec ).array() ).sum() ; 
+                    
+                    log_ratio = - energy_new + energy_old; 
             
           }
  

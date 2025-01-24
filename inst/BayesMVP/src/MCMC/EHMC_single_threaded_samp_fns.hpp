@@ -164,6 +164,8 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                               HMC_output_single_chain_i.trace_div()(0, ii) = result_input.main_div();
                          }
                          
+                         HMC_output_single_chain_i.trace_log_lik().col(ii) = result_input.log_lik();
+                         
                      }
                        
          
