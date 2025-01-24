@@ -8,7 +8,7 @@ Maintainer: Enzo Cerullo <enzo.cerullo@bath.edu>
 Description: BayesMVP uses diffusion-space Hamiltonian Monte Carlo (HMC) to efficiently sample the multivariate probit model (MVP) to model correlated binary data, as well as the latent class MVP model for the evaluation of test accuracy data without a gold standard. It achieves rapid sampling through manually-derived gradients and chunking. Users can also input any Stan model for efficient sampling of high dimensional latent variable vectors.
 License: GPL-3
 Imports: cmdstanr, bridgestan, devtools
-LinkingTo:  
+LinkingTo: 
 Suggests: roxygen2
 Roxygen: list(markdown = TRUE, roclets = c("namespace", "rd"))
 SystemRequirements: GNU make, C++17
