@@ -5,68 +5,14 @@
  
  
 
-// #include <stan/math/rev.hpp>
-// ////
-// #include <stan/math/prim/fun/Eigen.hpp>
-// #include <stan/math/prim/fun/typedefs.hpp>
-// #include <stan/math/prim/fun/value_of_rec.hpp>
-// #include <stan/math/prim/err/check_pos_definite.hpp>
-// #include <stan/math/prim/err/check_square.hpp>
-// #include <stan/math/prim/err/check_symmetric.hpp>
-// ////
-// #include <stan/math/prim/fun/cholesky_decompose.hpp>
-// #include <stan/math/prim/fun/sqrt.hpp>
-// #include <stan/math/prim/fun/log.hpp>
-// #include <stan/math/prim/fun/transpose.hpp>
-// #include <stan/math/prim/fun/dot_product.hpp>
-// #include <stan/math/prim/fun/norm2.hpp>
-// #include <stan/math/prim/fun/diagonal.hpp>
-// #include <stan/math/prim/fun/cholesky_decompose.hpp>
-// #include <stan/math/prim/fun/eigenvalues_sym.hpp>
-// #include <stan/math/prim/fun/diag_post_multiply.hpp>
-// ////
-// #include <stan/math/prim/prob/multi_normal_cholesky_lpdf.hpp>
-// #include <stan/math/prim/prob/lkj_corr_cholesky_lpdf.hpp>
-// #include <stan/math/prim/prob/weibull_lpdf.hpp>
-// #include <stan/math/prim/prob/gamma_lpdf.hpp>
-// #include <stan/math/prim/prob/beta_lpdf.hpp>
-// 
-
-
 
 #include <Eigen/Dense>
- 
  
 #include <unsupported/Eigen/SpecialFunctions>
 
 
  
  
-
-
-using std_vec_of_EigenVecs_dbl = std::vector<Eigen::Matrix<double, -1, 1>>;
-using std_vec_of_EigenVecs_int = std::vector<Eigen::Matrix<int, -1, 1>>;
-
-using std_vec_of_EigenMats_dbl = std::vector<Eigen::Matrix<double, -1, -1>>;
-using std_vec_of_EigenMats_int = std::vector<Eigen::Matrix<int, -1, -1>>;
-
-using two_layer_std_vec_of_EigenVecs_dbl =  std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>;
-using two_layer_std_vec_of_EigenVecs_int = std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>;
-
-using two_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>;
-using two_layer_std_vec_of_EigenMats_int = std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>;
-
-
-using three_layer_std_vec_of_EigenVecs_dbl =  std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>>;
-using three_layer_std_vec_of_EigenVecs_int =  std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>>;
-
-using three_layer_std_vec_of_EigenMats_dbl = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>; 
-using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
-
-
-
-
-
 
 
 
@@ -86,7 +32,7 @@ inline  void                   fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace
 ) { 
   
   
-   out_mat.setZero(); //// set log_prob and grad vec to zero at the start (only do this on outer fns, not inner/likelihood fns)
+  out_mat.setZero(); //// set log_prob and grad vec to zero at the start (only do this on outer fns, not inner/likelihood fns)
  
   //// important params
   const int N = y_ref.rows();
@@ -233,7 +179,11 @@ inline  void                   fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace
   }
 
   //// prev
-  const double u_prev_diseased = theta_main_vec_ref(n_params_main - 1);
+  double u_prev_diseased = 0.00001;
+  
+  if (n_class > 1) {
+    u_prev_diseased = theta_main_vec_ref(n_params_main - 1);
+  }
 
   //// 
   double prior_densities_L_Omega_double = 0.0;
@@ -485,7 +435,7 @@ inline  void                   fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace
   Eigen::Matrix<double, -1, 1>  prev_unconstrained_grad_vec_out = Eigen::Matrix<double, -1, 1>::Zero(n_class - 1); //
   //// correlations:
   std::vector<Eigen::Matrix<double, -1, -1>> U_Omega_grad_array =  vec_of_mats<double>(n_tests, n_tests, n_class);
-  Eigen::Matrix<double, -1, 1> L_Omega_grad_vec(n_corrs + (2 * n_tests));
+  Eigen::Matrix<double, -1, 1> L_Omega_grad_vec(n_corrs + (n_class * n_tests));
   Eigen::Matrix<double, -1, 1> U_Omega_grad_vec(n_corrs);
   ////////////////////////////////////////////////
    
@@ -926,7 +876,7 @@ inline  void                   fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace
       U_Omega_grad_vec.head(dim_choose_2) =  ( grad_wrt_L_Omega_nd.transpose()  *  deriv_L_wrt_unc_full[0]  ).transpose() ;
       U_Omega_grad_vec.segment(dim_choose_2, dim_choose_2) =   ( grad_wrt_L_Omega_d.transpose()  *  deriv_L_wrt_unc_full[1] ).transpose()  ;
     } else {
-      grad_wrt_L_Omega_nd =   L_Omega_grad_vec.segment(0, dim_choose_2 + n_tests);
+      grad_wrt_L_Omega_nd =   L_Omega_grad_vec.head(dim_choose_2 + n_tests);
       U_Omega_grad_vec.head(dim_choose_2) =  ( grad_wrt_L_Omega_nd.transpose()  *  deriv_L_wrt_unc_full[0] ).transpose() ;
     }
     
@@ -937,7 +887,9 @@ inline  void                   fn_lp_grad_MVP_LC_Pinkney_NoLog_MD_and_AD_Inplace
     out_mat(0) =  log_prob_out;
     out_mat.segment(1 + n_us, n_corrs) += U_Omega_grad_vec ;
     out_mat.segment(1 + n_us + n_corrs, n_covariates_total) += beta_grad_vec ;  /// no Jacobian needed
-    out_mat(1 + n_us + n_corrs + n_covariates_total) += prev_unconstrained_grad_vec_out(0) ;  
+    if (n_class > 1) {
+       out_mat(1 + n_us + n_corrs + n_covariates_total) += prev_unconstrained_grad_vec_out(0) ;  
+    }
   }
 
   
