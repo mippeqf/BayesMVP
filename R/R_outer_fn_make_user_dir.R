@@ -5,16 +5,24 @@
 #' @export
 .make_user_dir <- function(libname, 
                            pkgname) {
-          
   
-              user_dir <- path.expand("~/BayesMVP")
-              if (!dir.exists(user_dir)) {
-                dir.create(user_dir)
-              }
+  
+              ## Sys.getenv("USERPROFILE")
+             ##  Sys.getenv("R_USER") ## This is BAD on windows dont use this !! (often points e.g. to OneDrive even if OneDrive uninstalled!!)
+  
+              user_dir <- Sys.getenv("USERPROFILE")
               cat("user_dir =", user_dir, "\n")
-              
+              ##
+              user_BayesMVP_dir <- file.path(user_dir, "BayesMVP")
+              ##
+              if (!dir.exists(user_BayesMVP_dir)) {
+                dir.create(user_BayesMVP_dir)
+              }
+              ##
+              cat("user_BayesMVP_dir =", user_BayesMVP_dir, "\n")
+              ##
               ## -------------- USER Examples dir:
-              user_examples_dir <- file.path(user_dir, "examples")
+              user_examples_dir <- file.path(user_BayesMVP_dir, "examples")
               cat("user_examples_dir =", user_examples_dir, "\n")
               
               system_examples_dir <- system.file("examples", package = "BayesMVP")
@@ -31,7 +39,7 @@
               }
               
               ## -------------- USER src dir:
-              user_src_dir <- file.path(user_dir, "src")
+              user_src_dir <- file.path(user_BayesMVP_dir, "src")
               cat("user_src_dir =", user_src_dir, "\n")
               
               system_src_dir <- system.file("BayesMVP/src", package = "BayesMVP")
@@ -48,7 +56,7 @@
               }
               
               ## -------------- USER stan_models dir:
-              user_stan_models_dir <- file.path(user_dir, "stan_models")
+              user_stan_models_dir <- file.path(user_BayesMVP_dir, "stan_models")
               cat("user_stan_models_dir =", user_stan_models_dir, "\n")
               
               system_stan_models_dir <- system.file("BayesMVP/inst/stan_models/", package = "BayesMVP")
@@ -66,7 +74,7 @@
           
               
               # ## -------------- USER TBB files:
-              # user_stan_models_dir <- file.path(user_dir, "stan_models")
+              # user_stan_models_dir <- file.path(user_BayesMVP_dir, "stan_models")
               # cat("user_stan_models_dir =", user_stan_models_dir, "\n")
               # 
               # system_stan_models_dir <- system.file("BayesMVP/inst/stan_models/", package = "BayesMVP")
