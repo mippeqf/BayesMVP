@@ -296,7 +296,9 @@ Stan_model_struct fn_load_Stan_model_and_data( const std::string &model_so_file,
                                               bs_model_destruct,
                                               bs_rng_destruct};
            
-           bs_model* bs_model_ptr = fn_convert_JSON_data_to_BridgeStan(model_handle, json_file, seed);
+           bs_model* bs_model_ptr = fn_convert_JSON_data_to_BridgeStan(model_handle, 
+                                                                       json_file,
+                                                                       seed);
    
            
            // return {bs_model_ptr, bs_handle, bs_model_construct, bs_log_density_gradient};  // Return handle and fn pointers 

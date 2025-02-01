@@ -185,6 +185,8 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
                             //     std::cout << "Combined input for iter " << ii << ": " << theta_unc_full_input.transpose().tail(5) << std::endl;  //// NOT OK
                             // }
                             
+                            
+                            //// Get constrained params. from vector of un-constrained params using bs_param_constrain:
                             int result = Stan_model_as_cpp_struct.bs_param_constrain( Stan_model_as_cpp_struct.bs_model_ptr,
                                                                                       true,
                                                                                       true,

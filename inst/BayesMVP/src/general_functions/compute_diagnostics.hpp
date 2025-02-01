@@ -20,8 +20,7 @@
 #include <immintrin.h>
 #endif
 
- 
-//  
+  
 // #include <stan/analyze/mcmc/autocovariance.hpp>
 // 
 // /// #include <stan/analyze/mcmc/check_chains.hpp>  ////
@@ -59,12 +58,6 @@
 using namespace Eigen;
 using namespace Rcpp;
 
-
-
-
-#define EIGEN_NO_DEBUG
-#define EIGEN_DONT_PARALLELIZE
- 
 
   
   
@@ -171,25 +164,25 @@ inline double  compute_Stan_split_Rhat(const Eigen::Ref<const Eigen::Matrix<doub
 
 
 
-inline std::pair<double, double>   compute_Stan_split_Rhat_rank(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> mcmc_array) {
-  
-  const int n_iter = mcmc_array.rows();
-  const int n_chains = mcmc_array.cols();
-  
-  // Create a vector of pointers to each column (chain)
-  std::vector<const double*> draws;
-  for (int chain = 0; chain < n_chains; ++chain) {
-    draws.push_back(mcmc_array.col(chain).data());
-  } 
-  
-  // Create a sizes vector (each chain has the same size in this example)
-  std::vector<size_t> sizes(n_chains, n_iter);
-  
-  std::pair<double, double> out = stan::analyze::compute_potential_scale_reduction_rank(draws, sizes);
-  
-  return out;
-  
-}  
+// inline std::pair<double, double>   compute_Stan_split_Rhat_rank(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> mcmc_array) {
+//   
+//   const int n_iter = mcmc_array.rows();
+//   const int n_chains = mcmc_array.cols();
+//   
+//   // Create a vector of pointers to each column (chain)
+//   std::vector<const double*> draws;
+//   for (int chain = 0; chain < n_chains; ++chain) {
+//     draws.push_back(mcmc_array.col(chain).data());
+//   } 
+//   
+//   // Create a sizes vector (each chain has the same size in this example)
+//   std::vector<size_t> sizes(n_chains, n_iter);
+//   
+//   std::pair<double, double> out = stan::analyze::compute_potential_scale_reduction_rank(draws, sizes);
+//   
+//   return out;
+//   
+// }  
 
 
 
