@@ -1,6 +1,12 @@
 
 
+##
 rm(list = ls())
+##
+rstudioapi::restartSession()
+##
+rm(list = ls())
+##
 
 ## First remove any possible package fragments:
 ## Find user_pkg_install_dir:
@@ -19,22 +25,27 @@ unlink(pkg_temp_install_path, recursive = TRUE, force = TRUE)
 
 
 if (.Platform$OS.type == "windows") {
-  local_pkg_dir <- "C:/users/enzoc/Documents/BayesMVP"   
+  local_pkg_dir <-  "C:\\Users\\enzoc\\Documents\\Work\\PhD_work\\R_packages\\BayesMVP"
+  local_INNER_pkg_dir <-  "C:\\Users\\enzoc\\Documents\\Work\\PhD_work\\R_packages\\BayesMVP\\inst\\BayesMVP"
 } else {
-  local_pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP"  
-  # local_pkg_dir <- "/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP"  
+  if (parallel::detectCores() > 16) {   ## if on local HPC
+      local_pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP"  
+      local_INNER_pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP"
+  } else {  ## if on laptop
+      local_pkg_dir <- "/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP"  
+      local_INNER_pkg_dir <- "/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP"
+  }
 }
 
-
+ 
 # #### -------- INNER pkg stuff:
-# local_INNER_pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP"
-# ## Document INNER package:
-# devtools::clean_dll(local_INNER_pkg_dir)
-# Rcpp::compileAttributes(local_INNER_pkg_dir)
-# devtools::document(local_INNER_pkg_dir)
+## Document INNER package:
+devtools::clean_dll(local_INNER_pkg_dir)
+Rcpp::compileAttributes(local_INNER_pkg_dir)
+devtools::document(local_INNER_pkg_dir)
 
 
-#### -------- ACTUAL (LOCAL) INSTALL:
+#### -------- ACTUAL (LOCAL) INSTALL: 
 ## Document:
 devtools::clean_dll(local_pkg_dir)
 devtools::document(local_pkg_dir)
@@ -48,6 +59,7 @@ rstudioapi::restartSession()
 require(BayesMVP)
 BayesMVP::install_BayesMVP()
 require(BayesMVP)
+
 
 
 
