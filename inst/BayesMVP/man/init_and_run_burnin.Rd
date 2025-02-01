@@ -5,12 +5,13 @@
 \title{init_and_run_burnin}
 \usage{
 init_and_run_burnin(
+  Model_type,
   init_object,
+  Stan_data_list,
   y,
   N,
   parallel_method,
   n_chains_burnin,
-  Model_type,
   sample_nuisance,
   Phi_type,
   n_params_main,

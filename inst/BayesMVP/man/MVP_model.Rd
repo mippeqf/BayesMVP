@@ -268,9 +268,9 @@ Sample from the model
   force_PartialLog = FALSE,
   multi_attempts = TRUE,
   max_L = 1024,
-  tau_mult = 1.6,
+  tau_mult = 2,
   metric_type_main = "Hessian",
-  metric_shape_main = "dense",
+  metric_shape_main = "diag",
   ratio_M_main = 0.25,
   ratio_M_us = 0.25,
   n_nuisance_to_track = 5,
@@ -356,7 +356,7 @@ automatically be set to \code{TRUE}, since autodiff is only available for partia
 is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwise.}
 
 \item{\code{metric_shape_main}}{The shape of the metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"diag"} or
-\code{"dense"}. The default is \code{"dense"} if \code{n_params_main < 250} and \code{"diag"} otherwise.}
+\code{"dense"}. The default is \code{"diag"} (i.e. a diagonal metric).}
 
 \item{\code{ratio_M_main}}{Ratio to use for the metric. Main parameters.}
 
