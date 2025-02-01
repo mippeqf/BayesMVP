@@ -20,7 +20,17 @@ init_inits    <- function(init_model_outs,
                           Stan_cpp_flags,
                           ...) {
   
-  
+  # # Get package directory paths
+  # pkg_dir <- system.file(package = "BayesMVP")
+  # data_dir <- file.path(pkg_dir, "stan_data")  # directory to store data inc. JSON data files
+  # stan_dir <- file.path(pkg_dir, "stan_models")
+  # ##
+  # print(paste("pkg_dir = ", pkg_dir))
+  # print(paste("data_dir = ", data_dir))
+  # print(paste("stan_dir = ", stan_dir))
+  # 
+  # ## Stan model path
+  # Stan_model_file_path <- file.path(stan_dir, Stan_model_name)
   
   ## NOTE:        metric_shape_nuisance = "diag" is the only option for nuisance !!
   
@@ -67,9 +77,6 @@ init_inits    <- function(init_model_outs,
   }
   
   
-  
-  
-  
   if (Model_type != "Stan") { 
     if (Model_type == "MVP") {
       n_class <- 1
@@ -78,88 +85,49 @@ init_inits    <- function(init_model_outs,
     }
   }
 
+  mod <- NULL
  
  ####  n_chains_burnin <- 8 
   
   ##  ----------------------------   starting values - set defaults if user does not supply --- this is only for NON-Stan models - for Stan models inits are specified the same as they are for Stan
   
-  
+  mod <- NULL
   if (Model_type == "Stan") { 
     
-           dummy_json_file_path <- NULL
-           dummy_model_so_file <- NULL
-           
-            # //////   ----- if Stan model, then all 3 of: 
-            # Stan_model_file_path,
-            # Stan_data_list, and 
-            # init_lists_per_chain need to be user-supplied
-            
-            bs_model <- init_model_outs$bs_model
-            json_file_path <- init_model_outs$json_file_path
-         
-              
-            if (compile == TRUE) {  # re-compile the user-supplied Stan model to extract model methods and make init's  
-
-                      if (is.null(Stan_cpp_user_header)) {
-                        
-                        mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
-                                                       compile_model_methods = TRUE,
-                                                       force_recompile = force_recompile,
-                                                       cpp_options = Stan_cpp_flags)
-                        
-                      } else {
-                        
-                        mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
-                                                       compile_model_methods = TRUE,
-                                                       force_recompile = force_recompile,
-                                                       user_header =  Stan_cpp_user_header, 
-                                                       cpp_options = Stan_cpp_flags)
-                      }
-
-              
-            } else {  ### use the inputted cmdstanr_model_fit_obj to re-initialise the model
-              
-              # model_fit <- cmdstanr_model_fit_obj
-              mod <- cmdstanr_model_fit_obj
-              
-            }
-            
-            
-            
-            
-            model_fit <- mod$sample(  data = Stan_data_list,
-                                      seed = 123,
-                                      chains = n_chains_burnin,
-                                      parallel_chains = n_chains_burnin,
-                                      iter_warmup = 1,
-                                      iter_sampling = 1,
-                                      init = init_lists_per_chain,
-                                      adapt_delta = 0.10,
-                                      max_treedepth = 1)
-            
-              
-              
-              cmdstanr_model_out <- model_fit$summary()
-              param_names <- cmdstanr_model_out$variable
-              
-              
-              unconstrained_vec_per_chain <- list()
-              for (kk in 1:n_chains_burnin) {
-                unconstrained_vec_per_chain[[kk]] <- model_fit$unconstrain_variables(init_lists_per_chain[[kk]])
-              }
-              
-              # ?StanModel
-              # print(unconstrained_vec_per_chain)
-              
-              n_params <- length( unconstrained_vec_per_chain[[kk]])
-              if (sample_nuisance == TRUE) { 
-                n_params_main <- n_params - n_nuisance
-              } else { 
-                n_params_main <- n_params
-              }
-              
+                   dummy_json_file_path <- NULL
+                   dummy_model_so_file <- NULL
+                   
+                    # //////   ----- if Stan model, then all 3 of:  Stan_model_file_path, Stan_data_list, and init_lists_per_chain need to be user-supplied
+                    
+                    bs_model <- init_model_outs$bs_model
+                    print(paste("bs_model = "))
+                    print(bs_model)
+                    ##
+                    json_file_path <- init_model_outs$json_file_path
+                    print(paste("json_file_path = "))
+                    print(json_file_path)
  
-    
+                    if (sample_nuisance == TRUE) { 
+                      n_params_main <- n_params - n_nuisance
+                    } else { 
+                      n_params_main <- n_params
+                    }
+                    
+                    ##
+                    bs_names  <-  (bs_model$param_names())
+                    ## if using bs names for param names:
+                    param_names <- bs_names
+                    ## Inits:
+                    inits_unconstrained_vec_per_chain <- list()
+                    for (kk in 1:n_chains_burnin) {
+                      ## NOTE: param_unconstrain_json() Returns a vector of unconstrained parameters * given the constrained parameters *
+                      json_string_for_inits_chain_kk <- BayesMVP:::convert_Stan_data_list_to_JSON(init_lists_per_chain[[kk]])
+                      validated_json_string <- paste(readLines(json_string_for_inits_chain_kk), collapse="")
+                      ##
+                      inits_unconstrained_vec_per_chain[[kk]] <- bs_model$param_unconstrain_json(validated_json_string) ## error here
+                      ####  inits_unconstrained_vec_per_chain[[kk]] <-  convert_JSON_string_to_R_vector(json_string_for_inits_chain_kk)
+                    }
+                    
  
   } else {
     
@@ -175,6 +143,8 @@ init_inits    <- function(init_model_outs,
                   n_covariates_max <- max(n_covariates_max_nd, n_covariates_max_d)
                   X_nd <- X[[1]]
                   X_d <-  X[[2]]
+                  
+                  print(str(X_d))
               
                   prior_coeffs_mean_mat <- init_model_outs$model_args_list$model_args_list$prior_coeffs_mean_mat
                   prior_coeffs_sd_mat <- init_model_outs$model_args_list$model_args_list$prior_coeffs_sd_mat
@@ -193,12 +163,9 @@ init_inits    <- function(init_model_outs,
                   ## these vars need conversion to different types compatible w/ Stan
                   corr_force_positive <- as.integer(init_model_outs$model_args_list$model_args_list$corr_force_positive)
                   prior_only <-  as.integer(init_model_outs$model_args_list$model_args_list$prior_only)
-
                   
-                  overflow_threshold <- init_model_outs$model_args_list$model_args_list$overflow_threshold
+                  overflow_threshold <-  init_model_outs$model_args_list$model_args_list$overflow_threshold
                   underflow_threshold <- init_model_outs$model_args_list$model_args_list$underflow_threshold
- 
-                  
                   
                   for (c in 1:n_class) {
                     for (t in 1:n_tests) {
@@ -211,30 +178,38 @@ init_inits    <- function(init_model_outs,
                   print(prior_coeffs_mean_mat)
                   print(prior_coeffs_sd_mat)
                   
-                 #  print(X)
-                  # for (c in 1:n_class) {
-                  #   for (t in 1:n_tests) {
-                  #      print( is.numeric(X[[c]][[t]]))
-                  #   }
-                  # }
+                  Phi_type <- init_model_outs$model_args_list$model_args_list$Phi_type
+                  print(paste("Phi_type = ", Phi_type))
+                  ##
+                  Phi_type_int <- ifelse(Phi_type == "Phi", 1, 2)
+                  
+                  ## Make sure vecs of length 1 are R arrays (1d):
+                  if (!(is.matrix(prev_prior_a))) {
+                    prev_prior_a <-  matrix(prev_prior_a, ncol = 1)
+                    prev_prior_b <-  matrix(prev_prior_b, ncol = 1)
+                  }
+                  
+                  if (!(is.matrix(lkj_cholesky_eta))) {
+                    lkj_cholesky_eta <-  matrix(lkj_cholesky_eta, ncol = 1)
+                  }
                   
                   Stan_data_list <- list(N = N,
                                          n_tests = n_tests,
                                          y = y,
-                                         n_class = 2,
-                                         n_pops =  1,  ## multi-pop not supported yet (currently only in Stan version)
-                                         pop =  (rep(1, N)),
-                                         #####
+                                         n_class = n_class,
+                                         n_pops =  n_pops,  ## multi-pop not supported yet (currently only in Stan version)
+                                         pop =  c(rep(1, N)),
+                                         ##
                                          n_covariates_max_nd = n_covariates_max_nd,
                                          n_covariates_max_d = n_covariates_max_d,
                                          n_covariates_max = n_covariates_max,
-                                         # X_nd = X_nd,
-                                         # X_d = X_d,
-                                         #X = list(X_nd, X_d),
+                                         X_nd = X_nd,
+                                         X_d = X_d,
                                          n_covs_per_outcome = n_covariates_per_outcome_mat,
-                                         #####
+                                         ##
                                          corr_force_positive = corr_force_positive,
                                          known_num = known_num,
+                                         ##
                                          # lb_corr = lb_corr,
                                          # ub_corr = ub_corr,
                                          overflow_threshold =  overflow_threshold,
@@ -244,20 +219,38 @@ init_inits    <- function(init_model_outs,
                                          prior_beta_mean = prior_coeffs_mean_mat,
                                          prior_beta_sd = prior_coeffs_sd_mat,
                                          prior_LKJ = lkj_cholesky_eta,
-                                         prior_p_alpha =  array(rep(prev_prior_a, n_pops)),
-                                         prior_p_beta =  array(rep(prev_prior_b, n_pops)))
- 
+                                         prior_p_alpha = prev_prior_a,
+                                         prior_p_beta = prev_prior_b,
+                                         ##
+                                         Phi_type =  Phi_type_int,
+                                         handle_numerical_issues = 1,
+                                         fully_vectorised = 1)
                   
+                  print(paste("Stan_data_list = "))
+                  print(str(Stan_data_list))
                   
-                  outs_init_bs_model <- BayesMVP:::init_bs_model(   Stan_data_list = Stan_data_list,
-                                                                    Stan_model_name = "PO_LC_MVP_bin.stan")
+                  print(paste("prev_prior_a = "))
+                  print(str(prev_prior_a))
+                  print(paste("prev_prior_b = "))
+                  print(str(prev_prior_b))
                   
+                  print(paste("Stan_data_list$prior_p_alpha = "))
+                  print(str(Stan_data_list$prior_p_alpha))
+                  print(paste("Stan_data_list$prior_p_beta = "))
+                  print(str(Stan_data_list$prior_p_beta))
+                  
+                  ## Compile using BridgeStan:
+                  outs_init_bs_model <- BayesMVP:::init_bs_model_internal(   Stan_data_list = Stan_data_list,
+                                                                             Stan_model_name = "LC_MVP_bin_PartialLog_v5.stan")
+                  ##   LC_MVP_bin_PartialLog_v5.stan
+                  ##   PO_LC_MVP_bin.stan
+                  ##   LC_MVP_bin_w_mnl_cpp_grad_v1.stan
                   bs_model <- outs_init_bs_model$bs_model
                   json_file_path <- outs_init_bs_model$json_file_path         
                   Stan_model_file_path <- outs_init_bs_model$Stan_model_file_path  
                   
                   dummy_json_file_path <- json_file_path
-                  dummy_model_so_file <- transform_stan_path(Stan_model_file_path)
+                  dummy_model_so_file <- BayesMVP:::transform_stan_path(Stan_model_file_path)
                   
         } else if (Model_type == "MVP") {
                   
@@ -266,8 +259,6 @@ init_inits    <- function(init_model_outs,
                   n_covariates_max_nd <- 999999 #max(n_covariates_per_outcome_mat[[1]])
                   n_covariates_max_d <-  999999 #max(n_covariates_per_outcome_mat[[2]])  
                   n_covariates_max <- max(unlist(n_covariates_per_outcome_mat))
-                  ##X_nd <- X[[1]]
-                 # X_d <-  X[[2]]
                   
                   prior_coeffs_mean_mat <- init_model_outs$model_args_list$model_args_list$prior_coeffs_mean_mat
                   prior_coeffs_sd_mat <- init_model_outs$model_args_list$model_args_list$prior_coeffs_sd_mat
@@ -286,7 +277,6 @@ init_inits    <- function(init_model_outs,
                   ## these vars need conversion to different types compatible w/ Stan
                   corr_force_positive <- as.integer(init_model_outs$model_args_list$model_args_list$corr_force_positive)
                   prior_only <-  as.integer(init_model_outs$model_args_list$model_args_list$prior_only)
-                  
                   
                   overflow_threshold <- init_model_outs$model_args_list$model_args_list$overflow_threshold
                   underflow_threshold <- init_model_outs$model_args_list$model_args_list$underflow_threshold
@@ -324,17 +314,17 @@ init_inits    <- function(init_model_outs,
                   
                   
                   
-                  
-                  outs_init_bs_model <- BayesMVP:::init_bs_model( Stan_data_list = Stan_data_list,
-                                                                  Stan_model_name = "PO_MVP_bin.stan")
-                  
+                  ## Compile using BridgeStan:
+                  outs_init_bs_model <- BayesMVP:::init_bs_model_internal( Stan_data_list = Stan_data_list,
+                                                                           Stan_model_name = "LC_MVP_bin_PartialLog_v5.stan")
+                  ## PO_MVP_bin.stan
+                  ## LC_MVP_bin_w_mnl_cpp_grad_v1.stan
                   bs_model <- outs_init_bs_model$bs_model
                   json_file_path <- outs_init_bs_model$json_file_path         
                   Stan_model_file_path <- outs_init_bs_model$Stan_model_file_path  
- 
-                  
+                  ##
                   dummy_json_file_path <- json_file_path
-                  dummy_model_so_file <- transform_stan_path(Stan_model_file_path)
+                  dummy_model_so_file <- BayesMVP:::transform_stan_path(Stan_model_file_path)
           
         } else if (Model_type == "latent_trait") {
           
@@ -363,6 +353,17 @@ init_inits    <- function(init_model_outs,
                   print(LT_b_priors_shape) ; print(LT_b_priors_scale) ; 
                   print(LT_known_bs_values) ;  print(LT_known_bs_indicator) ; 
                   
+                  Phi_type <- init_model_outs$model_args_list$model_args_list$Phi_type
+                  print(paste("Phi_type = ", Phi_type))
+                  ##
+                  Phi_type_int <- ifelse(Phi_type == "Phi", 1, 2)
+                  
+                  ## Make sure vecs of length 1 are R arrays (1d):
+                  if (length(prev_prior_a) == 1) {
+                    prior_p_alpha <- ifelse(is.array(prev_prior_a), prev_prior_a, array(prev_prior_a))
+                    prior_p_beta <-  ifelse(is.array(prev_prior_b), prev_prior_b, array(prev_prior_b))
+                  }
+                  
                   Stan_data_list <- list(N = N,
                                          n_tests = n_tests,
                                          y = y,
@@ -382,120 +383,83 @@ init_inits    <- function(init_model_outs,
                                          LT_known_bs_values = LT_known_bs_values,
                                          LT_known_bs_indicator = LT_known_bs_indicator, 
                                          ####
-                                         prior_p_alpha =  array(rep(prev_prior_a, n_pops)),
-                                         prior_p_beta =  array(rep(prev_prior_b, n_pops))) 
+                                         prior_p_alpha =  prior_p_alpha,
+                                         prior_p_beta = prior_p_beta)
          
-                  
-                  outs_init_bs_model <- init_bs_model(Stan_data_list = Stan_data_list,
-                                                      Stan_model_name = "PO_latent_trait_bin.stan")
-                  
+                  ## Compile using BridgeStan
+                  outs_init_bs_model <- BayesMVP:::init_bs_model_internal( Stan_data_list = Stan_data_list,
+                                                                           Stan_model_name = "PO_latent_trait_bin.stan")
+                  ## PO_latent_trait_bin.stan
+                  ## latent_trait_w_mnl_cpp_grad_v1.stan
                   bs_model <- outs_init_bs_model$bs_model
                   json_file_path <- outs_init_bs_model$json_file_path         
                   Stan_model_file_path <- outs_init_bs_model$Stan_model_file_path  
-                  
+                  ##
                   dummy_json_file_path <- json_file_path
-                  dummy_model_so_file <- transform_stan_path(Stan_model_file_path)
+                  dummy_model_so_file <- BayesMVP:::transform_stan_path(Stan_model_file_path)
        
           
         }
           
           
-          # re-compile the user-supplied Stan model to extract model methods and make init's vector and JSON data file 
-    
-
-    param_names <- NULL
-    
-
-    
-    
-    if (compile == TRUE) {  # re-compile the user-supplied Stan model to extract model methods and make init's  
-      
-            mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
-                                           compile_model_methods = TRUE,
-                                           force_recompile = force_recompile
-                                           ## user_header =  Stan_cpp_user_header, 
-                                           ## cpp_options = Stan_cpp_flags
-                                           )
-      
-            # if (is.null(Stan_cpp_user_header)) {
-            #   
-            #   mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
-            #                                  compile_model_methods = TRUE,
-            #                                  force_recompile = force_recompile,
-            #                                  cpp_options = Stan_cpp_flags)
-            #   
-            # } else {
-            #   
-            #   mod <- cmdstanr::cmdstan_model(Stan_model_file_path, 
-            #                                  compile_model_methods = TRUE,
-            #                                  force_recompile = force_recompile,
-            #                                  user_header =  Stan_cpp_user_header, 
-            #                                  cpp_options = Stan_cpp_flags)
-            # }
-
-      
-    } else {  ### use the inputted cmdstanr_model_fit_obj to re-initialise the model
-      
-      # model_fit <- cmdstanr_model_fit_obj
-      mod <- cmdstanr_model_fit_obj
-      
-    }
-    
-    
-    model_fit <- mod$sample(  data = Stan_data_list,
-                              seed = 123,
-                              chains = n_chains_burnin,
-                              parallel_chains = n_chains_burnin,
-                              iter_warmup = 1,
-                              iter_sampling = 1,
-                              init = init_lists_per_chain,
-                              adapt_delta = 0.10,
-                              max_treedepth = 1)
-    
-    
-          cmdstanr_model_out <- model_fit$summary()
-          param_names <- cmdstanr_model_out$variable
+                # re-compile the user-supplied Stan model to extract model methods and make init's vector and JSON data file 
           
-          unconstrained_vec_per_chain <- list()
-          for (kk in 1:n_chains_burnin) {
-            unconstrained_vec_per_chain[[kk]] <- model_fit$unconstrain_variables(init_lists_per_chain[[kk]])
-          }
+      
+          param_names <- NULL
+   
+ 
           
-          bs_model <- NULL
-          bs_model <- init_model_outs$bs_model
+                #### bs_model <- NULL
+                #### bs_model <- init_model_outs$bs_model
+                ##
+                bs_names  <-  (bs_model$param_names())
+                ## if using bs names for param names:
+                param_names <- bs_names
+                ## Inits:
+                inits_unconstrained_vec_per_chain <- list()
+                for (kk in 1:n_chains_burnin) {
+                  ## NOTE: param_unconstrain_json() Returns a vector of unconstrained parameters * given the constrained parameters *
+                  json_string_for_inits_chain_kk <- BayesMVP:::convert_Stan_data_list_to_JSON(init_lists_per_chain[[kk]])
+                  validated_json_string <- paste(readLines(json_string_for_inits_chain_kk), collapse="")
+                  ##
+                  inits_unconstrained_vec_per_chain[[kk]] <- bs_model$param_unconstrain_json(validated_json_string) ## error here
+                  ####  inits_unconstrained_vec_per_chain[[kk]] <-  convert_JSON_string_to_R_vector(json_string_for_inits_chain_kk)
+                }
+                
+
     
     
   } ### /// end of "if not Stan model [else]" block
   
   
-   model_so_file <- transform_stan_path(Stan_model_file_path)
+   model_so_file <- BayesMVP:::transform_stan_path(Stan_model_file_path)
   
   
  
     ##  --------------------------   End of starting values 
-    print(n_chains_burnin)
-    print(n_params_main)
-    print(n_nuisance)
-    
-    theta_main_vectors_all_chains_input_from_R  <- array(0, dim = c(n_params_main, n_chains_burnin))
-    theta_us_vectors_all_chains_input_from_R    <- array(0, dim = c(n_nuisance, n_chains_burnin))
-    
     n_params <- n_nuisance + n_params_main
     index_nuisance <- 1:n_nuisance
     index_main <- (1 + n_nuisance):n_params
+    ##
+    print(paste("n_chains_burnin = ", n_chains_burnin))
+    ##
+    print(paste("n_params_main = ", n_params_main))
+    print(paste("n_nuisance = ", n_nuisance))
+    print(paste("n_params = ", n_params))
+    ##
+    theta_main_vectors_all_chains_input_from_R  <- array(0, dim = c(n_params_main, n_chains_burnin))
+    theta_us_vectors_all_chains_input_from_R    <- array(0, dim = c(n_nuisance, n_chains_burnin))
   
     for (kk in 1:n_chains_burnin) {
-      theta_main_vectors_all_chains_input_from_R[, kk] <-     unconstrained_vec_per_chain[[kk]][index_main]
-      theta_us_vectors_all_chains_input_from_R[, kk] <-     unconstrained_vec_per_chain[[kk]][index_nuisance]
+      theta_main_vectors_all_chains_input_from_R[, kk] <-     inits_unconstrained_vec_per_chain[[kk]][index_main]
+      theta_us_vectors_all_chains_input_from_R[, kk] <-     inits_unconstrained_vec_per_chain[[kk]][index_nuisance]
     }
-
-  
   
     json_file_path <- normalizePath(json_file_path)
     model_so_file <- normalizePath(model_so_file)
     
     Model_args_as_Rcpp_List <- init_model_outs$Model_args_as_Rcpp_List
-    
+    ##
     Model_args_as_Rcpp_List$model_so_file <- model_so_file
     Model_args_as_Rcpp_List$json_file_path <- json_file_path
   
@@ -509,7 +473,8 @@ init_inits    <- function(init_model_outs,
                 Stan_data_list = Stan_data_list,
                 Stan_model_file_path = Stan_model_file_path,
                 Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
-                unconstrained_vec_per_chain = unconstrained_vec_per_chain,
+                inits_unconstrained_vec_per_chain = inits_unconstrained_vec_per_chain,
+                init_lists_per_chain = init_lists_per_chain,
                 theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R, 
                 theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R))
   

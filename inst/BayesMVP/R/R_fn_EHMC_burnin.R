@@ -21,6 +21,7 @@ is_valid <- function(x) {
 R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                 vect_type,
                                                 parallel_method,
+                                                Stan_data_list,
                                                 y,
                                                 N,
                                                 sample_nuisance,
@@ -58,16 +59,21 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                 EHMC_Metric_as_Rcpp_List,
                                                 EHMC_burnin_as_Rcpp_List) { 
   
+  tictoc::tic()
 
+  debug <- TRUE ## BOOKMARK
+  
+  message("Printing from R_fn_EHMC_SNAPER_ADAM_burnin:")
 
   RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
 
   Model_type_R <- Model_type
-
+  
+  ## Fixed SNAPER-HMC / ADAM constants: 
   beta1_adam = 0.00
   beta2_adam = 0.95
   eps_adam = 1e-8
-
+  ##
   kappa = 8.0
   eta_w <- 3
   
@@ -97,9 +103,6 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   
   print(paste("n_params_main = ", n_params_main))
   print(paste("n_nuisance = ", n_nuisance))
-
-
-  tictoc::tic()
   
   # print("hello")
   ####  print(paste("theta_main_vectors_all_chains_input_from_R = ", theta_main_vectors_all_chains_input_from_R))
@@ -108,7 +111,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   if (sample_nuisance == TRUE) { 
      theta_vec_mean <-  rowMeans( rbind(theta_us_vectors_all_chains_input_from_R, theta_main_vectors_all_chains_input_from_R))
   } else { 
-     theta_main_vectors_all_chains_input_from_R[,] <- 0 
+     #### theta_main_vectors_all_chains_input_from_R[,] <- 0 
      theta_vec_mean <-  rowMeans( rbind(theta_main_vectors_all_chains_input_from_R))
   }
   
@@ -163,29 +166,93 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
    
   EHMC_args_as_Rcpp_List$eps_main <- 0.01 # just in case fn_find_initial_eps fails
   EHMC_args_as_Rcpp_List$eps_us <- 0.01 # just in case fn_find_initial_eps fails
-  
+
   
   try({
 
         if (sample_nuisance == TRUE) {
-          theta_us_vec <-  matrix(theta_vec_mean[index_nuisance])
+          theta_us_vec <-   c(theta_vec_mean[index_nuisance])
         } else {
-          theta_us_vec <- matrix(rep(1, n_nuisance))
+          theta_us_vec <-   c(rep(1, n_nuisance))
         }
-
-
-        par_res <- (BayesMVP:::fn_find_initial_eps_main_and_us(         theta_main_vec_initial_ref = matrix(theta_vec_mean[index_main]),
-                                                             theta_us_vec_initial_ref = theta_us_vec,
-                                                             partitioned_HMC = partitioned_HMC,
-                                                             seed = seed,
-                                                             Model_type = Model_type,
-                                                             force_autodiff = force_autodiff,
-                                                             force_PartialLog = force_PartialLog,
-                                                             multi_attempts = multi_attempts,
-                                                             y_ref = y,
-                                                             Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
-                                                             EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
-                                                             EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
+    
+    
+        
+        if (debug == TRUE) {
+          ##
+          print(paste("index_main = "))
+          print(head(index_main)) ;   print(tail(index_main))
+          ##
+          print(paste("theta_vec_mean[index_main] = "))
+          print(matrix(theta_vec_mean[index_main]))
+          ##
+          print(paste("theta_us_vec = "))
+          print(head(theta_us_vec)) ; print(tail(theta_us_vec))
+          ##
+          print(paste("partitioned_HMC = "))
+          print(partitioned_HMC)
+          ##
+          print(paste("seed = "))
+          print(seed)
+          ##
+          print(paste("Model_type = "))
+          print(Model_type)
+          ##
+          print(paste("force_autodiff = "))
+          print(force_autodiff)
+          ##
+          print(paste("force_PartialLog = "))
+          print(force_PartialLog)
+          ##
+          print(paste("multi_attempts = "))
+          print(multi_attempts)
+          ##
+          print(paste("y = "))
+          print(head(y)) ;  print(str(y))
+          ##
+          print(paste("Model_args_as_Rcpp_List = "))
+          print(str(Model_args_as_Rcpp_List))
+          ##
+          print(paste("EHMC_args_as_Rcpp_List = "))
+          print(str(EHMC_args_as_Rcpp_List))
+          ##
+          print(paste("EHMC_Metric_as_Rcpp_List = "))
+          print(str(EHMC_Metric_as_Rcpp_List))
+          ##
+        }
+    
+        
+        # try({ 
+        #   for (i in 1:length(Model_args_as_Rcpp_List$Model_args_col_vecs_double)) {
+        #     if (!(is.matrix(Model_args_as_Rcpp_List$Model_args_col_vecs_double[[i]]))) { 
+        #       Model_args_as_Rcpp_List$Model_args_col_vecs_double[[i]] <- matrix(c(Model_args_as_Rcpp_List$Model_args_col_vecs_double[[i]]))
+        #     }
+        #   }
+        # })
+    
+        print(paste(" Model_args_as_Rcpp_List$Model_args_col_vecs_double = "))
+        print(Model_args_as_Rcpp_List$Model_args_col_vecs_double)
+        
+        print(paste(" matrix(c(theta_vec_mean[index_main])) = "))
+        print(matrix(c(theta_vec_mean[index_main])))
+        
+        print(paste("matrix(c(theta_us_vec)) = "))
+        print(matrix(c(theta_us_vec)))
+        
+        
+    
+        par_res <- (BayesMVP:::fn_find_initial_eps_main_and_us(        theta_main_vec_initial_ref = matrix(c(theta_vec_mean[index_main]), ncol = 1),
+                                                                       theta_us_vec_initial_ref = matrix(c(theta_us_vec), ncol = 1),
+                                                                       partitioned_HMC = partitioned_HMC,
+                                                                       seed = seed,
+                                                                       Model_type = Model_type,
+                                                                       force_autodiff = force_autodiff,
+                                                                       force_PartialLog = force_PartialLog,
+                                                                       multi_attempts = multi_attempts,
+                                                                       y_ref = y,
+                                                                       Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+                                                                       EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
+                                                                       EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
 
         #par_res <- parallel::mccollect(par_proc)
         par_res <- par_res  ## [[1]]
@@ -210,9 +277,6 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
          print( paste("initial_eps for ALL params = ", EHMC_args_as_Rcpp_List$eps_main))
     
   }
-  
-
- 
    
   
   {
@@ -257,7 +321,9 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   
   shrinkage_factor <- 1
   
-
+  L_main_during_burnin_vec <- c()
+  L_us_during_burnin_vec <-   c()
+  
  #  Start burnin   ------------------------------------------------------------------------------------------------------------------------------------------------
   for (ii in iter_seq_burnin) {
     
@@ -804,6 +870,10 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                               }
 
                              })
+                               
+                               L_main_iter_ii <-  EHMC_args_as_Rcpp_List$tau_main /  EHMC_args_as_Rcpp_List$eps_main 
+                               L_main_during_burnin_vec[ii] <- L_main_iter_ii
+                               
                          }
 
                               ## //////////////////   --------------------------------  update tau for us ------------------------------------------------------------------------------
@@ -860,6 +930,9 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                     }
 
                                   })
+                                
+                              L_us_iter_ii <-  EHMC_args_as_Rcpp_List$tau_us /  EHMC_args_as_Rcpp_List$eps_us 
+                              L_us_during_burnin_vec[ii] <- L_us_iter_ii
 
                    }
 
@@ -939,16 +1012,20 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
  }
  
-  
-  
+  L_main_during_burnin <- mean(L_main_during_burnin_vec, na.rm = TRUE)
+  L_us_during_burnin <-   mean(L_us_during_burnin_vec, na.rm = TRUE)
   
     out <- list(n_chains_burnin = n_chains_burnin,
-                n_burnin = n_burnin,
-                time_burnin = time_burnin,
-                 eps_main =  EHMC_args_as_Rcpp_List$eps_main,
+              n_burnin = n_burnin,
+              time_burnin = time_burnin,
+              eps_main =  EHMC_args_as_Rcpp_List$eps_main,
               tau_main =  EHMC_args_as_Rcpp_List$tau_main,
               eps_us =  EHMC_args_as_Rcpp_List$eps_us,
               tau_us =  EHMC_args_as_Rcpp_List$tau_us,
+              L_main_during_burnin_vec = L_main_during_burnin_vec,
+              L_us_during_burnin_vec = L_us_during_burnin_vec,
+              L_main_during_burnin = L_main_during_burnin,
+              L_us_during_burnin = L_us_during_burnin,
               theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R,
               theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,
               EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,

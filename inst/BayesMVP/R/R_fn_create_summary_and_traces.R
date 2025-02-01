@@ -1,139 +1,7 @@
 
 
 
-#' generate_summary_tibble
-#' @keywords internal
-#' @export
-generate_summary_tibble <- function(n_threads = NULL,
-                                    trace, 
-                                    param_names, 
-                                    n_to_compute, 
-                                    compute_nested_rhat,
-                                    n_chains, 
-                                    n_superchains) {
-  
-        
-            n_cores <- parallel::detectCores()
-            n_threads <- n_cores
-
-              #### Initialize summary dataframe
-              summary_df <- data.frame(     parameter = param_names,
-                                            mean = NA,
-                                            sd = NA,
-                                            `2.5%` = NA,
-                                            `50%` = NA,
-                                            `97.5%` = NA,
-                                            n_eff = NA,
-                                            Rhat = NA,
-                                            n_Rhat = NA,
-                                            check.names = FALSE)
-              
-              # # Effective Sample Size (ESS) and Rhat - using the fast custom RcppParallel fn "BayesMVP::Rcpp_compute_MCMC_diagnostics()"
-              posterior_draws_as_std_vec_of_mats <- list()
-              mat <- matrix(nrow = n_iter, ncol = n_chains)
-
-              n_params <- n_to_compute
-              
-              comment(print(str(trace)))
-             # comment(print(str(posterior_draws_as_std_vec_of_mats)))
-
-              for (i in 1:n_params) {
-                posterior_draws_as_std_vec_of_mats[[i]] <- mat
-                for (kk in 1:n_chains) {
-                  posterior_draws_as_std_vec_of_mats[[i]][1:n_iter, kk] <- trace[i, 1:n_iter, kk] 
-                }
-              }
-              
-              if (n_params < n_threads) { n_threads = n_params }
-              
-              #### Compute summary stats using custom Rcpp/C++ functions
-              outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
-                                                    stat_type = "mean",
-                                                    n_threads = n_threads))
-              means_between_chains <- outs$statistics[, 1]
-
-              outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
-                                                    stat_type = "sd",
-                                                    n_threads = n_threads))
-              SDs_between_chains <- outs$statistics[, 1]
-
-              outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
-                                                    stat_type = "quantiles",
-                                                    n_threads = n_threads))
-              quantiles_between_chains <- outs$statistics
-              
-              
-              #### Compute Effective Sample Size (ESS) and Rhat using custom Rcpp/C++ functions 
-              outs <-  (BayesMVP:::Rcpp_compute_MCMC_diagnostics(  posterior_draws_as_std_vec_of_mats,
-                                                        diagnostic = "split_ESS",
-                                                        n_threads = n_threads))
-              ess_vec <- outs$diagnostics[, 1]
-              # ess_tail_vec <- outs$diagnostics[, 2]
-              
-              outs <-  (BayesMVP:::Rcpp_compute_MCMC_diagnostics(  posterior_draws_as_std_vec_of_mats,
-                                                        diagnostic = "split_rhat",
-                                                        n_threads = n_threads))
-              rhat_vec <- outs$diagnostics[, 1]
-              # rhat_tail_vec <- outs$diagnostics[, 2]
-              
-              
-              for (i in seq_len(n_to_compute)) {
-                
-                    #### Get all values for this parameter across iterations and chains
-                    param_values <- as.vector(trace[i, , ])
-                    
-                    #### Calculate summary statistics
-                    summary_df$mean[i] <- means_between_chains[i]
-                    summary_df$sd[i] <- SDs_between_chains[i]
-                    try({  
-                        summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[i, ]
-                        #### summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[, i]
-                    })
-                    summary_df$n_eff[i] <- round(ess_vec[i])
-                    summary_df$Rhat[i] <- rhat_vec[i]
-                
-              }
-              
-              if (compute_nested_rhat == TRUE) {
-                
-                    nested_rhat_vec <- numeric(n_to_compute)
-                    superchain_ids <- create_superchain_ids(n_chains = n_chains, n_superchains = n_superchains)
-                    
-                    for (i in seq_len(n_to_compute)) {
-                      nested_rhat_vec[i] <- posterior::rhat_nested(trace[i, , ], superchain_ids = superchain_ids)
-                      summary_df$n_Rhat[i] <- nested_rhat_vec[i]
-                    }
-                                    
-              }
-              
-              summary_tibble <- tibble::tibble(summary_df)
-              print(summary_tibble, n = 100)
-              
-              return(summary_tibble)
-
-    
-}
-
-
-
-
-
  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #### ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -154,6 +22,8 @@ create_summary_and_traces <- function(    model_results,
 ) {
   
 
+  ## Start timer 
+  tictoc::tic()
   
   ## Extract essential model info from "init_object" object
   Model_type <- init_object$Model_type
@@ -170,7 +40,8 @@ create_summary_and_traces <- function(    model_results,
     log_lik_trace_mnl_models <-  model_results$result[[6]] 
   }
   
-  time_burnin <- model_results$time_burnin
+  #### time_burnin <- model_results$time_burnin
+  time_burnin <- model_results$init_burnin_object$time_burnin
   time_sampling <- model_results$time_sampling
   time_total_wo_summaries <- time_burnin + time_sampling
   
@@ -196,10 +67,16 @@ create_summary_and_traces <- function(    model_results,
   force_autodiff <- model_results$force_autodiff
   force_PartialLog <- model_results$force_PartialLog
   multi_attempts <- model_results$multi_attempts
+
+  L_main_during_burnin_vec <- model_results$init_burnin_object$L_main_during_burnin_vec
+  L_us_during_burnin_vec <- model_results$init_burnin_object$L_us_during_burnin_vec
+  L_main_during_burnin <- model_results$init_burnin_object$L_main_during_burnin
+  L_us_during_burnin <- model_results$init_burnin_object$L_us_during_burnin
+  
   
   {
 
-  tictoc::tic()
+
     
   if (sample_nuisance == TRUE) {
       n_nuisance <- n_nuisance
@@ -231,22 +108,40 @@ create_summary_and_traces <- function(    model_results,
     n_superchains <- round(n_chains / n_chains_burnin)
   }
   
-  # Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))  ### TEMP
-  Stan_model_file_path <- init_object$Stan_model_file_path
+  #### Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))  ### TEMP
+  #### Stan_model_file_path <- init_object$Stan_model_file_path
   
   if (Model_type == "Stan") {
     json_file_path <- init_object$json_file_path
-    model_so_file <- init_object$model_so_file
+    model_so_file <-  init_object$model_so_file
   } else { 
     json_file_path <- init_object$dummy_json_file_path
-    model_so_file <- init_object$dummy_model_so_file
+    model_so_file <-  init_object$dummy_model_so_file
   }
   
+  cmdstanr::write_stan_json(data = init_object$Stan_data_list, 
+                            file = json_file_path)
   
-  
+  ##
+  print(paste("init_object$json_file_path = "))
+  print(init_object$json_file_path)
+  ##
+  print(paste("init_object$model_so_file = "))
+  print(init_object$model_so_file)
+  ##
+  print(paste("init_object$dummy_json_file_path = "))
+  print(init_object$dummy_json_file_path)
+  ##
+  print(paste("init_object$dummy_model_so_file = "))
+  print(init_object$dummy_model_so_file)
+  ##
   Sys.setenv(STAN_THREADS = "true")
-  bs_model <- StanModel$new(Stan_model_file_path, data = json_file_path, 1234) # creates .so fil
+ 
+  #### bs_model <- StanModel$new(Stan_model_file_path, data = json_file_path, 1234) # creates .so file
+  bs_model <- init_object$bs_model
   bs_names  <-  (bs_model$param_names())
+  
+  init_object$bs_names
   
   comment(print(paste("bs_names - head = ", head(bs_names))))
   comment(print(paste("bs_names - tail = ", tail(bs_names))))
@@ -255,11 +150,10 @@ create_summary_and_traces <- function(    model_results,
   bs_names_inc_tp_and_gq <-  (bs_model$param_names(include_tp = TRUE, include_gq = TRUE))
   
   
+  pars_names <- bs_names_inc_tp_and_gq
+  ####  pars_names <- init_object$param_names
   
-  ## pars_names <- bs_names_inc_tp_and_gq
-  pars_names <- init_object$param_names
-  
-  if (model_obj$init_object$param_names[1] == "lp__") { 
+  if (init_object$param_names[1] == "lp__") { 
     pars_names <- pars_names[-1]
   }
   
@@ -488,7 +382,12 @@ create_summary_and_traces <- function(    model_results,
                                                                 n_superchains = n_superchains)
                   
                   
-        Min_ESS_main <- min(na.rm = TRUE, summary_tibble_main_params$n_eff[1:n_params_main])
+        Min_ESS_main <-  min(na.rm = TRUE, summary_tibble_main_params$n_eff[1:n_params_main])
+        Max_rhat_main <- max(na.rm = TRUE, summary_tibble_main_params$Rhat[1:n_params_main])
+        Max_nested_rhat_main <- NULL
+        if (compute_nested_rhat == TRUE) {
+           Max_nested_rhat_main <- max(na.rm = TRUE, summary_tibble_main_params$n_Rhat[1:n_params_main])
+        } 
               
   }
  
@@ -621,21 +520,28 @@ create_summary_and_traces <- function(    model_results,
     EHMC_args_as_Rcpp_List <- model_results$init_burnin_object$EHMC_args_as_Rcpp_List
     
     try({
+      comment(print((paste("Max R-hat (parameters block, main only) = ", round(Max_rhat_main, 4)))))
+      comment(print((paste("Max R-hat (parameters block, main only) = ", round(Max_nested_rhat_main, 4)))))
+    })
+    
+    try({
       comment(print((paste("Min ESS (parameters block, main only) = ", round(Min_ESS_main, 0)))))
       comment(print((paste("Min ESS / sec [samp.] (parameters block, main only) = ", signif(ESS_per_sec_samp, 3)))))
       comment(print((paste("Min ESS / sec [overall] (parameters block, main only) = ", signif(ESS_per_sec_total, 3)))))
     })
     try({ 
-      n_grad_evals_sampling_main <-  (EHMC_args_as_Rcpp_List$tau_main / EHMC_args_as_Rcpp_List$eps_main)  * n_iter * n_chains_sampling
+      L_main_during_sampling <- (EHMC_args_as_Rcpp_List$tau_main / EHMC_args_as_Rcpp_List$eps_main)
+      n_grad_evals_sampling_main <- L_main_during_sampling * n_iter * n_chains_sampling
       Min_ess_per_grad_main_samp <-  Min_ESS_main / n_grad_evals_sampling_main
     })
     try({
-      n_grad_evals_sampling_us <-  (EHMC_args_as_Rcpp_List$tau_us / EHMC_args_as_Rcpp_List$eps_us)  * n_iter * n_chains_sampling
+      L_us_during_sampling <- (EHMC_args_as_Rcpp_List$tau_us / EHMC_args_as_Rcpp_List$eps_us)
+      n_grad_evals_sampling_us <-  L_us_during_sampling  * n_iter * n_chains_sampling
       Min_ess_per_grad_us_samp <-  Min_ESS_main / n_grad_evals_sampling_us
     })
     try({ 
       
-      if (partitioned_HMC == TRUE) {
+      if (partitioned_HMC == TRUE) { ## i.e. if nuisance are sampledseperately 
           weight_nuisance_grad <- 0.3333333
           weight_main_grad <- 0.6666667 ## main grad takes ~ 2x as long to compute as nuisance grad 
           Min_ess_per_grad_samp_weighted <- (weight_nuisance_grad * Min_ess_per_grad_us_samp + weight_main_grad * Min_ess_per_grad_main_samp) / (weight_nuisance_grad + weight_main_grad)
@@ -729,14 +635,25 @@ create_summary_and_traces <- function(    model_results,
     
     ## list to store efficiency information
     efficiency_info <- list(              n_iter = n_iter,
+                                          ##
+                                          Max_rhat_main = Max_rhat_main,
+                                          Max_nested_rhat_main = Max_nested_rhat_main,
+                                          ##
                                           Min_ESS_main = Min_ESS_main, 
                                           ESS_per_sec_samp = ESS_per_sec_samp, 
                                           ESS_per_sec_total = ESS_per_sec_total,
+                                          ##
                                           time_burnin = time_burnin, 
                                           time_sampling = time_sampling, 
                                           time_summaries = time_summaries,
                                           time_total_wo_summaries = time_total_wo_summaries, 
                                           time_total = time_total, 
+                                          ##
+                                          L_main_during_burnin = L_main_during_burnin,
+                                          L_main_during_sampling = L_main_during_sampling,
+                                          L_us_during_burnin = L_us_during_burnin,
+                                          L_us_during_sampling = L_us_during_sampling,
+                                          ##
                                           Min_ess_per_grad_samp_weighted = Min_ess_per_grad_samp_weighted,
                                           grad_evals_per_sec = grad_evals_per_sec,
                                           ##

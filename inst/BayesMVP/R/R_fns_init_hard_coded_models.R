@@ -8,10 +8,7 @@ init_hard_coded_model <- function(Model_type,
                                   N = N,
                                   model_args_list = list(),
                                   ...) {
- 
   
- 
-
   hard_coded_models_vec <- c("LC_MVP", "MVP", "latent_trait")
   
   if (Model_type == "MVP") { 
@@ -40,15 +37,11 @@ init_hard_coded_model <- function(Model_type,
     stop("y must be a matrix where #cols = #outcomes and #rows = #individuals")
   }
   
-
-  
-  
-  
+ 
  ## N <- nrow(y)
   n_tests <- ncol(y)
   n_obs <- N * n_tests 
-  
-  
+   
   ## load fn args 
   ### args relevant for all 3 models (i.e. MVP, LC_MVP and latent_trait)
   prior_only <- FALSE ## prior_only <- model_args_list$prior_only ## currently not available
@@ -130,52 +123,66 @@ init_hard_coded_model <- function(Model_type,
 
   if (is.null(overflow_threshold)) { 
     overflow_threshold <- +5
+    model_args_list$overflow_threshold <- +5
   }
   if (is.null(underflow_threshold)) { 
     underflow_threshold <- -5
+    model_args_list$underflow_threshold <- -5
   }
   
   if (is.null(Phi_type)) { 
+    ##
     Phi_type <- "Phi"
+    model_args_list$Phi_type <- "Phi"
+    ##
     inv_Phi_type <- "inv_Phi"
+    model_args_list$inv_Phi_type <- "inv_Phi"
+    ##
+  
   }
   if (is.null(nuisance_transformation)) { 
     nuisance_transformation <- "Phi"
+    model_args_list$nuisance_transformation <- "inv_Phi"
   }
   
   
   ### call C++ function to detect is user has AVX-2 or AVX-512 vectorisation support 
   if (is.null(vect_type)) { 
     vect_type <-  BayesMVP:::detect_vectorization_support()
+    model_args_list$vect_type <-  BayesMVP:::detect_vectorization_support()
   }
   
   
   ### find "optimal" number of chunks (at the moment only looks at number of cores, but should ideally also look at L3 cache and memory bandwidth)
   if (is.null(num_chunks)) { 
     num_chunks <- BayesMVP:::find_num_chunks_MVP(N, n_tests)
+    model_args_list$num_chunks <- num_chunks
   }
   
   
   if ( (Model_type == "LC_MVP") || (Model_type == "latent_trait") ) { 
     n_class = 2
+    model_args_list$n_class <- 2
   } else if (Model_type == "MVP") { 
     n_class = 1
+    model_args_list$n_class <- 1
   }
    
-
-  if (is.null(corr_force_positive)) {
-    corr_force_positive <- FALSE
-  }
-  
   if (n_class == 2) { 
     if (is.null(prev_prior_a)) { 
       prev_prior_a <- 1
+      model_args_list$prev_prior_a <- 1
     }
     if (is.null(prev_prior_b)) { 
       prev_prior_b <- 1
+      model_args_list$prev_prior_b <- 1
     }
   }
   
+  if (is.null(corr_force_positive)) {
+    corr_force_positive <- FALSE
+    model_args_list$corr_force_positive <- FALSE
+  }
   
   if (is.null(lb_corr)) {
     if (corr_force_positive == TRUE) lb <- 0 
@@ -184,6 +191,7 @@ init_hard_coded_model <- function(Model_type,
     for (c in 1:n_class) {
       lb_corr[[c]] <- array(lb, dim = c(n_tests, n_tests))
     }
+    model_args_list$lb_corr <- lb_corr
   }
   
   if (is.null(ub_corr)) {
@@ -191,17 +199,20 @@ init_hard_coded_model <- function(Model_type,
     for (c in 1:n_class) {
       ub_corr[[c]]  = array( +1, dim = c(n_tests, n_tests))
     }
+    model_args_list$ub_corr <- ub_corr
   }
   
  
   if (is.null(corr_param)) {
     corr_param <- "Sean"
+    model_args_list$corr_param <- "Sean"
   }
   
   if (Model_type %in% c("MVP", "LC_MVP")) {
     if (is.null(lkj_cholesky_eta)) {
       warning("lkj_cholesky_eta not supplied - if using LKJ priors (the default for LC-MVP and MVP) then will assume LKJ(2) in all classes")
-      lkj_cholesky_eta <- rep(2, n_class)
+      lkj_cholesky_eta <- matrix(rep(2, n_class), ncol = 1)
+      model_args_list$lkj_cholesky_eta <- matrix(rep(2, n_class), ncol = 1)
     }
   }
   
@@ -211,13 +222,14 @@ init_hard_coded_model <- function(Model_type,
   if ( (is.null(n_covariates_per_outcome_mat)) && (Model_type == "Stan") ) {  # if Stan model used, then make dummy variable
   
       n_covariates_per_outcome_mat <- c(array(1, dim = c(n_tests, 1)))
-  
+      model_args_list$n_covariates_per_outcome_mat <- c(array(1, dim = c(n_tests, 1)))
   }
 
   
   
   if (is.null(prior_only)) { 
     prior_only <- FALSE
+    model_args_list$prior_only <- FALSE
   }
   
  
@@ -577,7 +589,7 @@ init_hard_coded_model <- function(Model_type,
     if (Model_type  %in% c("MVP", "LC_MVP")) {
           Model_args_col_vecs_double[[1]] <-  (lkj_cholesky_eta)
     } else { 
-          Model_args_col_vecs_double[[1]] <-   matrix(rep(1, 10)) # dummy var
+          Model_args_col_vecs_double[[1]] <-   matrix(rep(1, 10), ncol = 1) # dummy var
     }
     
     

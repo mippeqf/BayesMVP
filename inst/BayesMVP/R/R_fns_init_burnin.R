@@ -3,18 +3,199 @@
 
 
 
+#' init_EHMC_Metric_as_Rcpp_List
+#' @keywords internal
+#' @export
+init_EHMC_Metric_as_Rcpp_List   <- function(  n_params_main,
+                                              n_nuisance,
+                                              metric_shape_main) {
+  
+      n_params <- n_params_main + n_nuisance
+      try({  
+        index_nuisance <- 1:n_nuisance
+      })
+      
+      M_diag_vec <- rep(1, n_params)
+      
+      M_dense_main <- diag(n_params_main)
+      M_inv_dense_main <- M_dense_main
+      M_inv_dense_main_chol <- M_dense_main
+      
+      M_inv_main_vec <- matrix(c(diag(M_inv_dense_main)))
+      M_main_vec <- matrix(c(1 / M_inv_main_vec))
+      
+      M_inv_us_vec <- matrix(1 / M_diag_vec[index_nuisance])
+      M_us_vec <- matrix(M_diag_vec[index_nuisance])
+      
+      
+      
+      EHMC_Metric_as_Rcpp_List <- list( 
+          ### for main params
+          M_dense_main = M_dense_main,
+          M_inv_dense_main = M_inv_dense_main,
+          M_inv_dense_main_chol = M_inv_dense_main_chol,
+          M_inv_main_vec = M_inv_main_vec,
+          M_main_vec = M_main_vec,
+          ### for nuisance
+          M_inv_us_vec = M_inv_us_vec, 
+          M_us_vec = M_us_vec,
+          ### shape of main metric
+          metric_shape_main = metric_shape_main)
+   
+
+   return(EHMC_Metric_as_Rcpp_List)
+
+}
+
+
+
+
+#' init_EHMC_args_as_Rcpp_List
+#' @keywords internal
+#' @export
+init_EHMC_args_as_Rcpp_List   <- function(diffusion_HMC) {
+  
+        tau_main <- 1
+        tau_main_ii <- 1
+        eps_main <- 1
+        tau_us <- 1
+        tau_us_ii <- 1
+        eps_us <- 1
+
+        EHMC_args_as_Rcpp_List <- list(
+          ### for main params
+          tau_main = tau_main,
+          tau_main_ii = tau_main_ii,
+          eps_main = eps_main,
+          ### for nuisance
+          tau_us = tau_us,
+          tau_us_ii = tau_us_ii,
+          eps_us = eps_us,
+          diffusion_HMC = diffusion_HMC)
+        
+      return(EHMC_args_as_Rcpp_List)
+
+}
+
+
+
+#' init_EHMC_args_as_Rcpp_List
+#' @keywords internal
+#' @export
+init_EHMC_burnin_as_Rcpp_List   <- function(n_params_main,
+                                            n_nuisance,
+                                            adapt_delta,
+                                            LR_main,
+                                            LR_us) {
+  
+      n_params <- n_params_main + n_nuisance
+      index_main <- (1 + n_nuisance):n_params
+      try({  
+        index_nuisance <- 1:n_nuisance
+      })
+  
+  ##### set ADAM-related params (initialise)
+      ### for main params
+      adapt_delta_main <- adapt_delta
+      LR_main <- LR_main
+      eps_m_adam_main <-  1.0
+      eps_v_adam_main <-  1.0
+      tau_m_adam_main <-  1.0
+      tau_v_adam_main <-  1.0
+      index_main <- index_main
+      M_dense_sqrt <- matrix(c(diag(n_params_main)))
+      snaper_m_vec_main  <- matrix(c(rep(1, n_params_main)))
+      snaper_w_vec_main  <- matrix(c(rep(0.01, n_params_main)))
+      
+      
+      ### for NUISANCE params
+      adapt_delta_us <- adapt_delta
+      LR_us <- LR_us
+      eps_m_adam_us <-  1.0
+      eps_v_adam_us <-  1.0
+      tau_m_adam_us <-  1.0
+      tau_v_adam_us <-  1.0
+      index_nuisance <- index_nuisance
+      sqrt_M_us_vec <- matrix(rep(1, n_nuisance))
+      snaper_m_vec_us  <- matrix(rep(1, n_nuisance))
+      snaper_w_vec_us  <- matrix(rep(0.01, n_nuisance))
+      
+      
+      ### for main params
+      adapt_delta_main <- adapt_delta_main
+      LR_main <- LR_main
+      eps_m_adam_main <- eps_m_adam_main
+      eps_v_adam_main <- eps_v_adam_main
+      tau_m_adam_main <- tau_m_adam_main
+      tau_v_adam_main <- tau_v_adam_main
+      index_main <- index_main
+      M_dense_sqrt <- M_dense_sqrt
+      snaper_m_vec_main <- snaper_m_vec_main
+      snaper_w_vec_main <- snaper_w_vec_main
+      eigen_max_main <- 0
+      eigen_vector_main <- matrix(c(rep(0, n_params_main)))
+      
+      ### for NUISANCE params
+      adapt_delta_us <- adapt_delta_us
+      LR_us <- LR_us
+      eps_m_adam_us <- eps_m_adam_us
+      eps_v_adam_us <- eps_v_adam_us
+      tau_m_adam_us <- tau_m_adam_us
+      tau_v_adam_us <- tau_v_adam_us
+      index_nuisance <- index_nuisance
+      M_dense_sqrt <- M_dense_sqrt
+      snaper_m_vec_us <- snaper_m_vec_us
+      snaper_w_vec_us <- snaper_w_vec_us
+      eigen_max_us <- 0 
+      eigen_vector_us <- matrix(c(rep(0, n_nuisance)))
+      
+      # ------------ put in the list to put into C++
+      EHMC_burnin_as_Rcpp_List <- list(   ### for main params
+                                          adapt_delta_main = adapt_delta_main,
+                                          LR_main = LR_main,
+                                          eps_m_adam_main = eps_m_adam_main,
+                                          eps_v_adam_main = eps_v_adam_main,
+                                          tau_m_adam_main = tau_m_adam_main,
+                                          tau_v_adam_main = tau_v_adam_main,
+                                          eigen_max_main =  eigen_max_main,
+                                          index_main = index_main,
+                                          M_dense_sqrt = M_dense_sqrt,
+                                          snaper_m_vec_main = snaper_m_vec_main,
+                                          snaper_w_vec_main = snaper_w_vec_main,
+                                          eigen_vector_main = eigen_vector_main,
+                                          ### for nuisance
+                                          adapt_delta_us = adapt_delta_us,
+                                          LR_us = LR_us,
+                                          eps_m_adam_us = eps_m_adam_us,
+                                          eps_v_adam_us = eps_v_adam_us,
+                                          tau_m_adam_us = tau_m_adam_us,
+                                          tau_v_adam_us = tau_v_adam_us,
+                                          eigen_max_us =  eigen_max_us,
+                                          index_us = index_nuisance,
+                                          sqrt_M_us_vec = sqrt_M_us_vec,
+                                          snaper_m_vec_us = snaper_m_vec_us,
+                                          snaper_w_vec_us = snaper_w_vec_us,
+                                          eigen_vector_us = eigen_vector_us)
+      
+      
+      return(EHMC_burnin_as_Rcpp_List)
+      
+}
+
 
 
 
 #' init_and_run_burnin
 #' @keywords internal
 #' @export
-init_and_run_burnin   <- function(  init_object, 
+init_and_run_burnin   <- function(  Model_type,
+                                    init_object,
+                                    Stan_data_list,
+                                    # model_args_list,
                                     y,
                                     N,
                                     parallel_method,
                                     n_chains_burnin,
-                                    Model_type,
                                     sample_nuisance,
                                     Phi_type,
                                     n_params_main,
@@ -48,44 +229,6 @@ init_and_run_burnin   <- function(  init_object,
                                     Model_args_as_Rcpp_List) {
   
   
-  ###  Model_args_as_Rcpp_List <- init_object$Model_args_as_Rcpp_List
-  
-  Stan_model_json_file_path <- init_object$json_file_path
-  
-  print(paste("n_params = ", n_nuisance + n_params_main))
-  
-  n_params <- n_nuisance + n_params_main
-
-  if (n_nuisance > 0) {
-    index_us <- 1:n_nuisance
-  }
-  
-  # else { 
-  #   index_us <- 1:5 
-  # }
-  
-  index_main <- (n_nuisance + 1):n_params
-  
-  print(paste("n_params_main = ",  n_params_main))
-  print(paste("n_nuisance = ",  n_nuisance))
-  
-  
-  if (Model_type == "Stan") {
-    Model_args_as_Rcpp_List$model_so_file <-    init_object$model_so_file
-    Model_args_as_Rcpp_List$json_file_path <- init_object$json_file_path
-  } else { 
-    Model_args_as_Rcpp_List$model_so_file <-  "none" #   init_object$dummy_model_so_file
-    Model_args_as_Rcpp_List$json_file_path <- "none" #  init_object$dummy_json_file_path
-  }
-  
-  
-  print( Model_args_as_Rcpp_List$model_so_file)
-  print(  Model_args_as_Rcpp_List$json_file_path)
-  
-  print( Model_args_as_Rcpp_List$Model_args_strings)
-  
-  
-  
   # lp_grad_outs <- fn_Rcpp_wrapper_fn_lp_grad( Model_type = "latent_trait",
   #                                             force_autodiff = FALSE,
   #                                             force_PartialLog = FALSE,
@@ -99,165 +242,39 @@ init_and_run_burnin   <- function(  init_object,
 
   ## NOTE:        metric_shape_nuisance = "diag" is the only option for nuisance !!
   
-
-
+  n_params <- n_params_main + n_nuisance
+  index_us <- 1:n_nuisance
+  index_main <- (n_nuisance + 1):n_nuisance
  
-
   
   {  # ---------------------------------------------------------------- list for EHMC params / EHMC struct in C++
     
-    M_diag_vec <- rep(1, n_params)
+        EHMC_Metric_as_Rcpp_List <- init_EHMC_Metric_as_Rcpp_List(   n_params_main = n_params_main, 
+                                                                     n_nuisance = n_nuisance, 
+                                                                     metric_shape_main = metric_shape_main)  
     
-    M_dense_main <- diag(n_params_main)
-    M_inv_dense_main <- M_dense_main
-    M_inv_dense_main_chol <- M_dense_main
-    
-    M_inv_main_vec <- diag(M_inv_dense_main)
-    
-    M_inv_us_vec <- matrix(1 / M_diag_vec[index_us])
-    M_us_vec <- matrix(M_diag_vec[index_us])
-    
-   
-    
-    EHMC_Metric_as_Rcpp_List <- list( 
-      ### for main params
-      M_dense_main = M_dense_main,
-      M_inv_dense_main = M_inv_dense_main,
-      M_inv_dense_main_chol = M_inv_dense_main_chol,
-      M_inv_main_vec = M_inv_main_vec,
-      ### for nuisance
-      M_inv_us_vec = M_inv_us_vec, 
-      M_us_vec = M_us_vec,
-      ### shape of main metric
-      metric_shape_main = metric_shape_main)
   }
   
   
   
   { # ----------------------------------------------------------------- list for EHMC params / EHMC struct in C++  #
     
-    tau_main <- 1
-    tau_main_ii <- 1
-    eps_main <- 1
-    tau_us <- 1
-    tau_us_ii <- 1
-    eps_us <- 1
-    
-    EHMC_args_as_Rcpp_List <- list(
-      ### for main params
-      tau_main = tau_main, 
-      tau_main_ii = tau_main_ii,
-      eps_main = eps_main,
-      ### for nuisance
-      tau_us = tau_us,
-      tau_us_ii = tau_us_ii,
-      eps_us = eps_us, 
-      diffusion_HMC = diffusion_HMC)
+        EHMC_args_as_Rcpp_List <- init_EHMC_args_as_Rcpp_List(diffusion_HMC = diffusion_HMC) 
     
   }
-
-  
-  
-  {  # ----------------------------------------------------------------- list for EHMC params / EHMC struct in C++
-    
-    ##### set ADAM-related params (initialise)
-    ### for main params
-    adapt_delta_main <- adapt_delta
-    LR_main <- LR_main
-    eps_m_adam_main <-  1.0
-    eps_v_adam_main <-  1.0
-    tau_m_adam_main <-  1.0
-    tau_v_adam_main <-  1.0
-    index_main <- index_main
-    M_dense_sqrt <- diag(n_params_main)
-    snaper_m_vec_main  <- rep(1, n_params_main)
-    snaper_w_vec_main  <- rep(0.01, n_params_main)
-    
-    
-    ### for NUISANCE params
-    adapt_delta_us <- adapt_delta
-    LR_us <- LR_us
-    eps_m_adam_us <-  1.0
-    eps_v_adam_us <-  1.0
-    tau_m_adam_us <-  1.0
-    tau_v_adam_us <-  1.0
-    index_us <- index_us
-    sqrt_M_us_vec <- rep(1, n_nuisance)
-    snaper_m_vec_us  <- rep(1, n_nuisance)
-    snaper_w_vec_us  <- rep(0.01, n_nuisance)
-    
-    
-    ### for main params
-    adapt_delta_main <- adapt_delta_main
-    LR_main <- LR_main
-    eps_m_adam_main <- eps_m_adam_main
-    eps_v_adam_main <- eps_v_adam_main
-    tau_m_adam_main <- tau_m_adam_main
-    tau_v_adam_main <- tau_v_adam_main
-    index_main <- index_main
-    M_dense_sqrt <- M_dense_sqrt
-    snaper_m_vec_main <- snaper_m_vec_main
-    snaper_w_vec_main <- snaper_w_vec_main
-    eigen_max_main <- 0
-    eigen_vector_main <- rep(0, n_params_main)
-    
-    ### for NUISANCE params
-    adapt_delta_us <- adapt_delta_us
-    LR_us <- LR_us
-    eps_m_adam_us <- eps_m_adam_us
-    eps_v_adam_us <- eps_v_adam_us
-    tau_m_adam_us <- tau_m_adam_us
-    tau_v_adam_us <- tau_v_adam_us
-    index_us <- index_us
-    M_dense_sqrt <- M_dense_sqrt
-    snaper_m_vec_us <- snaper_m_vec_us
-    snaper_w_vec_us <- snaper_w_vec_us
-    eigen_max_us <- 0 
-    eigen_vector_us <- rep(0, n_nuisance)
-    
-    # ------------ put in the list to put into C++
-    EHMC_burnin_as_Rcpp_List <- list( 
-      ### for main params
-      adapt_delta_main = adapt_delta_main,
-      LR_main = LR_main,
-      eps_m_adam_main = eps_m_adam_main,
-      eps_v_adam_main = eps_v_adam_main,
-      tau_m_adam_main = tau_m_adam_main,
-      tau_v_adam_main = tau_v_adam_main,
-      eigen_max_main =  eigen_max_main,
-      index_main = index_main,
-      M_dense_sqrt = M_dense_sqrt,
-      snaper_m_vec_main = snaper_m_vec_main,
-      snaper_w_vec_main = snaper_w_vec_main,
-      eigen_vector_main = eigen_vector_main,
-      ### for nuisance
-      adapt_delta_us = adapt_delta_us,
-      LR_us = LR_us,
-      eps_m_adam_us = eps_m_adam_us,
-      eps_v_adam_us = eps_v_adam_us,
-      tau_m_adam_us = tau_m_adam_us,
-      tau_v_adam_us = tau_v_adam_us,
-      eigen_max_us =  eigen_max_us,
-      index_us = index_us,
-      sqrt_M_us_vec = sqrt_M_us_vec,
-      snaper_m_vec_us = snaper_m_vec_us,
-      snaper_w_vec_us = snaper_w_vec_us,
-      eigen_vector_us = eigen_vector_us
-    )
-    
-    
-    
-
-
-    
-    
-  }
-  
-
-
 
  
+  {  # ----------------------------------------------------------------- list for EHMC params / EHMC struct in C++
+      
+        EHMC_burnin_as_Rcpp_List <- init_EHMC_burnin_as_Rcpp_List( n_params_main = n_params_main,
+                                                                   n_nuisance = n_nuisance,
+                                                                   adapt_delta = adapt_delta,
+                                                                   LR_main = LR_main,
+                                                                   LR_us = LR_us)
+    
+  }
   
+
   theta_main_vectors_all_chains_input_from_R <- init_object$theta_main_vectors_all_chains_input_from_R
   theta_us_vectors_all_chains_input_from_R <-   init_object$theta_us_vectors_all_chains_input_from_R
   
@@ -282,6 +299,8 @@ init_and_run_burnin   <- function(  init_object,
                                                               parallel_method = parallel_method,
                                                               n_params_main = n_params_main,
                                                               n_nuisance = n_nuisance,
+                                                              Stan_data_list = Stan_data_list,
+                                                              # model_args_list = model_args_list,
                                                               y = y,
                                                               N = N,
                                                               n_chains_burnin = n_chains_burnin,

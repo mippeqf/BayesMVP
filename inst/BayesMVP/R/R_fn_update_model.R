@@ -61,10 +61,9 @@ update_model    <- function(init_object, ### this is the object to update
      sample_nuisance <-  init_object$sample_nuisance
   }
   
-  
   ### update model_args_list
   if (!(is.null(model_args_list))) {
-   ### init_object$model_args_list <- model_args_list
+    init_object$model_args_list <- model_args_list
   } else {  # don't update
     model_args_list <-  init_object$model_args_list
   }
@@ -72,7 +71,7 @@ update_model    <- function(init_object, ### this is the object to update
   
   ### update Stan_data_list
   if (!(is.null(Stan_data_list))) {
-   #### init_object$Stan_data_list <- Stan_data_list
+    init_object$Stan_data_list <- Stan_data_list
   } else {  # don't update
     Stan_data_list <-  init_object$Stan_data_list
   }
@@ -90,12 +89,11 @@ update_model    <- function(init_object, ### this is the object to update
   } else {  # don't update
     n_nuisance <-  init_object$n_nuisance
   }
-
-   
+    
 
   ### now re-initialise but WITHOUT re-compiling the model
-    init_object <- BayesMVP:::initialise_model(   Model_type = Model_type,
-                                                 compile = FALSE,
+    init_object <- BayesMVP:::initialise_model(  Model_type = Model_type,
+                                                 compile = FALSE, ## DONT re-compile model
                                                  force_recompile = force_recompile,
                                                  cmdstanr_model_fit_obj = init_object$cmdstanr_model_fit_obj,
                                                  y = y,
@@ -119,6 +117,23 @@ update_model    <- function(init_object, ### this is the object to update
   
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                   
                    
                   

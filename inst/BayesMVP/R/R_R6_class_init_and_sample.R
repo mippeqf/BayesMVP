@@ -364,8 +364,6 @@ MVP_model <- R6Class("MVP_model",
                                                       }
                                                     }
                                                     
-                                                    params_same <- 1
-                                                    
                                                     if (partitioned_HMC == FALSE) { 
                                                       if (diffusion_HMC == TRUE) { 
                                                         stop("Diffusion-pathspace HMC is only allowed if partitioned_HMC is set to TRUE - \n
@@ -375,17 +373,29 @@ MVP_model <- R6Class("MVP_model",
                                                       }
                                                     }
                                                     
+
+                                                    if (partitioned_HMC == TRUE) {
+                                                      sample_nuisance <- TRUE
+                                                    } 
                                                     
-                                                    # first update class members if new values provided
-                                                    if (!identical(self$y, y))  { self$y <- y ; params_same <- 0 }
-                                                    if (!identical(self$N, N))  { self$N <- N ; params_same <- 0 }
-                                                    if (!identical(self$n_params_main, n_params_main))  { self$n_params_main <- n_params_main ; params_same <- 0 }
-                                                    if (!identical(self$n_nuisance, n_nuisance))  { self$n_nuisance <- n_nuisance ; params_same <- 0 }
-                                                    if (!identical(self$init_lists_per_chain, init_lists_per_chain))  { self$init_lists_per_chain <- init_lists_per_chain ; params_same <- 0 }
-                                                    if (!identical(self$model_args_list, model_args_list))  { self$model_args_list <- model_args_list ; params_same <- 0 }
-                                                    if (!identical(self$Stan_data_list, Stan_data_list))  { self$Stan_data_list <- Stan_data_list ; params_same <- 0 }
-                                                    if (!identical(self$sample_nuisance, sample_nuisance))  { self$sample_nuisance <- sample_nuisance ; params_same <- 0 }
-                                                    if (!identical(self$n_chains_burnin, n_chains_burnin))  { self$n_chains_burnin <- n_chains_burnin ; params_same <- 0 }
+                                                    params_same <- 1
+                                                    
+                                                    {
+                                                      # first update class members if new values provided
+                                                      if (!identical(self$y, y))  { self$y <- y ; params_same <- 0 } ## Don't need to update for y (as n_us doesn't change unless N does!!)
+                                                      if (!identical(self$sample_nuisance, sample_nuisance))  { self$sample_nuisance <- sample_nuisance ; params_same <- 0 } ## Don't need to update (??? - BOOKMARK)
+                                                      if (!identical(self$Stan_data_list, Stan_data_list))  { self$Stan_data_list <- Stan_data_list ; params_same <- 0 } ## Don't need to update as JSON updated whenever Stan_data_list is!! (??? - BOOKMARK)
+                                                      ##
+                                                      if (!identical(self$N, N))  { self$N <- N ; params_same <- 0 }
+                                                      ##
+                                                      if (!identical(self$n_params_main, n_params_main))  { self$n_params_main <- n_params_main ; params_same <- 0 }
+                                                      if (!identical(self$n_nuisance, n_nuisance))  { self$n_nuisance <- n_nuisance ; params_same <- 0 }
+                                                      ##
+                                                      if (!identical(self$n_chains_burnin, n_chains_burnin))  { self$n_chains_burnin <- n_chains_burnin ; params_same <- 0 }
+                                                      if (!identical(self$init_lists_per_chain, init_lists_per_chain))  { self$init_lists_per_chain <- init_lists_per_chain ; params_same <- 0 }
+                                                      ##
+                                                      if (!identical(self$model_args_list, model_args_list))  { self$model_args_list <- model_args_list ; params_same <- 0 }
+                                                    }
                                                     
                                                     # then update model if any of needed parameters changed
                                                     if (params_same == 0) {
@@ -422,7 +432,6 @@ MVP_model <- R6Class("MVP_model",
                                                       LR_main  <- LR
                                                     }
                                                     
-                                                    
                                                     if (is.null(LR_us))  { 
                                                       if (n_burnin < 249) LR <- 0.10
                                                       if (n_burnin %in% c(250:500)) LR <- 0.075
@@ -431,12 +440,10 @@ MVP_model <- R6Class("MVP_model",
                                                       LR_us  <- LR
                                                     }
                                                     
-                                                    
                                                     if (is.null(n_nuisance)) { 
                                                       n_nuisance <- self$n_nuisance
                                                     }
                                                     
-                  
                                                     if (n_nuisance == 0) {
                                                       diffusion_HMC <- FALSE ## diffusion_HMC only done for nuisance 
                                                     }
@@ -455,11 +462,9 @@ MVP_model <- R6Class("MVP_model",
                                                     #   }
                                                     # }
                                                     
-                                                    
                                                     if (is.null(n_adapt)) { 
                                                       n_adapt <-  n_burnin - round(n_burnin/10)
                                                     }
-                                                    
                                                     
                                                     if (is.null(clip_iter)) {
                                                       if (n_burnin > 999) {
@@ -475,8 +480,6 @@ MVP_model <- R6Class("MVP_model",
                                                       }
                                                     }
                                                     
-                                                    
-                                                    
                                                     if (is.null(gap)) { 
                                                       gap <-  clip_iter  + round(n_adapt / 5)
                                                     }
@@ -486,54 +489,55 @@ MVP_model <- R6Class("MVP_model",
                                                     if (is.null(interval_width_nuisance)) { 
                                                       interval_width_nuisance <- round(n_burnin/10)
                                                     }
-       
                                                     
                                                   ###  partitioned_HMC <- TRUE # currently only TRUE is supported. 
                                                     inv_Phi_type <- ifelse(Phi_type == "Phi", "inv_Phi", "inv_Phi_approx") # inv_Phi_type is not modifiable 
-
-               
-                                                    # -----------  call sample_model fn ---------------------------------------------------------------------------------------------------
-                                                    self$result <-       BayesMVP:::sample_model(  Model_type = Model_type,
-                                                                                            init_object = self$init_object ,
-                                                                                            vect_type = vect_type,
-                                                                                            parallel_method = parallel_method,
-                                                                                            Phi_type = Phi_type,
-                                                                                            inv_Phi_type = inv_Phi_type,
-                                                                                            y =  self$y,
-                                                                                            N =  self$N,
-                                                                                            n_params_main = self$n_params_main,
-                                                                                            n_nuisance = self$n_nuisance,
-                                                                                            sample_nuisance =   self$sample_nuisance,
-                                                                                            n_chains_burnin =  self$n_chains_burnin,
-                                                                                            seed = seed,
-                                                                                            n_iter = n_iter,
-                                                                                            n_burnin = n_burnin,
-                                                                                            n_chains_sampling = n_chains_sampling,
-                                                                                            n_superchains = n_superchains,
-                                                                                            diffusion_HMC = diffusion_HMC,
-                                                                                            partitioned_HMC = partitioned_HMC,
-                                                                                            adapt_delta = adapt_delta,
-                                                                                            LR_us = learning_rate,
-                                                                                            LR_main = learning_rate,
-                                                                                            clip_iter = clip_iter,
-                                                                                            n_adapt = n_adapt,
-                                                                                            gap = gap,
-                                                                                            ratio_M_us = ratio_M_us,
-                                                                                            ratio_M_main = ratio_M_main,
-                                                                                            interval_width_main = interval_width_main,
-                                                                                            interval_width_nuisance = interval_width_nuisance,
-                                                                                            force_autodiff = force_autodiff,
-                                                                                            force_PartialLog = force_PartialLog,
-                                                                                            multi_attempts = multi_attempts,
-                                                                                            max_eps_main = max_eps_main,
-                                                                                            max_eps_us = max_eps_us,
-                                                                                            max_L = max_L,
-                                                                                            tau_mult = tau_mult,
-                                                                                            metric_type_main = metric_type_main,
-                                                                                            metric_shape_main = metric_shape_main,
-                                                                                            metric_type_nuisance = metric_type_nuisance,
-                                                                                            metric_shape_nuisance = metric_shape_nuisance,
-                                                                                            n_nuisance_to_track = n_nuisance_to_track)
+                   
+                                                    # -----------  call R_fn_sample_model fn ---------------------------------------------------------------------------------------------------
+                                                    self$result <-       BayesMVP:::R_fn_sample_model(    Model_type = Model_type,
+                                                                                                          init_object = self$init_object ,
+                                                                                                          init_lists_per_chain = self$init_lists_per_chain,
+                                                                                                          vect_type = vect_type,
+                                                                                                          parallel_method = parallel_method,
+                                                                                                          Phi_type = Phi_type,
+                                                                                                          inv_Phi_type = inv_Phi_type,
+                                                                                                          Stan_data_list = self$Stan_data_list,
+                                                                                                          model_args_list = self$model_args_list,
+                                                                                                          y =  self$y,
+                                                                                                          N =  self$N,
+                                                                                                          n_params_main = self$n_params_main,
+                                                                                                          n_nuisance = self$n_nuisance,
+                                                                                                          sample_nuisance =   self$sample_nuisance,
+                                                                                                          n_chains_burnin =  self$n_chains_burnin,
+                                                                                                          seed = seed,
+                                                                                                          n_iter = n_iter,
+                                                                                                          n_burnin = n_burnin,
+                                                                                                          n_chains_sampling = n_chains_sampling,
+                                                                                                          n_superchains = n_superchains,
+                                                                                                          diffusion_HMC = diffusion_HMC,
+                                                                                                          partitioned_HMC = partitioned_HMC,
+                                                                                                          adapt_delta = adapt_delta,
+                                                                                                          LR_us = learning_rate,
+                                                                                                          LR_main = learning_rate,
+                                                                                                          clip_iter = clip_iter,
+                                                                                                          n_adapt = n_adapt,
+                                                                                                          gap = gap,
+                                                                                                          ratio_M_us = ratio_M_us,
+                                                                                                          ratio_M_main = ratio_M_main,
+                                                                                                          interval_width_main = interval_width_main,
+                                                                                                          interval_width_nuisance = interval_width_nuisance,
+                                                                                                          force_autodiff = force_autodiff,
+                                                                                                          force_PartialLog = force_PartialLog,
+                                                                                                          multi_attempts = multi_attempts,
+                                                                                                          max_eps_main = max_eps_main,
+                                                                                                          max_eps_us = max_eps_us,
+                                                                                                          max_L = max_L,
+                                                                                                          tau_mult = tau_mult,
+                                                                                                          metric_type_main = metric_type_main,
+                                                                                                          metric_shape_main = metric_shape_main,
+                                                                                                          metric_type_nuisance = metric_type_nuisance,
+                                                                                                          metric_shape_nuisance = metric_shape_nuisance,
+                                                                                                          n_nuisance_to_track = n_nuisance_to_track)
                                                     
                                                     return(self)
                                               

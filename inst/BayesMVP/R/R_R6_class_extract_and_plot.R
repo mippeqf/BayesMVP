@@ -158,6 +158,8 @@ MVP_class_extract_and_plot <- R6Class("MVP_class_extract_and_plot",
                                         time_total_MCMC = self$summary_object$summaries$efficiency_info$time_total_wo_summaries,
                                         time_total_inc_summaries = self$summary_object$summaries$efficiency_info$time_total,
                                         # Now extract some more specific efficiency info:
+                                        Max_rhat_main = self$summary_object$summaries$efficiency_info$Max_rhat_main,
+                                        Max_nested_rhat_main = self$summary_object$summaries$efficiency_info$Max_nested_rhat_main,
                                         Min_ESS_main = self$summary_object$summaries$efficiency_info$Min_ESS_main,
                                         Min_ESS_per_sec_sampling = self$summary_object$summaries$efficiency_info$ESS_per_sec_samp,
                                         Min_ESS_per_sec_total = self$summary_object$summaries$efficiency_info$ESS_per_sec_total,

@@ -31,6 +31,12 @@ init_model <- function(Model_type,
     stop("Model_type must be set and be one of the following: 'Stan' 'LC_MVP', 'MVP', 'latent_trait'")
   }
   
+  
+  if (is.null(N)) { 
+    warning("N not inputted - assuming N is the number of rows of the data (y)")
+    N <- nrow(y)
+  }
+  
   #### load hard-coded model args 
   if (Model_type  %in% hard_coded_models_vec) {
 
@@ -89,23 +95,24 @@ init_model <- function(Model_type,
              
   } else if (Model_type == "Stan") { 
 
-    
-            Model_args_as_Rcpp_List <- list()
-            
             Stan_model <- NULL
+            Stan_cpp_user_header = NULL
+            Stan_cpp_flags = NULL
             
             bs_model_outs <- init_bs_model_external(Stan_data_list = Stan_data_list, 
                                                     Stan_model_file_path = Stan_model_file_path)
             
+            ##
             bs_model <- bs_model_outs$bs_model
+            print(paste("bs_model = "))
+            print(bs_model)
+            ##
             json_file_path <- bs_model_outs$json_file_path
+            print(paste("json_file_path = "))
+            print(json_file_path)
             
-            
-            if (is.null(N)) { 
-              warning("N not inputted - assuming N is the number of rows of the data (y)")
-              N <- nrow(y)
-            }
-            
+            ##
+            Model_args_as_Rcpp_List <- list()
             Model_args_as_Rcpp_List$N <- N
             Model_args_as_Rcpp_List$n_params_main <- n_params_main
             Model_args_as_Rcpp_List$n_nuisance <- n_nuisance

@@ -7,51 +7,55 @@
 
 
 
-#' sample_model
+#' R_fn_sample_model
 #' @keywords internal
 #' @export
-sample_model  <-    function(     Model_type,
-                                  init_object,
-                                  parallel_method,
-                                  y,
-                                  N,
-                                  sample_nuisance,
-                                  diffusion_HMC,
-                                  partitioned_HMC,
-                                  vect_type,
-                                  Phi_type,
-                                  inv_Phi_type,
-                                  n_params_main,
-                                  n_nuisance,
-                                  n_chains_burnin,
-                                  n_chains_sampling,
-                                  n_superchains,
-                                  seed,
-                                  n_burnin,
-                                  n_iter,
-                                  adapt_delta,
-                                  LR_main,
-                                  LR_us,
-                                  n_adapt ,
-                                  clip_iter,
-                                  gap,
-                                  metric_type_main,
-                                  metric_shape_main,
-                                  metric_type_nuisance,
-                                  metric_shape_nuisance,
-                                  max_eps_main,
-                                  max_eps_us,
-                                  max_L,
-                                  tau_mult,
-                                  ratio_M_us,
-                                  ratio_M_main,
-                                  interval_width_main ,
-                                  interval_width_nuisance,
-                                  force_autodiff,
-                                  force_PartialLog,
-                                  multi_attempts,
-                                  n_nuisance_to_track) { 
+R_fn_sample_model  <-    function(      Model_type,
+                                        init_object, ## This may be updated within this function
+                                        init_lists_per_chain, ## This may be updated within this function
+                                        parallel_method,
+                                        Stan_data_list,  ## here as may be updated
+                                        model_args_list, ## here as may be updated
+                                        y,  ## here as may be updated
+                                        N,  ## here as may be updated
+                                        sample_nuisance,  ## here as may be updated
+                                        diffusion_HMC,
+                                        partitioned_HMC,
+                                        vect_type,
+                                        Phi_type,
+                                        inv_Phi_type,
+                                        n_params_main,  ## here as may be updated
+                                        n_nuisance,  ## here as may be updated
+                                        n_chains_burnin,  ## here as may be updated
+                                        n_chains_sampling,
+                                        n_superchains,
+                                        seed,
+                                        n_burnin,
+                                        n_iter,
+                                        adapt_delta,
+                                        LR_main,
+                                        LR_us,
+                                        n_adapt ,
+                                        clip_iter,
+                                        gap,
+                                        metric_type_main,
+                                        metric_shape_main,
+                                        metric_type_nuisance,
+                                        metric_shape_nuisance,
+                                        max_eps_main,
+                                        max_eps_us,
+                                        max_L,
+                                        tau_mult,
+                                        ratio_M_us,
+                                        ratio_M_main,
+                                        interval_width_main ,
+                                        interval_width_nuisance,
+                                        force_autodiff,
+                                        force_PartialLog,
+                                        multi_attempts,
+                                        n_nuisance_to_track) { 
   
+                message("Printing from R_fn_sample_model:")
   
                 # bookmark
                 if (sample_nuisance == FALSE) {
@@ -59,65 +63,97 @@ sample_model  <-    function(     Model_type,
                 }
  
                 Model_args_as_Rcpp_List <- init_object$Model_args_as_Rcpp_List
+                print(paste("Model_args_as_Rcpp_List = "))
+                print(str(Model_args_as_Rcpp_List))
+                
+                bs_model <- init_object$bs_model
                 
                 Model_args_as_Rcpp_List$n_nuisance <- n_nuisance
                 
                 if (Model_type != "Stan")  {
                     n_params_main <- Model_args_as_Rcpp_List$n_params_main # <- n_params_main
-                    n_nuisance <- Model_args_as_Rcpp_List$n_nuisance #<- n_nuisance
-                } else { 
+                    n_nuisance <-    Model_args_as_Rcpp_List$n_nuisance #<- n_nuisance
+                } else if  (Model_type == "Stan")   { 
                     Model_args_as_Rcpp_List$n_params_main <- n_params_main
                     Model_args_as_Rcpp_List$n_nuisance <- n_nuisance
                 }
+  
                 
-                print(paste("n_nuisance = ", n_nuisance))
-                
-                 if (Model_type != "Stan") {
-
-                                 # nuisance transformation (bookmark - currently fixed to "Phi")
-                                 Model_args_as_Rcpp_List$Model_args_strings[13, 1] <- "Phi"
-
-                                  try({
-                                    Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,6,7,8,9,10,11),1] <-     vect_type
-                                    Model_args_as_Rcpp_List$Model_args_strings[6,1] <-  vect_type
-                                  }, silent = TRUE)
-
-                 }
-                      
-                      n_class <- 0 
+                 # if (Model_type != "Stan") {
+                 # 
+                 #                 # nuisance transformation (bookmark - currently fixed to "Phi")
+                 #                 Model_args_as_Rcpp_List$Model_args_strings[13, 1] <- "Phi"
+                 # 
+                 #                  try({
+                 #                    Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,6,7,8,9,10,11),1] <-     vect_type
+                 #                    Model_args_as_Rcpp_List$Model_args_strings[6,1] <-  vect_type
+                 #                  }, silent = TRUE)
+                 # 
+                 # }
                       
                       if (Model_type == "Stan") { 
-                        n_class <- 0 
+                        ## n_class <- 0 
+                        n_class <- Stan_data_list$n_class
                       } else { 
                         n_class <-  Model_args_as_Rcpp_List$Model_args_ints[2]
                       }
                       
                       print(paste("n_class = ", n_class))
                       
-                      if (n_class == 1) {
-                            
-                               lkj_cholesky_eta <- Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]]
-                            if (is.matrix(lkj_cholesky_eta) == FALSE) {
-                               lkj_cholesky_eta <- matrix(lkj_cholesky_eta)
-                            }
-                               
-                            Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]] <- lkj_cholesky_eta
-                           # Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]] <-  (Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]])
-                            
-                            print(paste("lkj_cholesky_eta = ", lkj_cholesky_eta))
-                            
-                      }
+                      # try({ 
+                      #      {
+                      #           lkj_cholesky_eta <- Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]]
+                      #              ##
+                      #           if (is.matrix(lkj_cholesky_eta) == FALSE) {
+                      #              lkj_cholesky_eta <- matrix(lkj_cholesky_eta)
+                      #           }
+                      #              
+                      #           Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]] <- lkj_cholesky_eta
+                      #          # Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]] <-  (Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]])
+                      #      }
+                      # })
                       
-                      
+                ####  print(paste("lkj_cholesky_eta = ", lkj_cholesky_eta))
 
-                RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
+                n_params <- n_nuisance + n_params_main
+                print(paste("n_params = ", n_params))
+                print(paste("n_params_main = ",  n_params_main))
+                print(paste("n_nuisance = ",  n_nuisance))
+                
+                # if (n_nuisance > 0) {
+                #   index_us <- 1:n_nuisance
+                # }
+                # else { 
+                #   index_us <- 1:5 
+                # }
+             
+                index_nuisance <- 1:n_nuisance
+                index_main <- (1 + n_nuisance):n_params
+                
+                if (Model_type == "Stan") {
+                  Model_args_as_Rcpp_List$model_so_file <-    init_object$model_so_file
+                  Model_args_as_Rcpp_List$json_file_path <-   init_object$json_file_path
+                } else { 
+                  Model_args_as_Rcpp_List$model_so_file <-  "none" #   init_object$dummy_model_so_file
+                  Model_args_as_Rcpp_List$json_file_path <- "none" #  init_object$dummy_json_file_path
+                }
+                
+                if (Model_type == "Stan") {
+                   cmdstanr::write_stan_json(data = Stan_data_list, file = Model_args_as_Rcpp_List$json_file_path)
+                } else { 
+                  ####  cmdstanr::write_stan_json(data = Stan_data_list, file = Model_args_as_Rcpp_List$dummy_json_file_path)
+                }
+                
+                print(  Model_args_as_Rcpp_List$model_so_file)
+                print(  Model_args_as_Rcpp_List$json_file_path)
                 
                 init_burnin_object <-                BayesMVP:::init_and_run_burnin( Model_type = Model_type,
+                                                                                     init_object = init_object,
                                                                                      sample_nuisance = sample_nuisance,
                                                                                      parallel_method = parallel_method,
-                                                                                     y = y,
-                                                                                     N = N,
-                                                                                     init_object = init_object,
+                                                                                     Stan_data_list = Stan_data_list,
+                                                                                     y = y, ## only used in C++ for manual models! (all data passed via Stan_data_list / JSON strings for .stan models!)
+                                                                                     N = N, ## only used in C++ for manual models! (all data passed via Stan_data_list / JSON strings for .stan models!)
                                                                                      n_chains_burnin = n_chains_burnin,
                                                                                      n_params_main = n_params_main,
                                                                                      n_nuisance = n_nuisance,
@@ -134,7 +170,7 @@ sample_model  <-    function(     Model_type,
                                                                                      n_adapt = n_adapt,
                                                                                      partitioned_HMC = partitioned_HMC,
                                                                                      clip_iter = clip_iter,
-                                                                                     gap =gap,
+                                                                                     gap = gap,
                                                                                      max_eps_main = max_eps_main,
                                                                                      max_eps_us = max_eps_us,
                                                                                      max_L = max_L,
@@ -152,11 +188,11 @@ sample_model  <-    function(     Model_type,
 
                 {
 
-                  theta_main_vectors_all_chains_input_from_R <- init_burnin_object$theta_main_vectors_all_chains_input_from_R
-                  theta_us_vectors_all_chains_input_from_R <- init_burnin_object$theta_us_vectors_all_chains_input_from_R
+                  theta_main_vectors_all_chains_input_from_R <- init_burnin_object$theta_main_vectors_all_chains_input_from_R  # inits stored here
+                  theta_us_vectors_all_chains_input_from_R <- init_burnin_object$theta_us_vectors_all_chains_input_from_R  # inits stored here
 
-                  Model_args_as_Rcpp_List <- init_burnin_object$Model_args_as_Rcpp_List
-                  EHMC_args_as_Rcpp_List <- init_burnin_object$EHMC_args_as_Rcpp_List
+                  Model_args_as_Rcpp_List <-  init_burnin_object$Model_args_as_Rcpp_List
+                  EHMC_args_as_Rcpp_List <-   init_burnin_object$EHMC_args_as_Rcpp_List 
                   EHMC_Metric_as_Rcpp_List <- init_burnin_object$EHMC_Metric_as_Rcpp_List
                   EHMC_burnin_as_Rcpp_List <- init_burnin_object$EHMC_burnin_as_Rcpp_List
 
@@ -215,7 +251,7 @@ sample_model  <-    function(     Model_type,
                   }
                   
                   ### Call C++ parallel sampling function
-                  result <-       (fn(   n_threads_R = n_chains_sampling,
+                  result <-       (fn(                          n_threads_R = n_chains_sampling,
                                                                 sample_nuisance_R = sample_nuisance,
                                                                 n_nuisance_to_track = n_nuisance_to_track,
                                                                 seed_R = seed,
@@ -226,9 +262,9 @@ sample_model  <-    function(     Model_type,
                                                                 force_autodiff_R = force_autodiff,
                                                                 force_PartialLog = force_PartialLog,
                                                                 multi_attempts_R = multi_attempts,
-                                                                theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R,
-                                                                theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,
-                                                                y =  y,  
+                                                                theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R, # inits stored here
+                                                                theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,  # inits stored here
+                                                                y =  y,  ## only used in C++ for manual models! (all data passed via Stan_data_list / JSON strings for .stan models!) 
                                                                 Model_args_as_Rcpp_List =  Model_args_as_Rcpp_List,
                                                                 EHMC_args_as_Rcpp_List =   EHMC_args_as_Rcpp_List,
                                                                 EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
