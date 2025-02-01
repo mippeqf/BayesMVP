@@ -25,34 +25,27 @@
   
 
 {
-  
-  
-  
-     
-        n_covariates_per_outcome_vec <- c(array(1, dim = c(n_tests, 1)))
+    n_covariates_per_outcome_vec <- c(array(1, dim = c(n_tests, 1)))
         
     if (Model_type == "latent_trait") {
-     prior_b_shape_d <-  1.33 ; prior_b_scale_d <-    1.25    # ~ equiv. to  truncated-LKJ(1.5)
-     prior_b_shape_nd <- 1.52 ; prior_b_scale_nd <-   0.633 # ~ equiv. to  truncated-LKJ(10)
+       prior_b_shape_d <-  1.33 ; prior_b_scale_d <-    1.25    # ~ equiv. to  truncated-LKJ(1.5)
+       prior_b_shape_nd <- 1.52 ; prior_b_scale_nd <-   0.633 # ~ equiv. to  truncated-LKJ(10)
     }
      
+         
+    CI <- 0
+    corr_force_positive <- 0
+      
+    tailored_corr_priors <- FALSE
+    # tailored_corr_priors <- TRUE
      
-  CI <- 0
-  corr_force_positive <- 0
-  
-  tailored_corr_priors <- FALSE
- # tailored_corr_priors <- TRUE
- 
-bs_to_set_to_0 = array(0, dim = c(n_class, n_tests)) # for LT model
-
-prior_a_mean <-   array(0,  dim = c(n_class, n_tests, n_covariates))
-prior_a_sd  <-    array(1,  dim = c(n_class, n_tests, n_covariates))
- 
-  
-n_pops <- 1
-group <- rep(1, N)
- 
-
+    bs_to_set_to_0 = array(0, dim = c(n_class, n_tests)) # for LT model
+    
+    prior_a_mean <-   array(0,  dim = c(n_class, n_tests, n_covariates))
+    prior_a_sd  <-    array(1,  dim = c(n_class, n_tests, n_covariates))
+     
+    n_pops <- 1
+    group <- rep(1, N)
  
 }
 

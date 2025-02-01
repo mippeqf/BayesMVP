@@ -25,13 +25,13 @@ if (.Platform$OS.type == "windows") {
   # local_pkg_dir <- "/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP"  
 }
 
-
-#### -------- INNER pkg stuff:
-local_INNER_pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP"
-## Document INNER package:
-devtools::clean_dll(local_INNER_pkg_dir)
-Rcpp::compileAttributes(local_INNER_pkg_dir)
-devtools::document(local_INNER_pkg_dir)
+# 
+# #### -------- INNER pkg stuff:
+# local_INNER_pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP"
+# ## Document INNER package:
+# devtools::clean_dll(local_INNER_pkg_dir)
+# Rcpp::compileAttributes(local_INNER_pkg_dir)
+# devtools::document(local_INNER_pkg_dir)
 
 
 #### -------- ACTUAL (LOCAL) INSTALL:
@@ -60,6 +60,7 @@ rstudioapi::restartSession()
 require(BayesMVP)
 BayesMVP::install_BayesMVP()
 require(BayesMVP)
+
 
 
 

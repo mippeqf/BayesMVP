@@ -375,8 +375,17 @@ n_tests
 choose(4, 2)
 
 
-model_samples <-  model_obj$sample(  partitioned_HMC = TRUE,
-                                     diffusion_HMC = TRUE,
+
+## To run standard HMC, do:
+partitioned_HMC <- FALSE ;    diffusion_HMC <- FALSE
+## To run * partitioned * HMC (i.e. sample nuisance and main params. seperately), do:
+# partitioned_HMC <- TRUE ;     diffusion_HMC <- FALSE # fine
+## To run partitioned * and * diffusion HMC (i.e., nuisance params. sampled using diffusion-pathspace HMC), do:
+# partitioned_HMC <- TRUE ;    diffusion_HMC <- TRUE  # fine
+
+
+model_samples <-  model_obj$sample(  partitioned_HMC = partitioned_HMC,
+                                     diffusion_HMC = diffusion_HMC,
                                      seed = 1,
                                      n_burnin = n_burnin,
                                      n_iter = n_iter,

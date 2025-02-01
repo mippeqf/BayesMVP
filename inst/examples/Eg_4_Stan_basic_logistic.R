@@ -275,12 +275,13 @@ source(file.path(pkg_example_path, "load_R_packages.R"))
       n_superchains <- min(8, parallel::detectCores() / 2)  ## round(n_chains_sampling / n_chains_burnin) # Each superchain is a "group" or "nest" of chains. If using ~8 chains or less, set this to 1. 
       n_iter <- 1000                                 
       n_burnin <- 500
-      n_nuisance_to_track <- n_nuisance # set to some small number (< 10) if don't care about making inference on nuisance params (which is most of the time!)
+      ## n_nuisance_to_track <- n_nuisance # set to some small number (< 10) if don't care about making inference on nuisance params (which is most of the time!)
     }
     
     
     ## Since this model (i.e., basic logistic reg.) does NOT have any nuisance parameters, we will set:
-    ## partitioned_HMC = FALSE - this is because partitioned HMC is only available if sample_nuisance == TRUE (since we partition the nu)
+    ## partitioned_HMC = FALSE - this is because partitioned HMC is only available if sample_nuisance == TRUE
+    ## (since we sample the nuisance params and main params seperately)
     partitioned_HMC <- FALSE ;    diffusion_HMC <- FALSE
     
     
