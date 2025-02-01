@@ -230,6 +230,8 @@ override STAN_BASE = $(CMDSTAN_PATH)/stan/src/stan
 override STAN_LIB = $(CMDSTAN_PATH)/stan/lib
 override STAN_MATH = $(CMDSTAN_PATH)/stan/lib/stan_math
 override STAN_MATH_LIB = $(CMDSTAN_PATH)/stan/lib/stan_math/lib
+override TBB_PATH = $(STAN_MATH_LIB)/tbb
+
 ##
 ## Print CmDStan paths:
 $(info CMDSTAN_PATH found: $(CMDSTAN_PATH))
@@ -257,7 +259,7 @@ override PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_MATH_LIB)/boost_1.84.0" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1/include" \
     -I"$(STAN_MATH_LIB)/sundials_6.1.1/src/sundials" \
-    -I"$(STAN_MATH_LIB)/tbb/include" \
+    -I"$(TBB_PATH)" \
     -I"$(STAN_LIB)/rapidjson_1.1.0" \
     -I"$(STAN_LIB)/rapidjson_1.1.0/rapidjson" \
     -I"$(CMDSTAN_PATH)" \
@@ -278,8 +280,8 @@ override PKG_CXXFLAGS = $(PKG_CPPFLAGS)
 override CPPFLAGS = $(PKG_CPPFLAGS)
 override CXXFLAGS = $(PKG_CPPFLAGS)
 ##
-override CC  = $(CCACHE) $(CPP_COMPILER) 
-override CXX = $(CCACHE) $(CXX_COMPILER) 
+override CC  = "$(CCACHE)" $(CPP_COMPILER) 
+override CXX = "$(CCACHE)" $(CXX_COMPILER) 
 ##
 override CFLAGS =  $(CPPFLAGS)
 ##

@@ -40,8 +40,8 @@ $(info R_VERSION is: $(R_VERSION))
 ## --- Construct RTools version (e.g., "rtools44" for R 4.4):
 override RTOOLS_VERSION = rtools$(R_VERSION)
 $(info RTOOLS_VERSION is: $(RTOOLS_VERSION))
-override RTOOLS_VERSION_HOME = $(RTOOLS_VERSION)_HOME
-$(info RTOOLS_VERSION_HOME is: $(RTOOLS_VERSION_HOME))
+## override RTOOLS_VERSION_HOME = $(RTOOLS_VERSION)_HOME
+## $(info RTOOLS_VERSION_HOME is: $(RTOOLS_VERSION_HOME))
 ##
 ## override RTOOLS_PATH=C:/rtools44
 override SYSTEM_DRIVE=$(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "system_drive <- Sys.getenv('SystemDrive'); cat(system_drive)")
@@ -89,8 +89,8 @@ $(info RTOOLS_CLANG64_LIBCXX_INCLUDE_PATH is: $(RTOOLS_CLANG64_LIBCXX_INCLUDE_PA
 ##
 ####### ----- CCACHE / ccache path [e.g.: "C:/rtools44/mingw64/bin/ccache.exe"] ---------------------------------------------------------------  
 ## Check for ccache
-override CCACHE_PATH = "$(RTOOLS_MINGW_BIN_PATH)/ccache.exe"
-override HAVE_CCACHE = $(wildcard $(CCACHE_PATH))
+override CCACHE_PATH=$(RTOOLS_MINGW_BIN_PATH)/ccache.exe
+override HAVE_CCACHE=$(wildcard $(CCACHE_PATH))
 ##
 ## Set CCACHE prefix only if available
 ifneq (,$(HAVE_CCACHE))

@@ -596,9 +596,6 @@ Eigen::Matrix<double, -1, 1>        Rcpp_wrapper_fn_lp_grad(             const s
 
 
 
-
-
-
 // [[Rcpp::export]]
 Rcpp::List Rcpp_compute_chain_stats(const std::vector<Rcpp::NumericMatrix> mcmc_3D_array,
                                     const std::string stat_type,
@@ -617,6 +614,10 @@ Rcpp::List Rcpp_compute_chain_stats(const std::vector<Rcpp::NumericMatrix> mcmc_
   return Rcpp::List::create(Rcpp::Named("statistics") = output);
 
 }
+
+
+
+
 
 
 
