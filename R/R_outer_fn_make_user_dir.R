@@ -9,18 +9,27 @@
   
               ## Sys.getenv("USERPROFILE")
              ##  Sys.getenv("R_USER") ## This is BAD on windows dont use this !! (often points e.g. to OneDrive even if OneDrive uninstalled!!)
-  
-              user_dir <- Sys.getenv("USERPROFILE")
-              cat("user_dir =", user_dir, "\n")
+
+              os <- .Platform$OS.type
+              
+              if (os == "unix") { 
+                user_root_dir <- Sys.getenv("PWD")
+              } else if (os == "windows") { 
+                user_root_dir <- Sys.getenv("USERPROFILE")
+              }
+              
+              cat("user_root_dir =", user_root_dir, "\n")
               ##
-              user_BayesMVP_dir <- file.path(user_dir, "BayesMVP")
+              user_BayesMVP_dir <- file.path(user_root_dir, "BayesMVP")
               ##
               if (!dir.exists(user_BayesMVP_dir)) {
                 dir.create(user_BayesMVP_dir)
               }
               ##
               cat("user_BayesMVP_dir =", user_BayesMVP_dir, "\n")
-              ##
+            
+              
+              
               ## -------------- USER Examples dir:
               user_examples_dir <- file.path(user_BayesMVP_dir, "examples")
               cat("user_examples_dir =", user_examples_dir, "\n")
@@ -30,13 +39,13 @@
               
               if (!dir.exists(user_examples_dir)) {
                 dir.create(user_examples_dir)
-                ## Copy the entire examples directory:
-                file.copy(
-                  from = list.files(system_examples_dir, full.names = TRUE),
-                  to = user_examples_dir,
-                  recursive = TRUE
-                )
               }
+              ## Copy the entire examples directory:
+              file.copy(
+                from = list.files(system_examples_dir, full.names = TRUE),
+                to = user_examples_dir,
+                recursive = TRUE
+              )
               
               ## -------------- USER src dir:
               user_src_dir <- file.path(user_BayesMVP_dir, "src")
@@ -47,6 +56,8 @@
     
               if (!dir.exists(user_src_dir)) {
                 dir.create(user_src_dir)
+              }
+              {
                 ## Copy the entire src directory:
                 file.copy(
                   from = list.files(system_src_dir, full.names = TRUE),
@@ -64,6 +75,8 @@
               
               if (!dir.exists(user_stan_models_dir)) {
                 dir.create(user_stan_models_dir)
+              }
+              {
                 ## Copy the entire src directory:
                 file.copy(
                   from = list.files(system_stan_models_dir, full.names = TRUE),
