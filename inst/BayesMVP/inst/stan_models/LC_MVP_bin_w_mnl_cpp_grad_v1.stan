@@ -139,31 +139,30 @@ functions {
                                 
                                 
                                 
-                                
 ////// this is the entire log_posterior fn for LC-MVP / MVP / latent_trait models w/ manual gradients and AVX-512 (or AVX-2 or if not available then using Stan's built-in fns)                                  
-real   Stan_wrapper_lp_fn_var(        int Model_type_int, 
+real   Stan_wrapper_lp_fn_LC_MVP_var( int Model_type_int, 
                                       int force_autodiff_int, 
+                                      int force_PartialLog_int,
                                       int multi_attempts_int,
-                                      vector theta_main_vec, 
+                                      vector theta_main_vec,  // 5
                                       vector theta_us_vec, 
                                       matrix y, 
                                       int  n_chunks_target, 
-                                      real overflow_threshold, // 5
-                                      real underflow_threshold, 
+                                      real overflow_threshold, 
+                                      real underflow_threshold,  // 10
                                       real prev_prior_a, 
                                       real prev_prior_b, 
                                       vector lkj_cholesky_eta, 
-                                      matrix n_covariates_per_outcome_vec,  // 10
-                                      array[] matrix prior_coeffs_mean, 
+                                      matrix n_covariates_per_outcome_vec,   
+                                      array[] matrix prior_coeffs_mean,  // 15
                                       array[] matrix prior_coeffs_sd, 
                                       array[] matrix prior_for_corr_a,  
                                       array[] matrix prior_for_corr_b, 
-                                      array[] matrix lb_corr,  // 15
-                                      array[] matrix ub_corr,  
+                                      array[] matrix lb_corr,   
+                                      array[] matrix ub_corr,   // 20
                                       array[] matrix known_values,
                                       array[] matrix known_values_indicator,
-                                      array[,] matrix X); // 19
-                                    
+                                      array[,] matrix X); // 27
                                   
                                     
  
@@ -202,9 +201,10 @@ data {
       int n_chunks_target;
       int<lower=0, upper=(n_tests * (n_tests - 1)) %/% 2> known_num;
       int priors_via_Stan;
-      int Model_type_int;
+      int Model_type_int; ////  1 for MVP, 2 for LC_MVP, and 3 for latent_trait 
       int multi_attempts_int;
       int force_autodiff_int;
+      int force_PartialLog_int;
   
 }
 
@@ -309,15 +309,25 @@ transformed parameters {
      {
            //// set counter for main params
            int counter = 1;
-           //// CORRELATIONS are the first n_class * T * (T - 1) / 2 elements of main parameter vector
-           for (c in 1:n_class) {
-             for (t1 in 2:n_tests) {
-               for (t2 in 1:(t1 - 1)) {
-                   Omega_unconstrained_var[c, t1, t2] = theta_main_vec[counter];
-                   counter += 1;
+           
+           if (Model_type_int == 2) { ////  if LC_MVP
+               //// CORRELATIONS are the first n_class * T * (T - 1) / 2 elements of main parameter vector
+               for (c in 1:n_class) {
+                 for (t1 in 2:n_tests) {
+                   for (t2 in 1:(t1 - 1)) {
+                       Omega_unconstrained_var[c, t1, t2] = theta_main_vec[counter];
+                       counter += 1;
+                   }
+                 }
                }
-             }
+           } else  if (Model_type_int == 3) { ////  if latent_trait
+               for (c in 1:n_class) {
+                     for (t in 1:n_tests) {
+                           counter += 1;
+                       }
+                     }
            }
+           
            ///// COEFFICIENTS are the next set of parameters
            int counter_beta = 1;
            for (c in 1:n_class) {
@@ -387,8 +397,9 @@ transformed parameters {
       
               if (priors_via_Stan == 1) {
 
-                   log_posterior =     Stan_wrapper_lp_fn_var(     Model_type_int, /// model_type (1 for MVP, 2 for LC_MVP, 3 for latent_trait)
-                                                                    force_autodiff_int,
+                   log_posterior =     Stan_wrapper_lp_fn_LC_MVP_var(                    Model_type_int, /// model_type (1 for MVP, 2 for LC_MVP, 3 for latent_trait)
+                                                                                  force_autodiff_int,
+                                                                                  force_PartialLog_int,
                                                                                   multi_attempts_int, /// multi_attempts 
                                                                                   theta_main_vec,
                                                                                   theta_nuisance_vec,
@@ -416,8 +427,9 @@ transformed parameters {
 
               } else { ///// if managing priors directly via C++
                 
-                   log_posterior     =  Stan_wrapper_lp_fn_var(      Model_type_int, /// model_type (1 for MVP, 2 for LC_MVP, 3 for latent_trait)
+                   log_posterior     =  Stan_wrapper_lp_fn_LC_MVP_var(                     Model_type_int, /// model_type (1 for MVP, 2 for LC_MVP, 3 for latent_trait)
                                                                                     force_autodiff_int,
+                                                                                    force_PartialLog_int,
                                                                                     multi_attempts_int, /// multi_attempts  
                                                                                     theta_main_vec,
                                                                                     theta_nuisance_vec,

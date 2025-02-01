@@ -2,10 +2,10 @@
 functions {
  
  
- matrix corr_to_chol(real x, int J) {
-    matrix[J, J] cor = add_diag(rep_matrix(x, J, J), 1 - x);
-    return cholesky_decompose(cor);
-  }
+ // matrix corr_to_chol(real x, int J) {
+ //    matrix[J, J] cor = add_diag(rep_matrix(x, J, J), 1 - x);
+ //    return cholesky_decompose(cor);
+ //  }
  
  
  
@@ -88,148 +88,142 @@ functions {
    
  
 
-    // need to add citation to this (slight modification from a forum post)
-      real inv_Phi_approx_from_prob(real p) { 
-        return 5.494 *  sinh(0.33333333333333331483 * asinh( 0.3418 * logit(p)  )) ;
-      }
-      
-       // need to add citation to this (slight modification from a forum post)
-      vector inv_Phi_approx_from_prob(vector p) { 
-        return 5.494 *  sinh(0.33333333333333331483 * asinh( 0.3418 * logit(p)  )) ; 
-      }
-      
-      
-      
-      // need to add citation to this (slight modification from a forum post)
-      real inv_Phi_approx_from_logit_prob(real logit_p) { 
-           return 5.494 *  sinh(0.33333333333333331483 * asinh( 0.3418 * logit_p  )) ; 
-      }
-      
-      
-       // need to add citation to this (slight modification from a forum post)
-      vector inv_Phi_approx_from_logit_prob(vector logit_p) { 
-         return 5.494 *  sinh(0.33333333333333331483 * asinh( 0.3418 *logit_p  )) ; 
-      }
- 
- 
-      vector rowwise_sum(matrix M) {      // M is (N x T) matrix
-          return M * rep_vector(1.0, cols(M));
-      }
-      
-      vector rowwise_max(matrix M) {      // M is (N x T) matrix
-          int N =  rows(M);
-          vector[N] rowwise_maxes;
-          for (n in 1:N) {
-            rowwise_maxes[n] = max(M[n, ]);
-          }
-          return rowwise_maxes;
-      }
-    
-      vector rowwise_sum_lp(matrix M) {      // M is (N x T) matrix
-           vector[rows(M)] col_vec = M * rep_vector(1.0, cols(M));
-           target += sum(col_vec);
-           return col_vec;
-      }
-      
-      vector log_sum_exp_2d(matrix array_2d_to_lse) { 
-        int N = rows(array_2d_to_lse);
-        matrix[N, 2] rowwise_maxes_2d_array;
-        rowwise_maxes_2d_array[, 1] =  rowwise_max(array_2d_to_lse);
-        rowwise_maxes_2d_array[, 2] =  rowwise_maxes_2d_array[, 1];
-        return  rowwise_maxes_2d_array[, 1] + log(rowwise_sum(exp((array_2d_to_lse  -  rowwise_maxes_2d_array))));
-      }
+    // // need to add citation to this (slight modification from a forum post)
+    //   real inv_Phi_approx_from_prob(real p) { 
+    //     return 5.494 *  sinh(0.33333333333333331483 * asinh( 0.3418 * logit(p)  )) ;
+    //   }
+    //   
+    //    // need to add citation to this (slight modification from a forum post)
+    //   vector inv_Phi_approx_from_prob(vector p) { 
+    //     return 5.494 *  sinh(0.33333333333333331483 * asinh( 0.3418 * logit(p)  )) ; 
+    //   }
+    //   
+    //   
+    //   
+    //   // need to add citation to this (slight modification from a forum post)
+    //   real inv_Phi_approx_from_logit_prob(real logit_p) { 
+    //        return 5.494 *  sinh(0.33333333333333331483 * asinh( 0.3418 * logit_p  )) ; 
+    //   }
+    //   
+    //   
+    //    // need to add citation to this (slight modification from a forum post)
+    //   vector inv_Phi_approx_from_logit_prob(vector logit_p) { 
+    //      return 5.494 *  sinh(0.33333333333333331483 * asinh( 0.3418 *logit_p  )) ; 
+    //   }
+    // 
+    // 
+    //   vector rowwise_sum(matrix M) {      // M is (N x T) matrix
+    //       return M * rep_vector(1.0, cols(M));
+    //   }
+    //   
+    //   vector rowwise_max(matrix M) {      // M is (N x T) matrix
+    //       int N =  rows(M);
+    //       vector[N] rowwise_maxes;
+    //       for (n in 1:N) {
+    //         rowwise_maxes[n] = max(M[n, ]);
+    //       }
+    //       return rowwise_maxes;
+    //   }
+    // 
+    //   vector rowwise_sum_lp(matrix M) {      // M is (N x T) matrix
+    //        vector[rows(M)] col_vec = M * rep_vector(1.0, cols(M));
+    //        target += sum(col_vec);
+    //        return col_vec;
+    //   }
+    //   
+    //   vector log_sum_exp_2d(matrix array_2d_to_lse) { 
+    //     int N = rows(array_2d_to_lse);
+    //     matrix[N, 2] rowwise_maxes_2d_array;
+    //     rowwise_maxes_2d_array[, 1] =  rowwise_max(array_2d_to_lse);
+    //     rowwise_maxes_2d_array[, 2] =  rowwise_maxes_2d_array[, 1];
+    //     return  rowwise_maxes_2d_array[, 1] + log(rowwise_sum(exp((array_2d_to_lse  -  rowwise_maxes_2d_array))));
+    //   }
  
 }
 
-
+ 
 
 
 data {
 
-  int<lower=1> N;
-  int<lower=2> n_tests;
-  /// matrix<lower=0>[N, n_tests]   y;  //////// data
-  int<lower=1, upper = 2> n_class;  // if n_class = 1, then standard MVP - otherwise latent class MVP (w/ 2 classes)
-  int<lower=1> n_pops;
-  ////  array[N] int pop;
-  int corr_force_positive;
-  real overflow_threshold;
-  real underflow_threshold;
-  ///// covariate stuff 
-  int n_covariates_max_nd; /// only needed if latent class (i.e., n_class = 2) - otherwise ignored
-  int n_covariates_max_d;  /// only needed if latent class (i.e., n_class = 2) - otherwise ignored
-  int n_covariates_max;
-//  array[n_class, n_tests] matrix[N, n_covariates_max] X; /////// covariate array (can have  DIFFERENT NUMBERS of covariates for each  outcome - fill rest of array with 999999 if they vary between outcomes)
-  array[n_class, n_tests] int n_covs_per_outcome;
-  ///// priors 
-  int prior_only;
-  array[n_class]  matrix[n_covariates_max, n_tests] prior_beta_mean;
-  array[n_class]  matrix<lower=0>[n_covariates_max, n_tests]   prior_beta_sd;
-  array[n_class] real prior_LKJ;
-  array[n_pops] real<lower=0> prior_p_alpha;
-  array[n_pops] real<lower=0> prior_p_beta;
-  ////// other 
-  int<lower=0, upper=(n_tests * (n_tests - 1)) %/% 2> known_num;
-  // array[n_class] matrix[n_tests, n_tests] lb_corr;
-  // array[n_class] matrix[n_tests, n_tests] ub_corr;
+    int<lower=1> N;
+    int<lower=2> n_tests;
+    matrix<lower=0>[N, n_tests]   y;  //////// data
+    int<lower=2> n_class;
+    int<lower=1> n_pops;
+    array[N] int pop;
+    int n_covariates_max_nd;
+    int n_covariates_max_d;
+    int n_covariates_max;
+    array[n_tests] matrix[N, n_covariates_max_nd] X_nd; /////// covariate array (can have  DIFFERENT NUMBERS of covariates for each  outcome - fill rest of array with 999999 if they vary between outcomes)
+    array[n_tests] matrix[N, n_covariates_max_d]  X_d; /////// covariate array (can have  DIFFERENT NUMBERS of covariates for each  outcome - fill rest of array with 999999 if they vary between outcomes)
+    array[n_class, n_tests] int n_covs_per_outcome;
+    int corr_force_positive;
+    int<lower=0, upper=(n_tests * (n_tests - 1)) %/% 2> known_num;
+    // array[n_class] matrix[n_tests, n_tests] lb_corr;
+    // array[n_class] matrix[n_tests, n_tests] ub_corr;
+    real overflow_threshold;
+    real underflow_threshold;
+    ///// priors  
+    int prior_only;
+    array[n_class] matrix[n_covariates_max, n_tests] prior_beta_mean;  ////  // array[n_class, n_tests, n_covariates_max]  real prior_beta_mean;
+    array[n_class] matrix<lower=0>[n_covariates_max, n_tests] prior_beta_sd;     //// array[n_class, n_tests, n_covariates_max]  real<lower=0> prior_beta_sd;
+    matrix<lower=0>[n_class, 1] prior_LKJ; // NOTE: Some Stan vector's written as mtx. w/ 1 col to avoid issues w/ custom C++ fns 
+    matrix<lower=0>[n_pops, 1] prior_p_alpha; // NOTE: Some Stan vector's written as mtx. w/ 1 col to avoid issues w/ custom C++ fns ; ## NOTE: Some Stan vector's written as mtx. w/ 1 col to avoid issues w/ custom C++ fns 
+    matrix<lower=0>[n_pops, 1] prior_p_beta; // NOTE: Some Stan vector's written as mtx. w/ 1 col to avoid issues w/ custom C++ fns 
+    ///// other
+    int Phi_type;
+    int handle_numerical_issues;
+    int fully_vectorised;
   
 }
 
 
 transformed data {
    
-    int k_choose_2 = (n_tests * (n_tests - 1)) / 2; 
-    int km1_choose_2 = ((n_tests - 1) * (n_tests - 2)) / 2;
-  
-    int n_covariates_total_nd;// =    (sum( (n_covs_per_outcome[1,])));
-    int n_covariates_total_d;// =     (sum( (n_covs_per_outcome[2,])));
-    int n_covariates_total;// =       n_covariates_total_nd + n_covariates_total_d;
+      int k_choose_2 = (n_tests * (n_tests - 1)) / 2; 
+      int km1_choose_2 = ((n_tests - 1) * (n_tests - 2)) / 2;
     
-    if (n_class > 1) {  //// i.e., if latent class w/ 2 classes
-        n_covariates_total_nd =    (sum( (n_covs_per_outcome[1,])));
-        n_covariates_total_d =     (sum( (n_covs_per_outcome[2,])));
-        n_covariates_total =       n_covariates_total_nd + n_covariates_total_d;
-    } else { 
-        n_covariates_total =    (sum( (n_covs_per_outcome[1,])));
-    }
+      int n_covariates_total_nd; 
+      int n_covariates_total_d; 
+      int n_covariates_total; 
       
+      if (n_class > 1) {  //// i.e., if latent class w/ 2 classes
+          n_covariates_total_nd =    (sum( (n_covs_per_outcome[1,])));
+          n_covariates_total_d =     (sum( (n_covs_per_outcome[2,])));
+          n_covariates_total =       n_covariates_total_nd + n_covariates_total_d;
+      } else { 
+          n_covariates_total =    (sum( (n_covs_per_outcome[1,])));
+      }
+        
+      
+      real<lower=-1, upper=1> lb;
+      real<lower=lb, upper=1> ub = 1.0;
     
-    real<lower=-1, upper=1> lb;
-    real<lower=lb, upper=1> ub = 1.0;
-  
-    if (corr_force_positive == 1)  lb = 0;
-    else lb = -1.0;
+      if (corr_force_positive == 1)  lb = 0;
+      else lb = -1.0;
 
 }
 
 
 parameters {
-
+  
       matrix[N, n_tests] u_raw; //  put nuisance parameters FIRST (NOTE: doesnt have to be on "raw" scale to work as grad is computed w.r.t unconstrained anyway!)
       array[n_class] vector[n_tests - 1] col_one_raw;
       array[n_class] vector[km1_choose_2 - known_num] off_raw;
       vector[n_covariates_total] beta_vec;
-      vector[n_pops] p_raw;
+      vector[n_pops]  p_raw;
 
 }
 
  
  
 transformed parameters {
-  
-     //matrix<lower=0, upper=1>[N, n_tests]  u = Phi(u_raw);
-     array[n_class, n_tests, n_covariates_max] real beta;
-     array[n_class] matrix[n_tests, n_tests] Omega;
-     vector<lower=0, upper=1>[n_pops]  p; /// if not latent class then this is a dummy variable 
-     array[n_class] matrix[n_tests, n_tests] L_Omega;
-     
-      p = lb_ub_lp(p_raw, 0.0, 1.0);  //// note: this is a dummy parameter if n_class = 1
- 
-//      if (n_class > 1) {   //// if latent classs
-//         p = lb_ub_lp(p_raw, 0.0, 1.0);
-//      } else {
-//       //  p[1] - 0.0;
-//      }
+
+      array[n_class, n_tests, n_covariates_max] real beta;
+      vector<lower=0, upper=1>[n_pops]  p;//  = lb_ub_lp(p_raw, 0.0, 1.0);
+      array[n_class] matrix[n_tests, n_tests] Omega;
+      array[n_class] matrix[n_tests, n_tests] L_Omega;
      
       {
             int counter = 1;
@@ -258,12 +252,12 @@ model {
                    beta[c, t, k] ~ normal(prior_beta_mean[c, k, t], prior_beta_sd[c, k, t]);
                 }
             }
-             target += lkj_corr_cholesky_lpdf(L_Omega[c,,]  | prior_LKJ[c]) ;
+             target += lkj_corr_cholesky_lpdf(L_Omega[c,,]  | prior_LKJ[c, 1]) ;
         }
 
            if (n_class > 1) {   //// if latent classs
               for (g in 1 : n_pops) {
-                p[g] ~ beta(prior_p_alpha[g], prior_p_beta[g]);
+                p[g] ~ beta(prior_p_alpha[g, 1], prior_p_beta[g, 1]);
               }
            }
               
