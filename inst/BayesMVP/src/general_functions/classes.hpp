@@ -34,9 +34,9 @@ class HMCResult {
          public:
            //// Constructor 
            HMCResult(int n_params_main, 
-                     int n_us, 
+                     int n_nuisance, 
                      int N)
-           : lp_and_grad_outs_(Eigen::Matrix<double, -1, 1>::Zero((1 + N + n_params_main + n_us)))
+           : lp_and_grad_outs_(Eigen::Matrix<double, -1, 1>::Zero((1 + N + n_params_main + n_nuisance)))
            //// main
            , main_theta_vec_0_(Eigen::Matrix<double, -1, 1>::Zero(n_params_main))
            , main_theta_vec_(Eigen::Matrix<double, -1, 1>::Zero(n_params_main))
@@ -47,23 +47,24 @@ class HMCResult {
            , main_p_jump_(0.0)
            , main_div_(0)
            //// nuisance
-           , us_theta_vec_0_(Eigen::Matrix<double, -1, 1>::Zero(n_us))
-           , us_theta_vec_(Eigen::Matrix<double, -1, 1>::Zero(n_us))
-           , us_theta_vec_proposed_(Eigen::Matrix<double, -1, 1>::Zero(n_us))
-           , us_velocity_0_vec_(Eigen::Matrix<double, -1, 1>::Zero(n_us))
-           , us_velocity_vec_proposed_(Eigen::Matrix<double, -1, 1>::Zero(n_us))
-           , us_velocity_vec_(Eigen::Matrix<double, -1, 1>::Zero(n_us))
+           , us_theta_vec_0_(Eigen::Matrix<double, -1, 1>::Zero(n_nuisance))
+           , us_theta_vec_(Eigen::Matrix<double, -1, 1>::Zero(n_nuisance))
+           , us_theta_vec_proposed_(Eigen::Matrix<double, -1, 1>::Zero(n_nuisance))
+           , us_velocity_0_vec_(Eigen::Matrix<double, -1, 1>::Zero(n_nuisance))
+           , us_velocity_vec_proposed_(Eigen::Matrix<double, -1, 1>::Zero(n_nuisance))
+           , us_velocity_vec_(Eigen::Matrix<double, -1, 1>::Zero(n_nuisance))
            , us_p_jump_(0.0)
            , us_div_(0),
            N_(N)
            {}
            
            //// "getters"/"setters" to access the private members
-           Eigen::Matrix<double, -1, 1> &lp_and_grad_outs() { return lp_and_grad_outs_; }
+           Eigen::Matrix<double, -1, 1> &lp_and_grad_outs() { 
+             return lp_and_grad_outs_; 
+           }
            // const Eigen::Matrix<double, -1, 1> &lp_and_grad_outs() const { return lp_and_grad_outs_; }
-           Eigen::Matrix<double, -1, 1> &log_lik() { 
-               Eigen::Matrix<double, -1, 1>  log_lik_vec = lp_and_grad_outs_.tail(N_);
-               return log_lik_vec;
+           Eigen::Matrix<double, -1, 1> log_lik() { 
+             return lp_and_grad_outs_.tail(N_);
            }
            ////
            //// main
@@ -125,19 +126,21 @@ class HMCResult {
            void reject_proposal_main() {
              main_theta_vec_ = main_theta_vec_0_;
              main_velocity_vec_ = main_velocity_0_vec_;
+             //// lp_and_grad_outs_.setZero();
            } 
             
            void reject_proposal_us() {
              us_theta_vec_ = us_theta_vec_0_;
              us_velocity_vec_ = us_velocity_0_vec_;
+             //// lp_and_grad_outs_.setZero();
            }  
            
            //// fn to check state validity
            bool check_state_valid() const {
-             return main_theta_vec_.allFinite() && 
-               main_velocity_vec_.allFinite() && 
-               us_theta_vec_.allFinite() && 
-               us_velocity_vec_.allFinite();
+               return  main_theta_vec_.allFinite() && 
+                       main_velocity_vec_.allFinite() && 
+                       us_theta_vec_.allFinite() && 
+                       us_velocity_vec_.allFinite();
            }
             
 
@@ -202,10 +205,10 @@ class HMC_output_single_chain {
           HMC_output_single_chain(int n_iter,
                                   int n_nuisance_to_track,
                                   int n_params_main,
-                                  int n_us,
+                                  int n_nuisance,
                                   int N)
             : 
-            result_input_(n_params_main, n_us, N)
+            result_input_(n_params_main, n_nuisance, N)
           , traces_(n_params_main, n_iter, n_nuisance_to_track, N)
           , diagnostics_(n_iter) 
           {}

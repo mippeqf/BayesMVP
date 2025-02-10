@@ -25,17 +25,17 @@ using namespace Eigen;
 
 
 
-ALWAYS_INLINE bool is_NaN_or_Inf_Eigen(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> mat) {
-  
-  if (!((mat.array() == mat.array()).all())) {
-    return true;
-  }   
-  
-  if ((mat.array().isInf()).any()) {
-    return true;
-  }   
-  
-  return false; // if no NaN or Inf values  
+ALWAYS_INLINE bool is_NaN_or_Inf_Eigen(const Eigen::Matrix<double, -1, -1> &mat) {
+    
+    if (!((mat.array() == mat.array()).all())) {
+      return true;
+    }   
+    
+    if ((mat.array().isInf()).any()) {
+      return true;
+    }   
+    
+    return false; // if no NaN or Inf values  
   
 }  
 
