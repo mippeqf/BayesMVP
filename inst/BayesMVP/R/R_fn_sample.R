@@ -81,7 +81,6 @@ R_fn_sample_model  <-    function(      Model_type,
                     Model_args_as_Rcpp_List$n_params_main <- n_params_main
                     Model_args_as_Rcpp_List$n_nuisance <- n_nuisance
                 }
-  
                 
                  # if (Model_type != "Stan") {
                  # 
@@ -196,109 +195,116 @@ R_fn_sample_model  <-    function(      Model_type,
 
                 {
 
-                  theta_main_vectors_all_chains_input_from_R <- init_burnin_object$theta_main_vectors_all_chains_input_from_R  # inits stored here
-                  theta_us_vectors_all_chains_input_from_R <- init_burnin_object$theta_us_vectors_all_chains_input_from_R  # inits stored here
-
-                  Model_args_as_Rcpp_List <-  init_burnin_object$Model_args_as_Rcpp_List
-                  EHMC_args_as_Rcpp_List <-   init_burnin_object$EHMC_args_as_Rcpp_List 
-                  EHMC_Metric_as_Rcpp_List <- init_burnin_object$EHMC_Metric_as_Rcpp_List
-                  EHMC_burnin_as_Rcpp_List <- init_burnin_object$EHMC_burnin_as_Rcpp_List
-
-                  time_burnin <- init_burnin_object$time_burnin
-                  
-                  n_chains_burnin <-  init_burnin_object$n_chains_burnin
-                  n_burnin <-  init_burnin_object$n_burnin
+                          theta_main_vectors_all_chains_input_from_R <- init_burnin_object$theta_main_vectors_all_chains_input_from_R  # inits stored here
+                          theta_us_vectors_all_chains_input_from_R <- init_burnin_object$theta_us_vectors_all_chains_input_from_R  # inits stored here
+        
+                          Model_args_as_Rcpp_List <-  init_burnin_object$Model_args_as_Rcpp_List
+                          EHMC_args_as_Rcpp_List <-   init_burnin_object$EHMC_args_as_Rcpp_List 
+                          EHMC_Metric_as_Rcpp_List <- init_burnin_object$EHMC_Metric_as_Rcpp_List
+                          EHMC_burnin_as_Rcpp_List <- init_burnin_object$EHMC_burnin_as_Rcpp_List
+        
+                          time_burnin <- init_burnin_object$time_burnin
+                          
+                          n_chains_burnin <-  init_burnin_object$n_chains_burnin
+                          n_burnin <-  init_burnin_object$n_burnin
 
                 }
 
                 {
 
-
-                  post_burnin_prep_inits <-  BayesMVP:::R_fn_post_burnin_prep_for_sampling( n_chains_sampling = n_chains_sampling,
-                                                                                            n_superchains = n_superchains,
-                                                                                            n_params_main = n_params_main,
-                                                                                            n_nuisance = n_nuisance,
-                                                                                            theta_main_vectors_all_chains_input_from_R,
-                                                                                            theta_us_vectors_all_chains_input_from_R)
-
-                  theta_main_vectors_all_chains_input_from_R <- post_burnin_prep_inits$theta_main_vectors_all_chains_input_from_R
-                  theta_us_vectors_all_chains_input_from_R <- post_burnin_prep_inits$theta_us_vectors_all_chains_input_from_R
-
-
+                          post_burnin_prep_inits <-  BayesMVP:::R_fn_post_burnin_prep_for_sampling( n_chains_sampling = n_chains_sampling,
+                                                                                                    n_superchains = n_superchains,
+                                                                                                    n_params_main = n_params_main,
+                                                                                                    n_nuisance = n_nuisance,
+                                                                                                    theta_main_vectors_all_chains_input_from_R,
+                                                                                                    theta_us_vectors_all_chains_input_from_R)
+        
+                          theta_main_vectors_all_chains_input_from_R <- post_burnin_prep_inits$theta_main_vectors_all_chains_input_from_R
+                          theta_us_vectors_all_chains_input_from_R <- post_burnin_prep_inits$theta_us_vectors_all_chains_input_from_R
 
                 }
 
 
                 {
 
-                 ## gc(reset = TRUE)
-
-
-                  tictoc::tic("post-burnin timer")
-
-                  if (Model_type != "Stan") {
-                      Model_args_as_Rcpp_List$model_so_file <- "none"
-                      Model_args_as_Rcpp_List$json_file_path <- "none"
-                  }
-
-
-                  RcppParallel::setThreadOptions(numThreads = n_chains_sampling);
-
-                  ## Rcpp_fn_RcppParallel_EHMC_sampling
-                  # Rcpp_fn_openMP_EHMC_sampling
-                  # parallel::mcparallel
-
-                  # if (Model_type != "Stan")  {
-                  #      Model_args_as_Rcpp_List$Model_args_ints[4, 1] <- num_chunks
-                  # }
-                  
-                  if (parallel_method == "OpenMP") { 
-                    fn <- BayesMVP:::Rcpp_fn_OpenMP_EHMC_sampling
-                  } else { ###  use RcppParallel
-                    fn <- BayesMVP:::Rcpp_fn_RcppParallel_EHMC_sampling
-                  }
-                  
-                  ### Call C++ parallel sampling function
-                  result <-       (fn(                          n_threads_R = n_chains_sampling,
-                                                                sample_nuisance_R = sample_nuisance,
-                                                                n_nuisance_to_track = n_nuisance_to_track,
-                                                                seed_R = seed,
-                                                                iter_one_by_one = FALSE,
-                                                                n_iter_R = n_iter,
-                                                                partitioned_HMC_R = partitioned_HMC,
-                                                                Model_type_R = Model_type,
-                                                                force_autodiff_R = force_autodiff,
-                                                                force_PartialLog = force_PartialLog,
-                                                                multi_attempts_R = multi_attempts,
-                                                                theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R, # inits stored here
-                                                                theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,  # inits stored here
-                                                                y =  y,  ## only used in C++ for manual models! (all data passed via Stan_data_list / JSON strings for .stan models!) 
-                                                                Model_args_as_Rcpp_List =  Model_args_as_Rcpp_List,
-                                                                EHMC_args_as_Rcpp_List =   EHMC_args_as_Rcpp_List,
-                                                                EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
-
-
-                  try({
-                    {
-                      print(tictoc::toc(log = TRUE))
-                      log.txt <- tictoc::tic.log(format = TRUE)
-                      tictoc::tic.clearlog()
-                      time_sampling <- unlist(log.txt)
-                    }
-                  })
-
-                  # gc()
-
-                  try({
-                    time_sampling <- as.numeric( substr(start = 0, stop = 100,  strsplit(  strsplit(time_sampling, "[:]")[[1]], "[s]")[[2]][1] ) )
-                  })
-
-                  print(paste("sampling time = ",  time_sampling) )
-                  #  print(paste("total time = ", time_burnin + time_sampling) )
+                          gc(reset = TRUE)
+        
+                          tictoc::tic("post-burnin timer")
+        
+                          if (Model_type != "Stan") {
+                              Model_args_as_Rcpp_List$model_so_file <- "none"
+                              Model_args_as_Rcpp_List$json_file_path <- "none"
+                          }
+        
+        
+                          RcppParallel::setThreadOptions(numThreads = n_chains_sampling);
+        
+                          ## Rcpp_fn_RcppParallel_EHMC_sampling
+                          # Rcpp_fn_openMP_EHMC_sampling
+                          # parallel::mcparallel
+        
+                          # if (Model_type != "Stan")  {
+                          #      Model_args_as_Rcpp_List$Model_args_ints[4, 1] <- num_chunks
+                          # }
+                          
+                          if (parallel_method == "OpenMP") { 
+                            fn <- BayesMVP:::Rcpp_fn_OpenMP_EHMC_sampling
+                          } else { ###  use RcppParallel
+                            fn <- BayesMVP:::Rcpp_fn_RcppParallel_EHMC_sampling
+                          }
+                          
+                          ### Call C++ parallel sampling function
+                          result <-       (fn(                          n_threads_R = n_chains_sampling,
+                                                                        sample_nuisance_R = sample_nuisance,
+                                                                        n_nuisance_to_track = n_nuisance_to_track,
+                                                                        seed_R = seed,
+                                                                        iter_one_by_one = FALSE,
+                                                                        n_iter_R = n_iter,
+                                                                        partitioned_HMC_R = partitioned_HMC,
+                                                                        Model_type_R = Model_type,
+                                                                        force_autodiff_R = force_autodiff,
+                                                                        force_PartialLog = force_PartialLog,
+                                                                        multi_attempts_R = multi_attempts,
+                                                                        theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R, # inits stored here
+                                                                        theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,  # inits stored here
+                                                                        y =  y,  ## only used in C++ for manual models! (all data passed via Stan_data_list / JSON strings for .stan models!) 
+                                                                        Model_args_as_Rcpp_List =  Model_args_as_Rcpp_List,
+                                                                        EHMC_args_as_Rcpp_List =   EHMC_args_as_Rcpp_List,
+                                                                        EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
+        
+        
+                          # try({
+                          #   {
+                          #     print(tictoc::toc(log = TRUE))
+                          #     log.txt <- tictoc::tic.log(format = TRUE)
+                          #     tictoc::tic.clearlog()
+                          #     time_sampling <- unlist(log.txt)
+                          #   }
+                          # })
+                          # try({
+                          #   time_sampling <- as.numeric( substr(start = 0, stop = 100,  strsplit(  strsplit(time_sampling, "[:]")[[1]], "[s]")[[2]][1] ) )
+                          # })
+                          
+                          try({
+                              print(tictoc::toc(log = TRUE))
+                              log.txt <- tictoc::tic.log(format = TRUE)
+                              tictoc::tic.clearlog()
+                              time_sampling <- unlist(log.txt)
+                              ##
+                              extract_numeric_string <- str_extract(time_sampling, "\\d+\\.\\d+")   
+                              time_sampling <- as.numeric(extract_numeric_string)
+                          })
+        
+                          print(paste("sampling time = ",  time_sampling))
+                          
+                          gc(reset = TRUE)
 
                 }
                 
-                time_total <- time_sampling + time_burnin
+                time_total <- NULL
+                try({
+                   time_total <- time_sampling + time_burnin
+                })
 
   out_list <- list(LR_main = LR_main, 
                    LR_us = LR_us, 

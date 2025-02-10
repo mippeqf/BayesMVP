@@ -419,11 +419,10 @@ MVP_model <- R6Class("MVP_model",
                                                     
                                                     {
                                                       # first update class members if new values provided
-                                                      if (!identical(self$y, y))  { self$y <- y ; params_same <- 0 } ## Don't need to update for y (as n_us doesn't change unless N does!!)
+                                                      if (!identical(self$N, N))  { self$N <- N ; params_same <- 0 }
+                                                      if (!identical(self$y, y))  { self$y <- y ; params_same <- 0 }
                                                       if (!identical(self$sample_nuisance, sample_nuisance))  { self$sample_nuisance <- sample_nuisance ; params_same <- 0 } ## Don't need to update (??? - BOOKMARK)
                                                       if (!identical(self$Stan_data_list, Stan_data_list))  { self$Stan_data_list <- Stan_data_list ; params_same <- 0 } ## Don't need to update as JSON updated whenever Stan_data_list is!! (??? - BOOKMARK)
-                                                      ##
-                                                      if (!identical(self$N, N))  { self$N <- N ; params_same <- 0 }
                                                       ##
                                                       if (!identical(self$n_params_main, n_params_main))  { self$n_params_main <- n_params_main ; params_same <- 0 }
                                                       if (!identical(self$n_nuisance, n_nuisance))  { self$n_nuisance <- n_nuisance ; params_same <- 0 }
