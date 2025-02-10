@@ -246,6 +246,13 @@ MVP_model <- R6Class("MVP_model",
                           #'@param parallel_method The method to use for parallelisation (multithreading) in C++. Default is "RcppParallel". Can be changed to "OpenMP", if available. 
                           #'@param y The dataset. See class documentation for details.
                           #'@param N The sample size. See class documentation for details.
+                          #'@param manual_tau If \code{FALSE}, then SNAPER-HMC will be used to adapt \eqn{\tau} during the burnin phase. Otherwise if \code{TRUE}, \eqn{\tau} will be
+                          #' fixed to the value given in the \code{tau_if_manual} argument. 
+                          #'@param tau_if_manual The HMC path length (\eqn{\tau}) to use for the HMC sampling. This will be used for both the burnin and sampling phases. 
+                          #'Note that this only works if \code{manual_tau = TRUE}. Otherwise, \eqn{\tau} will be adapted using SNAPER-HMC. Also note that if only one value is 
+                          #'given, then this value of tau will be used for both the main parameter sampling and the nuisance parameter sampling. If you want to specify separate
+                          #'path lengths for the main and nuisance parameters, provide a vector instead. E.g.  \code{tau_if_manual = c(0.50, 2.0)} will mean that 
+                          #'\eqn{\tau} = 0.50 is used for the main parameters and \eqn{\tau} = 2.0 is used for the nuisance parameters. 
                           #'@param sample_nuisance Whether to sample nuisance parameters. See class documentation for details.
                           #'@param partitioned_HMC Whether to sample all parameters at once (note: wont use diffusion HMC) or whether to alternate between sampling the nuisance 
                           #'parameters and the main model parameters. 
@@ -299,9 +306,13 @@ MVP_model <- R6Class("MVP_model",
                                               parallel_method = "RcppParallel",
                                               y = self$y,
                                               N = self$N,
+                                              ##
+                                              manual_tau = NULL,
+                                              tau_if_manual = NULL,
+                                              ##
                                               sample_nuisance =   self$sample_nuisance,
-                                              partitioned_HMC = TRUE,
-                                              diffusion_HMC = TRUE,
+                                              partitioned_HMC = FALSE,
+                                              diffusion_HMC = FALSE,
                                               vect_type = NULL,
                                               Phi_type = "Phi",
                                               n_params_main = self$n_params_main,
@@ -321,23 +332,50 @@ MVP_model <- R6Class("MVP_model",
                                               force_PartialLog = FALSE,
                                               multi_attempts = TRUE,
                                               max_L = 1024,
-                                              tau_mult = 2.00,
+                                              tau_mult = 1.60,
                                               metric_type_main = "Hessian",
                                               metric_shape_main = "diag",
                                               ratio_M_main = 0.25,
                                               ratio_M_us = 0.25,
-                                              n_nuisance_to_track = 5,
+                                              n_nuisance_to_track = 10,
                                               force_recompile = FALSE,
                                               ...) {
+      
+                                                   # require(dqrng)
+                                                   # ## Set the standard R seed:
+                                                   # set.seed(seed)
+                                                   # ## Set global seed for PCG64:
+                                                   # # dqrng::dqrng_set_state("pcg64")
+                                                   # # dqrng::dqset.seed(seed)
+                                                   # 
+                                                   # set.seed(seed)
+                                                   # library(dqrng)
+                                                   # ##dqrng::dqrng_set_state("pcg64")
+                                                   # 
+                                                   # for (i in 1:n_chains_sampling) {
+                                                   #   dqrng::dqset.seed(seed, i)
+                                                   # }
                             
+                                                   ## validate initialization
+                                                   if (is.null(self$init_object)) {
+                                                     stop("Model was not properly initialize")
+                                                   }
                             
-                                                    #### Set HMC adaptations params that are fixed
-                                                    gap <- NULL
-                                                   ##  clip_iter <- NULL
+                                                    max_eps_main <- max_eps_us <- 100
                                                     
-                                                    n_adapt <- NULL
-                                                    max_eps_main <- 1.00
-                                                    max_eps_us <- 1.00
+                                                    ## Helper function:
+                                                    if_null_then_set_to <- function(x, set_to_this_if_null) { 
+                                                        if (is.null(x)) {
+                                                          return(set_to_this_if_null)
+                                                        }
+                                                        return(x)
+                                                    }
+                                                    
+                                                    manual_tau <- if_null_then_set_to(manual_tau, FALSE)
+                                                    message(print(paste("manual_tau = ", manual_tau)))
+                                                    
+                                                    vect_type <- if_null_then_set_to(vect_type, BayesMVP:::detect_vectorization_support())
+                                                    message(print(paste("vect_type = ", vect_type)))
                                                     
                                                     #### Currently for nuisance sampling only diagonal-Euclidean metric is available 
                                                     metric_type_nuisance = "Euclidean"
@@ -345,11 +383,6 @@ MVP_model <- R6Class("MVP_model",
                                                     
                                                     if (force_autodiff == TRUE) { 
                                                       force_PartialLog <- TRUE
-                                                    }
-                            
-                                                    # validate initialization
-                                                    if (is.null(self$init_object)) {
-                                                      stop("Model was not properly initialize")
                                                     }
                         
                                                     ## params that cannot be updated using "$sample()":
@@ -373,6 +406,10 @@ MVP_model <- R6Class("MVP_model",
                                                       }
                                                     }
                                                     
+                                                    if (is.null(diffusion_HMC)) {
+                                                      warning("'diffusion_HMC' not specificed (either TRUE of FALSE) - using default (standard, non-diffusion HMC)")
+                                                      diffusion_HMC <- FALSE 
+                                                    }
 
                                                     if (partitioned_HMC == TRUE) {
                                                       sample_nuisance <- TRUE
@@ -416,7 +453,6 @@ MVP_model <- R6Class("MVP_model",
                                                       
                                                     }
                                                     
-                                                    
                                                     if (!is.null(adapt_delta) && (adapt_delta <= 0 || adapt_delta >= 1)) {
                                                       stop("adapt_delta must be between 0 and 1")
                                                     }
@@ -440,55 +476,32 @@ MVP_model <- R6Class("MVP_model",
                                                       LR_us  <- LR
                                                     }
                                                     
-                                                    if (is.null(n_nuisance)) { 
-                                                      n_nuisance <- self$n_nuisance
+                                                    if (is.null(clip_iter)) {
+                                                          if (n_burnin > 999) {
+                                                            clip_iter <-  round(n_burnin/20, 0)  ## round(n_burnin/10, 0)   
+                                                          } else if ((n_burnin > 499) && (n_burnin < 1000)) { 
+                                                            clip_iter <-  round(n_burnin/20, 0)  ## round(n_burnin/10, 0)  
+                                                          } else if (n_burnin %in% c(250:499)) { 
+                                                            clip_iter <-  25 #  round(n_burnin/10, 0) # 50 # 15
+                                                          } else if (n_burnin %in% c(150:249)) { 
+                                                            clip_iter <-  25 # 30 # 2  #  round(n_burnin/20, 0) # 25
+                                                          } else {  # 149 or less
+                                                            clip_iter <-  15 #  20 # 10 # 5 
+                                                          }
                                                     }
                                                     
+                                                    ## Nuisance params:
+                                                    n_nuisance <- if_null_then_set_to(n_nuisance, self$n_nuisance)
                                                     if (n_nuisance == 0) {
                                                       diffusion_HMC <- FALSE ## diffusion_HMC only done for nuisance 
+                                                      partitioned_HMC <- FALSE ## nothing to partition if no nuisance params!
                                                     }
-                                                    
-                                                    if (is.null(diffusion_HMC)) {
-                                                      warning("'diffusion_HMC' not specificed (either TRUE of FALSE) - using default (standard, non-diffusion HMC)")
-                                                      diffusion_HMC <- FALSE 
-                                                    }
-                                                    
-                                                    # if (is.null(metric_shape_main)) { 
-                                                    #   warning("metric_shape_main not supplied - using default (dense if n_params_main < 250, otherwise diagonal")
-                                                    #   if (n_params_main > 250) {
-                                                    #     metric_shape_main <- "dense"
-                                                    #   } else { 
-                                                    #     metric_shape_main <- "diag"
-                                                    #   }
-                                                    # }
-                                                    
-                                                    if (is.null(n_adapt)) { 
-                                                      n_adapt <-  n_burnin - round(n_burnin/10)
-                                                    }
-                                                    
-                                                    if (is.null(clip_iter)) {
-                                                      if (n_burnin > 999) {
-                                                        clip_iter =  round(n_burnin/10, 0) # 50
-                                                      } else if ((n_burnin > 499) && (n_burnin < 1000)) { 
-                                                        clip_iter =  round(n_burnin/10, 0) # 50
-                                                      } else if (n_burnin %in% c(250:499)) { 
-                                                        clip_iter =  50 # 25 #  round(n_burnin/10, 0) # 50 # 15
-                                                      } else if (n_burnin %in% c(150:249)) { 
-                                                        clip_iter =  25 # 30 # 2  #  round(n_burnin/20, 0) # 25
-                                                      } else {  # 149 or less
-                                                        clip_iter =  20 #  20 # 10 # 5 
-                                                      }
-                                                    }
-                                                    
-                                                    if (is.null(gap)) { 
-                                                      gap <-  clip_iter  + round(n_adapt / 5)
-                                                    }
-                                                    if (is.null(interval_width_main)) { 
-                                                      interval_width_main <- round(n_burnin/10)
-                                                    }
-                                                    if (is.null(interval_width_nuisance)) { 
-                                                      interval_width_nuisance <- round(n_burnin/10)
-                                                    }
+                                                    ##
+                                                    gap <- n_adapt <- NULL
+                                                    n_adapt <- if_null_then_set_to(n_adapt, n_burnin - round(n_burnin/10))
+                                                    gap <- if_null_then_set_to(gap, clip_iter  + round(n_adapt / 5))
+                                                    interval_width_main <- if_null_then_set_to(interval_width_main, round(n_burnin/10))
+                                                    interval_width_nuisance <- if_null_then_set_to(interval_width_nuisance, round(n_burnin/10))
                                                     
                                                   ###  partitioned_HMC <- TRUE # currently only TRUE is supported. 
                                                     inv_Phi_type <- ifelse(Phi_type == "Phi", "inv_Phi", "inv_Phi_approx") # inv_Phi_type is not modifiable 
@@ -507,6 +520,10 @@ MVP_model <- R6Class("MVP_model",
                                                                                                           N =  self$N,
                                                                                                           n_params_main = self$n_params_main,
                                                                                                           n_nuisance = self$n_nuisance,
+                                                                                                          ##
+                                                                                                          manual_tau = manual_tau,
+                                                                                                          tau_if_manual = tau_if_manual,
+                                                                                                          ##
                                                                                                           sample_nuisance =   self$sample_nuisance,
                                                                                                           n_chains_burnin =  self$n_chains_burnin,
                                                                                                           seed = seed,

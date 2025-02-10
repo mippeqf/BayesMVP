@@ -13,8 +13,8 @@ generate_summary_tibble <- function(n_threads = NULL,
                                     n_superchains) {
   
         
-              n_cores <- parallel::detectCores()
-              n_threads <- n_cores
+            n_cores <- parallel::detectCores()
+            n_threads <- n_cores
 
               #### Initialize summary dataframe
               summary_df <- data.frame(     parameter = param_names,
@@ -30,15 +30,12 @@ generate_summary_tibble <- function(n_threads = NULL,
               
               # # Effective Sample Size (ESS) and Rhat - using the fast custom RcppParallel fn "BayesMVP::Rcpp_compute_MCMC_diagnostics()"
               posterior_draws_as_std_vec_of_mats <- list()
-              ##
-              n_iter <- dim(trace)[2]
               mat <- matrix(nrow = n_iter, ncol = n_chains)
 
               n_params <- n_to_compute
               
-             #  message(print(paste("str(trace) = ")))
-             #  message(print(paste(str(trace))))
-             # # message(print(str(posterior_draws_as_std_vec_of_mats)))
+              comment(print(str(trace)))
+             # comment(print(str(posterior_draws_as_std_vec_of_mats)))
 
               for (i in 1:n_params) {
                 posterior_draws_as_std_vec_of_mats[[i]] <- mat
@@ -122,11 +119,6 @@ generate_summary_tibble <- function(n_threads = NULL,
 
 
  
-
-
-
-
-
 
 
 

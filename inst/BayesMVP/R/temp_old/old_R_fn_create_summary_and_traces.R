@@ -3,6 +3,9 @@
 
 
 
+
+ 
+
 ## Helper R function to remove "log_lik" parameter from trace array 
 #' R_fn_remove_log_lik_from_array
 #' @keywords internal
@@ -11,7 +14,7 @@ R_fn_remove_log_lik_from_array <- function(arr) {
   format(object.size(arr), units = "MB")
   
   # Find which parameters don't contain "log_lik"
-  keep_params <- !grepl("log_lik", dimnames(arr)[[1]])
+  keep_params <- !grepl("log_lik", dimnames(arr)[[3]])
   
   # Create new array without the log_lik parameters
   arr_filtered <- arr[, , keep_params, drop = FALSE]
@@ -19,7 +22,6 @@ R_fn_remove_log_lik_from_array <- function(arr) {
   return(arr_filtered)
   
 }
-
 
 
 
@@ -34,17 +36,15 @@ create_summary_and_traces <- function(    model_results,
                                           n_nuisance, 
                                           compute_main_params = TRUE, # excludes nuisance params. and log-lik 
                                           compute_transformed_parameters = TRUE,
-                                          compute_generated_quantities = TRUE,
-                                          save_log_lik_trace = FALSE, 
+                                          compute_generated_quantities = FALSE,
+                                          save_log_lik_trace = TRUE, 
                                           save_nuisance_trace = FALSE,
-                                          compute_nested_rhat = FALSE,
+                                          compute_nested_rhat = NULL,
                                           n_superchains = NULL,
                                           save_trace_tibbles = FALSE
 ) {
   
 
-  ## Start timer 
-  tictoc::tic()
   
   ## Extract essential model info from "init_object" object
   Model_type <- init_object$Model_type
@@ -58,23 +58,17 @@ create_summary_and_traces <- function(    model_results,
   nuisance_trace <- model_results$result[[3]]
   
   if (save_log_lik_trace == TRUE) {
-    if (Model_type != "Stan") {
-      log_lik_trace_mnl_models <-  model_results$result[[6]] 
-    } else { 
-      log_lik_trace_mnl_models <- NULL
-    }
+      if (Model_type != "Stan") {
+        log_lik_trace_mnl_models <-  model_results$result[[6]] 
+      } else { 
+        log_lik_trace_mnl_models <- NULL
+      }
   } else { 
-    log_lik_trace_mnl_models <- NULL
+        log_lik_trace_mnl_models <- NULL
   }
   
   
-  
-  # if (Model_type != "Stan") {
-  #   log_lik_trace_mnl_models <-  model_results$result[[6]] 
-  # }
-  
-  #### time_burnin <- model_results$time_burnin
-  time_burnin <- model_results$init_burnin_object$time_burnin
+  time_burnin <- model_results$time_burnin
   time_sampling <- model_results$time_sampling
   time_total_wo_summaries <- time_burnin + time_sampling
   
@@ -100,16 +94,10 @@ create_summary_and_traces <- function(    model_results,
   force_autodiff <- model_results$force_autodiff
   force_PartialLog <- model_results$force_PartialLog
   multi_attempts <- model_results$multi_attempts
-
-  L_main_during_burnin_vec <- model_results$init_burnin_object$L_main_during_burnin_vec
-  L_us_during_burnin_vec <- model_results$init_burnin_object$L_us_during_burnin_vec
-  L_main_during_burnin <- model_results$init_burnin_object$L_main_during_burnin
-  L_us_during_burnin <- model_results$init_burnin_object$L_us_during_burnin
-  
   
   {
 
-
+  tictoc::tic()
     
   if (sample_nuisance == TRUE) {
       n_nuisance <- n_nuisance
@@ -141,58 +129,41 @@ create_summary_and_traces <- function(    model_results,
     n_superchains <- round(n_chains / n_chains_burnin)
   }
   
-  #### Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))  ### TEMP
-  #### Stan_model_file_path <- init_object$Stan_model_file_path
+  # Stan_model_file_path <- (file.path(pkg_dir, "inst/stan_models/PO_LC_MVP_bin.stan"))  ### TEMP
+  Stan_model_file_path <- init_object$Stan_model_file_path
   
   if (Model_type == "Stan") {
     json_file_path <- init_object$json_file_path
-    model_so_file <-  init_object$model_so_file
+    model_so_file <- init_object$model_so_file
   } else { 
     json_file_path <- init_object$dummy_json_file_path
-    model_so_file <-  init_object$dummy_model_so_file
+    model_so_file <- init_object$dummy_model_so_file
   }
   
-  cmdstanr::write_stan_json(data = init_object$Stan_data_list, 
-                            file = json_file_path)
   
-  ##
-  print(paste("init_object$json_file_path = "))
-  print(init_object$json_file_path)
-  ##
-  print(paste("init_object$model_so_file = "))
-  print(init_object$model_so_file)
-  ##
-  print(paste("init_object$dummy_json_file_path = "))
-  print(init_object$dummy_json_file_path)
-  ##
-  print(paste("init_object$dummy_model_so_file = "))
-  print(init_object$dummy_model_so_file)
-  ##
+  
   Sys.setenv(STAN_THREADS = "true")
- 
-  #### bs_model <- StanModel$new(Stan_model_file_path, data = json_file_path, 1234) # creates .so file
-  bs_model <- init_object$bs_model
+  bs_model <- StanModel$new(Stan_model_file_path, data = json_file_path, 1234) # creates .so fil
   bs_names  <-  (bs_model$param_names())
   
-  init_object$bs_names
-  
-  # message(print(paste("bs_names - head = ", head(bs_names))))
-  # message(print(paste("bs_names - tail = ", tail(bs_names))))
+  comment(print(paste("bs_names - head = ", head(bs_names))))
+  comment(print(paste("bs_names - tail = ", tail(bs_names))))
   
   bs_names_inc_tp <-  (bs_model$param_names(include_tp = TRUE))
   bs_names_inc_tp_and_gq <-  (bs_model$param_names(include_tp = TRUE, include_gq = TRUE))
   
   
-  pars_names <- bs_names_inc_tp_and_gq
-  ####  pars_names <- init_object$param_names
   
-  if (init_object$param_names[1] == "lp__") { 
+  ## pars_names <- bs_names_inc_tp_and_gq
+  pars_names <- init_object$param_names
+  
+  if (model_obj$init_object$param_names[1] == "lp__") { 
     pars_names <- pars_names[-1]
   }
   
   
-  # message(print(paste("pars_names - head = ", head(pars_names))))
-  # message(print(paste("pars_names - tail = ", tail(pars_names))))
+  comment(print(paste("pars_names - head = ", head(pars_names))))
+  comment(print(paste("pars_names - tail = ", tail(pars_names))))
   
   index_lp  <- grep("^lp__", pars_names, invert = FALSE)
   
@@ -208,8 +179,8 @@ create_summary_and_traces <- function(    model_results,
  #   pars_names <- init_object$init_vals_object$param_names
   n_par_inc_tp_and_gq <- length(pars_names) 
   try({ 
-     names_nuisance_tracked <- head(pars_names, n_nuisance_tracked)
-  }, silent = TRUE)
+  names_nuisance_tracked <- head(pars_names, n_nuisance_tracked)
+  })
   
   index_log_lik  <- grep("^log_lik", pars_names, invert = FALSE)
   names_log_lik <- pars_names[index_log_lik]
@@ -229,15 +200,9 @@ create_summary_and_traces <- function(    model_results,
   
   # Mow find names, indexes and N's of tp and gq ONLY
   index_tp <- setdiff(bs_index_inc_tp, bs_index)
-  names_tp <- pars_names[index_tp]
-  index_tp_wo_log_lik <- setdiff(index_tp, index_log_lik)
-  names_tp_wo_log_lik <- pars_names[index_tp_wo_log_lik]
-  ## replace names_tp etc. to be w/o log_lik (as stored in seperate array only if user chooses)
-  names_tp <- names_tp_wo_log_lik
-  index_tp <- names_tp_wo_log_lik
-  
-  ##
   index_gq <- setdiff(bs_index_inc_tp_and_gq, bs_index_inc_tp)
+  
+  names_tp <- pars_names[index_tp]
   names_gq <- pars_names[index_gq]
  
   n_tp <- length(names_tp)
@@ -253,18 +218,11 @@ create_summary_and_traces <- function(    model_results,
   
   # setdiff(names_wo_nuisance, names_wo_log_lik)
   
-  print(head(index_wo_log_lik))
-  print(head(index_wo_nuisance))
-  
   names_wo_nuisance_and_log_lik <-  intersect(names_wo_log_lik, names_wo_nuisance)
   index_wo_nuisance_and_log_lik <-  intersect(index_wo_log_lik, index_wo_nuisance)
   n_params_wo_nuisance_and_log_lik <- length(index_wo_nuisance_and_log_lik)
   
-  print(paste("n_params_main = ", n_params_main))
-  index_params_main <- index_wo_nuisance_and_log_lik[1]:(index_wo_nuisance_and_log_lik[1] + n_params_main - 1)
-  
-
-  print(head(index_params_main))
+  index_params_main <- index_wo_nuisance_and_log_lik[1]:( index_wo_nuisance_and_log_lik[1] + n_params_main - 1)
 
   if (sample_nuisance == TRUE) {
     
@@ -283,14 +241,16 @@ create_summary_and_traces <- function(    model_results,
      
   }
   
-   # if (include_nuisance == TRUE)  {
-   #   include_log_lik <- TRUE
-   # } else { 
-   #   include_log_lik <- FALSE
-   #   warning("NOTE: can only compute log_lik a posteriori if ALL nuisance are tracked. \n Note it's also possible to compute log_lik during sampling by specifying: save_log_lik_trace = TRUE")
-   # }
+  
+  # if (include_nuisance == TRUE)  {
+  #   include_log_lik <- TRUE
+  # } else { 
+  #   include_log_lik <- FALSE
+  #   warning("NOTE: can only compute log_lik a posteriori if ALL nuisance are tracked. \n Note it's also possible to compute log_lik during sampling by specifying: save_log_lik_trace = TRUE")
+  # }
+  
    
-   ## print(n_params_main)
+  ## print(n_params_main)
    pars_indicies_to_track <- 1:n_par_inc_tp_and_gq
    n_params_full <- n_par_inc_tp_and_gq
    all_param_outs_trace <-    (BayesMVP:::fn_compute_param_constrain_from_trace_parallel(    unc_params_trace_input_main = main_trace,
@@ -315,9 +275,9 @@ create_summary_and_traces <- function(    model_results,
 
   ### str(all_param_outs_trace[[1]])
    
-   # message(print(paste("index_params_main = ", index_params_main)))
-   # message(print(paste("index_tp (head) = ", head(index_tp))))
-   # message(print(paste("index_gq (head) = ", head(index_gq))))
+   comment(print(paste("index_params_main = ", index_params_main)))
+   comment(print(paste("index_tp (head) = ", head(index_tp))))
+   comment(print(paste("index_gq (head) = ", head(index_gq))))
    
    # if (index_lp == 1) { 
    #   offset <- 1
@@ -327,21 +287,21 @@ create_summary_and_traces <- function(    model_results,
    
    offset <- 0
    
-   # message(print(paste("offset = ", offset)))
-   # 
-   # 
-   # message(print(paste("n_chains = ", n_chains)))
-   # message(print(paste("n_iter = ", n_iter)))
-   # message(print(paste("n_params_main = ", n_params_main)))
-   # 
-   # message(print(paste("length(all_param_outs_trace) = ", length(all_param_outs_trace))))
-   # message(print(paste("length(index_params_main) = ", length(index_params_main))))
-   # 
-   # message(print(paste("index_params_main = ", index_params_main)))
+   comment(print(paste("offset = ", offset)))
+   
+
+   comment(print(paste("n_chains = ", n_chains)))
+   comment(print(paste("n_iter = ", n_iter)))
+   comment(print(paste("n_params_main = ", n_params_main)))
+   
+   comment(print(paste("length(all_param_outs_trace) = ", length(all_param_outs_trace))))
+   comment(print(paste("length(index_params_main) = ", length(index_params_main))))
+   
+   comment(print(paste("index_params_main = ", index_params_main)))
    
    trace_params_main <- array(dim = c(n_params_main, n_iter, n_chains))
    
-   # message(print(str(all_param_outs_trace)))
+   comment(print(str(all_param_outs_trace)))
   
    if (compute_main_params == TRUE) {
      kk <- 1
@@ -354,23 +314,12 @@ create_summary_and_traces <- function(    model_results,
       }
    }
      
-   try({
+   try({ 
      trace_tp <- NULL
-     ##
-     message(print(paste("index_tp_wo_log_lik = ")))
-     message(print(head(index_tp_wo_log_lik)))
-     message(print(length(index_tp_wo_log_lik)))
-     ##
-     message(print(paste("index_tp = ")))
-     message(print(head(index_tp)))
-     message(print(length(index_tp)))
-     ##
-     n_tp_wo_log_lik <- length(index_tp_wo_log_lik)
-     
      if (compute_transformed_parameters == TRUE) { 
-       trace_tp <- array(dim = c(n_tp_wo_log_lik, n_iter, n_chains))
+       trace_tp <- array(dim = c(n_tp, n_iter, n_chains))
        for (kk in 1:n_chains) {
-         trace_tp[1:n_tp_wo_log_lik,  1:n_iter, kk] <- all_param_outs_trace[[kk]][index_tp_wo_log_lik - offset, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
+         trace_tp[1:n_tp,  1:n_iter, kk] <- all_param_outs_trace[[kk]][index_tp - offset, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
        }
      }
    })
@@ -380,7 +329,7 @@ create_summary_and_traces <- function(    model_results,
      if (compute_generated_quantities == TRUE) { 
        trace_gq <- array(dim = c(n_gq, n_iter, n_chains))
        for (kk in 1:n_chains) {
-         trace_gq[1:n_gq, 1:n_iter, kk] <- all_param_outs_trace[[kk]][index_gq - offset, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
+         trace_gq[1:n_gq,  1:n_iter, kk] <- all_param_outs_trace[[kk]][index_gq - offset, 1:n_iter] #  params_subset_trace[[kk]][param, 1:n_iter]
        }
      }
    })
@@ -417,7 +366,10 @@ create_summary_and_traces <- function(    model_results,
       }
    })
 
-
+   
+   ## Remove log-lik trace from tp trace array (since we store it in seperate array called "log_lik_trace" if user chooses to store it)
+   trace_tp <- R_fn_remove_log_lik_from_array(trace_tp)
+   
    n_cores <- parallel::detectCores()
    
   ### --------- MAIN PARAMETERS / "PARAMETERS" BLOCK IN STAN  ----------------------------------------
@@ -427,21 +379,16 @@ create_summary_and_traces <- function(    model_results,
   
   if (compute_main_params == TRUE) { 
     
-        summary_tibble_main_params <- BayesMVP:::generate_summary_tibble(   n_threads = n_cores,
-                                                                            trace = trace_params_main,
-                                                                            param_names = names_main,
-                                                                            n_to_compute = n_params_main,
-                                                                            compute_nested_rhat = compute_nested_rhat,
-                                                                            n_chains = n_chains, 
-                                                                            n_superchains = n_superchains)
+        summary_tibble_main_params <- BayesMVP:::generate_summary_tibble(  n_threads = n_cores,
+                                                                trace = trace_params_main,
+                                                                param_names = names_main,
+                                                                n_to_compute = n_params_main,
+                                                                compute_nested_rhat = compute_nested_rhat,
+                                                                n_chains = n_chains, 
+                                                                n_superchains = n_superchains)
                   
                   
-        Min_ESS_main <-  min(na.rm = TRUE, summary_tibble_main_params$n_eff[1:n_params_main])
-        Max_rhat_main <- max(na.rm = TRUE, summary_tibble_main_params$Rhat[1:n_params_main])
-        Max_nested_rhat_main <- NULL
-        if (compute_nested_rhat == TRUE) {
-           Max_nested_rhat_main <- max(na.rm = TRUE, summary_tibble_main_params$n_Rhat[1:n_params_main])
-        } 
+        Min_ESS_main <- min(na.rm = TRUE, summary_tibble_main_params$n_eff[1:n_params_main])
               
   }
  
@@ -451,13 +398,13 @@ create_summary_and_traces <- function(    model_results,
   
   if  ((compute_generated_quantities == TRUE) && (n_gq > 0))  { 
             
-        summary_tibble_generated_quantities <- BayesMVP:::generate_summary_tibble(    n_threads = n_cores,
-                                                                                      trace = trace_gq,
-                                                                                      param_names = names_gq,
-                                                                                      n_to_compute = n_gq,
-                                                                                      compute_nested_rhat = compute_nested_rhat,
-                                                                                      n_chains = n_chains, 
-                                                                                      n_superchains = n_superchains)
+        summary_tibble_generated_quantities <- BayesMVP:::generate_summary_tibble(   n_threads = n_cores,
+                                                                          trace = trace_gq,
+                                                                          param_names = names_gq,
+                                                                          n_to_compute = n_gq,
+                                                                          compute_nested_rhat = compute_nested_rhat,
+                                                                          n_chains = n_chains, 
+                                                                          n_superchains = n_superchains)
                   
     
   }
@@ -466,50 +413,45 @@ create_summary_and_traces <- function(    model_results,
   ### --------- TRANSFORMED PARAMETERS -------------------------------------------------------------- 
   summary_tibble_transformed_parameters <- NULL
   if ((compute_transformed_parameters == TRUE) && (n_tp > 0)) {
-    
-        ## Remove log-lik trace from tp trace array (since we store it in seperate array called "log_lik_trace" if user chooses to store it)
-        ## trace_tp <- R_fn_remove_log_lik_from_array(trace_tp)
         
-        summary_tibble_transformed_parameters <- BayesMVP:::generate_summary_tibble(      n_threads = n_cores,
-                                                                                          trace = trace_tp,
-                                                                                          param_names = names_tp_wo_log_lik,
-                                                                                          n_to_compute = n_tp_wo_log_lik,
-                                                                                          compute_nested_rhat = compute_nested_rhat,
-                                                                                          n_chains = n_chains, 
-                                                                                          n_superchains = n_superchains)
+        summary_tibble_transformed_parameters <- BayesMVP:::generate_summary_tibble(     n_threads = n_cores,
+                                                                              trace = trace_tp,
+                                                                              param_names = names_tp,
+                                                                              n_to_compute = n_tp,
+                                                                              compute_nested_rhat = compute_nested_rhat,
+                                                                              n_chains = n_chains, 
+                                                                              n_superchains = n_superchains)
     
   }
   
    
-   #### -----------------------------  DF / tibble creation (for "posterior" and "bayesplot" R packages)  --------------------------------------------
-   trace_params_main_tibble <- NULL ;   trace_params_main_reshaped <- NULL
-   trace_transformed_params_tibble <- NULL ;   trace_tp_reshaped <- NULL
-   trace_generated_quantities_tibble <- NULL ; trace_gq_reshaped <- NULL
+  #### -----------------------------  DF / tibble creation (for "posterior" and "bayesplot" R packages)  --------------------------------------------
+  trace_params_main_tibble <- NULL ;   trace_params_main_reshaped <- NULL
+  trace_transformed_params_tibble <- NULL ;   trace_tp_reshaped <- NULL
+  trace_generated_quantities_tibble <- NULL ; trace_gq_reshaped <- NULL
 
-   ## re-shape data (so can easily use with "posterior" & "bayesplot" R packages)
-   trace_params_main_reshaped <-  base::aperm(trace_params_main, c(2, 3, 1))
-   if (compute_transformed_parameters == TRUE)   trace_tp_reshaped <- base::aperm(trace_tp, c(2, 3, 1))
-   if (compute_generated_quantities == TRUE)     trace_gq_reshaped <- base::aperm(trace_gq, c(2, 3, 1))
+  ## re-shape data (so can easily use with "posterior" & "bayesplot" R packages)
+  trace_params_main_reshaped <-  base::aperm(trace_params_main, c(2, 3, 1))
+  if (compute_transformed_parameters == TRUE)   trace_tp_reshaped <- base::aperm(trace_tp, c(2, 3, 1))
+  if (compute_generated_quantities == TRUE)     trace_gq_reshaped <- base::aperm(trace_gq, c(2, 3, 1))
   
-   ## add the parameter names to the array
-   dimnames(trace_params_main_reshaped) <- list(iterations = 1:n_iter, 
+  ## add the parameter names to the array
+  dimnames(trace_params_main_reshaped) <- list(iterations = 1:n_iter, 
                                                chains = 1:n_chains, 
                                                parameters = names_main)
-   ##
-   if (compute_transformed_parameters == TRUE)  dimnames(trace_tp_reshaped) <- list(iterations = 1:n_iter, 
+  if (compute_transformed_parameters == TRUE)  dimnames(trace_tp_reshaped) <- list(iterations = 1:n_iter, 
                                                                                    chains = 1:n_chains,
-                                                                                   parameters = names_tp_wo_log_lik)
-   ##
-   if (compute_generated_quantities == TRUE) dimnames(trace_gq_reshaped) <-    list(iterations = 1:n_iter, 
+                                                                                   parameters = names_tp)
+  if (compute_generated_quantities == TRUE) dimnames(trace_gq_reshaped) <-    list(iterations = 1:n_iter, 
                                                                                    chains = 1:n_chains, 
                                                                                    parameters = names_gq)
   
    ## then convert from array -> to df/tibble format  
-   if (save_trace_tibbles == TRUE) {
+  if (save_trace_tibbles == TRUE) {
        trace_params_main_tibble <- dplyr::tibble(posterior::as_draws_df(trace_params_main_reshaped))
        if (compute_transformed_parameters == TRUE)  trace_transformed_params_tibble <- dplyr::tibble(posterior::as_draws_df(trace_tp_reshaped))
        if (compute_generated_quantities == TRUE) trace_generated_quantities_tibble <-  dplyr::tibble(posterior::as_draws_df(trace_gq_reshaped))
-   }
+  }
   
    ##  ----- Make OVERALL (full) draws array   --------------- 
    dims_main <- dim(trace_params_main_reshaped)[3]
@@ -522,7 +464,7 @@ create_summary_and_traces <- function(    model_results,
    
    
    names_total <- names_main
-   if (compute_transformed_parameters == TRUE)  names_total <- c(names_total, names_tp_wo_log_lik)
+   if (compute_transformed_parameters == TRUE)  names_total <- c(names_total, names_tp)
    if (compute_generated_quantities == TRUE)    names_total <- c(names_total, names_gq)
    
    draws_array <- array(NA, dim = c(n_iter, n_chains, dim_total))
@@ -546,6 +488,12 @@ create_summary_and_traces <- function(    model_results,
    dimnames(draws_array) <- list( iterations = 1:n_iter, 
                                   chains = 1:n_chains, 
                                   parameters = names_total)
+   
+  
+
+  
+  
+  
   
   try({
     {
@@ -573,44 +521,36 @@ create_summary_and_traces <- function(    model_results,
     EHMC_args_as_Rcpp_List <- model_results$init_burnin_object$EHMC_args_as_Rcpp_List
     
     try({
-      message(((paste("Max R-hat (parameters block, main only) = ", round(Max_rhat_main, 4)))))
-    }, silent = TRUE)
-    try({
-      message(((paste("Max R-hat (parameters block, main only) = ", round(Max_nested_rhat_main, 4)))))
-    }, silent = TRUE)
-    try({
-      message(((paste("Min ESS (parameters block, main only) = ", round(Min_ESS_main, 0)))))
-      message(((paste("Min ESS / sec [samp.] (parameters block, main only) = ", signif(ESS_per_sec_samp, 3)))))
-      message(((paste("Min ESS / sec [overall] (parameters block, main only) = ", signif(ESS_per_sec_total, 3)))))
-    }, silent = TRUE)
+      comment(print((paste("Min ESS (parameters block, main only) = ", round(Min_ESS_main, 0)))))
+      comment(print((paste("Min ESS / sec [samp.] (parameters block, main only) = ", signif(ESS_per_sec_samp, 3)))))
+      comment(print((paste("Min ESS / sec [overall] (parameters block, main only) = ", signif(ESS_per_sec_total, 3)))))
+    })
     try({ 
-      L_main_during_sampling <- (EHMC_args_as_Rcpp_List$tau_main / EHMC_args_as_Rcpp_List$eps_main)
-      n_grad_evals_sampling_main <- L_main_during_sampling * n_iter * n_chains_sampling
+      n_grad_evals_sampling_main <-  (EHMC_args_as_Rcpp_List$tau_main / EHMC_args_as_Rcpp_List$eps_main)  * n_iter * n_chains_sampling
       Min_ess_per_grad_main_samp <-  Min_ESS_main / n_grad_evals_sampling_main
-    }, silent = TRUE)
+    })
     try({
-      L_us_during_sampling <- (EHMC_args_as_Rcpp_List$tau_us / EHMC_args_as_Rcpp_List$eps_us)
-      n_grad_evals_sampling_us <-  L_us_during_sampling  * n_iter * n_chains_sampling
+      n_grad_evals_sampling_us <-  (EHMC_args_as_Rcpp_List$tau_us / EHMC_args_as_Rcpp_List$eps_us)  * n_iter * n_chains_sampling
       Min_ess_per_grad_us_samp <-  Min_ESS_main / n_grad_evals_sampling_us
-    }, silent = TRUE)
+    })
     try({ 
-          if (partitioned_HMC == TRUE) { ## i.e. if nuisance are sampledseperately 
-              weight_nuisance_grad <- 0.3333333
-              weight_main_grad <- 0.6666667 ## main grad takes ~ 2x as long to compute as nuisance grad 
-              Min_ess_per_grad_samp_weighted <- (weight_nuisance_grad * Min_ess_per_grad_us_samp + weight_main_grad * Min_ess_per_grad_main_samp) / (weight_nuisance_grad + weight_main_grad)
-          } else if (partitioned_HMC == FALSE) {  # if not partitioned, grad isnt seperate and "main" grad = "all" grad so use weight_main_grad only !!
-              weight_nuisance_grad <- 0.00
-              weight_main_grad <- 1.00
-              Min_ess_per_grad_samp_weighted <- (weight_nuisance_grad * Min_ess_per_grad_us_samp + weight_main_grad * Min_ess_per_grad_main_samp) / (weight_nuisance_grad + weight_main_grad)
-          }
-          
-      message(((paste("Min ESS / grad [samp., weighted] (parameters block, main only) = ", signif(1000 *  Min_ess_per_grad_samp_weighted, 3)))))
-    }, silent = TRUE)
+      
+      if (partitioned_HMC == TRUE) {
+          weight_nuisance_grad <- 0.3333333
+          weight_main_grad <- 0.6666667 ## main grad takes ~ 2x as long to compute as nuisance grad 
+          Min_ess_per_grad_samp_weighted <- (weight_nuisance_grad * Min_ess_per_grad_us_samp + weight_main_grad * Min_ess_per_grad_main_samp) / (weight_nuisance_grad + weight_main_grad)
+      } else {  # if not partitioned, grad isnt seperate and "main" grad = "all" grad so use weight_main_grad only !!
+          weight_nuisance_grad <- 0.00
+          weight_main_grad <- 1.00
+          Min_ess_per_grad_samp_weighted <- (weight_nuisance_grad * Min_ess_per_grad_us_samp + weight_main_grad * Min_ess_per_grad_main_samp) / (weight_nuisance_grad + weight_main_grad)
+      }
+      
+      comment(print((paste("Min ESS / grad [samp., weighted] (parameters block, main only) = ", signif(1000 *  Min_ess_per_grad_samp_weighted, 3)))))
+    })
     try({ 
       grad_evals_per_sec <- ESS_per_sec_samp / Min_ess_per_grad_samp_weighted
-      message(((paste("Grad evals / sec [samp.] (parameters block, main only) = ", signif(grad_evals_per_sec, 3)))))
-    }, silent = TRUE)
-    ##
+      comment(print((paste("Grad evals / sec [samp.] (parameters block, main only) = ", signif(grad_evals_per_sec, 3)))))
+    })
     try({ 
           sampling_time_to_Min_ESS <- time_sampling
           sampling_time_to_100_ESS <- (100 / Min_ESS_main) * sampling_time_to_Min_ESS
@@ -637,8 +577,8 @@ create_summary_and_traces <- function(    model_results,
     if (n_divs > 0) { 
       warning("divergences detected!")
       try({ 
-        message(print(paste("Number of divergences = ", n_divs)))
-        message(print(paste("% divergences = ", pct_divs)))
+        comment(print(paste("Number of divergences = ", n_divs)))
+        comment(print(paste("% divergences = ", pct_divs)))
       })
     } else { 
       message("No divergences detected!")
@@ -689,25 +629,14 @@ create_summary_and_traces <- function(    model_results,
     
     ## list to store efficiency information
     efficiency_info <- list(              n_iter = n_iter,
-                                          ##
-                                          Max_rhat_main = Max_rhat_main,
-                                          Max_nested_rhat_main = Max_nested_rhat_main,
-                                          ##
                                           Min_ESS_main = Min_ESS_main, 
                                           ESS_per_sec_samp = ESS_per_sec_samp, 
                                           ESS_per_sec_total = ESS_per_sec_total,
-                                          ##
                                           time_burnin = time_burnin, 
                                           time_sampling = time_sampling, 
                                           time_summaries = time_summaries,
                                           time_total_wo_summaries = time_total_wo_summaries, 
                                           time_total = time_total, 
-                                          ##
-                                          L_main_during_burnin = L_main_during_burnin,
-                                          L_main_during_sampling = L_main_during_sampling,
-                                          L_us_during_burnin = L_us_during_burnin,
-                                          L_us_during_sampling = L_us_during_sampling,
-                                          ##
                                           Min_ess_per_grad_samp_weighted = Min_ess_per_grad_samp_weighted,
                                           grad_evals_per_sec = grad_evals_per_sec,
                                           ##
@@ -744,7 +673,7 @@ create_summary_and_traces <- function(    model_results,
     
     
     output_list <- list(  summaries = summaries, ### summary info (incl. efficiency info + divergences)
-                          traces = traces      ### trace arrays + trace tibbles
+                          traces = traces       ### trace arrays + trace tibbles
                           ## all_param_outs_trace = all_param_outs_trace
     )
     

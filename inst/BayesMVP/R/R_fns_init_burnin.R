@@ -79,7 +79,7 @@ init_EHMC_args_as_Rcpp_List   <- function(diffusion_HMC) {
 
 
 
-#' init_EHMC_args_as_Rcpp_List
+#' init_EHMC_burnin_as_Rcpp_List
 #' @keywords internal
 #' @export
 init_EHMC_burnin_as_Rcpp_List   <- function(n_params_main,
@@ -195,6 +195,10 @@ init_and_run_burnin   <- function(  Model_type,
                                     y,
                                     N,
                                     parallel_method,
+                                    ##
+                                    manual_tau,
+                                    tau_if_manual,
+                                    ##
                                     n_chains_burnin,
                                     sample_nuisance,
                                     Phi_type,
@@ -303,6 +307,10 @@ init_and_run_burnin   <- function(  Model_type,
                                                               # model_args_list = model_args_list,
                                                               y = y,
                                                               N = N,
+                                                              ##
+                                                              manual_tau = manual_tau, ##
+                                                              tau_if_manual = tau_if_manual, ##
+                                                              ##
                                                               n_chains_burnin = n_chains_burnin,
                                                               seed = seed,
                                                               n_burnin = n_burnin,

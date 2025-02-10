@@ -18,6 +18,10 @@ R_fn_sample_model  <-    function(      Model_type,
                                         model_args_list, ## here as may be updated
                                         y,  ## here as may be updated
                                         N,  ## here as may be updated
+                                        ##
+                                        manual_tau,
+                                        tau_if_manual,
+                                        ##
                                         sample_nuisance,  ## here as may be updated
                                         diffusion_HMC,
                                         partitioned_HMC,
@@ -157,6 +161,10 @@ R_fn_sample_model  <-    function(      Model_type,
                                                                                      n_chains_burnin = n_chains_burnin,
                                                                                      n_params_main = n_params_main,
                                                                                      n_nuisance = n_nuisance,
+                                                                                     ##
+                                                                                     manual_tau = manual_tau,
+                                                                                     tau_if_manual = tau_if_manual,
+                                                                                     ##
                                                                                      diffusion_HMC = diffusion_HMC,
                                                                                      metric_type_main = metric_type_main,
                                                                                      metric_shape_main = metric_shape_main,
