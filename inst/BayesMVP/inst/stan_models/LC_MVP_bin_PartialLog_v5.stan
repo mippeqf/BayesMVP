@@ -195,7 +195,7 @@ parameters {
 transformed parameters {
 
      array[n_class, n_tests, n_covariates_max] real beta;
-     vector<lower=0, upper=1>[n_pops]  p = lb_ub_lp(p_raw, 0.0, 1.0);
+     vector<lower=0, upper=1>[n_pops]   prev = lb_ub_lp(p_raw, 0.0, 1.0);
      array[n_class] matrix[n_tests, n_tests] Omega;
      array[n_class] matrix[n_tests, n_tests] L_Omega;
      matrix[n_class, n_tests] L_Omega_diag_recip;
@@ -221,8 +221,8 @@ transformed parameters {
           matrix[N, n_class]  log_prev;
 
            for (n in 1:N) {
-             log_prev[n, 1] =  log1m(p[pop[n]]);//(bernoulli_lpmf( 0 | p[pop[n]]) );
-             log_prev[n, 2] =  log(p[pop[n]]);// (bernoulli_lpmf( 1 | p[pop[n]]) );
+             log_prev[n, 1] =  log1m(prev[pop[n]]);//(bernoulli_lpmf( 0 | prev[pop[n]]) );
+             log_prev[n, 2] =  log(prev[pop[n]]);// (bernoulli_lpmf( 1 | prev[pop[n]]) );
            }
 
     {  // Goodrich-based method but with my modifications / vectorisations, etc
@@ -566,7 +566,7 @@ model {
 
 
               for (g in 1 : n_pops) {
-                p[g] ~ beta(prior_p_alpha[g, 1], prior_p_beta[g, 1]);
+                prev[g] ~ beta(prior_p_alpha[g, 1], prior_p_beta[g, 1]);
               }
 
 
@@ -583,8 +583,8 @@ generated quantities {
     vector[n_tests] Se_bin;
     vector[n_tests] Sp_bin;
     vector[n_tests] Fp_bin;
-
-
+    vector<lower=0, upper=1>[n_pops] p = prev;
+    
    for (c in 1:n_class) {
 
 
@@ -609,7 +609,3 @@ generated quantities {
 
 
 }
-
-
-
-
