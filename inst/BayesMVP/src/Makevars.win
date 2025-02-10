@@ -288,10 +288,10 @@ $(info BRIDGESTAN_SRC is: $(BRIDGESTAN_SRC))
 ##
 ##### TBB path(s) [using cmdstan tbb] -----------------------------------------------------------------------------------------
 ##
-TBB_PATH=$(STAN_MATH_LIB)/tbb
+override TBB_PATH=$(STAN_MATH_LIB)/tbb
 $(info TBB_PATH is: $(TBB_PATH))
 ##
-TBB_DLL="$(PKG_INST_PATH)/tbb_stan/tbb.dll"## using the tbb.dll bundled with the package (which is the same as CmDStan v2.35 tbb.dll)
+override TBB_DLL="$(PKG_INST_PATH)/tbb_stan/tbb.dll"## using the tbb.dll bundled with the package (which is the same as CmDStan v2.35 tbb.dll)
 $(info TBB_DLL is: $(TBB_DLL))
 ##
 ##### PKG_CPPFLAGS / PKG_CXXFLAGS / CPPFLAGS / CXXFLAGS -----------------------------------------------------------------------

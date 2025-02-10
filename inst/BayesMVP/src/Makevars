@@ -54,25 +54,30 @@ override CLANG_CPP_COMPILER=clang
 ##
 override GCC_CXX_COMPILER=g++
 override GCC_CPP_COMPILER=gcc
-##
+##  
 ifneq (,$(wildcard $(AMD_AOCC_CXX_COMPILER))) ## if AOCC-clang is available (AMD only)
-  override CXX_COMPILER = "$(AMD_AOCC_CXX_COMPILER)"
-  override CPP_COMPILER = "$(AMD_AOCC_CPP_COMPILER)"
-  override CXX_STD = CXX17 # Use C++17
-  override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
-  ## CPU_BASE_FLAGS = -O3  -march=$(AMD_ZEN_VER)  -mtune=$(AMD_ZEN_VER)
-  ## CPU_BASE_FLAGS = -O3  -march=znver4  -mtune=znver4
+    override CXX_COMPILER = "$(AMD_AOCC_CXX_COMPILER)"
+    override CPP_COMPILER = "$(AMD_AOCC_CPP_COMPILER)"
+    override CXX_STD = CXX17 # Use C++17
+    override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
+    ## CPU_BASE_FLAGS = -O3  -march=$(AMD_ZEN_VER)  -mtune=$(AMD_ZEN_VER)
 else ifneq (,$(wildcard $(CLANG_CXX_COMPILER))) ## if "standard" clang++/clang is available
-  override CXX_COMPILER = "$(CLANG_CXX_COMPILER)"
-  override CPP_COMPILER = "$(CLANG_CPP_COMPILER)"
-  override CXX_STD = CXX17 # Use C++17
-  override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
+    override CXX_COMPILER = "$(CLANG_CXX_COMPILER)"
+    override CPP_COMPILER = "$(CLANG_CPP_COMPILER)"
+    override CXX_STD = CXX17 # Use C++17
+    override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
 else ifneq (,$(wildcard $(GCC_CXX_COMPILER))) ## otherwise, use gcc/g++
-  override CXX_COMPILER = "$(GCC_CXX_COMPILER)"
-  override CPP_COMPILER = "$(GCC_CPP_COMPILER)"
-  override CXX_STD = -std=gnu++17 # Use C++17
-  override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
+    override CXX_COMPILER = "$(GCC_CXX_COMPILER)"
+    override CPP_COMPILER = "$(GCC_CPP_COMPILER)"
+    override CXX_STD = -std=gnu++17 # Use C++17
+    override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
 endif
+## 
+## override CXX_COMPILER = "$(GCC_CXX_COMPILER)"
+## override CPP_COMPILER = "$(GCC_CPP_COMPILER)"
+## override CXX_STD = -std=gnu++17 # Use C++17
+##
+## override CPU_BASE_FLAGS = -O3  -march=znver4  -mtune=znver4 ## BOOKMARK
 ##
 ## BASE_FLAGS +=  -mllvm   ### --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
 ##
@@ -95,10 +100,14 @@ endif
 ##
 ####### ----- CPU Feature Detection (i.e., AVX, FMA, etc) -------------------------------------------------------------------------
 ##
-override HAS_AVX=$(shell "${R_HOME}/bin/Rscript" R_script_has_AVX.R)
-override HAS_AVX2=$(shell "${R_HOME}/bin/Rscript" R_script_has_AVX2.R)
-override HAS_AVX512=$(shell "${R_HOME}/bin/Rscript" R_script_has_AVX_512.R)
-override HAS_FMA=$(shell "${R_HOME}/bin/Rscript" R_script_has_FMA.R)
+## override HAS_FMA = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" R_script_has_FMA.R)
+## override HAS_AVX=$(shell "${R_HOME}/bin/Rscript" $(PKG_SRC_PATH)/R_script_has_AVX.R)
+override HAS_OMP=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_load_OMP_Linux.R")
+override LD_LIBRARY_PATH="$(HAS_OMP)"
+override HAS_FMA=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_FMA.R")
+override HAS_AVX2=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX.R")
+override HAS_AVX2=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX2.R")
+override HAS_AVX512=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX_512.R")
 ##
 $(info CPU Features detected:)
 $(info HAS_FMA: $(HAS_FMA))
@@ -171,6 +180,9 @@ else ##  if using GCC OpenMP
   override OMP_LIB_FLAGS += -lgomp
 endif
 ##
+## override OMP_FLAGS = -fopenmp
+## override OMP_LIB_FLAGS += -lgomp
+##
 ## Custom user-supplied flags (if supplied):
 ifneq ($(USER_SUPPLIED_OMP_FLAGS),) ## i.e. if user-supplied variable is available
 	override OMP_FLAGS="$(USER_SUPPLIED_OMP_FLAGS)"
@@ -189,12 +201,12 @@ override SHLIB_OPENMP_CXXFLAGS = $(SHLIB_OPENMP_CFLAGS)
 ##
 ####### ----- set MATH_FLAGS ---------------------------------------------------------------------------------------------------------
 ##
-override MATH_FLAGS = -fno-math-errno  -fno-signed-zeros  -fno-trapping-math
+override MATH_FLAGS = -fno-math-errno  -fno-signed-zeros -fno-trapping-math
 $(info MATH_FLAGS: $(MATH_FLAGS))
 ##
 ####### ----- set UNIX_FLAGS  (if any) ---------------------------------------------------------------------------------------------------------
 ##
-override UNIX_FLAGS = -ftls-model=global-dynamic
+## override UNIX_FLAGS = -ftls-model=global-dynamic
 ##
 ####### ----- set BASE_FLAGS -----------------------------------------------------------------------------------------------------
 ##
@@ -253,6 +265,10 @@ $(info BRIDGESTAN_PATH is: $(BRIDGESTAN_PATH))
 $(info BRIDGESTAN_PATH is: $(BRIDGESTAN_PATH))
 $(info BRIDGESTAN_SRC is: $(BRIDGESTAN_SRC))
 ##
+##### RNG paths: ---------------------------------------------------------------------------------------------------------------
+#### ## BOOKMARK:
+#### override RNG_PATH=/home/enzocerullo/pcg_lib/include
+#### ##
 ####### PKG_CPPFLAGS / PKG_CXXFLAGS / CPPFLAGS / CXXFLAGS -----------------------------------------------------------------------
 override PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_MATH_LIB)/eigen_3.4.0" \
@@ -275,6 +291,9 @@ override PKG_CPPFLAGS = $(BASE_FLAGS) \
     -I"$(STAN_BASE)/mcmc" \
     -I"$(STAN_BASE)/analyze" \
     -I"$(BRIDGESTAN_SRC)"
+
+##     -I"$(RNG_PATH)"
+
 ##
 override PKG_CXXFLAGS = $(PKG_CPPFLAGS)
 override CPPFLAGS = $(PKG_CPPFLAGS)
@@ -335,7 +354,9 @@ override CXX23PICFLAGS = -fpic
 ## override SHLIB_LD = $(CXX_COMPILER_TYPE) ## not needed for Linux / Mac OS ??
 ##
 ## ---------------------  Initial link paths and libraries (PKG_LIBS) --------------
+override TBB_SO = $(TBB_PATH)/libtbb.so
 override PKG_LIBS = $(TBB_SO) -Wl,-rpath,$(TBB_PATH) $(OMP_LIB_FLAGS)
+####override PKG_LIBS = -L$(TBB_PATH) -ltbb -Wl,-rpath,$(TBB_PATH) $(OMP_LIB_FLAGS)
 ##
 ## Custom user-supplied flags (if supplied) - here its "+=" as NOT over-writing PKG_LIBS or may not compile
 ifneq ($(USER_SUPPLIED_PKG_LIBS),) ## i.e. if user-supplied variable is available
@@ -367,3 +388,4 @@ override PKG_LIBS+=$(USER_HOME_DUMMY_MODEL_SO)
 PKG_LIBS+=$(USER_HOME_DUMMY_MODEL_SO) -Wl,-rpath,$(COPY_DIR_PATH) -Wl,-rpath,$(TBB_PATH),--no-as-needed
 ##
 ##
+
