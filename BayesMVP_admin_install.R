@@ -85,6 +85,15 @@ devtools::install(local_pkg_dir, upgrade = "never")
 }
 
 
+##### Using GitHub:
+## Install (outer pkg):
+BayesMVP_repo_link <- "https://github.com/CerulloE1996/BayesMVP"
+remotes::install_github(repo = BayesMVP_repo_link, upgrade = "never")
+###
+## Install (inner pkg):
+require(BayesMVP)
+BayesMVP::install_BayesMVP()
+require(BayesMVP)
 
 
 # CUSTOM_FLAGS <- list(  "CCACHE_PATH = ccache",
