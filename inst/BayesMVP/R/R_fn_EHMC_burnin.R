@@ -3,12 +3,28 @@
 
 
 
- 
+## helper function:
 #' is_valid
 #' @keywords internal
 #' @export
 is_valid <- function(x) {
-  !is.null(x) && all(!is.na(x)) && all(is.finite(x))
+    return( !(is.null(x)) && all(!is.na(x)) && all(!is.nan(x)) && all(is.finite(x)) )
+}
+
+
+## helper function:
+#' if_not_NA_or_INF_else
+#' @keywords internal
+#' @export
+if_not_NA_or_INF_else <- function(x, alt_x) { 
+  
+    success_indicator <- TRUE
+    if (is_valid(x) == TRUE) {
+      return(x)
+    } else { 
+      return(alt_x)
+    }
+  
 }
 
 
@@ -169,55 +185,51 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   EHMC_args_as_Rcpp_List$eps_us <- 0.01 # just in case fn_find_initial_eps fails
 
   
-  #### BOOKMARK:
-  # try({
-  # 
-  #       if (sample_nuisance == TRUE) {
-  #         theta_us_vec <-   c(theta_vec_mean[index_nuisance])
-  #       } else {
-  #         theta_us_vec <-   c(rep(1, n_nuisance))
-  #       }
-  # 
-  #       par_res <- (BayesMVP:::fn_find_initial_eps_main_and_us(        theta_main_vec_initial_ref = matrix(c(theta_vec_mean[index_main]), ncol = 1),
-  #                                                                      theta_us_vec_initial_ref = matrix(c(theta_us_vec), ncol = 1),
-  #                                                                      partitioned_HMC = partitioned_HMC,
-  #                                                                      seed = seed,
-  #                                                                      Model_type = Model_type,
-  #                                                                      force_autodiff = force_autodiff,
-  #                                                                      force_PartialLog = force_PartialLog,
-  #                                                                      multi_attempts = multi_attempts,
-  #                                                                      y_ref = y,
-  #                                                                      Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
-  #                                                                      EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
-  #                                                                      EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
-  # 
-  #       #par_res <- parallel::mccollect(par_proc)
-  #       par_res <- par_res  ## [[1]]
-  # 
-  #       print(paste("step_sizes = "))
-  #       ## main
-  #       EHMC_args_as_Rcpp_List$eps_main <- min(0.50, par_res[[1]])
-  #       print(EHMC_args_as_Rcpp_List$eps_main)
-  #       ## nuisance
-  #       EHMC_args_as_Rcpp_List$eps_us <-   min(0.50, par_res[[2]])
-  #       print(EHMC_args_as_Rcpp_List$eps_us)
-  #       
-  #       if (partitioned_HMC == FALSE) { 
-  #         EHMC_args_as_Rcpp_List$eps_us <-  EHMC_args_as_Rcpp_List$eps_main 
-  #       }
-  # 
-  # })
-  
-  if (partitioned_HMC == TRUE) {
-  
-         print( paste("initial_eps for MAIN params = ", EHMC_args_as_Rcpp_List$eps_main))
-         print( paste("initial_eps for NUISANCE params = ", EHMC_args_as_Rcpp_List$eps_us))
+  ### INITIAL VALUE(S) FOR EPSILON (I.E. THE HMC STEP-SIZE(S)) ---- BOOKMARK ------------------------------------------------------------------------------:
+  try({
+
+        if (sample_nuisance == TRUE) {
+          theta_us_vec <-   c(theta_vec_mean[index_nuisance])
+        } else {
+          theta_us_vec <-   c(rep(1, n_nuisance))
+        }
+
+        par_res <- (BayesMVP:::fn_find_initial_eps_main_and_us(        theta_main_vec_initial_ref = matrix(c(theta_vec_mean[index_main]), ncol = 1),
+                                                                       theta_us_vec_initial_ref = matrix(c(theta_us_vec), ncol = 1),
+                                                                       partitioned_HMC = partitioned_HMC,
+                                                                       seed = seed,
+                                                                       Model_type = Model_type,
+                                                                       force_autodiff = force_autodiff,
+                                                                       force_PartialLog = force_PartialLog,
+                                                                       multi_attempts = multi_attempts,
+                                                                       y_ref = y,
+                                                                       Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+                                                                       EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
+                                                                       EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
+
+        #par_res <- parallel::mccollect(par_proc)
+        par_res <- par_res  ## [[1]]
+
+        message(paste("step_sizes = "))
+        ## main
+        EHMC_args_as_Rcpp_List$eps_main <- min(0.50, par_res[[1]])
+        cat(paste("eps_main = "))
+        print(EHMC_args_as_Rcpp_List$eps_main)
         
-  } else { 
-    
-         print( paste("initial_eps for ALL params = ", EHMC_args_as_Rcpp_List$eps_main))
-    
-  }
+        ## nuisance
+        if (partitioned_HMC == TRUE) {
+          
+              EHMC_args_as_Rcpp_List$eps_us <-   min(0.50, par_res[[2]])
+              cat(paste("eps_us = "))
+              print(EHMC_args_as_Rcpp_List$eps_us)
+              
+        } else if (partitioned_HMC == FALSE) {
+          
+              EHMC_args_as_Rcpp_List$eps_us <-  EHMC_args_as_Rcpp_List$eps_main
+            
+        }
+
+  })
    
   
   {
@@ -264,22 +276,6 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   
   L_main_during_burnin_vec <- c()
   L_us_during_burnin_vec <-   c()
-  
-  ## helper function
-  if_not_NA_or_INF_else <- function(x, alt_x) { 
-    
-        success_indicator <- TRUE
-        if ((any(is.na(x))) || (any(is.nan(x))) || (any(is.infinite(x)))) {
-          success_indicator <- FALSE
-        }
-        
-        if (success_indicator == TRUE) { 
-          return(x)
-        } else { 
-          return(alt_x)
-        }
-    
-  }
   
   
  ####  Start burnin   ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1031,23 +1027,12 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                         log.txt <- tictoc::tic.log(format = TRUE)
                                         tictoc::tic.clearlog()
                                         time_burnin <- unlist(log.txt)
-                                    })
-      
-                                    try({
-                                      time_burnin <- as.numeric( substr(start = 0, stop = 100,  strsplit(  strsplit(time_burnin, "[:]")[[1]], "[s]")  [[1]][1] ) )
+                                        ##
+                                        extract_numeric_string <- str_extract(time_burnin, "\\d+\\.\\d+")   
+                                        time_burnin <- as.numeric(extract_numeric_string)
                                     })
                               
-                            }  else  if (ii > n_burnin) {
-
-
-                                         ##  theta_main_trace[1:n_params_main, ii - n_burnin, ] <- theta_main_vectors_all_chains_input_from_R
-
-                            }
-
-
-
-
-
+                            } 
 
 
     }

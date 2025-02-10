@@ -45,16 +45,16 @@ fn_update_snaper_m_and_s <- function(snaper_m, snaper_s_empirical, theta_vec_mea
     .Call(`_BayesMVP_fn_update_snaper_m_and_s`, snaper_m, snaper_s_empirical, theta_vec_mean, ii)
 }
 
-fn_update_eigen_max_and_eigen_vec <- function(snaper_w_vec) {
-    .Call(`_BayesMVP_fn_update_eigen_max_and_eigen_vec`, snaper_w_vec)
-}
-
 fn_update_snaper_w_dense_M <- function(snaper_w_vec, eigen_vector, eigen_max, theta_vec, snaper_m_vec, ii, M_dense_sqrt) {
     .Call(`_BayesMVP_fn_update_snaper_w_dense_M`, snaper_w_vec, eigen_vector, eigen_max, theta_vec, snaper_m_vec, ii, M_dense_sqrt)
 }
 
 fn_update_snaper_w_diag_M <- function(snaper_w_vec, eigen_vector, eigen_max, theta_vec, snaper_m_vec, ii, sqrt_M_vec) {
     .Call(`_BayesMVP_fn_update_snaper_w_diag_M`, snaper_w_vec, eigen_vector, eigen_max, theta_vec, snaper_m_vec, ii, sqrt_M_vec)
+}
+
+fn_update_eigen_max_and_eigen_vec <- function(snaper_w_vec) {
+    .Call(`_BayesMVP_fn_update_eigen_max_and_eigen_vec`, snaper_w_vec)
 }
 
 fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM <- function(eigen_vector, eigen_max, theta_vec_initial, theta_vec_prop, snaper_m_vec, velocity_prop, velocity_0, tau, LR, ii, n_burnin, sqrt_M_vec, tau_m_adam, tau_v_adam, tau_ii) {
