@@ -82,6 +82,12 @@ ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Ei
  
  
  
+ 
+ 
+ 
+ 
+ 
+ 
  ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_dual_InPlace(     Eigen::Matrix<double, -1, 1> &velocity_main_vec_proposed_ref,
                                                                                Eigen::Matrix<double, -1, 1> &velocity_us_vec_proposed_ref,
                                                                                Eigen::Matrix<double, -1, 1> &theta_main_vec_proposed_ref,
@@ -155,11 +161,14 @@ ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Ei
  
  
  
-template<typename T = pcg64>
+ 
+ 
+ 
+ 
+ 
+ template<typename T = RNG_TYPE_dqrng>
 ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InPlace_process(    HMCResult &result_input,
-                                                                                                 const bool  burnin, 
                                                                                                  T &rng,
-                                                                                                 const int seed,
                                                                                                  const std::string &Model_type,
                                                                                                  const bool  force_autodiff,
                                                                                                  const bool  force_PartialLog,
@@ -190,19 +199,19 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
     double energy_old = 0.0;
     double energy_new = 0.0;
     
-    result_input.store_current_state(); // sets initial theta and velocity to current theta and velocity
+    //// result_input.store_current_state(); // sets initial theta and velocity to current theta and velocity
+    result_input.main_theta_vec_0() =  result_input.main_theta_vec();
+    result_input.us_theta_vec_0() =    result_input.us_theta_vec();
 
   {
 
       { /// draw velocity for main   
-          Eigen::Matrix<double, -1, 1>  std_norm_vec_main(n_params_main);
-          generate_random_std_norm_vec_dqrng(std_norm_vec_main, n_params_main, rng);
+          const Eigen::Matrix<double, -1, 1>  std_norm_vec_main = generate_random_std_norm_vec(n_params_main, rng);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
           if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
       { /// draw velocity for nuisance
-          Eigen::Matrix<double, -1, 1> std_norm_vec_us(n_nuisance); // testing if static thread_local makes more efficient
-          generate_random_std_norm_vec_dqrng(std_norm_vec_us, n_nuisance, rng);
+          const Eigen::Matrix<double, -1, 1>  std_norm_vec_us = generate_random_std_norm_vec(n_nuisance, rng);
           result_input.us_velocity_0_vec().array() = ( std_norm_vec_us.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //.cast<float>() ;  
       }
 
@@ -218,9 +227,15 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
         result_input.us_theta_vec_proposed() =       result_input.us_theta_vec_0();   // set to initial theta 
 
         // ---------------------------------------------------------------------------------------------------------------///    Perform L leapfrogs   ///-----------------------------------------
-        if (EHMC_args_as_cpp_struct.tau_main < EHMC_args_as_cpp_struct.eps_main) { EHMC_args_as_cpp_struct.tau_main = EHMC_args_as_cpp_struct.eps_main; }
-          generate_random_tau_ii_dqrng(   EHMC_args_as_cpp_struct.tau_main,    EHMC_args_as_cpp_struct.tau_main_ii, rng);
-          if (EHMC_args_as_cpp_struct.tau_main_ii < EHMC_args_as_cpp_struct.eps_main) { EHMC_args_as_cpp_struct.tau_main_ii = EHMC_args_as_cpp_struct.eps_main; }
+          if (EHMC_args_as_cpp_struct.tau_main < EHMC_args_as_cpp_struct.eps_main) { 
+            EHMC_args_as_cpp_struct.tau_main = EHMC_args_as_cpp_struct.eps_main; 
+          }
+          //
+          EHMC_args_as_cpp_struct.tau_main_ii = generate_random_tau_ii(EHMC_args_as_cpp_struct.tau_main, rng);
+          if (EHMC_args_as_cpp_struct.tau_main_ii < EHMC_args_as_cpp_struct.eps_main) { 
+            EHMC_args_as_cpp_struct.tau_main_ii = EHMC_args_as_cpp_struct.eps_main; 
+          }
+          //
           int    L_ii = std::ceil( EHMC_args_as_cpp_struct.tau_main_ii / EHMC_args_as_cpp_struct.eps_main );
           if (L_ii < 1) { L_ii = 1 ; }
           
@@ -326,48 +341,48 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
             
           }
  
-        if  (check_divergence_Eigen(result_input,   result_input.lp_and_grad_outs(), energy_old, energy_new) == true)      {     /// if main_div, reject proposal 
+        if  (check_divergence(log_ratio, result_input) == true)    { /// if main_div, reject proposal 
             
-                //// if  div, reject proposal 
-                result_input.main_div() = 1;  
-                result_input.main_p_jump() = 0.0;
-                result_input.us_div() = 1;
-                result_input.us_p_jump() = 0.0;
-                result_input.reject_proposal_main();  // # reject proposal
-                result_input.reject_proposal_us();  // # reject proposal
+                    //// if  div, reject proposal 
+                    result_input.main_div() = 1;  
+                    result_input.main_p_jump() = 0.0;
+                    result_input.us_div() = 1;
+                    result_input.us_p_jump() = 0.0;
+                    result_input.reject_proposal_main();  // # reject proposal
+                    result_input.reject_proposal_us();  // # reject proposal
         
           
         }  else {  // if no main_div, carry on with MH step 
           
                     result_input.main_div() = 0;
                     result_input.main_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
-                    result_input.us_div() = 0;
-                    result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
+                    result_input.us_div()   = 0;
+                    result_input.us_p_jump() =   std::min(1.0, stan::math::exp(log_ratio));
                     
-                     std::uniform_real_distribution <double> unif(0.0, 1.0);
+                    const double rand_unif = generate_random_std_uniform(rng);
 
-                if  (unif(rng) > result_input.main_p_jump())   {  // # reject proposal
-                      result_input.reject_proposal_main();  // # reject proposal
-                      result_input.reject_proposal_us();  // # reject proposal
-                } else {   // # accept proposal
-                      result_input.accept_proposal_main();  // # reject proposal
-                      result_input.accept_proposal_us();  // # reject proposal
-                }
+                    if  (rand_unif > result_input.main_p_jump())   {  // # reject proposal
+                          result_input.reject_proposal_main();  // # reject proposal
+                          result_input.reject_proposal_us();  // # reject proposal
+                    } else {   // # accept proposal
+                          result_input.accept_proposal_main();  // # accept proposal
+                          result_input.accept_proposal_us();  // # accept proposal
+                    }
  
                 
         }
 
       } catch (...) {
         
-              std::cout << "  Could not evaluate lp_grad function when sampling main + nuisance parameters " << ")\n";
+              // std::cout << "  Could not evaluate lp_grad function when sampling main + nuisance parameters " << ")\n";
         
-              result_input.main_div() = 1;
-              result_input.main_p_jump() = 0.0;
-              result_input.us_div() = 1;
-              result_input.us_p_jump() = 0.0;
-              
-              result_input.reject_proposal_main();  // # reject proposal
-              result_input.reject_proposal_us();  // # reject proposal
+                result_input.us_div() = 1; // record as div 
+                result_input.us_p_jump() = 0.0; // set p_jump to zero
+                result_input.reject_proposal_us(); // # reject proposal
+                
+                result_input.main_div() = 1; // record as div 
+                result_input.main_p_jump() = 0.0; // set p_jump to zero
+                result_input.reject_proposal_main(); // # reject proposal
   
               
       }

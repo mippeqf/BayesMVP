@@ -1,7 +1,5 @@
 #pragma once
 
- 
- 
 
  
 
@@ -40,22 +38,16 @@ static std::mutex result_mutex_2; //// global mutex
 
 
  
- 
- 
- 
 
- 
- 
- 
- 
-template<typename T = pcg64>
+  
+template<typename T = RNG_TYPE_dqrng>
 ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(      HMC_output_single_chain &HMC_output_single_chain_i,
                                                                                     HMCResult &result_input,
                                                                                     const bool burnin_indicator,
                                                                                     const int chain_id,
-                                                                                    int current_iter,
-                                                                                    const int seed,
-                                                                                    T &rng,
+                                                                                    const int current_iter,
+                                                                                    const int seed_chain_i,
+                                                                                    T &rng_i,
                                                                                     const int n_iter,
                                                                                     const bool partitioned_HMC,
                                                                                     const std::string &Model_type,
@@ -72,23 +64,17 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
   
  
      const int N =  Model_args_as_cpp_struct.N;
-     const int n_us =  Model_args_as_cpp_struct.n_nuisance;
+     const int n_nuisance =  Model_args_as_cpp_struct.n_nuisance;
      const int n_params_main = Model_args_as_cpp_struct.n_params_main;
-     const int n_params = n_params_main + n_us;
-     
-     const bool burnin = false; 
+     const int n_params = n_params_main + n_nuisance;
  
          ///////////////////////////////////////// perform iterations for adaptation interval
          ////// main iteration loop
          for (int ii = 0; ii < n_iter; ++ii) {
-           
-                     int seed_ii;
-           
-                     if (burnin_indicator == false) {
-                         rng.advance(1);
-                     } else {  //// burnin 
-                         rng.advance(current_iter);
-                     }
+                     
+                     #if RNG_TYPE_CPP_STD == 1
+                        rng_i.seed(seed_chain_i + (ii + 1));
+                     #endif
                      
                      if (partitioned_HMC == true) {
                    
@@ -97,7 +83,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                              
                                              stan::math::start_nested();
                                              fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(    result_input,    
-                                                                                                            burnin,  rng, seed_ii,
+                                                                                                            rng_i,
                                                                                                             Model_type, 
                                                                                                             force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                                             y_Eigen_i,
@@ -115,7 +101,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                    
                                              stan::math::start_nested();
                                              fn_standard_HMC_main_only_single_iter_InPlace_process(      result_input,   
-                                                                                                         burnin,  rng, seed_ii,
+                                                                                                         rng_i,
                                                                                                          Model_type,  
                                                                                                          force_autodiff, force_PartialLog,  multi_attempts,
                                                                                                          y_Eigen_i,
@@ -133,7 +119,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                        
                                          stan::math::start_nested();
                                          fn_standard_HMC_dual_single_iter_InPlace_process(    result_input,    
-                                                                                              burnin,  rng, seed_ii,
+                                                                                              rng_i,
                                                                                               Model_type, 
                                                                                               force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                               y_Eigen_i,
