@@ -189,17 +189,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// fn_update_eigen_max_and_eigen_vec
-Eigen::Matrix<double, -1, 1> fn_update_eigen_max_and_eigen_vec(const Eigen::Matrix<double, -1, 1> snaper_w_vec);
-RcppExport SEXP _BayesMVP_fn_update_eigen_max_and_eigen_vec(SEXP snaper_w_vecSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::Matrix<double, -1, 1> >::type snaper_w_vec(snaper_w_vecSEXP);
-    rcpp_result_gen = Rcpp::wrap(fn_update_eigen_max_and_eigen_vec(snaper_w_vec));
-    return rcpp_result_gen;
-END_RCPP
-}
 // fn_update_snaper_w_dense_M
 Eigen::Matrix<double, -1, 1> fn_update_snaper_w_dense_M(Eigen::Matrix<double, -1, 1> snaper_w_vec, const Eigen::Matrix<double, -1, 1> eigen_vector, const double eigen_max, const Eigen::Matrix<double, -1, 1> theta_vec, const Eigen::Matrix<double, -1, 1> snaper_m_vec, const double ii, const Eigen::Matrix<double, -1, -1> M_dense_sqrt);
 RcppExport SEXP _BayesMVP_fn_update_snaper_w_dense_M(SEXP snaper_w_vecSEXP, SEXP eigen_vectorSEXP, SEXP eigen_maxSEXP, SEXP theta_vecSEXP, SEXP snaper_m_vecSEXP, SEXP iiSEXP, SEXP M_dense_sqrtSEXP) {
@@ -231,6 +220,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type ii(iiSEXP);
     Rcpp::traits::input_parameter< const Eigen::Matrix<double, -1, 1> >::type sqrt_M_vec(sqrt_M_vecSEXP);
     rcpp_result_gen = Rcpp::wrap(fn_update_snaper_w_diag_M(snaper_w_vec, eigen_vector, eigen_max, theta_vec, snaper_m_vec, ii, sqrt_M_vec));
+    return rcpp_result_gen;
+END_RCPP
+}
+// fn_update_eigen_max_and_eigen_vec
+Eigen::Matrix<double, -1, 1> fn_update_eigen_max_and_eigen_vec(const Eigen::Matrix<double, -1, 1> snaper_w_vec);
+RcppExport SEXP _BayesMVP_fn_update_eigen_max_and_eigen_vec(SEXP snaper_w_vecSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::Matrix<double, -1, 1> >::type snaper_w_vec(snaper_w_vecSEXP);
+    rcpp_result_gen = Rcpp::wrap(fn_update_eigen_max_and_eigen_vec(snaper_w_vec));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -435,9 +435,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BayesMVP_fn_find_initial_eps_main_and_us", (DL_FUNC) &_BayesMVP_fn_find_initial_eps_main_and_us, 12},
     {"_BayesMVP_fn_Rcpp_wrapper_adapt_eps_ADAM", (DL_FUNC) &_BayesMVP_fn_Rcpp_wrapper_adapt_eps_ADAM, 11},
     {"_BayesMVP_fn_update_snaper_m_and_s", (DL_FUNC) &_BayesMVP_fn_update_snaper_m_and_s, 4},
-    {"_BayesMVP_fn_update_eigen_max_and_eigen_vec", (DL_FUNC) &_BayesMVP_fn_update_eigen_max_and_eigen_vec, 1},
     {"_BayesMVP_fn_update_snaper_w_dense_M", (DL_FUNC) &_BayesMVP_fn_update_snaper_w_dense_M, 7},
     {"_BayesMVP_fn_update_snaper_w_diag_M", (DL_FUNC) &_BayesMVP_fn_update_snaper_w_diag_M, 7},
+    {"_BayesMVP_fn_update_eigen_max_and_eigen_vec", (DL_FUNC) &_BayesMVP_fn_update_eigen_max_and_eigen_vec, 1},
     {"_BayesMVP_fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM", (DL_FUNC) &_BayesMVP_fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM, 15},
     {"_BayesMVP_fn_Rcpp_wrapper_update_tau_w_dense_M_ADAM", (DL_FUNC) &_BayesMVP_fn_Rcpp_wrapper_update_tau_w_dense_M_ADAM, 15},
     {"_BayesMVP_Rcpp_det", (DL_FUNC) &_BayesMVP_Rcpp_det, 1},
