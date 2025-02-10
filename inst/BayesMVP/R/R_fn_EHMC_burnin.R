@@ -137,8 +137,6 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
   M_dense_main_non_scaled <-   EHMC_Metric_as_Rcpp_List$M_dense_main
   M_inv_dense_main_non_scaled <- EHMC_Metric_as_Rcpp_List$M_inv_dense_main
   M_inv_dense_main_chol_non_scaled <-  EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol
-
-  # print(M_inv_dense_main_non_scaled)
   
  
   {
@@ -181,8 +179,8 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
    
    print(paste("n_class = ", n_class))
    
-  EHMC_args_as_Rcpp_List$eps_main <- 0.01 # just in case fn_find_initial_eps fails
-  EHMC_args_as_Rcpp_List$eps_us <- 0.01 # just in case fn_find_initial_eps fails
+  EHMC_args_as_Rcpp_List$eps_main <- 0.01 # just in case fn_find_initial_eps_main_and_us fails
+  EHMC_args_as_Rcpp_List$eps_us <- 0.01 # just in case fn_find_initial_eps_main_and_us fails
 
   
   ### INITIAL VALUE(S) FOR EPSILON (I.E. THE HMC STEP-SIZE(S)) ---- BOOKMARK ------------------------------------------------------------------------------:
@@ -1042,25 +1040,25 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
  }
  
-  L_main_during_burnin <- mean(L_main_during_burnin_vec, na.rm = TRUE)
-  L_us_during_burnin <-   mean(L_us_during_burnin_vec, na.rm = TRUE)
+    L_main_during_burnin <- mean(L_main_during_burnin_vec, na.rm = TRUE)
+    L_us_during_burnin <-   mean(L_us_during_burnin_vec, na.rm = TRUE)
   
-    out <- list(n_chains_burnin = n_chains_burnin,
-              n_burnin = n_burnin,
-              time_burnin = time_burnin,
-              eps_main =  EHMC_args_as_Rcpp_List$eps_main,
-              tau_main =  EHMC_args_as_Rcpp_List$tau_main,
-              eps_us =  EHMC_args_as_Rcpp_List$eps_us,
-              tau_us =  EHMC_args_as_Rcpp_List$tau_us,
-              L_main_during_burnin_vec = L_main_during_burnin_vec,
-              L_us_during_burnin_vec = L_us_during_burnin_vec,
-              L_main_during_burnin = L_main_during_burnin,
-              L_us_during_burnin = L_us_during_burnin,
-              theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R,
-              theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,
-              EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
-              EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List,
-              EHMC_burnin_as_Rcpp_List = EHMC_burnin_as_Rcpp_List)
+    out <- list( n_chains_burnin = n_chains_burnin,
+                  n_burnin = n_burnin,
+                  time_burnin = time_burnin,
+                  eps_main =  EHMC_args_as_Rcpp_List$eps_main,
+                  tau_main =  EHMC_args_as_Rcpp_List$tau_main,
+                  eps_us =  EHMC_args_as_Rcpp_List$eps_us,
+                  tau_us =  EHMC_args_as_Rcpp_List$tau_us,
+                  L_main_during_burnin_vec = L_main_during_burnin_vec,
+                  L_us_during_burnin_vec = L_us_during_burnin_vec,
+                  L_main_during_burnin = L_main_during_burnin,
+                  L_us_during_burnin = L_us_during_burnin,
+                  theta_main_vectors_all_chains_input_from_R = theta_main_vectors_all_chains_input_from_R,
+                  theta_us_vectors_all_chains_input_from_R = theta_us_vectors_all_chains_input_from_R,
+                  EHMC_args_as_Rcpp_List = EHMC_args_as_Rcpp_List,
+                  EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List,
+                  EHMC_burnin_as_Rcpp_List = EHMC_burnin_as_Rcpp_List)
     
     return(out)
   
