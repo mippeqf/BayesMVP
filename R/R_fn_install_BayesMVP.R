@@ -190,7 +190,7 @@ install_BayesMVP <- function(CUSTOM_FLAGS = NULL) {
           )
           
           ## Append "USER_SUPPLIED_" at the start of the flags to be passed onto makevars/makrvars.win. 
-          CUSTOM_FLAGS <- paste0("USER_SUPPLIED_", FLAGS)
+          CUSTOM_FLAGS <- paste0("USER_SUPPLIED_", CUSTOM_FLAGS)
           
           # Validate flag names
           invalid_flags <- setdiff(names(CUSTOM_FLAGS), allowed_flags)
