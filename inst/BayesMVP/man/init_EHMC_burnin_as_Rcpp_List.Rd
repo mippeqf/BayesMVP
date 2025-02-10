@@ -2,7 +2,7 @@
 % Please edit documentation in R/R_fns_init_burnin.R
 \name{init_EHMC_burnin_as_Rcpp_List}
 \alias{init_EHMC_burnin_as_Rcpp_List}
-\title{init_EHMC_args_as_Rcpp_List}
+\title{init_EHMC_burnin_as_Rcpp_List}
 \usage{
 init_EHMC_burnin_as_Rcpp_List(
   n_params_main,
@@ -13,6 +13,6 @@ init_EHMC_burnin_as_Rcpp_List(
 )
 }
 \description{
-init_EHMC_args_as_Rcpp_List
+init_EHMC_burnin_as_Rcpp_List
 }
 \keyword{internal}

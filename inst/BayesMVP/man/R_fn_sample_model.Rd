@@ -13,6 +13,8 @@ R_fn_sample_model(
   model_args_list,
   y,
   N,
+  manual_tau,
+  tau_if_manual,
   sample_nuisance,
   diffusion_HMC,
   partitioned_HMC,

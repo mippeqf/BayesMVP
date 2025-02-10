@@ -16,6 +16,8 @@ R_fn_EHMC_SNAPER_ADAM_burnin(
   n_nuisance,
   n_chains_burnin,
   seed,
+  manual_tau,
+  tau_if_manual,
   n_burnin,
   LR_main,
   LR_us,

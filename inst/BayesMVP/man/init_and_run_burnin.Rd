@@ -11,6 +11,8 @@ init_and_run_burnin(
   y,
   N,
   parallel_method,
+  manual_tau,
+  tau_if_manual,
   n_chains_burnin,
   sample_nuisance,
   Phi_type,
