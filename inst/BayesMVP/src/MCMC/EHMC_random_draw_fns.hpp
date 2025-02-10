@@ -62,6 +62,26 @@ ALWAYS_INLINE   Eigen::Matrix<double, -1, 1>  generate_random_std_norm_vec( int 
  
  
  
+ 
+template<typename T = RNG_TYPE_dqrng>
+ALWAYS_INLINE    void generate_random_std_norm_vec_InPlace( Eigen::Matrix<double, -1, 1> &std_norm_vec,
+                                                            T &rng) {
+       const int n_params = std_norm_vec.size();
+  
+       std::normal_distribution<double> dist(0.0, 1.0); 
+       
+       // Initialise at zero:
+       std_norm_vec.setZero();
+       // Fill vector:
+       for (int d = 0; d < n_params; d++) {
+         double norm_draw = dist(rng);
+         std_norm_vec(d) = norm_draw; 
+       }
+   
+}
+ 
+ 
+ 
   
 template<typename T = RNG_TYPE_dqrng>
 ALWAYS_INLINE  double generate_random_std_uniform(T &rng) {

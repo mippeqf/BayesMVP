@@ -41,15 +41,11 @@ std::vector<double>                                   fn_find_initial_eps_main_a
    #elif RNG_TYPE_pcg64 == 1
         pcg64 rng_i(seed, 1);
    #endif
-        
-   uint64_t seed_uint64_t = static_cast<uint64_t>(seed);
    
    #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-      RNG_TYPE_dqrng rng_i(seed_uint64_t);
-      //// RNG_TYPE_dqrng global_rng = dqrng::generator<dqrng::xoshiro256plusplus>(); // seeded from R's RNG
-      //// std::unique_ptr<dqrng::random_64bit_generator> rng_i = global_rng->clone(1);
+          dqrng::xoshiro256plus rng_i(seed);
    #elif RNG_TYPE_dqrng_pcg64 == 1
-      RNG_TYPE_dqrng rng_i = dqrng::generator<pcg64>(seed_uint64_t, 1);
+          RNG_TYPE_dqrng rng_i = dqrng::generator<pcg64>(seed, 1);
    #endif
    
    const int N = Model_args_as_cpp_struct.N;

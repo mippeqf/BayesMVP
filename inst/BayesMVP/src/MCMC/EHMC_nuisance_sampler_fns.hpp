@@ -238,7 +238,8 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
   {
 
     {
-       const Eigen::Matrix<double, -1, 1>  std_norm_vec_us = generate_random_std_norm_vec(n_nuisance, rng);
+       Eigen::Matrix<double, -1, 1> std_norm_vec_us = Eigen::Matrix<double, -1, 1>::Zero(n_nuisance);
+       generate_random_std_norm_vec_InPlace(std_norm_vec_us, rng);
        result_input.us_velocity_0_vec().array() = ( std_norm_vec_us.array() * (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //// .cast<float>() ;  
     }
      
