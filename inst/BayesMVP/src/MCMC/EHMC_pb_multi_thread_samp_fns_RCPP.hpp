@@ -198,17 +198,17 @@ public:
                           const int seed_i = global_seed_int + n_iter*(1 + chain_id_int);
                            
                           #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-                                     dqrng::xoshiro256plus rng_i(global_rng);      // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                     thread_local dqrng::xoshiro256plus rng_i(global_rng);      // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                                      rng_i.long_jump(n_iter*(1 + chain_id_int));  
                           #elif RNG_TYPE_CPP_STD == 1
-                                     std::mt19937 rng_i;  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                     thread_local std::mt19937 rng_i;  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                                      rng_i.seed(seed_i); 
                           #elif RNG_TYPE_pcg64 == 1
                                      pcg_extras::seed_seq_from<std::random_device> global_seed;
-                                     pcg64 rng_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                     thread_local pcg64 rng_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                           #elif RNG_TYPE_pcg32 == 1
                                      pcg_extras::seed_seq_from<std::random_device> global_seed;
-                                     pcg32 rng_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                     thread_local pcg32 rng_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                           #endif
                           
                           const int N = Model_args_as_cpp_struct_copies[i].N;
@@ -216,8 +216,8 @@ public:
                           const int n_params_main = Model_args_as_cpp_struct_copies[i].n_params_main;
                           const int n_params = n_params_main + n_us;
                           
-                          stan::math::ChainableStack ad_tape;     // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                          stan::math::nested_rev_autodiff nested; // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                          thread_local stan::math::ChainableStack ad_tape;     // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                          thread_local stan::math::nested_rev_autodiff nested; // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                            
                           const bool burnin_indicator = false;
                           const int current_iter = 0; // gets assigned later for post-burnin

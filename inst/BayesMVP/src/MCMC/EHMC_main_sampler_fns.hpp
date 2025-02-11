@@ -285,7 +285,7 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       
 
  
  
- template<typename T = RNG_TYPE_dqrng>
+template<typename T = RNG_TYPE_dqrng>
 ALWAYS_INLINE  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(  HMCResult &result_input,
                                                                                                                    T &rng,
                                                                                                                    const std::string &Model_type,
@@ -325,10 +325,10 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
   {
 
       {
-          Eigen::Matrix<double, -1, 1> std_norm_vec_main = Eigen::Matrix<double, -1, 1>::Zero(n_params_main);
-          generate_random_std_norm_vec_InPlace(std_norm_vec_main, rng);
-          if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
-          if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
+          //// Eigen::Matrix<double, -1, 1> std_norm_vec_main = Eigen::Matrix<double, -1, 1>::Zero(n_params_main);
+          generate_random_std_norm_vec_InPlace(result_input.main_velocity_0_vec(), rng);
+          if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * result_input.main_velocity_0_vec();
+          if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = result_input.main_velocity_0_vec().array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
      
     {

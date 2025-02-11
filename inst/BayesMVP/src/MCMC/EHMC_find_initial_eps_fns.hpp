@@ -55,15 +55,14 @@ std::vector<double>                                   fn_find_initial_eps_main_a
    
    const std::string grad_option = "all";
    
-   EHMC_args_as_cpp_struct.eps_us = 1.0;    /// starting value 
+   EHMC_args_as_cpp_struct.eps_us = 0.50;    /// starting value 
    EHMC_args_as_cpp_struct.tau_us = EHMC_args_as_cpp_struct.eps_us ; 
    
-   EHMC_args_as_cpp_struct.eps_main = 1.0;    /// starting value 
+   EHMC_args_as_cpp_struct.eps_main = 0.50;    /// starting value 
    EHMC_args_as_cpp_struct.tau_main = EHMC_args_as_cpp_struct.eps_main ; 
    
    Stan_model_struct Stan_model_as_cpp_struct;
    
-//// #if HAS_BRIDGESTAN_H
    if (Model_args_as_cpp_struct.model_so_file != "none") {
      
      Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file, 
@@ -71,7 +70,6 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                                                             seed);
      
    }
-//// #endif
    
    fn_lp_grad_InPlace(   result_input.lp_and_grad_outs(), 
                          Model_type, 
@@ -140,23 +138,23 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                ////
                if    ( (result_input.us_div() == 0) && (result_input.main_div() == 0) )  { // if no divs
                  
-                 if (result_input.us_p_jump() < 0.80) {
-                   EHMC_args_as_cpp_struct.eps_us = 0.5 * EHMC_args_as_cpp_struct.eps_us;
-                   EHMC_args_as_cpp_struct.tau_us =       EHMC_args_as_cpp_struct.eps_us ;
-                 }
-                 
-                 if (result_input.main_p_jump() < 0.80) {
-                   EHMC_args_as_cpp_struct.eps_main = 0.5 * EHMC_args_as_cpp_struct.eps_main;
-                   EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main ;
-                 } 
+                     if (result_input.us_p_jump() < 0.80) {
+                           EHMC_args_as_cpp_struct.eps_us = 0.5 * EHMC_args_as_cpp_struct.eps_us;
+                           EHMC_args_as_cpp_struct.tau_us =       EHMC_args_as_cpp_struct.eps_us;
+                     }
+                     
+                     if (result_input.main_p_jump() < 0.80) {
+                           EHMC_args_as_cpp_struct.eps_main = 0.5 * EHMC_args_as_cpp_struct.eps_main;
+                           EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main;
+                     } 
                  
                } else {
-                 
-                 EHMC_args_as_cpp_struct.eps_us  =  0.5 * EHMC_args_as_cpp_struct.eps_us;
-                 EHMC_args_as_cpp_struct.tau_us =       EHMC_args_as_cpp_struct.eps_us ;
-                 
-                 EHMC_args_as_cpp_struct.eps_main  =  0.5 * EHMC_args_as_cpp_struct.eps_main;
-                 EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main ;
+                     
+                     EHMC_args_as_cpp_struct.eps_us  =  0.5 * EHMC_args_as_cpp_struct.eps_us;
+                     EHMC_args_as_cpp_struct.tau_us =       EHMC_args_as_cpp_struct.eps_us;
+                     
+                     EHMC_args_as_cpp_struct.eps_main  =  0.5 * EHMC_args_as_cpp_struct.eps_main;
+                     EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main;
                  
                }
                ////
@@ -166,15 +164,15 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                ////
                if    (result_input.main_div() == 0) { // if no divs
                  
-                 if (result_input.main_p_jump() < 0.80) {
-                   EHMC_args_as_cpp_struct.eps_main = 0.5 * EHMC_args_as_cpp_struct.eps_main;
-                   EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main ;
-                 } 
+                     if (result_input.main_p_jump() < 0.80) {
+                         EHMC_args_as_cpp_struct.eps_main = 0.5 * EHMC_args_as_cpp_struct.eps_main;
+                         EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main;
+                     }
                  
                } else {
-                 
-                 EHMC_args_as_cpp_struct.eps_main  =  0.5 * EHMC_args_as_cpp_struct.eps_main;
-                 EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main ;
+                     
+                     EHMC_args_as_cpp_struct.eps_main  =  0.5 * EHMC_args_as_cpp_struct.eps_main;
+                     EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main;
                  
                }
                ////
@@ -184,31 +182,26 @@ std::vector<double>                                   fn_find_initial_eps_main_a
        
      } catch (...) { 
        
-       EHMC_args_as_cpp_struct.eps_us  =  0.5 * EHMC_args_as_cpp_struct.eps_us;
-       EHMC_args_as_cpp_struct.tau_us =       EHMC_args_as_cpp_struct.eps_us ;
-       
-       EHMC_args_as_cpp_struct.eps_main  =  0.5 * EHMC_args_as_cpp_struct.eps_main;
-       EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main ;
+             EHMC_args_as_cpp_struct.eps_us  =  0.5 * EHMC_args_as_cpp_struct.eps_us;
+             EHMC_args_as_cpp_struct.tau_us =       EHMC_args_as_cpp_struct.eps_us;
+             
+             EHMC_args_as_cpp_struct.eps_main  =  0.5 * EHMC_args_as_cpp_struct.eps_main;
+             EHMC_args_as_cpp_struct.tau_main =       EHMC_args_as_cpp_struct.eps_main;
        
      }
      
      
    }
    
-//// #if HAS_BRIDGESTAN_H
    // destroy Stan model object
    if (Model_args_as_cpp_struct.model_so_file != "none") {
      fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
    }
-//// #endif
-   
-   
    
    std::vector<double>  outs(2);
    
    outs[0] = EHMC_args_as_cpp_struct.eps_main;
    outs[1] = EHMC_args_as_cpp_struct.eps_us;
-   
    
    return outs;
    
