@@ -8,16 +8,16 @@
 #' @keywords internal
 R_fn_remove_log_lik_from_array <- function(arr) {
   
-  format(object.size(arr), units = "MB")
-  
-  # Find which parameters don't contain "log_lik"
-  keep_params <- !grepl("log_lik", dimnames(arr)[[1]])
-  
-  # Create new array without the log_lik parameters
-  arr_filtered <- arr[, , keep_params, drop = FALSE]
-  
-  return(arr_filtered)
-  
+      format(object.size(arr), units = "MB")
+      
+      # Find which parameters don't contain "log_lik"
+      keep_params <- !grepl("log_lik", dimnames(arr)[[1]])
+      
+      # Create new array without the log_lik parameters
+      arr_filtered <- arr[, , keep_params, drop = FALSE]
+      
+      return(arr_filtered)
+      
 }
 
 
@@ -26,7 +26,6 @@ R_fn_remove_log_lik_from_array <- function(arr) {
 
 
 #### ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 #' create_summary_and_traces
 #' @keywords internal
 create_summary_and_traces <- function(    model_results,
@@ -42,8 +41,10 @@ create_summary_and_traces <- function(    model_results,
                                           save_trace_tibbles = FALSE
 ) {
   
+  require(bridgestan)
+  require(stringr)
 
-  ## Start timer 
+  ## Start timer: 
   tictoc::tic()
   
   ## Extract essential model info from "init_object" object
@@ -75,6 +76,9 @@ create_summary_and_traces <- function(    model_results,
   
   #### time_burnin <- model_results$time_burnin
   time_burnin <- model_results$init_burnin_object$time_burnin
+  if(is.na(time_burnin)) { 
+    time_burnin <- model_results$time_burnin
+  }
   time_sampling <- model_results$time_sampling
   time_total_wo_summaries <- time_burnin + time_sampling
   
@@ -547,18 +551,25 @@ create_summary_and_traces <- function(    model_results,
                                   chains = 1:n_chains, 
                                   parameters = names_total)
   
-  try({
-    {
-      print(tictoc::toc(log = TRUE))
-      log.txt <- tictoc::tic.log(format = TRUE)
-      tictoc::tic.clearlog()
-      time_summaries <- unlist(log.txt)
-    }
-  })
-  
-  try({
-    time_summaries <- as.numeric(substr(start = 0, stop = 100, strsplit(strsplit(time_summaries, "[:]")[[1]], "[s]")  [[1]][1]))
-  })
+  # try({
+  #     print(tictoc::toc(log = TRUE))
+  #     log.txt <- tictoc::tic.log(format = TRUE)
+  #     tictoc::tic.clearlog()
+  #     time_summaries <- unlist(log.txt)
+  # })
+  # try({
+  #   time_summaries <- as.numeric(substr(start = 0, stop = 100, strsplit(strsplit(time_summaries, "[:]")[[1]], "[s]")  [[1]][1]))
+  # })
+   
+   try({
+     print(tictoc::toc(log = TRUE))
+     log.txt <- tictoc::tic.log(format = TRUE)
+     tictoc::tic.clearlog()
+     time_summaries <- unlist(log.txt)
+     ##
+     extract_numeric_string <-  stringr::str_extract(time_summaries, "\\d+\\.\\d+")   
+     time_summaries <- as.numeric(extract_numeric_string)
+   })
   
   
   

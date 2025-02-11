@@ -340,12 +340,12 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                            }
                }
      
-               ### If not using partitioned_HMC (and therefore also NOT using diffusion_HMC), then set the path length to be the mean of tau_main and tau_us 
-               if (partitioned_HMC == FALSE) { # if sampling all parameters at once
-                       
-                       EHMC_args_as_Rcpp_List$tau_main <- mean( EHMC_args_as_Rcpp_List$tau_main, EHMC_args_as_Rcpp_List$tau_us)
-                 
-               }
+               # ### If not using partitioned_HMC (and therefore also NOT using diffusion_HMC), then set the path length to be the mean of tau_main and tau_us 
+               # if (partitioned_HMC == FALSE) { # if sampling all parameters at once
+               #         
+               #         EHMC_args_as_Rcpp_List$tau_main <- mean( EHMC_args_as_Rcpp_List$tau_main, EHMC_args_as_Rcpp_List$tau_us)
+               #   
+               # }
      
                if (manual_tau == TRUE) {
                    if (length(tau_if_manual) == 1) {
@@ -393,7 +393,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                #### ---------------------------------------------------------------------------------------------------------------------------------------------------------------
                if ( (ii < n_adapt) && (manual_tau == FALSE)) {
               
-                      if (partitioned_HMC == TRUE) {
+                     {
                         
                                   #### ////  updates for MAIN: --------------------------------------------------------------------------------------------------------------------
                                   ## update snaper_m and snaper_s_empirical (for MAIN):
@@ -458,7 +458,9 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                   #     message(cat("length = ", length(eigen_vector_main)))
                                   #     message(cat("head = ", head(eigen_vector_main, 10)))
                                   # }
+                     }
                             #### ////  updates for NUISANCE: --------------------------------------------------------------------------------------------------------------------
+                        if (partitioned_HMC == TRUE) {
                             if (sample_nuisance == TRUE) { 
                                   ## update snaper_m and snaper_s_empirical (for NUISANCE):
                                   try({
@@ -488,59 +490,60 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                   })
                             }
                         
-                      } else if (partitioned_HMC == FALSE) { 
-                        
-                                  theta_vec_mean_all <- theta_vec_current_mean
-                                  ##
-                                  snaper_m_vec_all <-  c(EHMC_burnin_as_Rcpp_List$snaper_m_vec_us, EHMC_burnin_as_Rcpp_List$snaper_m_vec_main)
-                                  snaper_s_vec_all_empirical <- c(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical, EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
-                                  ##
-                                  eigen_vector_all <- c(EHMC_burnin_as_Rcpp_List$eigen_vector_us, EHMC_burnin_as_Rcpp_List$eigen_vector_main)
-                                  snaper_w_vec_all <- c(EHMC_burnin_as_Rcpp_List$snaper_w_vec_us, EHMC_burnin_as_Rcpp_List$snaper_w_vec_main)
-                                  ##
-                                  sqrt_M_vec_all <- c(EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec, diag(EHMC_burnin_as_Rcpp_List$M_dense_sqrt))
-                                  ##
-                                  ## update snaper_m and snaper_s_empirical (for ALL PARAMS):
-                                  try({
-                                        outs_update_snaper_m_and_s <-   BayesMVP:::fn_update_snaper_m_and_s( snaper_m_vec_all,  
-                                                                                                             snaper_s_vec_all_empirical, 
-                                                                                                             theta_vec_mean_all, 
-                                                                                                             ii)
-                                        ## Update snaper_m:
-                                        snaper_m_vec_all <- outs_update_snaper_m_and_s[,1]
-                                        EHMC_burnin_as_Rcpp_List$snaper_m_vec_us <-   head(snaper_m_vec_all, n_nuisance)
-                                        EHMC_burnin_as_Rcpp_List$snaper_m_vec_main <- tail(snaper_m_vec_all, n_params_main)
-                                        ## Update snaper_s:
-                                        snaper_s_vec_all_empirical <- outs_update_snaper_m_and_s[,2]
-                                        EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical <-   head(snaper_s_vec_all_empirical, n_nuisance)
-                                        EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical <- tail(snaper_s_vec_all_empirical, n_params_main)
-                                  })
-                                  # update snaper_w (for ALL PARAMS):
-                                  try({
-                                    outs_update_eigen_max_and_eigen_vec <-   BayesMVP:::fn_update_snaper_w_diag_M(   snaper_w_vec = snaper_w_vec_all,
-                                                                                                                     eigen_vector = eigen_vector_all,
-                                                                                                                     eigen_max = eigen_max_all,
-                                                                                                                     theta_vec = theta_vec_mean_all,
-                                                                                                                     snaper_m_vec = snaper_m_vec_all,
-                                                                                                                     ii = ii,
-                                                                                                                     sqrt_M_vec =  sqrt_M_vec_all)
-                                    ## Update snaper_w:
-                                    snaper_w_vec_all <- outs_update_eigen_max_and_eigen_vec
-                                    EHMC_burnin_as_Rcpp_List$snaper_w_vec_us <-   head(snaper_w_vec_all, n_nuisance)
-                                    EHMC_burnin_as_Rcpp_List$snaper_w_vec_main <- tail(snaper_w_vec_all, n_params_main)
-                                  })
-                                  # update eigen_max and eigen_vec (for ALL PARAMS):
-                                  try({
-                                    outs_update_eigen_max_and_eigen_vec <- BayesMVP:::fn_update_eigen_max_and_eigen_vec(snaper_w_vec = snaper_w_vec_all)
-                                    ## Update eigen_max:
-                                    eigen_max_all <-  max(0.0001, outs_update_eigen_max_and_eigen_vec[1] )
-                                    EHMC_burnin_as_Rcpp_List$eigen_max_main <- eigen_max_all
-                                    EHMC_burnin_as_Rcpp_List$eigen_max_us   <- eigen_max_all
-                                    ## Update eigen_vector's:
-                                    eigen_vector_all <- tail(outs_update_eigen_max_and_eigen_vec, n_params)
-                                    EHMC_burnin_as_Rcpp_List$eigen_vector_us <-   head(eigen_vector_all, n_nuisance)
-                                    EHMC_burnin_as_Rcpp_List$eigen_vector_main <- tail(eigen_vector_all, n_params_main)
-                                  })
+                      }
+                      if (partitioned_HMC == FALSE) {
+                                  # 
+                                  # theta_vec_mean_all <- theta_vec_current_mean
+                                  # ##
+                                  # snaper_m_vec_all <-  c(EHMC_burnin_as_Rcpp_List$snaper_m_vec_us, EHMC_burnin_as_Rcpp_List$snaper_m_vec_main)
+                                  # snaper_s_vec_all_empirical <- c(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical, EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
+                                  # ##
+                                  # eigen_vector_all <- c(EHMC_burnin_as_Rcpp_List$eigen_vector_us, EHMC_burnin_as_Rcpp_List$eigen_vector_main)
+                                  # snaper_w_vec_all <- c(EHMC_burnin_as_Rcpp_List$snaper_w_vec_us, EHMC_burnin_as_Rcpp_List$snaper_w_vec_main)
+                                  # ##
+                                  # sqrt_M_vec_all <- c(EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec, diag(EHMC_burnin_as_Rcpp_List$M_dense_sqrt))
+                                  # ##
+                                  # ## update snaper_m and snaper_s_empirical (for ALL PARAMS):
+                                  # try({
+                                  #       outs_update_snaper_m_and_s <-   BayesMVP:::fn_update_snaper_m_and_s( snaper_m_vec_all,  
+                                  #                                                                            snaper_s_vec_all_empirical, 
+                                  #                                                                            theta_vec_mean_all, 
+                                  #                                                                            ii)
+                                  #       ## Update snaper_m:
+                                  #       snaper_m_vec_all <- outs_update_snaper_m_and_s[,1]
+                                  #       EHMC_burnin_as_Rcpp_List$snaper_m_vec_us <-   head(snaper_m_vec_all, n_nuisance)
+                                  #       EHMC_burnin_as_Rcpp_List$snaper_m_vec_main <- tail(snaper_m_vec_all, n_params_main)
+                                  #       ## Update snaper_s:
+                                  #       snaper_s_vec_all_empirical <- outs_update_snaper_m_and_s[,2]
+                                  #       EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical <-   head(snaper_s_vec_all_empirical, n_nuisance)
+                                  #       EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical <- tail(snaper_s_vec_all_empirical, n_params_main)
+                                  # })
+                                  # # update snaper_w (for ALL PARAMS):
+                                  # try({
+                                  #   outs_update_eigen_max_and_eigen_vec <-   BayesMVP:::fn_update_snaper_w_diag_M(   snaper_w_vec = snaper_w_vec_all,
+                                  #                                                                                    eigen_vector = eigen_vector_all,
+                                  #                                                                                    eigen_max = eigen_max_all,
+                                  #                                                                                    theta_vec = theta_vec_mean_all,
+                                  #                                                                                    snaper_m_vec = snaper_m_vec_all,
+                                  #                                                                                    ii = ii,
+                                  #                                                                                    sqrt_M_vec =  sqrt_M_vec_all)
+                                  #   ## Update snaper_w:
+                                  #   snaper_w_vec_all <- outs_update_eigen_max_and_eigen_vec
+                                  #   EHMC_burnin_as_Rcpp_List$snaper_w_vec_us <-   head(snaper_w_vec_all, n_nuisance)
+                                  #   EHMC_burnin_as_Rcpp_List$snaper_w_vec_main <- tail(snaper_w_vec_all, n_params_main)
+                                  # })
+                                  # # update eigen_max and eigen_vec (for ALL PARAMS):
+                                  # try({
+                                  #   outs_update_eigen_max_and_eigen_vec <- BayesMVP:::fn_update_eigen_max_and_eigen_vec(snaper_w_vec = snaper_w_vec_all)
+                                  #   ## Update eigen_max:
+                                  #   eigen_max_all <-  max(0.0001, outs_update_eigen_max_and_eigen_vec[1] )
+                                  #   EHMC_burnin_as_Rcpp_List$eigen_max_main <- eigen_max_all
+                                  #   EHMC_burnin_as_Rcpp_List$eigen_max_us   <- eigen_max_all
+                                  #   ## Update eigen_vector's:
+                                  #   eigen_vector_all <- tail(outs_update_eigen_max_and_eigen_vec, n_params)
+                                  #   EHMC_burnin_as_Rcpp_List$eigen_vector_us <-   head(eigen_vector_all, n_nuisance)
+                                  #   EHMC_burnin_as_Rcpp_List$eigen_vector_main <- tail(eigen_vector_all, n_params_main)
+                                  # })
                         
                       }
                 
@@ -817,7 +820,6 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                         }
 
                        ## //////////////////   --------------------------------  update tau for main ------------------------------------------------------------------------------
-                       if (partitioned_HMC == TRUE) {
                          
                                if ( (ii < n_adapt) && (manual_tau == FALSE)) {
                                  
@@ -874,6 +876,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                               
         
                                ## //////////////////   --------------------------------  update tau for us ------------------------------------------------------------------------------
+                        if (partitioned_HMC == TRUE) {
                                if  ((ii < n_adapt) && (sample_nuisance == TRUE) && (manual_tau == FALSE)) {
                                  
                                         tau_ADAM_us_per_chain_prop <- list()
@@ -921,71 +924,72 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                       L_us_during_burnin_vec[ii] <- L_us_iter_ii
         
                                }
+                        }
                             ## //////////////////   --------------------------------  update tau for ALL PARAMS ------------------------------------------------------------------------------
-                           } else if (partitioned_HMC == FALSE) {
+                         if (partitioned_HMC == FALSE) {
                              
-                                   if  ((ii < n_adapt) && (sample_nuisance == TRUE) && (manual_tau == FALSE)) {
-                                     
-                                             tau_ADAM_all_per_chain_prop <- list()
-                                             tau_ADAM_all_per_chain <- list()
-                                             
-                                             if (sample_nuisance == TRUE) {
-                                               
-                                                   theta_vec_initial_all <-    rbind(theta_us_0_burnin_tau_adapt_all_chains_input_from_R,       theta_main_0_burnin_tau_adapt_all_chains_input_from_R)
-                                                   theta_vec_prop_all <-       rbind(theta_us_prop_burnin_tau_adapt_all_chains_input_from_R,    theta_main_prop_burnin_tau_adapt_all_chains_input_from_R)
-                                                   velocity_prop_all <-        rbind(velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R, velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R)
-                                                   velocity_0_all <-           rbind(velocity_us_0_burnin_tau_adapt_all_chains_input_from_R,    velocity_main_0_burnin_tau_adapt_all_chains_input_from_R)
-                                                 
-                                             } else if (sample_nuisance == FALSE) { 
-                                                 
-                                                   theta_vec_initial_all <-    theta_main_0_burnin_tau_adapt_all_chains_input_from_R
-                                                   theta_vec_prop_all <-       theta_main_prop_burnin_tau_adapt_all_chains_input_from_R
-                                                   velocity_prop_all <-        velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R
-                                                   velocity_0_all <-           velocity_main_0_burnin_tau_adapt_all_chains_input_from_R
-                                                 
-                                             }
-                                             
-                                             try({
-                                                     for (kk in 1:n_chains_burnin) {
-                                                             
-                                                             tau_ADAM_all_per_chain_prop[[kk]] <-    BayesMVP:::fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM(    eigen_vector = eigen_vector_all,
-                                                                                                                                                             eigen_max = eigen_max_all,
-                                                                                                                                                             theta_vec_initial = theta_vec_initial_all[, kk], ####
-                                                                                                                                                             theta_vec_prop = theta_vec_prop_all[, kk], ####
-                                                                                                                                                             snaper_m_vec = snaper_m_vec_all,
-                                                                                                                                                             velocity_prop = velocity_prop_all[, kk],  ####
-                                                                                                                                                             velocity_0 = velocity_0_all[, kk], ####
-                                                                                                                                                             tau = EHMC_args_as_Rcpp_List$tau_main,
-                                                                                                                                                             LR =  EHMC_burnin_as_Rcpp_List$LR_main,
-                                                                                                                                                             ii = ii,
-                                                                                                                                                             n_burnin = n_adapt,
-                                                                                                                                                             sqrt_M_vec = sqrt_M_vec_all,
-                                                                                                                                                             tau_m_adam = EHMC_burnin_as_Rcpp_List$tau_m_adam_main,
-                                                                                                                                                             tau_v_adam = EHMC_burnin_as_Rcpp_List$tau_v_adam_main,
-                                                                                                                                                             tau_ii = tau_main_ii_vec[kk])
-                                                             
-                                                             if (!(any(is.nan( tau_ADAM_all_per_chain_prop[[kk]])))) {
-                                                               tau_ADAM_all_per_chain[[kk]] <- tau_ADAM_all_per_chain_prop[[kk]]
-                                                             }
-                                                       
-                                                     }
-                                                     
-                                                     tau_ADAM_all_per_chain <- Filter(is_valid, tau_ADAM_all_per_chain)
-                                                     tau_ADAM_all_avg <-  Reduce("+",  tau_ADAM_all_per_chain)/ length( tau_ADAM_all_per_chain)
-                                                     
-                                                     #### update lists:
-                                                     if  (length(tau_ADAM_all_avg) > 0) {
-                                                       EHMC_args_as_Rcpp_List$tau_main <- tau_ADAM_all_avg[[1]]
-                                                       EHMC_burnin_as_Rcpp_List$tau_m_adam_main <- tau_ADAM_all_avg[[2]]
-                                                       EHMC_burnin_as_Rcpp_List$tau_v_adam_main <- tau_ADAM_all_avg[[3]]
-                                                     }
-                                               
-                                             })
-                                             
-                                             L_main_iter_ii <-  EHMC_args_as_Rcpp_List$tau_main /  EHMC_args_as_Rcpp_List$eps_main
-                                             L_main_during_burnin_vec[ii] <- L_main_iter_ii
-                                             
-                                   }
+                                   # if  ((ii < n_adapt) && (sample_nuisance == TRUE) && (manual_tau == FALSE)) {
+                                   #   
+                                   #           tau_ADAM_all_per_chain_prop <- list()
+                                   #           tau_ADAM_all_per_chain <- list()
+                                   #           
+                                   #           if (sample_nuisance == TRUE) {
+                                   #             
+                                   #                 theta_vec_initial_all <-    rbind(theta_us_0_burnin_tau_adapt_all_chains_input_from_R,       theta_main_0_burnin_tau_adapt_all_chains_input_from_R)
+                                   #                 theta_vec_prop_all <-       rbind(theta_us_prop_burnin_tau_adapt_all_chains_input_from_R,    theta_main_prop_burnin_tau_adapt_all_chains_input_from_R)
+                                   #                 velocity_prop_all <-        rbind(velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R, velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R)
+                                   #                 velocity_0_all <-           rbind(velocity_us_0_burnin_tau_adapt_all_chains_input_from_R,    velocity_main_0_burnin_tau_adapt_all_chains_input_from_R)
+                                   #               
+                                   #           } else if (sample_nuisance == FALSE) { 
+                                   #               
+                                   #                 theta_vec_initial_all <-    theta_main_0_burnin_tau_adapt_all_chains_input_from_R
+                                   #                 theta_vec_prop_all <-       theta_main_prop_burnin_tau_adapt_all_chains_input_from_R
+                                   #                 velocity_prop_all <-        velocity_main_prop_burnin_tau_adapt_all_chains_input_from_R
+                                   #                 velocity_0_all <-           velocity_main_0_burnin_tau_adapt_all_chains_input_from_R
+                                   #               
+                                   #           }
+                                   #           
+                                   #           try({
+                                   #                   for (kk in 1:n_chains_burnin) {
+                                   #                           
+                                   #                           tau_ADAM_all_per_chain_prop[[kk]] <-    BayesMVP:::fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM(    eigen_vector = eigen_vector_all,
+                                   #                                                                                                                           eigen_max = eigen_max_all,
+                                   #                                                                                                                           theta_vec_initial = theta_vec_initial_all[, kk], ####
+                                   #                                                                                                                           theta_vec_prop = theta_vec_prop_all[, kk], ####
+                                   #                                                                                                                           snaper_m_vec = snaper_m_vec_all,
+                                   #                                                                                                                           velocity_prop = velocity_prop_all[, kk],  ####
+                                   #                                                                                                                           velocity_0 = velocity_0_all[, kk], ####
+                                   #                                                                                                                           tau = EHMC_args_as_Rcpp_List$tau_main,
+                                   #                                                                                                                           LR =  EHMC_burnin_as_Rcpp_List$LR_main,
+                                   #                                                                                                                           ii = ii,
+                                   #                                                                                                                           n_burnin = n_adapt,
+                                   #                                                                                                                           sqrt_M_vec = sqrt_M_vec_all,
+                                   #                                                                                                                           tau_m_adam = EHMC_burnin_as_Rcpp_List$tau_m_adam_main,
+                                   #                                                                                                                           tau_v_adam = EHMC_burnin_as_Rcpp_List$tau_v_adam_main,
+                                   #                                                                                                                           tau_ii = tau_main_ii_vec[kk])
+                                   #                           
+                                   #                           if (!(any(is.nan( tau_ADAM_all_per_chain_prop[[kk]])))) {
+                                   #                             tau_ADAM_all_per_chain[[kk]] <- tau_ADAM_all_per_chain_prop[[kk]]
+                                   #                           }
+                                   #                     
+                                   #                   }
+                                   #                   
+                                   #                   tau_ADAM_all_per_chain <- Filter(is_valid, tau_ADAM_all_per_chain)
+                                   #                   tau_ADAM_all_avg <-  Reduce("+",  tau_ADAM_all_per_chain)/ length( tau_ADAM_all_per_chain)
+                                   #                   
+                                   #                   #### update lists:
+                                   #                   if  (length(tau_ADAM_all_avg) > 0) {
+                                   #                     EHMC_args_as_Rcpp_List$tau_main <- tau_ADAM_all_avg[[1]]
+                                   #                     EHMC_burnin_as_Rcpp_List$tau_m_adam_main <- tau_ADAM_all_avg[[2]]
+                                   #                     EHMC_burnin_as_Rcpp_List$tau_v_adam_main <- tau_ADAM_all_avg[[3]]
+                                   #                   }
+                                   #             
+                                   #           })
+                                   #           
+                                   #           L_main_iter_ii <-  EHMC_args_as_Rcpp_List$tau_main /  EHMC_args_as_Rcpp_List$eps_main
+                                   #           L_main_during_burnin_vec[ii] <- L_main_iter_ii
+                                   #           
+                                   # }
                              
                            }
                                       
@@ -1026,7 +1030,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                         tictoc::tic.clearlog()
                                         time_burnin <- unlist(log.txt)
                                         ##
-                                        extract_numeric_string <- str_extract(time_burnin, "\\d+\\.\\d+")   
+                                        extract_numeric_string <- stringr::str_extract(time_burnin, "\\d+\\.\\d+")   
                                         time_burnin <- as.numeric(extract_numeric_string)
                                     })
                               

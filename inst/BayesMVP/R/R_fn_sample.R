@@ -291,11 +291,11 @@ R_fn_sample_model  <-    function(      Model_type,
                               tictoc::tic.clearlog()
                               time_sampling <- unlist(log.txt)
                               ##
-                              extract_numeric_string <- str_extract(time_sampling, "\\d+\\.\\d+")   
+                              extract_numeric_string <-  stringr::str_extract(time_sampling, "\\d+\\.\\d+")   
                               time_sampling <- as.numeric(extract_numeric_string)
                           })
         
-                          print(paste("sampling time = ",  time_sampling))
+                          print(paste("time_sampling = ",  time_sampling))
                           
                           gc(reset = TRUE)
 
@@ -304,6 +304,8 @@ R_fn_sample_model  <-    function(      Model_type,
                 time_total <- NULL
                 try({
                    time_total <- time_sampling + time_burnin
+                   print(paste("time_burnin = ",  time_burnin))
+                   print(paste("time_total = ",  time_total))
                 })
 
   out_list <- list(LR_main = LR_main, 
