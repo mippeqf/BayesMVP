@@ -550,16 +550,7 @@ create_summary_and_traces <- function(    model_results,
    dimnames(draws_array) <- list( iterations = 1:n_iter, 
                                   chains = 1:n_chains, 
                                   parameters = names_total)
-  
-  # try({
-  #     print(tictoc::toc(log = TRUE))
-  #     log.txt <- tictoc::tic.log(format = TRUE)
-  #     tictoc::tic.clearlog()
-  #     time_summaries <- unlist(log.txt)
-  # })
-  # try({
-  #   time_summaries <- as.numeric(substr(start = 0, stop = 100, strsplit(strsplit(time_summaries, "[:]")[[1]], "[s]")  [[1]][1]))
-  # })
+   
    
    try({
      print(tictoc::toc(log = TRUE))

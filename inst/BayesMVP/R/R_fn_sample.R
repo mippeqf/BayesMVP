@@ -81,18 +81,6 @@ R_fn_sample_model  <-    function(      Model_type,
                     Model_args_as_Rcpp_List$n_params_main <- n_params_main
                     Model_args_as_Rcpp_List$n_nuisance <- n_nuisance
                 }
-                
-                 # if (Model_type != "Stan") {
-                 # 
-                 #                 # nuisance transformation (bookmark - currently fixed to "Phi")
-                 #                 Model_args_as_Rcpp_List$Model_args_strings[13, 1] <- "Phi"
-                 # 
-                 #                  try({
-                 #                    Model_args_as_Rcpp_List$Model_args_strings[c(1, 4,5,6,7,8,9,10,11),1] <-     vect_type
-                 #                    Model_args_as_Rcpp_List$Model_args_strings[6,1] <-  vect_type
-                 #                  }, silent = TRUE)
-                 # 
-                 # }
                       
                       if (Model_type == "Stan") { 
                         ## n_class <- 0 
@@ -102,33 +90,11 @@ R_fn_sample_model  <-    function(      Model_type,
                       }
                       
                       print(paste("n_class = ", n_class))
-                      
-                      # try({ 
-                      #      {
-                      #           lkj_cholesky_eta <- Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]]
-                      #              ##
-                      #           if (is.matrix(lkj_cholesky_eta) == FALSE) {
-                      #              lkj_cholesky_eta <- matrix(lkj_cholesky_eta)
-                      #           }
-                      #              
-                      #           Model_args_as_Rcpp_List$Model_args_col_vecs_double[[1]] <- lkj_cholesky_eta
-                      #          # Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]] <-  (Model_args_as_Rcpp_List$Model_args_2_later_vecs_of_mats_double[[1]])
-                      #      }
-                      # })
-                      
-                ####  print(paste("lkj_cholesky_eta = ", lkj_cholesky_eta))
 
                 n_params <- n_nuisance + n_params_main
                 print(paste("n_params = ", n_params))
                 print(paste("n_params_main = ",  n_params_main))
                 print(paste("n_nuisance = ",  n_nuisance))
-                
-                # if (n_nuisance > 0) {
-                #   index_us <- 1:n_nuisance
-                # }
-                # else { 
-                #   index_us <- 1:5 
-                # }
              
                 index_nuisance <- 1:n_nuisance
                 index_main <- (1 + n_nuisance):n_params
@@ -149,6 +115,8 @@ R_fn_sample_model  <-    function(      Model_type,
                 
                 print(  Model_args_as_Rcpp_List$model_so_file)
                 print(  Model_args_as_Rcpp_List$json_file_path)
+                
+                RcppParallel::setThreadOptions(numThreads = n_chains_burnin);
                 
                 init_burnin_object <-                BayesMVP:::init_and_run_burnin( Model_type = Model_type,
                                                                                      init_object = init_object,
@@ -238,14 +206,6 @@ R_fn_sample_model  <-    function(      Model_type,
         
         
                           RcppParallel::setThreadOptions(numThreads = n_chains_sampling);
-        
-                          ## Rcpp_fn_RcppParallel_EHMC_sampling
-                          # Rcpp_fn_openMP_EHMC_sampling
-                          # parallel::mcparallel
-        
-                          # if (Model_type != "Stan")  {
-                          #      Model_args_as_Rcpp_List$Model_args_ints[4, 1] <- num_chunks
-                          # }
                           
                           if (parallel_method == "OpenMP") { 
                             fn <- BayesMVP:::Rcpp_fn_OpenMP_EHMC_sampling
@@ -271,19 +231,6 @@ R_fn_sample_model  <-    function(      Model_type,
                                                                         Model_args_as_Rcpp_List =  Model_args_as_Rcpp_List,
                                                                         EHMC_args_as_Rcpp_List =   EHMC_args_as_Rcpp_List,
                                                                         EHMC_Metric_as_Rcpp_List = EHMC_Metric_as_Rcpp_List))
-        
-        
-                          # try({
-                          #   {
-                          #     print(tictoc::toc(log = TRUE))
-                          #     log.txt <- tictoc::tic.log(format = TRUE)
-                          #     tictoc::tic.clearlog()
-                          #     time_sampling <- unlist(log.txt)
-                          #   }
-                          # })
-                          # try({
-                          #   time_sampling <- as.numeric( substr(start = 0, stop = 100,  strsplit(  strsplit(time_sampling, "[:]")[[1]], "[s]")[[2]][1] ) )
-                          # })
                           
                           try({
                               print(tictoc::toc(log = TRUE))
