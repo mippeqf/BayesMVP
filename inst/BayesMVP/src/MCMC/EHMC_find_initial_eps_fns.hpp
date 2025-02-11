@@ -34,19 +34,23 @@ std::vector<double>                                   fn_find_initial_eps_main_a
    stan::math::ChainableStack ad_tape;
    stan::math::nested_rev_autodiff nested;
      
-   #if RNG_TYPE_CPP_STD == 1
-        std::mt19937 rng_i(seed);
-   #elif RNG_TYPE_pcg32 == 1
-        pcg32 rng_i(seed, 1);
-   #elif RNG_TYPE_pcg64 == 1
-        pcg64 rng_i(seed, 1);
-   #endif
+   // #if RNG_TYPE_CPP_STD == 1
+   //      std::mt19937 rng_i(seed);
+   // #elif RNG_TYPE_pcg32 == 1
+   //      pcg32 rng_i(seed, 1);
+   // #elif RNG_TYPE_pcg64 == 1
+   //      pcg64 rng_i(seed, 1);
+   // #endif
    
-   #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-          dqrng::xoshiro256plus rng_i(seed);
-   #elif RNG_TYPE_dqrng_pcg64 == 1
-          RNG_TYPE_dqrng rng_i = dqrng::generator<pcg64>(seed, 1);
-   #endif
+   // // #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
+   // //        dqrng::xoshiro256plus rng_i(seed);
+   // // #elif RNG_TYPE_dqrng_pcg64 == 1
+   //        RNG_TYPE_dqrng rng_main_i = dqrng::generator<pcg64>(seed, 1);
+   //        RNG_TYPE_dqrng rng_nuisance_i = dqrng::generator<pcg64>(seed + 1e6, 1);
+   // // #endif
+   
+   std::mt19937 rng_main_i(seed);
+   std::mt19937 rng_nuisance_i(seed + 1e6);
    
    const int N = Model_args_as_cpp_struct.N;
    const int n_nuisance =  Model_args_as_cpp_struct.n_nuisance;
@@ -92,7 +96,7 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                    
                    ////  sample nuisance
                    fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(     result_input,  
-                                                                                   rng_i,
+                                                                                   rng_nuisance_i,
                                                                                    Model_type,  
                                                                                    force_autodiff, force_PartialLog, multi_attempts, 
                                                                                    y_ref,
@@ -104,7 +108,7 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                    
                    ////  sample main (cond. on nuisance)
                    fn_standard_HMC_main_only_single_iter_InPlace_process(          result_input,  
-                                                                                   rng_i,
+                                                                                   rng_main_i,
                                                                                    Model_type,  
                                                                                    force_autodiff, force_PartialLog, multi_attempts, 
                                                                                    y_ref,
@@ -117,7 +121,8 @@ std::vector<double>                                   fn_find_initial_eps_main_a
              
                    //// Sample all params (standard HMC)
                    fn_standard_HMC_dual_single_iter_InPlace_process( result_input,  
-                                                                     rng_i,
+                                                                     rng_main_i,
+                                                                     rng_nuisance_i,
                                                                      Model_type,  
                                                                      force_autodiff, force_PartialLog, multi_attempts, 
                                                                      y_ref,

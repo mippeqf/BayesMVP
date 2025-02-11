@@ -194,7 +194,7 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(  
 
 template<typename T = RNG_TYPE_dqrng>
 ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(        HMCResult &result_input,
-                                                                                               T &rng,
+                                                                                               T &rng_nuisance,
                                                                                                const std::string &Model_type,
                                                                                                const bool force_autodiff,
                                                                                                const bool force_PartialLog,
@@ -214,14 +214,10 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
   
       const std::string grad_option = "us_only";
       
-      // //// --------------------------------------------------------------------------------
-      // const std::string grad_option_temp = Model_args_as_cpp_struct.Model_args_strings(13);
-      // //// --------------------------------------------------------------------------------
-      
-      const double eps_1 = EHMC_args_as_cpp_struct.eps_us; ; // std::sqrt(h);
-      const double eps_1_sq = eps_1 * eps_1; /// h_sq is equiv. to MALA step-size  ??
+      const double eps_1 = EHMC_args_as_cpp_struct.eps_us;
+      const double eps_1_sq = eps_1 * eps_1;
       const double cos_eps_2 = (1.0 - 0.25 * eps_1_sq) / (1.0 + 0.25 * eps_1_sq);
-      const double sin_eps_2 = std::sqrt(1.0 - (cos_eps_2 * cos_eps_2)); 
+      const double sin_eps_2 = std::sqrt(1.0 - (cos_eps_2 * cos_eps_2));
   
       double U_x_initial = 0.0;
       double U_x_prop = 0.0;
@@ -236,28 +232,28 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
       result_input.us_theta_vec_0() =    result_input.us_theta_vec();
      
   {
-
-    {
-       //// Eigen::Matrix<double, -1, 1> std_norm_vec_us = Eigen::Matrix<double, -1, 1>::Zero(n_nuisance);
-       generate_random_std_norm_vec_InPlace(result_input.us_velocity_0_vec(), rng);
-       result_input.us_velocity_0_vec().array() = ( result_input.us_velocity_0_vec().array() * (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //// .cast<float>() ;  
-    }
+  
+      {
+         //// Eigen::Matrix<double, -1, 1> std_norm_vec_us = Eigen::Matrix<double, -1, 1>::Zero(n_nuisance);
+         generate_random_std_norm_vec_InPlace(result_input.us_velocity_0_vec(), rng_nuisance);
+         result_input.us_velocity_0_vec().array() = ( result_input.us_velocity_0_vec().array() * (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //// .cast<float>() ;  
+      }
      
     {
       
       {
  
       try {
-        
-            result_input.us_velocity_vec_proposed() =  result_input.us_velocity_0_vec() ;    // set TO initial velocity
-            result_input.us_theta_vec_proposed() =  result_input.us_theta_vec();             // set TO CURRENT theta   
+          
+              result_input.us_velocity_vec_proposed() =  result_input.us_velocity_0_vec() ;    // set TO initial velocity
+              result_input.us_theta_vec_proposed() =  result_input.us_theta_vec();             // set TO CURRENT theta   
     
               //// --------------------------------------------------------------------------------------------------------------- ////    Perform L leapfrogs  //// ------------------------------------
               if (EHMC_args_as_cpp_struct.tau_us < EHMC_args_as_cpp_struct.eps_us) { 
                 EHMC_args_as_cpp_struct.tau_us = EHMC_args_as_cpp_struct.eps_us;
               }
               // Draw + assign tau_ii:
-              EHMC_args_as_cpp_struct.tau_us_ii = generate_random_tau_ii(EHMC_args_as_cpp_struct.tau_us, rng);
+              EHMC_args_as_cpp_struct.tau_us_ii = generate_random_tau_ii(EHMC_args_as_cpp_struct.tau_us, rng_nuisance);
               if (EHMC_args_as_cpp_struct.tau_us_ii < EHMC_args_as_cpp_struct.eps_us) { 
                 EHMC_args_as_cpp_struct.tau_us_ii = EHMC_args_as_cpp_struct.eps_us; 
               }
@@ -354,13 +350,13 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
                     
                     energy_old +=  0.5 * (result_input.us_velocity_0_vec().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
                     energy_new +=  0.5 * (result_input.us_velocity_vec_proposed().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
-                
-                if (EHMC_args_as_cpp_struct.diffusion_HMC == true)  {
-                  energy_old +=  0.5 * (result_input.us_theta_vec_0().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
-                  energy_new +=  0.5 * (result_input.us_theta_vec_proposed().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
-                }
-      
-                log_ratio = - energy_new + energy_old;
+                    
+                    if (EHMC_args_as_cpp_struct.diffusion_HMC == true)  {
+                      energy_old +=  0.5 * (result_input.us_theta_vec_0().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
+                      energy_new +=  0.5 * (result_input.us_theta_vec_proposed().array().square() * EHMC_Metric_struct_as_cpp_struct.M_us_vec.array()).sum();
+                    }
+          
+                    log_ratio = - energy_new + energy_old;
     
             }
             
@@ -376,7 +372,7 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
                     result_input.us_div() = 0;
                     result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                     
-                    const double rand_unif = generate_random_std_uniform(rng);
+                    const double rand_unif = generate_random_std_uniform(rng_nuisance);
                     
                     if  (rand_unif > result_input.us_p_jump())   {  // # reject proposal
                        result_input.reject_proposal_us();  // # reject proposal

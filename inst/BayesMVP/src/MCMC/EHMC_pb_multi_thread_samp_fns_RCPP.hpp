@@ -185,31 +185,43 @@ public:
 
   ////////////// RcppParallel Parallel operator
   void operator() (std::size_t begin, std::size_t end) {
- 
-              const int global_seed_int = static_cast<int>(global_seed);
-              #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-                  dqrng::xoshiro256plus global_rng(global_seed_int);  
-              #endif
+           
+              const uint64_t global_seed_main =     global_seed;
+              const uint64_t global_seed_nuisance = global_seed + 1e6;
+              const int global_seed_main_int =      static_cast<int>(global_seed_main);
+              const int global_seed_nuisance_int =  static_cast<int>(global_seed_nuisance);
+              // #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
+              //      dqrng::xoshiro256plus global_rng(global_seed_main_int);
+              // #endif
       
               //// Process all chains from begin to end:
               for (std::size_t i = begin; i < end; ++i) {
                     
-                          const int chain_id_int = static_cast<int>(i);
-                          const int seed_i = global_seed_int + n_iter*(1 + chain_id_int);
+                           const int chain_id_int = static_cast<int>(i);
+                           const int seed_main_int_i =     global_seed_main_int +     n_iter*(1 + chain_id_int);
+                           const int seed_nuisance_int_i = global_seed_nuisance_int + n_iter*(1 + chain_id_int);
                            
-                          #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-                                     thread_local dqrng::xoshiro256plus rng_i(global_rng);      // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                                     rng_i.long_jump(n_iter*(1 + chain_id_int));  
-                          #elif RNG_TYPE_CPP_STD == 1
-                                     thread_local std::mt19937 rng_i;  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                                     rng_i.seed(seed_i); 
-                          #elif RNG_TYPE_pcg64 == 1
-                                     pcg_extras::seed_seq_from<std::random_device> global_seed;
-                                     thread_local pcg64 rng_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                          #elif RNG_TYPE_pcg32 == 1
-                                     pcg_extras::seed_seq_from<std::random_device> global_seed;
-                                     thread_local pcg32 rng_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                          #endif
+                           // #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
+                           //            thread_local dqrng::xoshiro256plus rng_main_i(global_rng);      // make thread local copy of rng 
+                           //            thread_local dqrng::xoshiro256plus rng_nuisance_i(global_rng);      // make thread local copy of rng 
+                           //            rng_main_i.long_jump(n_iter*(1 + chain_id_int));  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           //            rng_nuisance_i.long_jump(n_iter*(1 + chain_id_int));  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           // #elif RNG_TYPE_CPP_STD == 1
+                           thread_local std::mt19937 rng_main_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           thread_local std::mt19937 rng_nuisance_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           rng_main_i.seed(seed_main_int_i); // set / re-set the seed
+                           rng_nuisance_i.seed(seed_nuisance_int_i); // set / re-set the seed
+                           // #elif RNG_TYPE_pcg64 == 1
+                           //            pcg_extras::seed_seq_from<std::random_device> global_seed;
+                           //            pcg_extras::seed_seq_from<std::random_device> global_seed;
+                           //            thread_local pcg64 rng_main_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           //            thread_local pcg64 rng_nuisance_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           // #elif RNG_TYPE_pcg32 == 1
+                           //            pcg_extras::seed_seq_from<std::random_device> global_seed;
+                           //            pcg_extras::seed_seq_from<std::random_device> global_seed;
+                           //            thread_local pcg32 rng_main_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           //            thread_local pcg32 rng_nuisance_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           // #endif
                           
                           const int N = Model_args_as_cpp_struct_copies[i].N;
                           const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
@@ -236,7 +248,7 @@ public:
                    
                                             Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(    Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                                                           Model_args_as_cpp_struct_copies[i].json_file_path, 
-                                                                                                                          seed_i);
+                                                                                                                          seed_main_int_i);
                                       
                                            //////////////////////////////// perform iterations for chain i:
                                            fn_sample_HMC_multi_iter_single_thread(   HMC_outputs[i] ,
@@ -244,8 +256,10 @@ public:
                                                                                      burnin_indicator, 
                                                                                      chain_id_int, 
                                                                                      current_iter,
-                                                                                     seed_i, 
-                                                                                     rng_i,
+                                                                                     seed_main_int_i, 
+                                                                                     seed_nuisance_int_i,
+                                                                                     rng_main_i,
+                                                                                     rng_nuisance_i,
                                                                                      n_iter,
                                                                                      partitioned_HMC,
                                                                                      Model_type,  sample_nuisance,
@@ -273,8 +287,10 @@ public:
                                                                                      burnin_indicator, 
                                                                                      chain_id_int, 
                                                                                      current_iter,
-                                                                                     seed_i, 
-                                                                                     rng_i,
+                                                                                     seed_main_int_i, 
+                                                                                     seed_nuisance_int_i,
+                                                                                     rng_main_i,
+                                                                                     rng_nuisance_i,
                                                                                      n_iter,
                                                                                      partitioned_HMC,
                                                                                      Model_type,  sample_nuisance, 

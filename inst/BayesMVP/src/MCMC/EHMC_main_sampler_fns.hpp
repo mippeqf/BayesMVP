@@ -287,7 +287,7 @@ ALWAYS_INLINE  void leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       
  
 template<typename T = RNG_TYPE_dqrng>
 ALWAYS_INLINE  void                                        fn_standard_HMC_main_only_single_iter_InPlace_process(  HMCResult &result_input,
-                                                                                                                   T &rng,
+                                                                                                                   T &rng_main,
                                                                                                                    const std::string &Model_type,
                                                                                                                    const bool  force_autodiff,
                                                                                                                    const bool  force_PartialLog,
@@ -326,7 +326,7 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
 
       {
           //// Eigen::Matrix<double, -1, 1> std_norm_vec_main = Eigen::Matrix<double, -1, 1>::Zero(n_params_main);
-          generate_random_std_norm_vec_InPlace(result_input.main_velocity_0_vec(), rng);
+          generate_random_std_norm_vec_InPlace(result_input.main_velocity_0_vec(), rng_main);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * result_input.main_velocity_0_vec();
           if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = result_input.main_velocity_0_vec().array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
@@ -346,7 +346,7 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                         EHMC_args_as_cpp_struct.tau_main = EHMC_args_as_cpp_struct.eps_main; 
                 }
                 // Draw + assign tau_ii:
-                EHMC_args_as_cpp_struct.tau_main_ii = generate_random_tau_ii(EHMC_args_as_cpp_struct.tau_main, rng);
+                EHMC_args_as_cpp_struct.tau_main_ii = generate_random_tau_ii(EHMC_args_as_cpp_struct.tau_main, rng_main);
                 if (EHMC_args_as_cpp_struct.tau_main_ii < EHMC_args_as_cpp_struct.eps_main) { 
                         EHMC_args_as_cpp_struct.tau_main_ii = EHMC_args_as_cpp_struct.eps_main; 
                 }
@@ -386,7 +386,7 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                   
                 } else { 
                   
-                  leapfrog_integrator_diag_M_standard_HMC_main_InPlace(      result_input.main_velocity_vec_proposed(),
+                  leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       result_input.main_velocity_vec_proposed(),
                                                                               result_input.main_theta_vec_proposed(),
                                                                               result_input.lp_and_grad_outs(),
                                                                               result_input.us_theta_vec(),
@@ -402,7 +402,6 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                                                                               fn_lp_grad_InPlace);
                   
                 }
-                
                 
                 //// proposed lp  
                 log_posterior_prop =  result_input.lp_and_grad_outs()(0);
@@ -438,7 +437,7 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                           result_input.main_div() = 0;
                           result_input.main_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                           
-                          const double rand_unif = generate_random_std_uniform(rng);
+                          const double rand_unif = generate_random_std_uniform(rng_main);
     
                           if  (rand_unif > result_input.main_p_jump())   {  // # reject proposal
                                  result_input.reject_proposal_main();  // # reject proposal

@@ -166,9 +166,10 @@ ALWAYS_INLINE  void leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(    Ei
  
  
  
- template<typename T = RNG_TYPE_dqrng>
+template<typename T = RNG_TYPE_dqrng>
 ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InPlace_process(    HMCResult &result_input,
-                                                                                                 T &rng,
+                                                                                                 T &rng_main,
+                                                                                                 T &rng_nuisance,
                                                                                                  const std::string &Model_type,
                                                                                                  const bool  force_autodiff,
                                                                                                  const bool  force_PartialLog,
@@ -207,13 +208,13 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
 
       { /// draw velocity for main:
           //// Eigen::Matrix<double, -1, 1> std_norm_vec_main = Eigen::Matrix<double, -1, 1>::Zero(n_params_main);
-          generate_random_std_norm_vec_InPlace(result_input.main_velocity_0_vec(), rng);
+          generate_random_std_norm_vec_InPlace(result_input.main_velocity_0_vec(), rng_main);
           if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * result_input.main_velocity_0_vec();
           if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = result_input.main_velocity_0_vec().array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
       { /// draw velocity for nuisance:
           //// Eigen::Matrix<double, -1, 1> std_norm_vec_us = Eigen::Matrix<double, -1, 1>::Zero(n_nuisance);
-          generate_random_std_norm_vec_InPlace(result_input.us_velocity_0_vec(), rng);
+          generate_random_std_norm_vec_InPlace(result_input.us_velocity_0_vec(), rng_nuisance);
           result_input.us_velocity_0_vec().array() = ( result_input.us_velocity_0_vec().array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //.cast<float>() ;  
       }
 
@@ -233,7 +234,7 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
             EHMC_args_as_cpp_struct.tau_main = EHMC_args_as_cpp_struct.eps_main; 
           }
           //
-          EHMC_args_as_cpp_struct.tau_main_ii = generate_random_tau_ii(EHMC_args_as_cpp_struct.tau_main, rng);
+          EHMC_args_as_cpp_struct.tau_main_ii = generate_random_tau_ii(EHMC_args_as_cpp_struct.tau_main, rng_main);
           if (EHMC_args_as_cpp_struct.tau_main_ii < EHMC_args_as_cpp_struct.eps_main) { 
             EHMC_args_as_cpp_struct.tau_main_ii = EHMC_args_as_cpp_struct.eps_main; 
           }
@@ -255,7 +256,7 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
           log_posterior_0 =  result_input.lp_and_grad_outs()(0);
           U_x_initial = - log_posterior_0; //// initial energy
           
-          /////////  first do leapfrogs for MAIN parameters
+          /////////  do leapfrogs for ALL parameters
           if (metric_shape_main == "dense") {
                                                                                                  
                  leapfrog_integrator_dense_M_standard_HMC_dual_InPlace(     result_input.main_velocity_vec_proposed(), 
@@ -297,9 +298,6 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
                                                                            fn_lp_grad_InPlace);
             
           }
-          
-          
-          //////////// then do leapfrogs for NUISANCE parameters
  
           
           // /// proposed lp  
@@ -361,7 +359,7 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
                     result_input.us_div()   = 0;
                     result_input.us_p_jump() =   std::min(1.0, stan::math::exp(log_ratio));
                     
-                    const double rand_unif = generate_random_std_uniform(rng);
+                    const double rand_unif = generate_random_std_uniform(rng_main);
 
                     if  (rand_unif > result_input.main_p_jump())   {  // # reject proposal
                           result_input.reject_proposal_main();  // # reject proposal

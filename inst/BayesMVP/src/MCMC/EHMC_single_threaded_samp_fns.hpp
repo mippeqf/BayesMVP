@@ -46,8 +46,10 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                                                                     const bool burnin_indicator,
                                                                                     const int chain_id,
                                                                                     const int current_iter,
-                                                                                    const int seed_chain_i,
-                                                                                    T &rng_i,
+                                                                                    const int seed_main_chain_i,
+                                                                                    const int seed_nuisance_chain_i,
+                                                                                    T &rng_main_i,
+                                                                                    T &rng_nuisance_i,
                                                                                     const int n_iter,
                                                                                     const bool partitioned_HMC,
                                                                                     const std::string &Model_type,
@@ -73,7 +75,8 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
          for (int ii = 0; ii < n_iter; ++ii) {
                      
                      #if RNG_TYPE_CPP_STD == 1
-                        rng_i.seed(seed_chain_i + (ii + 1));
+                         rng_main_i.seed(seed_main_chain_i + (ii + 1));
+                         rng_nuisance_i.seed(1e6 + seed_nuisance_chain_i + (ii + 1));
                      #endif
                      
                      if (partitioned_HMC == true) {
@@ -83,7 +86,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                              
                                              stan::math::start_nested();
                                              fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(    result_input,    
-                                                                                                            rng_i,
+                                                                                                            rng_nuisance_i,
                                                                                                             Model_type, 
                                                                                                             force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                                             y_Eigen_i,
@@ -101,7 +104,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                    
                                              stan::math::start_nested();
                                              fn_standard_HMC_main_only_single_iter_InPlace_process(      result_input,   
-                                                                                                         rng_i,
+                                                                                                         rng_main_i,
                                                                                                          Model_type,  
                                                                                                          force_autodiff, force_PartialLog,  multi_attempts,
                                                                                                          y_Eigen_i,
@@ -119,7 +122,8 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                        
                                          stan::math::start_nested();
                                          fn_standard_HMC_dual_single_iter_InPlace_process(    result_input,    
-                                                                                              rng_i,
+                                                                                              rng_main_i,
+                                                                                              rng_nuisance_i,
                                                                                               Model_type, 
                                                                                               force_autodiff, force_PartialLog,  multi_attempts, 
                                                                                               y_Eigen_i,
