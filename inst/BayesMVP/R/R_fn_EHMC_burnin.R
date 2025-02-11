@@ -302,7 +302,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                 tau_main_prop <-  tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
                                 EHMC_args_as_Rcpp_List$tau_main  <-   if_not_NA_or_INF_else(tau_main_prop, 5.0 *   EHMC_args_as_Rcpp_List$eps_main)
                                 ##
-                                tau_us_prop <- tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us)
+                                tau_us_prop <- 3 ## tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us)
                                 EHMC_args_as_Rcpp_List$tau_us  <-   if_not_NA_or_INF_else(tau_us_prop, 5.0 * EHMC_args_as_Rcpp_List$eps_us)
                     
                       }
@@ -614,21 +614,21 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
           
                                       if (metric_shape_main == "diag") {
                                         
-                                            EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  matrix((diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)), ncol = 1)
-                                            EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- diag(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
-                                            EHMC_Metric_as_Rcpp_List$M_dense_main <- diag(diag(  1 /   EHMC_Metric_as_Rcpp_List$M_dense_main  ))
-                                            EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <- t(chol((EHMC_Metric_as_Rcpp_List$M_inv_dense_main)))
+                                                EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  matrix((diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)), ncol = 1)
+                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- diag(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
+                                                EHMC_Metric_as_Rcpp_List$M_dense_main <- diag(diag(  1 /   EHMC_Metric_as_Rcpp_List$M_dense_main  ))
+                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <- t(chol((EHMC_Metric_as_Rcpp_List$M_inv_dense_main)))
           
                                       } else if (metric_shape_main == "dense") {
                                         
-                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix((diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)), ncol = 1)
+                                                EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix((diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)), ncol = 1)
                                            
                                       } else if (metric_shape_main == "unit") { 
                                         
-                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(rep(1, n_params_main), ncol = 1)
-                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)
-                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  EHMC_Metric_as_Rcpp_List$M_inv_dense_main
-                                           EHMC_Metric_as_Rcpp_List$M_dense_sqrt <-           EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                                EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(rep(1, n_params_main), ncol = 1)
+                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)
+                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                                EHMC_Metric_as_Rcpp_List$M_dense_sqrt <-           EHMC_Metric_as_Rcpp_List$M_inv_dense_main
                                            
                                       }
                                       
@@ -638,32 +638,32 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
                                       if (metric_shape_main == "diag") {
                 
-                                              median_main_var <- 1 #  max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
-                                              print(median_main_var)
-                                              M_as_inv_snaper_s_vec_main_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical
-                                              M_as_inv_snaper_s_vec_main_empirical_scaled <- median_main_var * M_as_inv_snaper_s_vec_main_empirical
-                                              M_inv_as_snaper_s_vec_main_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_main_empirical_scaled
-                
-                                              ## now update M_inv_nuisance
-                                              M_inv_main_vec_temp <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
-                                              EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  ratio_M_main * M_inv_as_snaper_s_vec_main_empirical_scaled + (1 - ratio_M_main) * M_inv_main_vec_temp
-                                              EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
+                                                median_main_var <- 1 #  max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
+                                                print(median_main_var)
+                                                M_as_inv_snaper_s_vec_main_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical
+                                                M_as_inv_snaper_s_vec_main_empirical_scaled <- median_main_var * M_as_inv_snaper_s_vec_main_empirical
+                                                M_inv_as_snaper_s_vec_main_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_main_empirical_scaled
+                  
+                                                ## now update M_inv_nuisance
+                                                M_inv_main_vec_temp <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
+                                                EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  ratio_M_main * M_inv_as_snaper_s_vec_main_empirical_scaled + (1 - ratio_M_main) * M_inv_main_vec_temp
+                                                EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
               
                                       } else if (metric_shape_main == "dense") {
               
                   
-                                              median_nuisance_var <-  1 # max(diag(empicical_cov_main))
-                                              comment(print(empicical_cov_main))
-                                              inv_empicical_cov_main <-   BayesMVP:::Rcpp_solve(empicical_cov_main)
-                                              comment(print(inv_empicical_cov_main))
-                                              inv_empicical_cov_main_scaled <- median_nuisance_var * inv_empicical_cov_main
-                                            #  empicical_cov_main_scaled <- BayesMVP:::Rcpp_solve(inv_empicical_cov_main_scaled) #   1 / inv_empicical_cov_main_scaled
-                    
-                                          
-                                              EHMC_Metric_as_Rcpp_List$M_dense_main <-  ratio_M_main * inv_empicical_cov_main_scaled    +    (1 - ratio_M_main) *  EHMC_Metric_as_Rcpp_List$M_dense_main
-                                              EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- BayesMVP:::Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_dense_main)
-                                              EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
-                                              EHMC_burnin_as_Rcpp_List$M_dense_sqrt <-     pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
+                                                median_nuisance_var <-  1 # max(diag(empicical_cov_main))
+                                                comment(print(empicical_cov_main))
+                                                inv_empicical_cov_main <-   BayesMVP:::Rcpp_solve(empicical_cov_main)
+                                                comment(print(inv_empicical_cov_main))
+                                                inv_empicical_cov_main_scaled <- median_nuisance_var * inv_empicical_cov_main
+                                                #  empicical_cov_main_scaled <- BayesMVP:::Rcpp_solve(inv_empicical_cov_main_scaled) #   1 / inv_empicical_cov_main_scaled
+                      
+                                            
+                                                EHMC_Metric_as_Rcpp_List$M_dense_main <-  ratio_M_main * inv_empicical_cov_main_scaled    +    (1 - ratio_M_main) *  EHMC_Metric_as_Rcpp_List$M_dense_main
+                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- BayesMVP:::Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_dense_main)
+                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
+                                                EHMC_burnin_as_Rcpp_List$M_dense_sqrt <-     pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
               
                                       }
 
@@ -758,12 +758,14 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                             tau_main_ii_vec <- result[[3]][6,]
 
                          if (sample_nuisance == TRUE) { 
-                            theta_us_vectors_all_chains_input_from_R <-                  result[[4]]
-                            theta_us_0_burnin_tau_adapt_all_chains_input_from_R <-       result[[10]]
-                            theta_us_prop_burnin_tau_adapt_all_chains_input_from_R <-    result[[11]]
-                            velocity_us_0_burnin_tau_adapt_all_chains_input_from_R <-    result[[12]]
-                            velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R <- result[[13]]
-                            tau_us_ii_vec <-   result[[5]][6,]
+                           
+                                theta_us_vectors_all_chains_input_from_R <-                  result[[4]]
+                                theta_us_0_burnin_tau_adapt_all_chains_input_from_R <-       result[[10]]
+                                theta_us_prop_burnin_tau_adapt_all_chains_input_from_R <-    result[[11]]
+                                velocity_us_0_burnin_tau_adapt_all_chains_input_from_R <-    result[[12]]
+                                velocity_us_prop_burnin_tau_adapt_all_chains_input_from_R <- result[[13]]
+                                tau_us_ii_vec <-   result[[5]][6,]
+                                
                          }
  
           })
