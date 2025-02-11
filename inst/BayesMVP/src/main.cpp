@@ -829,15 +829,14 @@ Rcpp::List                         fn_find_initial_eps_main_and_us(           Ei
                                                                               Rcpp::List  EHMC_args_as_Rcpp_List, /// pass by ref. to modify (???)
                                                                               const Rcpp::List   EHMC_Metric_as_Rcpp_List
 ) {
-
-
+  
       const bool burnin = false;
       const int n_params_main = theta_main_vec_initial_ref.rows();
-      const int n_us = theta_us_vec_initial_ref.rows();
-      const int n_params = n_params_main + n_us;
+      const int n_nuisance =    theta_us_vec_initial_ref.rows();
+      const int n_params = n_params_main + n_nuisance;
       const int N = y_ref.rows();
 
-      HMCResult result_input(n_params_main, n_params, N);
+      HMCResult result_input(n_params_main, n_nuisance, N);
       result_input.main_theta_vec() = theta_main_vec_initial_ref;
       result_input.main_theta_vec_0()  = theta_main_vec_initial_ref;
       result_input.main_theta_vec_proposed()  = theta_main_vec_initial_ref;
@@ -861,7 +860,6 @@ Rcpp::List                         fn_find_initial_eps_main_and_us(           Ei
       Rcpp::List outs(2);
       outs(0) = eps_pair[0];
       outs(1) = eps_pair[1];
-
       return outs;
 
 }
