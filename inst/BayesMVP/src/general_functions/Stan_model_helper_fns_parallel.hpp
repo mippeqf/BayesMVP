@@ -110,8 +110,7 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
       //// std::cout << "Starting worker for chains " << begin << " to " << end << std::endl;
       
       // Process assigned chains
-      std::size_t kk = begin;
-      {
+      for (std::size_t kk = begin; kk < end; ++kk) {
         
               char* error_msg = nullptr;
               const int n_iter = unc_params_trace_input_main[0].cols();
@@ -135,56 +134,30 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
                 bs_rng_object = Stan_model_as_cpp_struct.bs_rng_construct(123 + kk, &error_msg);
               }
               
-              if (!bs_rng_object) {
-                ////  std::cout << "Failed to create RNG object: " << (error_msg ? error_msg : "Unknown error") << std::endl;
-              }
-              
-              if (!Stan_model_as_cpp_struct.bs_model_ptr) {
-                ////  std::cout << "Model pointer is null!" << std::endl;
-              } else {
-                ////  std::cout << "Model pointer is valid" << std::endl;
-              }
+              // if (!bs_rng_object) {
+              //      std::cout << "Failed to create RNG object: " << (error_msg ? error_msg : "Unknown error") << std::endl;
+              // }
+              // 
+              // if (!Stan_model_as_cpp_struct.bs_model_ptr) {
+              //      std::cout << "Model pointer is null!" << std::endl;
+              // } else {
+              //      std::cout << "Model pointer is valid" << std::endl;
+              // }
               
               for (int ii = 0; ii < n_iter; ii++) {
                 
                               theta_unc_full_input.setZero();
                               theta_constrain_full_output.setZero();
-                
-                              // if (ii % 100 == 0) { //// Print every 100th iteration
-                              //       std::cout << "Processing iteration " << ii << " for chain " << kk << std::endl;
-                              //    
-                              //     //// Print values before combining
-                              //     std::cout << "Main params for iter " << ii << ": "  << unc_params_trace_input_main[kk].col(ii).transpose().head(5) << std::endl; /// this is fine 
-                              //     
-                              //     if (include_nuisance) {
-                              //       std::cout << "Nuisance params for iter " << ii << ": "   << unc_params_trace_input_nuisance[kk].col(ii).transpose().head(5) << std::endl;  /// this is fine 
-                              //     }
-                              // 
-                              // }
-                                  
-                             // if (ii % 100 == 0) { //// Print every 100th iteration
-                             //      std::cout << "Full input size: " << theta_unc_full_input.size() << std::endl;
-                             //      std::cout << "Full output size: " << theta_constrain_full_output.size() << std::endl;
-                             //      std::cout << "Params to track size: " << pars_indicies_to_track.size() << std::endl;
-                             // }
-                                  
-                                  theta_unc_full_input.tail(n_params_main) = unc_params_trace_input_main[kk].col(ii);
+                              
+                              theta_unc_full_input.tail(n_params_main) = unc_params_trace_input_main[kk].col(ii);
                              
-                             // if (ii % 100 == 0) { //// Print every 100th iteration
-                             //      std::cout << "After copying main params: " << theta_unc_full_input.tail(5).transpose() << std::endl;
-                             // }
                             
                             if (include_nuisance == true) {
                                 theta_unc_full_input.head(n_nuisance) = unc_params_trace_input_nuisance[kk].col(ii);
                             } else {
                                 theta_unc_full_input.head(n_nuisance).array() = 0.0;
                             }
-                            
-                            // if (ii % 100 == 0) { // Print every 100th iteration
-                            //     // After combining into full input
-                            //     std::cout << "Combined input for iter " << ii << ": " << theta_unc_full_input.transpose().tail(5) << std::endl;  //// NOT OK
-                            // }
-                            
+
                             
                             //// Get constrained params. from vector of un-constrained params using bs_param_constrain:
                             int result = Stan_model_as_cpp_struct.bs_param_constrain( Stan_model_as_cpp_struct.bs_model_ptr,
@@ -202,58 +175,23 @@ struct ParamConstrainWorker : public RcppParallel::Worker {
                             if (result != 0) {
                               throw std::runtime_error("Constraint computation failed: " + std::string(error_msg ? error_msg : "Unknown error"));
                             }
-                         
-                            // if (ii % 100 == 0) { // Print every 100th iteration
-                            //     
-                            //     // After constraining, check if values were actually written
-                            //     std::cout << "Output after constraint op - head: " << theta_constrain_full_output.head(5).transpose() << std::endl;
-                            //     std::cout << "Output after constraint op - tail: " << theta_constrain_full_output.tail(5).transpose() << std::endl;
-                            //   
-                            //     // Check the indices we're using to extract values
-                            //   //  std::cout << "Indices to track: " << pars_indicies_to_track.head(5).transpose() << std::endl;
-                            //   
-                            //   // Show first few indices to track
-                            //   std::cout << "First few indices to track: ";
-                            //   for(int i = 0; i < std::min(5, (int)pars_indicies_to_track.size()); i++) {
-                            //       std::cout << pars_indicies_to_track[i] << " ";
-                            //   }
-                            //   
-                            //     std::cout << "Constrain operation result: " << result << std::endl;
-                            //     std::cout << "Input values - head: " << theta_unc_full_input.head(5).transpose() << std::endl;
-                            //     std::cout << "Input values - tail: " << theta_unc_full_input.tail(5).transpose() << std::endl;
-                            //     
-                            // }
                             
                             // chain_output.col(ii) = theta_constrain_full_output(pars_indicies_to_track);
                                chain_output.col(ii) = theta_constrain_full_output;
                             
-                            // if (ii % 100 == 0) { // Print every 100th iteration
-                            //     std::cout << "Chain output after copy - head: " << chain_output.col(ii).head(5).transpose() << std::endl;
-                            //     std::cout << "Chain output after copy - tail: " << chain_output.col(ii).tail(5).transpose() << std::endl;
-                            // }
-                            
-                            // if (ii % 100 == 0) { // Print every 100th iteration
-                            //     std::cout << "Sample values for iteration - head " << ii << ": "  << theta_constrain_full_output.head(5).transpose() << std::endl;
-                            //     std::cout << "Sample values for iteration - tail " << ii << ": "  << theta_constrain_full_output.tail(5).transpose() << std::endl;
-                            // }
                             
                 
               }
               
-             // // Store completed chain
-             //  std::cout << "chain_output size: " << chain_output.rows() << "x" << chain_output.cols() << std::endl;
-             // std::cout << "all_param_outs_trace_concurrent[kk] size: " << all_param_outs_trace_concurrent[kk].nrow() << "x" << all_param_outs_trace_concurrent[kk].ncol() << std::endl;
-              
               {
-                 //  std::lock_guard<std::mutex> lock(copy_mutex);
+                   std::lock_guard<std::mutex> lock(copy_mutex);
                 
                   for (int ii = 0; ii < n_iter; ii++) {
                     for (int param = 0; param < all_param_outs_trace[0].nrow(); ++param) {
                         all_param_outs_trace_concurrent[kk](param, ii) = chain_output(param, ii);
                     }
                   }
-                 // std::cout << "After final copy, first col: " << all_param_outs_trace_concurrent[kk].column(0)  << std::endl;
-                 // std::cout << "After final copy, last col: "  << all_param_outs_trace_concurrent[kk].column(n_iter - 1)  << std::endl;
+                  
               }
               
               // Clean up thread-local resources if needed
