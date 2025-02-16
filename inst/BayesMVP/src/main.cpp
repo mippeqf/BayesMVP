@@ -3,8 +3,7 @@
 //// #include <Rcpp.h>
 
 #define using_dqrng 0
-
-
+////
 #define RNG_TYPE_CPP_STD                  1
 ////
 #define RNG_TYPE_pcg32                    0
