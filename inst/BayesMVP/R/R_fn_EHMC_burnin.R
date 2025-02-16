@@ -568,14 +568,16 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
 
 
           { ## //// Update metric(s):
+                    
+                    ii_min <- (- 1 + round(n_burnin/5))
+                    #### ii_max <- (n_burnin - round(n_burnin/20))
+                    num_diff_e <- 0.00001
             
-                    if  ( (ii >  (- 1 + round(n_burnin/5))) && (ii %% interval_width_main == 0) && (ii < (n_burnin - round(n_burnin/10))) )  {
+                    if  ((ii < n_adapt) && (ii > ii_min) && (ii %% interval_width_main == 0))  {
             
                            if (partitioned_HMC == FALSE) { 
                                             
                                             if (metric_shape_main == "unit") { ## when partitioned_HMC is FALSE, setting "metric_shape_main" to "unit" results in the ENTIRE metric being a unit metric!!
-                                              
-                                                      metric_diag_vec <- rep(1, n_params)
                                                       
                                                       ## Metrics for main:
                                                       EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(rep(1, n_params_main), ncol = 1)
@@ -601,7 +603,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                       } else if (metric_type_main == "Hessian") {  ## then use the inverse-negative Hessian (diagonal) computed above
                                                           
                                                                outs <-     BayesMVP:::fn_Rcpp_compute_PD_Hessian_main(   shrinkage_factor = shrinkage_factor,
-                                                                                                                         num_diff_e = 0.00001,
+                                                                                                                         num_diff_e = num_diff_e,
                                                                                                                          Model_type = Model_type,
                                                                                                                          force_autodiff = force_autodiff,
                                                                                                                          force_PartialLog = force_PartialLog,
@@ -671,7 +673,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                       } else if (metric_type_main == "Hessian") {  ## then use the inverse-negative Hessian (diagonal) computed above
                                                         
                                                             outs <-     BayesMVP:::fn_Rcpp_compute_PD_Hessian_main(   shrinkage_factor = shrinkage_factor,
-                                                                                                                      num_diff_e = 0.00001,
+                                                                                                                      num_diff_e = num_diff_e,
                                                                                                                       Model_type = Model_type,
                                                                                                                       force_autodiff = force_autodiff,
                                                                                                                       force_PartialLog = force_PartialLog,
@@ -752,7 +754,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                                                                                                                    shrinkage_factor = shrinkage_factor,
                                                                                                                                                                    ratio_Hess_main = ratio_M_main,
                                                                                                                                                                    interval_width = interval_width_main,
-                                                                                                                                                                   num_diff_e = 0.00001,
+                                                                                                                                                                   num_diff_e = num_diff_e,
                                                                                                                                                                    Model_type = Model_type,
                                                                                                                                                                    force_autodiff = force_autodiff,
                                                                                                                                                                    force_PartialLog = force_PartialLog,
@@ -834,28 +836,28 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                      
                                    }
                                    
-                                   if  ( (ii < n_adapt) &&  (sample_nuisance == TRUE)  ) {
+                                   if (sample_nuisance == TRUE)  {
                                        
                                        try({
                                          
                                          if (metric_shape_nuisance == "unit") { 
                                            
-                                           #### ---- for unit metric --------------------------------------
-                                           EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  matrix(rep(1, n_nuisance), ncol = 1)
-                                           EHMC_Metric_as_Rcpp_List$M_us_vec <-      matrix(rep(1, n_nuisance), ncol = 1)
-                                           EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- matrix(rep(1, n_nuisance), ncol = 1)
+                                                 #### ---- for unit metric --------------------------------------
+                                                 EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  matrix(rep(1, n_nuisance), ncol = 1)
+                                                 EHMC_Metric_as_Rcpp_List$M_us_vec <-      matrix(rep(1, n_nuisance), ncol = 1)
+                                                 EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- matrix(rep(1, n_nuisance), ncol = 1)
                                            
                                          } else {
                                            
-                                           ## ------------------------------------------------------------------------------------------------------------------------------------------- 
-                                           max_var <- 1 #max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical)
-                                           M_as_inv_snaper_s_vec_us_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
-                                           M_as_inv_snaper_s_vec_us_empirical_scaled <- max_var * M_as_inv_snaper_s_vec_us_empirical
-                                           M_inv_as_snaper_s_vec_us_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_us_empirical_scaled
-                                           ## now update M_inv_nuisance:
-                                           EHMC_Metric_as_Rcpp_List$M_inv_us_vec <- ratio_M_us * M_inv_as_snaper_s_vec_us_empirical_scaled + (1 - ratio_M_us) * EHMC_Metric_as_Rcpp_List$M_inv_us_vec
-                                           EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- sqrt(1 /  EHMC_Metric_as_Rcpp_List$M_inv_us_vec)
-                                           EHMC_Metric_as_Rcpp_List$M_us_vec <- 1.0 / EHMC_Metric_as_Rcpp_List$M_inv_us_vec
+                                                 ## ------------------------------------------------------------------------------------------------------------------------------------------- 
+                                                 max_var <- 1 #max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical)
+                                                 M_as_inv_snaper_s_vec_us_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
+                                                 M_as_inv_snaper_s_vec_us_empirical_scaled <- max_var * M_as_inv_snaper_s_vec_us_empirical
+                                                 M_inv_as_snaper_s_vec_us_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_us_empirical_scaled
+                                                 ## now update M_inv_nuisance:
+                                                 EHMC_Metric_as_Rcpp_List$M_inv_us_vec <- ratio_M_us * M_inv_as_snaper_s_vec_us_empirical_scaled + (1 - ratio_M_us) * EHMC_Metric_as_Rcpp_List$M_inv_us_vec
+                                                 EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- sqrt(1 /  EHMC_Metric_as_Rcpp_List$M_inv_us_vec)
+                                                 EHMC_Metric_as_Rcpp_List$M_us_vec <- 1.0 / EHMC_Metric_as_Rcpp_List$M_inv_us_vec
                                            
                                          }
                                          
@@ -863,7 +865,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                      
                                    }
                              
-                           }
+                           } ## end of "else if (partitioned_HMC == TRUE)"
                       
                     } ## // end of "if  ( (ii >  (- 1 + round(n_burnin/5))) && (ii %% interval_width_main == 0) && (ii < (n_burnin - round(n_burnin/10))) )  {" loop
             
