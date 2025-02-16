@@ -73,15 +73,15 @@ override GCC_CPP_COMPILER=gcc
 #     override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
 # endif
 #### ---- To force AMD AOCC / Zen version 4 CPU's: ## ---- BOOKMARK
-# override CXX_COMPILER = "$(AMD_AOCC_CXX_COMPILER)"
-# override CPP_COMPILER = "$(AMD_AOCC_CPP_COMPILER)"
-# override CXX_STD = CXX17 # Use C++17
-# override CPU_BASE_FLAGS = -O3  -march=znver4  -mtune=znver4 ## BOOKMARK
-#### ---- To force gcc/g++: ## ---- BOOKMARK
-override CXX_COMPILER = "$(GCC_CXX_COMPILER)"
-override CPP_COMPILER = "$(GCC_CPP_COMPILER)"
-override CXX_STD = -std=gnu++17 # Use C++17
-override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
+override CXX_COMPILER = "$(AMD_AOCC_CXX_COMPILER)"
+override CPP_COMPILER = "$(AMD_AOCC_CPP_COMPILER)"
+override CXX_STD = CXX17 # Use C++17
+override CPU_BASE_FLAGS = -O3  -march=znver4  -mtune=znver4 ## BOOKMARK
+# #### ---- To force gcc/g++: ## ---- BOOKMARK
+# override CXX_COMPILER = "$(GCC_CXX_COMPILER)"
+# override CPP_COMPILER = "$(GCC_CPP_COMPILER)"
+# override CXX_STD = -std=gnu++17 # Use C++17
+# override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
 ##
 ##
 ## BASE_FLAGS +=  -mllvm   ### --openmp-opt-shared-limit=96  ### -inlinehint-threshold=20000000 # for clang++
@@ -206,13 +206,13 @@ override SHLIB_OPENMP_CXXFLAGS = $(SHLIB_OPENMP_CFLAGS)
 ##
 ####### ----- set MATH_FLAGS ---------------------------------------------------------------------------------------------------------
 ##
-override MATH_FLAGS = -fno-math-errno  -fno-signed-zeros -fno-trapping-math
+override MATH_FLAGS = ## -fno-math-errno -fno-signed-zeros -fno-trapping-math
 $(info MATH_FLAGS: $(MATH_FLAGS))
 ##
 ####### ----- set UNIX_FLAGS  (if any) ---------------------------------------------------------------------------------------------------------
 ##
-override UNIX_FLAGS = -ftls-model=global-dynamic ## Need this? ---- BOOKMARK
-$(info UNIX_FLAGS: $(UNIX_FLAGS))
+# override UNIX_FLAGS = -ftls-model=global-dynamic ## Need this? ---- BOOKMARK
+# $(info UNIX_FLAGS: $(UNIX_FLAGS))
 ##
 ####### ----- set BASE_FLAGS -----------------------------------------------------------------------------------------------------
 ##

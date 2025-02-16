@@ -209,10 +209,7 @@
     using RNG_TYPE_dqrng = Rcpp::XPtr<dqrng::random_64bit_generator>; 
 #elif RNG_TYPE_dqrng_xoshiro256plusplus == 1
     using RNG_TYPE_dqrng = dqrng::xoshiro256plus;
-    ////using RNG_TYPE_dqrng = Rcpp::XPtr<dqrng::random_64bit_generator>; 
-#endif
-
-#if RNG_TYPE_CPP_STD == 1
+#elif RNG_TYPE_CPP_STD == 1
     using RNG_TYPE_dqrng = std::mt19937;
 #endif
 
@@ -736,6 +733,49 @@ Rcpp::String  detect_vectorization_support() {
 
 
 
+
+// [[Rcpp::export]]
+Rcpp::List    fn_Rcpp_compute_PD_Hessian_main(        const double shrinkage_factor,
+                                                      const double num_diff_e,
+                                                      const std::string  Model_type,
+                                                      const bool force_autodiff,
+                                                      const bool force_PartialLog,
+                                                      const bool multi_attempts,
+                                                      const Eigen::Matrix<double, -1, 1> theta_main_vec,
+                                                      const Eigen::Matrix<double, -1, 1> theta_us_vec,
+                                                      const Eigen::Matrix<int, -1, -1> y,
+                                                      const Rcpp::List Model_args_as_Rcpp_List
+) {
+  
+          const int N = y.rows();
+          const int n_us = theta_us_vec.rows()  ;
+          const int n_params_main =  theta_main_vec.rows()  ;
+          const int n_params = n_params_main + n_us;
+          
+          const Model_fn_args_struct Model_args_as_cpp_struct = convert_R_List_to_Model_fn_args_struct(Model_args_as_Rcpp_List);
+          
+          
+          Eigen::Matrix<double, -1, -1> Hessian =   compute_PD_Hessian_main(   shrinkage_factor,
+                                                                               num_diff_e,
+                                                                               Model_type,
+                                                                               force_autodiff,
+                                                                               force_PartialLog,
+                                                                               multi_attempts,
+                                                                               theta_main_vec,
+                                                                               theta_us_vec,
+                                                                               y,
+                                                                               Model_args_as_cpp_struct);
+          
+          return Rcpp::List::create(
+            Rcpp::Named("Hessian") = Hessian
+          );
+  
+}
+
+
+
+
+
  
  
 
@@ -1160,7 +1200,7 @@ Eigen::Matrix<double, -1, 1> fn_Rcpp_wrapper_update_tau_w_diag_M_ADAM(    const 
 // [[Rcpp::export]]
 double   Rcpp_det(const Eigen::Matrix<double, -1, -1>  &mat) {
 
-  return(    (mat).determinant()   ) ;
+     return(    (mat).determinant()   ) ;
 
 }
 
@@ -1170,7 +1210,7 @@ double   Rcpp_det(const Eigen::Matrix<double, -1, -1>  &mat) {
 // [[Rcpp::export]]
 double   Rcpp_log_det(const Eigen::Matrix<double, -1, -1>  &mat) {
 
-  return (  stan::math::log( stan::math::abs(  (mat).determinant())  )  ) ;
+      return (  stan::math::log( stan::math::abs(  (mat).determinant())  )  ) ;
 
 }
 
@@ -1181,7 +1221,7 @@ double   Rcpp_log_det(const Eigen::Matrix<double, -1, -1>  &mat) {
 // [[Rcpp::export]]
 Eigen::Matrix<double, -1, -1>    Rcpp_solve(const Eigen::Matrix<double, -1, -1>  &mat) {
 
-  return mat.inverse(); //  fn_convert_EigenMat_to_RcppMat_dbl(fn_convert_RcppMat_to_EigenMat(mat).inverse());
+      return mat.inverse(); //  fn_convert_EigenMat_to_RcppMat_dbl(fn_convert_RcppMat_to_EigenMat(mat).inverse());
 
 }
 
@@ -1191,12 +1231,23 @@ Eigen::Matrix<double, -1, -1>    Rcpp_solve(const Eigen::Matrix<double, -1, -1> 
 // [[Rcpp::export]]
 Eigen::Matrix<double, -1, -1>  Rcpp_Chol(const Eigen::Matrix<double, -1, -1>  &mat) {
 
-  Eigen::Matrix<double, -1, -1>    res_Eigen = (  (mat).llt().matrixL() ).toDenseMatrix().matrix() ;
-  return  (res_Eigen);
+      Eigen::Matrix<double, -1, -1>    res_Eigen = (  (mat).llt().matrixL() ).toDenseMatrix().matrix() ;
+      return  (res_Eigen);
 
 }
 
 
+
+
+// [[Rcpp::export]]
+Eigen::Matrix<double, -1, -1>  Rcpp_near_PD(const Eigen::Matrix<double, -1, -1>  &mat) {
+  
+      Eigen::Matrix<double, -1, -1>    res_Eigen = near_PD(mat);
+      return  res_Eigen;
+  
+} 
+
+ 
 
 
 
