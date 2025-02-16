@@ -22,9 +22,9 @@ using namespace Eigen;
 // Helper to check positive-definiteness using Eigen's LDLT decomposition
 bool is_positive_definite(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  mat) {
   
-  Eigen::LLT<Eigen::Matrix<double, -1, -1> > llt((mat + mat.transpose()) * 0.50);  /// make symmetric first  and then attempt Cholesky factorisation
-  
-  return llt.info() == Eigen::Success;
+        Eigen::LLT<Eigen::Matrix<double, -1, -1> > llt((mat + mat.transpose()) * 0.50);  /// make symmetric first  and then attempt Cholesky factorisation
+        
+        return llt.info() == Eigen::Success;
   
 }
 
@@ -32,27 +32,27 @@ bool is_positive_definite(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> 
 // Helper function to make a matrix positive-definite
 Eigen::Matrix<double, -1, -1> near_PD(const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  mat) {
   
-   // Eigen::Matrix<double, -1, -1>  symMat = (mat + mat.transpose()) / 2.0; 
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, -1, -1> > es((mat + mat.transpose()) * 0.50); // Make symmetric and apply es
-  Eigen::Matrix<double, -1, 1>   eigenValues = es.eigenvalues();
-  Eigen::Matrix<double, -1, -1>  eigenVectors = es.eigenvectors();
-  
-  
-  double max_eigenvalue = eigenValues.maxCoeff();
-  double epsilon = std::max(1e-8, 1e-6 * max_eigenvalue);
-  for (int i = 0; i < eigenValues.size(); ++i) {
-    eigenValues(i) = std::max(eigenValues(i), epsilon);
-  }
-  
-  // // Shift eigenvalues to ensure all are positive
-  // for (int i = 0; i < eigenValues.size(); ++i) {
-  //   if (eigenValues(i) < 0.0) {
-  //     eigenValues(i) = 1e-6; // Set negative eigenvalues to a small positive value
-  //   }
-  // } 
-  
-  // Recompose the matrix with positive eigenvalues
-  return eigenVectors * eigenValues.asDiagonal() * eigenVectors.transpose();
+         // Eigen::Matrix<double, -1, -1>  symMat = (mat + mat.transpose()) / 2.0; 
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, -1, -1> > es((mat + mat.transpose()) * 0.50); // Make symmetric and apply es
+        Eigen::Matrix<double, -1, 1>   eigenValues = es.eigenvalues();
+        Eigen::Matrix<double, -1, -1>  eigenVectors = es.eigenvectors();
+        
+        
+        double max_eigenvalue = eigenValues.maxCoeff();
+        double epsilon = std::max(1e-8, 1e-6 * max_eigenvalue);
+        for (int i = 0; i < eigenValues.size(); ++i) {
+          eigenValues(i) = std::max(eigenValues(i), epsilon);
+        }
+        
+        // // Shift eigenvalues to ensure all are positive
+        // for (int i = 0; i < eigenValues.size(); ++i) {
+        //   if (eigenValues(i) < 0.0) {
+        //     eigenValues(i) = 1e-6; // Set negative eigenvalues to a small positive value
+        //   }
+        // } 
+        
+        // Recompose the matrix with positive eigenvalues
+        return eigenVectors * eigenValues.asDiagonal() * eigenVectors.transpose();
   
 }
 
@@ -145,6 +145,99 @@ Eigen::Matrix<double, -1, -1> num_diff_Hessian_main_given_nuisance(   const doub
   return Hessian;
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+Eigen::Matrix<double, -1, -1>  compute_PD_Hessian_main(     const double shrinkage_factor,
+                                                            const double num_diff_e,
+                                                            const std::string  &Model_type,
+                                                            const bool force_autodiff,
+                                                            const bool force_PartialLog,
+                                                            const bool multi_attemps, 
+                                                            const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_main_vec_ref,
+                                                            const Eigen::Ref<const Eigen::Matrix<double, -1, 1>> theta_us_vec_ref,
+                                                            const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
+                                                            const Model_fn_args_struct  &Model_args_as_cpp_struct
+) {
+  
+  
+          const int n_params_main = theta_main_vec_ref.rows();
+          Eigen::Matrix<double, -1, -1>    Hessian(n_params_main, n_params_main);
+          
+          
+          if (Model_type == "Stan") {
+                  
+                  Stan_model_struct Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(  Model_args_as_cpp_struct.model_so_file, 
+                                                                                             Model_args_as_cpp_struct.json_file_path, 
+                                                                                             123);
+                  
+                  
+                  //// compute proposed Hessian
+                  Hessian  = num_diff_Hessian_main_given_nuisance(    num_diff_e,
+                                                                      shrinkage_factor,
+                                                                      Model_type,
+                                                                      force_autodiff,
+                                                                      force_PartialLog,
+                                                                      multi_attemps,
+                                                                      theta_main_vec_ref,
+                                                                      theta_us_vec_ref, 
+                                                                      y_ref,
+                                                                      Model_args_as_cpp_struct, 
+                                                                      Stan_model_as_cpp_struct);
+                  
+                  
+                  
+                  //// destroy Stan model object
+                  fn_bs_destroy_Stan_model(Stan_model_as_cpp_struct);
+            
+          } else { 
+            
+                  Stan_model_struct Stan_model_as_cpp_struct; /// dummy struct 
+                  
+                  //// compute proposed Hessian
+                  Hessian  = num_diff_Hessian_main_given_nuisance(    num_diff_e,
+                                                                      shrinkage_factor,
+                                                                      Model_type,
+                                                                      force_autodiff,
+                                                                      force_PartialLog,
+                                                                      multi_attemps,
+                                                                      theta_main_vec_ref,
+                                                                      theta_us_vec_ref, 
+                                                                      y_ref,
+                                                                      Model_args_as_cpp_struct, 
+                                                                      Stan_model_as_cpp_struct);
+            
+          }
+  
+  
+          // force-symmetric positive-definiteness check
+          if (!is_positive_definite(Hessian)) {
+            Hessian = near_PD(Hessian); // Make the Hessian positive-definite
+          }
+          
+          return Hessian;
+          
+  
+} 
+
+
+
+
+
+
+
+
+
+
 
 
 

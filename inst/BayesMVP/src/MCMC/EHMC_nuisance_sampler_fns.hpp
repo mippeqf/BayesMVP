@@ -293,54 +293,52 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
               
               log_posterior_0 =  result_input.lp_and_grad_outs()(0);
               U_x_initial = - log_posterior_0; //// initial energy
-    
-           if (EHMC_args_as_cpp_struct.diffusion_HMC == true) {
-
-                   //// make params/containers for sampling u's using advanced HMC
-                   Eigen::Matrix<double, -1, 1>  theta_us_vec_current_segment =     result_input.us_theta_vec();
-                   Eigen::Matrix<double, -1, 1>  velocity_us_vec_current_segment =  result_input.us_velocity_vec();
-
-                   leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(   result_input.us_velocity_vec_proposed(),
-                                                                                result_input.us_theta_vec_proposed(),
-                                                                                result_input.lp_and_grad_outs(),
-                                                                                theta_us_vec_current_segment,
-                                                                                velocity_us_vec_current_segment,
-                                                                                result_input.main_theta_vec(),
-                                                                                EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec,
-                                                                                y_ref,
-                                                                                L_ii,
-                                                                                eps_1, cos_eps_2, sin_eps_2,
-                                                                                Model_type,
-                                                                                force_autodiff, force_PartialLog, multi_attempts,
-                                                                                grad_option,
-                                                                                Model_args_as_cpp_struct,
-                                                                                Stan_model_as_cpp_struct,
-                                                                                fn_lp_grad_InPlace);
-
-           } else  {
-
-                  leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(   result_input.us_velocity_vec_proposed(),
-                                                                              result_input.us_theta_vec_proposed(),
-                                                                              result_input.lp_and_grad_outs(),
-                                                                              result_input.main_theta_vec(),
-                                                                              EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec,
-                                                                              y_ref,
-                                                                              L_ii,
-                                                                              EHMC_args_as_cpp_struct.eps_us,
-                                                                              Model_type,
-                                                                              force_autodiff, force_PartialLog, multi_attempts,
-                                                                              grad_option,
-                                                                              Model_args_as_cpp_struct,
-                                                                              Stan_model_as_cpp_struct,
-                                                                              fn_lp_grad_InPlace);
-
-
-
-           }
+      
+              if (EHMC_args_as_cpp_struct.diffusion_HMC == true) {
+  
+                         //// make params/containers for sampling u's using advanced HMC
+                         Eigen::Matrix<double, -1, 1>  theta_us_vec_current_segment =     result_input.us_theta_vec();
+                         Eigen::Matrix<double, -1, 1>  velocity_us_vec_current_segment =  result_input.us_velocity_vec();
+      
+                         leapfrog_integrator_diag_M_diffusion_HMC_nuisance_InPlace(   result_input.us_velocity_vec_proposed(),
+                                                                                      result_input.us_theta_vec_proposed(),
+                                                                                      result_input.lp_and_grad_outs(),
+                                                                                      theta_us_vec_current_segment,
+                                                                                      velocity_us_vec_current_segment,
+                                                                                      result_input.main_theta_vec(),
+                                                                                      EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec,
+                                                                                      y_ref,
+                                                                                      L_ii,
+                                                                                      eps_1, cos_eps_2, sin_eps_2,
+                                                                                      Model_type,
+                                                                                      force_autodiff, force_PartialLog, multi_attempts,
+                                                                                      grad_option,
+                                                                                      Model_args_as_cpp_struct,
+                                                                                      Stan_model_as_cpp_struct,
+                                                                                      fn_lp_grad_InPlace);
+  
+              } else  {
+  
+                        leapfrog_integrator_diag_M_standard_HMC_nuisance_InPlace(   result_input.us_velocity_vec_proposed(),
+                                                                                    result_input.us_theta_vec_proposed(),
+                                                                                    result_input.lp_and_grad_outs(),
+                                                                                    result_input.main_theta_vec(),
+                                                                                    EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec,
+                                                                                    y_ref,
+                                                                                    L_ii,
+                                                                                    EHMC_args_as_cpp_struct.eps_us,
+                                                                                    Model_type,
+                                                                                    force_autodiff, force_PartialLog, multi_attempts,
+                                                                                    grad_option,
+                                                                                    Model_args_as_cpp_struct,
+                                                                                    Stan_model_as_cpp_struct,
+                                                                                    fn_lp_grad_InPlace);
+  
+              }
            
-                  //// proposed lp  
-                  log_posterior_prop =   result_input.lp_and_grad_outs()(0);
-                  U_x_prop = - log_posterior_prop;
+              //// proposed lp  
+              log_posterior_prop =   result_input.lp_and_grad_outs()(0);
+              U_x_prop = - log_posterior_prop;
                   
             //////////////////////////////////////////////////////////////////    M-H acceptance step  (i.e, Accept/Reject step)
             {
@@ -373,8 +371,9 @@ ALWAYS_INLINE  void         fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_p
                     result_input.us_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                     
                     const double rand_unif = generate_random_std_uniform(rng_nuisance);
+                    const double log_rand_unif = stan::math::log(rand_unif);
                     
-                    if  (rand_unif > result_input.us_p_jump())   {  // # reject proposal
+                    if  (log_rand_unif > log_ratio)   {  // # reject proposal
                        result_input.reject_proposal_us();  // # reject proposal
                     } else {   // # accept proposal
                        result_input.accept_proposal_us(); // # accept proposal

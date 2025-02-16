@@ -49,8 +49,13 @@ std::vector<double>                                   fn_find_initial_eps_main_a
    //        RNG_TYPE_dqrng rng_nuisance_i = dqrng::generator<pcg64>(seed + 1e6, 1);
    // // #endif
    
-   std::mt19937 rng_main_i(seed);
-   std::mt19937 rng_nuisance_i(seed + 1e6);
+   #if RNG_TYPE_CPP_STD == 1
+       std::mt19937 rng_main_i(seed);
+       std::mt19937 rng_nuisance_i(seed + 1e6);
+   #elif RNG_TYPE_dqrng_xoshiro256plusplus == 1
+       dqrng::xoshiro256plus rng_main_i(seed);
+       dqrng::xoshiro256plus rng_nuisance_i(seed + 1e6);
+   #endif
    
    const int N = Model_args_as_cpp_struct.N;
    const int n_nuisance =  Model_args_as_cpp_struct.n_nuisance;
@@ -69,9 +74,9 @@ std::vector<double>                                   fn_find_initial_eps_main_a
    
    if (Model_args_as_cpp_struct.model_so_file != "none") {
      
-     Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file, 
-                                                            Model_args_as_cpp_struct.json_file_path, 
-                                                            seed);
+         Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(Model_args_as_cpp_struct.model_so_file, 
+                                                                Model_args_as_cpp_struct.json_file_path, 
+                                                                seed);
      
    }
    
@@ -95,6 +100,7 @@ std::vector<double>                                   fn_find_initial_eps_main_a
        if (partitioned_HMC == true) {
                    
                    ////  sample nuisance
+                   stan::math::start_nested();
                    fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(     result_input,  
                                                                                    rng_nuisance_i,
                                                                                    Model_type,  
@@ -104,9 +110,11 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                                                                                    EHMC_args_as_cpp_struct, 
                                                                                    EHMC_Metric_struct_as_cpp_struct, 
                                                                                    Stan_model_as_cpp_struct); 
+                   stan::math::recover_memory_nested(); 
                    
                    
                    ////  sample main (cond. on nuisance)
+                   stan::math::start_nested();
                    fn_standard_HMC_main_only_single_iter_InPlace_process(          result_input,  
                                                                                    rng_main_i,
                                                                                    Model_type,  
@@ -116,10 +124,12 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                                                                                    EHMC_args_as_cpp_struct, 
                                                                                    EHMC_Metric_struct_as_cpp_struct, 
                                                                                    Stan_model_as_cpp_struct); 
+                   stan::math::recover_memory_nested(); 
        
        } else { 
              
                    //// Sample all params (standard HMC)
+                   stan::math::start_nested();
                    fn_standard_HMC_dual_single_iter_InPlace_process( result_input,  
                                                                      rng_main_i,
                                                                      rng_nuisance_i,
@@ -130,6 +140,7 @@ std::vector<double>                                   fn_find_initial_eps_main_a
                                                                      EHMC_args_as_cpp_struct, 
                                                                      EHMC_Metric_struct_as_cpp_struct, 
                                                                      Stan_model_as_cpp_struct); 
+                   stan::math::recover_memory_nested(); 
              
        }
        
@@ -216,10 +227,13 @@ std::vector<double>                                   fn_find_initial_eps_main_a
  
  
  
+
  
  
-// 
-// 
+ 
+ 
+ 
+
 // double                                   fn_find_initial_eps_main(                HMCResult &result_input,
 //                                                                                   const double seed,
 //                                                                                   const bool  burnin, 

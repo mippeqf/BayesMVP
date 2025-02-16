@@ -114,6 +114,7 @@ public:
           //// this only gets used for built-in models, for Stan models log_lik must be defined in the "transformed parameters" block.
           std::vector<Rcpp::NumericMatrix> &trace_output_log_lik;   
           
+          
   ////////////// Constructor (initialise these with the SOURCE format)
   RcppParallel_EHMC_sampling(  const int  &n_threads_R,
                                const uint64_t  &global_seed_R,
@@ -190,9 +191,11 @@ public:
               const uint64_t global_seed_nuisance = global_seed + 1e6;
               const int global_seed_main_int =      static_cast<int>(global_seed_main);
               const int global_seed_nuisance_int =  static_cast<int>(global_seed_nuisance);
-              // #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-              //      dqrng::xoshiro256plus global_rng(global_seed_main_int);
-              // #endif
+              
+              #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
+                      dqrng::xoshiro256plus global_rng_main(global_seed_main_int);
+                      dqrng::xoshiro256plus global_rng_nuisance(global_seed_nuisance_int);
+              #endif
       
               //// Process all chains from begin to end:
               for (std::size_t i = begin; i < end; ++i) {
@@ -201,38 +204,28 @@ public:
                            const int seed_main_int_i =     global_seed_main_int +     n_iter*(1 + chain_id_int);
                            const int seed_nuisance_int_i = global_seed_nuisance_int + n_iter*(1 + chain_id_int);
                            
-                           // #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-                           //            thread_local dqrng::xoshiro256plus rng_main_i(global_rng);      // make thread local copy of rng 
-                           //            thread_local dqrng::xoshiro256plus rng_nuisance_i(global_rng);      // make thread local copy of rng 
-                           //            rng_main_i.long_jump(n_iter*(1 + chain_id_int));  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           //            rng_nuisance_i.long_jump(n_iter*(1 + chain_id_int));  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           // #elif RNG_TYPE_CPP_STD == 1
-                           thread_local std::mt19937 rng_main_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           thread_local std::mt19937 rng_nuisance_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           rng_main_i.seed(seed_main_int_i); // set / re-set the seed
-                           rng_nuisance_i.seed(seed_nuisance_int_i); // set / re-set the seed
-                           // #elif RNG_TYPE_pcg64 == 1
-                           //            pcg_extras::seed_seq_from<std::random_device> global_seed;
-                           //            pcg_extras::seed_seq_from<std::random_device> global_seed;
-                           //            thread_local pcg64 rng_main_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           //            thread_local pcg64 rng_nuisance_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           // #elif RNG_TYPE_pcg32 == 1
-                           //            pcg_extras::seed_seq_from<std::random_device> global_seed;
-                           //            pcg_extras::seed_seq_from<std::random_device> global_seed;
-                           //            thread_local pcg32 rng_main_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           //            thread_local pcg32 rng_nuisance_i(global_seed, n_iter*(1 + chain_id_int)); // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           // #endif
+                           #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
+                                 thread_local dqrng::xoshiro256plus rng_main_i(global_rng_main);      // make thread local copy of rng 
+                                 thread_local dqrng::xoshiro256plus rng_nuisance_i(global_rng_nuisance);      // make thread local copy of rng 
+                                 rng_main_i.long_jump(seed_main_int_i);  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                 rng_nuisance_i.long_jump(seed_nuisance_int_i);  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           #elif RNG_TYPE_CPP_STD == 1
+                                 thread_local std::mt19937 rng_main_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                 thread_local std::mt19937 rng_nuisance_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                 rng_main_i.seed(seed_main_int_i); // set / re-set the seed
+                                 rng_nuisance_i.seed(seed_nuisance_int_i); // set / re-set the seed
+                           #endif
                           
-                          const int N = Model_args_as_cpp_struct_copies[i].N;
-                          const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
-                          const int n_params_main = Model_args_as_cpp_struct_copies[i].n_params_main;
-                          const int n_params = n_params_main + n_us;
+                           const int N = Model_args_as_cpp_struct_copies[i].N;
+                           const int n_us =  Model_args_as_cpp_struct_copies[i].n_nuisance;
+                           const int n_params_main = Model_args_as_cpp_struct_copies[i].n_params_main;
+                           const int n_params = n_params_main + n_us;
                           
-                          thread_local stan::math::ChainableStack ad_tape;     // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                          thread_local stan::math::nested_rev_autodiff nested; // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           thread_local stan::math::ChainableStack ad_tape;     // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           thread_local stan::math::nested_rev_autodiff nested; // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                            
-                          const bool burnin_indicator = false;
-                          const int current_iter = 0; // gets assigned later for post-burnin
+                           const bool burnin_indicator = false;
+                           const int current_iter = 0; // gets assigned later for post-burnin
                       
                     
                           {

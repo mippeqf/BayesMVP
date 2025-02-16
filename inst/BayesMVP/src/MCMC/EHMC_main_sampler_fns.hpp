@@ -369,37 +369,37 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                 
                 if (metric_shape_main == "dense") { 
                   
-                    leapfrog_integrator_dense_M_standard_HMC_main_InPlace(      result_input.main_velocity_vec_proposed(),
-                                                                                result_input.main_theta_vec_proposed(),
-                                                                                result_input.lp_and_grad_outs(),
-                                                                                result_input.us_theta_vec(),
-                                                                                EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main,
-                                                                                y_ref,
-                                                                                L_ii,
-                                                                                EHMC_args_as_cpp_struct.eps_main,
-                                                                                Model_type,
-                                                                                force_autodiff, force_PartialLog, multi_attempts,
-                                                                                grad_option,
-                                                                                Model_args_as_cpp_struct,
-                                                                                Stan_model_as_cpp_struct,
-                                                                                fn_lp_grad_InPlace);
+                          leapfrog_integrator_dense_M_standard_HMC_main_InPlace(      result_input.main_velocity_vec_proposed(),
+                                                                                      result_input.main_theta_vec_proposed(),
+                                                                                      result_input.lp_and_grad_outs(),
+                                                                                      result_input.us_theta_vec(),
+                                                                                      EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main,
+                                                                                      y_ref,
+                                                                                      L_ii,
+                                                                                      EHMC_args_as_cpp_struct.eps_main,
+                                                                                      Model_type,
+                                                                                      force_autodiff, force_PartialLog, multi_attempts,
+                                                                                      grad_option,
+                                                                                      Model_args_as_cpp_struct,
+                                                                                      Stan_model_as_cpp_struct,
+                                                                                      fn_lp_grad_InPlace);
                   
                 } else { 
                   
-                  leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       result_input.main_velocity_vec_proposed(),
-                                                                              result_input.main_theta_vec_proposed(),
-                                                                              result_input.lp_and_grad_outs(),
-                                                                              result_input.us_theta_vec(),
-                                                                              EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec,
-                                                                              y_ref,
-                                                                              L_ii,
-                                                                              EHMC_args_as_cpp_struct.eps_main,
-                                                                              Model_type,
-                                                                              force_autodiff, force_PartialLog, multi_attempts,
-                                                                              grad_option,
-                                                                              Model_args_as_cpp_struct,
-                                                                              Stan_model_as_cpp_struct,
-                                                                              fn_lp_grad_InPlace);
+                          leapfrog_integrator_diag_M_standard_HMC_main_InPlace(       result_input.main_velocity_vec_proposed(),
+                                                                                      result_input.main_theta_vec_proposed(),
+                                                                                      result_input.lp_and_grad_outs(),
+                                                                                      result_input.us_theta_vec(),
+                                                                                      EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec,
+                                                                                      y_ref,
+                                                                                      L_ii,
+                                                                                      EHMC_args_as_cpp_struct.eps_main,
+                                                                                      Model_type,
+                                                                                      force_autodiff, force_PartialLog, multi_attempts,
+                                                                                      grad_option,
+                                                                                      Model_args_as_cpp_struct,
+                                                                                      Stan_model_as_cpp_struct,
+                                                                                      fn_lp_grad_InPlace);
                   
                 }
                 
@@ -438,8 +438,9 @@ ALWAYS_INLINE  void                                        fn_standard_HMC_main_
                           result_input.main_p_jump() = std::min(1.0, stan::math::exp(log_ratio));
                           
                           const double rand_unif = generate_random_std_uniform(rng_main);
+                          const double log_rand_unif = stan::math::log(rand_unif);
     
-                          if  (rand_unif > result_input.main_p_jump())   {  // # reject proposal
+                          if  (log_rand_unif > log_ratio)   {  // # reject proposal
                                  result_input.reject_proposal_main();  // # reject proposal
                           } else {   
                                  result_input.accept_proposal_main(); // # accept proposal

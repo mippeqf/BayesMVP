@@ -32,9 +32,12 @@ using namespace Rcpp;
 using namespace Eigen;
  
  
+
+
+
 static std::mutex print_mutex;  //// global mutex 
-static std::mutex result_mutex_1; //// global mutex 
-static std::mutex result_mutex_2; //// global mutex 
+static std::mutex result_mutex_1; //// global mutex
+static std::mutex result_mutex_2; //// global mutex
 
 
  
@@ -77,7 +80,10 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                      #if RNG_TYPE_CPP_STD == 1
                          rng_main_i.seed(seed_main_chain_i + (ii + 1));
                          rng_nuisance_i.seed(1e6 + seed_nuisance_chain_i + (ii + 1));
-                     #endif
+                     #elif RNG_TYPE_dqrng_xoshiro256plusplus == 1
+                         rng_main_i.long_jump(seed_main_chain_i + (ii + 1));
+                         rng_nuisance_i.long_jump(1e6 + seed_nuisance_chain_i + (ii + 1));
+                     #endif 
                      
                      if (partitioned_HMC == true) {
                    
@@ -99,7 +105,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                              HMC_output_single_chain_i.diagnostics_div_us()(ii) =  result_input.us_div();
                                    
                                  } /// end of nuisance-part of iteration
-                                 
+                               
                                  { /// sample main GIVEN u's
                                    
                                              stan::math::start_nested();
@@ -119,42 +125,42 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                  } /// end of main_params part of iteration
                      
                      } else {  //// sample all params at once 
-                       
-                                         stan::math::start_nested();
-                                         fn_standard_HMC_dual_single_iter_InPlace_process(    result_input,    
-                                                                                              rng_main_i,
-                                                                                              rng_nuisance_i,
-                                                                                              Model_type, 
-                                                                                              force_autodiff, force_PartialLog,  multi_attempts, 
-                                                                                              y_Eigen_i,
-                                                                                              Model_args_as_cpp_struct,   
-                                                                                              EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
-                                                                                              Stan_model_as_cpp_struct);
-                                         stan::math::recover_memory_nested(); 
-                                         
-                                         HMC_output_single_chain_i.diagnostics_p_jump_us()(ii) =  result_input.us_p_jump();
-                                         HMC_output_single_chain_i.diagnostics_div_us()(ii) =  result_input.us_div();
-                                         HMC_output_single_chain_i.diagnostics_p_jump_main()(ii) =  result_input.main_p_jump();
-                                         HMC_output_single_chain_i.diagnostics_div_main()(ii) =  result_input.main_div();
+                           
+                                             stan::math::start_nested();
+                                             fn_standard_HMC_dual_single_iter_InPlace_process(    result_input,    
+                                                                                                  rng_main_i,
+                                                                                                  rng_nuisance_i,
+                                                                                                  Model_type, 
+                                                                                                  force_autodiff, force_PartialLog,  multi_attempts, 
+                                                                                                  y_Eigen_i,
+                                                                                                  Model_args_as_cpp_struct,   
+                                                                                                  EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
+                                                                                                  Stan_model_as_cpp_struct);
+                                             stan::math::recover_memory_nested(); 
+                                             
+                                             HMC_output_single_chain_i.diagnostics_p_jump_us()(ii) =  result_input.us_p_jump();
+                                             HMC_output_single_chain_i.diagnostics_div_us()(ii) =  result_input.us_div();
+                                             HMC_output_single_chain_i.diagnostics_p_jump_main()(ii) =  result_input.main_p_jump();
+                                             HMC_output_single_chain_i.diagnostics_div_main()(ii) =  result_input.main_div();
                                          
                      }
                      
                      //// store iteration ii 
                      {
                          
-                         std::lock_guard<std::mutex> lock(result_mutex_1);  
-                         
-                         // HMC_output_single_chain_i.store_iteration(ii, sample_nuisance);
-                         HMC_output_single_chain_i.trace_main().col(ii) = result_input.main_theta_vec(); 
-  
-                         if (sample_nuisance == true) {
-                              HMC_output_single_chain_i.trace_div()(0, ii) =  (0.50 * (result_input.main_div() + result_input.us_div()));
-                              HMC_output_single_chain_i.trace_nuisance().col(ii) = result_input.us_theta_vec();  
-                         } else {
-                              HMC_output_single_chain_i.trace_div()(0, ii) = result_input.main_div();
-                         }
-                         
-                         HMC_output_single_chain_i.trace_log_lik().col(ii) = result_input.log_lik();
+                             std::lock_guard<std::mutex> lock(result_mutex_1);  
+                             
+                             // HMC_output_single_chain_i.store_iteration(ii, sample_nuisance);
+                             HMC_output_single_chain_i.trace_main().col(ii) = result_input.main_theta_vec(); 
+      
+                             if (sample_nuisance == true) {
+                                  HMC_output_single_chain_i.trace_div()(0, ii) =  (0.50 * (result_input.main_div() + result_input.us_div()));
+                                  HMC_output_single_chain_i.trace_nuisance().col(ii) = result_input.us_theta_vec();  
+                             } else {
+                                  HMC_output_single_chain_i.trace_div()(0, ii) = result_input.main_div();
+                             }
+                             
+                             HMC_output_single_chain_i.trace_log_lik().col(ii) = result_input.log_lik();
                          
                      }
                        
