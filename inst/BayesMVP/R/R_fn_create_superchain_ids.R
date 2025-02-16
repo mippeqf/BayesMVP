@@ -1,8 +1,9 @@
 
+## Create superchain IDs for chain grouping when many chains are used
 
 
-#' Create superchain IDs for chain grouping when many chains are used
-#' @keywords internal 
+#' #' create_superchain_ids
+#' @keywords internal
 #' @export
 create_superchain_ids <- function(n_superchains,
                                   n_chains) {

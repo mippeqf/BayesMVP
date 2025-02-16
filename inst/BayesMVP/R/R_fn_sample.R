@@ -67,8 +67,8 @@ R_fn_sample_model  <-    function(      Model_type,
                 }
  
                 Model_args_as_Rcpp_List <- init_object$Model_args_as_Rcpp_List
-                print(paste("Model_args_as_Rcpp_List = "))
-                print(str(Model_args_as_Rcpp_List))
+                # print(paste("Model_args_as_Rcpp_List = "))
+                # print(str(Model_args_as_Rcpp_List))
                 
                 bs_model <- init_object$bs_model
                 
@@ -205,7 +205,8 @@ R_fn_sample_model  <-    function(      Model_type,
                           }
         
         
-                          RcppParallel::setThreadOptions(numThreads = n_chains_sampling);
+                          ## RcppParallel::setThreadOptions(numThreads = n_chains_sampling); #### BOOKMARK
+                          RcppParallel::setThreadOptions(numThreads = parallel::detectCores()); #### BOOKMARK
                           
                           if (parallel_method == "OpenMP") { 
                             fn <- BayesMVP:::Rcpp_fn_OpenMP_EHMC_sampling

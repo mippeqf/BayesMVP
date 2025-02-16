@@ -1171,14 +1171,14 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                         if (partitioned_HMC == TRUE) { # if NOT sampling all parameters at once
                                                   cat(colourise(    (paste("p_jump_main = ", round(p_jump_main, 3)))          , "green"), "\n")
                                                   cat(colourise(    (paste("eps_main = ", round(EHMC_args_as_Rcpp_List$eps_main, 3)))          , "blue"), "\n")
-                                                  comment(print(paste("tau_main = ",  round(EHMC_args_as_Rcpp_List$tau_main, 3))))
-                                                  comment(print(paste("L_main = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_main/EHMC_args_as_Rcpp_List$eps_main), 0))))
+                                                  message(print(paste("tau_main = ",  round(EHMC_args_as_Rcpp_List$tau_main, 3))))
+                                                  message(print(paste("L_main = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_main/EHMC_args_as_Rcpp_List$eps_main), 0))))
                                                   cat(colourise(    (paste("div_main = ", sum(div_main)))          , "red"), "\n")
                                         } else {
                                                   cat(colourise(    (paste("p_jump = ", round(p_jump_main, 3)))          , "green"), "\n")
                                                   cat(colourise(    (paste("eps = ", round(EHMC_args_as_Rcpp_List$eps_main, 3)))          , "blue"), "\n")
-                                                  comment(print(paste("tau = ",  round(EHMC_args_as_Rcpp_List$tau_main, 3))))
-                                                  comment(print(paste("L = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_main/EHMC_args_as_Rcpp_List$eps_main), 0))))
+                                                  message(print(paste("tau = ",  round(EHMC_args_as_Rcpp_List$tau_main, 3))))
+                                                  message(print(paste("L = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_main/EHMC_args_as_Rcpp_List$eps_main), 0))))
                                                   cat(colourise(    (paste("div = ", sum(div_main)))          , "red"), "\n")
                                         }
 
@@ -1187,8 +1187,8 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                             if     (sample_nuisance == TRUE)   {
                                                 cat(colourise(    (paste("p_jump_us = ", round(p_jump_us, 3)))          , "green"), "\n")
                                                 cat(colourise(    (paste("eps_us = ", round(EHMC_args_as_Rcpp_List$eps_us, 3)))          , "blue"), "\n")
-                                                comment(print(paste("tau_us = ",  round(EHMC_args_as_Rcpp_List$tau_us, 3))))
-                                                comment(print(paste("L_us = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_us / EHMC_args_as_Rcpp_List$eps_us), 0))))
+                                                message(print(paste("tau_us = ",  round(EHMC_args_as_Rcpp_List$tau_us, 3))))
+                                                message(print(paste("L_us = ",  round(ceiling(EHMC_args_as_Rcpp_List$tau_us / EHMC_args_as_Rcpp_List$eps_us), 0))))
                                                 cat(colourise(    (paste("div_us = ", sum(div_us)))          , "red"), "\n")
                                             }
                                         }

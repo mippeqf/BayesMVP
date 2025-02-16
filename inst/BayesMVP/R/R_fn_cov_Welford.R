@@ -2,7 +2,9 @@
 
 
 
-
+#' #' update_cov_Welford
+#' @keywords internal
+#' @export
 update_cov_Welford <- function( new_sample,
                                 ii, 
                                 mean_vec,
