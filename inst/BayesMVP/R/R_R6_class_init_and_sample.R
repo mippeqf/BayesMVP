@@ -168,12 +168,12 @@ MVP_model <- R6Class("MVP_model",
                           #'@param n_params_main Number of main parameters. See class documentation for details.
                           #'@param n_nuisance Number of nuisance parameters. See class documentation for details.
                           #'@param init_lists_per_chain List of initial values for each chain. See class documentation for details.
-                          #'@param model_args_list List of model arguments. See class documentation for details.
-                          #'@param Stan_data_list List of Stan data (optional). See class documentation for details.
-                          #'@param sample_nuisance Whether to sample nuisance parameters. See class documentation for details.
                           #'@param n_chains_burnin Number of chains used for burnin. See class documentation for details.
                           #'@param compile Compile the (possibly dummy if using built-in models) Stan model. 
                           #'@param force_recompile Force-compile the (possibly dummy if using built-in models) Stan model. 
+                          #'@param model_args_list List of model arguments. See class documentation for details.
+                          #'@param Stan_data_list List of Stan data (optional). See class documentation for details.
+                          #'@param sample_nuisance Whether to sample nuisance parameters. See class documentation for details.
                           #'@param Stan_model_file_path The file path to the Stan model, only needed if \code{Model_type = "Stan"}.
                           #'@param Stan_cpp_user_header The file path to a user-supplied C++ .hpp file to be compiled together with the Stan model. This is optional and only needed if you want to use custom C++ functions in your 
                           #' Stan model, and is only relvant if \code{Model_type = "Stan"}.
@@ -288,7 +288,7 @@ MVP_model <- R6Class("MVP_model",
                           #'@param multi_attempts Whether 
                           #'@param max_L The maximum number of leapfrog steps. This is similar to \code{max_treedepth} in Stan. The default is 1024 (which is equivalent to the default
                           #'\code{max_treedepth = 10} in Stan). 
-                          #'@param tau_mult
+                          #'@param tau_mult The SNAPER-HMC algorithm multiplier to use when adjusting the path length during the burnin phase. 
                           #'@param metric_type_main The type of metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"Hessian"} or 
                           #'\code{"Empirical"}, where the former uses second derivative information and the latter uses the SD of the posterior computed whilst sampling. The default
                           #'is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwise. 
@@ -296,7 +296,6 @@ MVP_model <- R6Class("MVP_model",
                           #'\code{"dense"}. The default is \code{"diag"} (i.e. a diagonal metric).
                           #'@param ratio_M_main Ratio to use for the metric. Main parameters. 
                           #'@param ratio_M_us Ratio to use for the metric. Nuisance parameters. 
-                          #'@param n_nuisance_to_track The number of nuisance parameters to track (i.e. to generate a trace for). By default the first 5 nuisance parameters are tracked.
                           #'@param force_recompile Recompile the (possibly dummy if using built-in model) Stan model. 
                           #'@param ... Additional arguments passed to sampling.
                           #'@return Returns self invisibly, allowing for method chaining of this classes (MVP_model) methods. E.g.: model$sample(...)$summary(...). 
@@ -337,10 +336,9 @@ MVP_model <- R6Class("MVP_model",
                                               metric_shape_main = "diag",
                                               ratio_M_main = 0.25,
                                               ratio_M_us = 0.25,
-                                              n_nuisance_to_track = 10,
                                               force_recompile = FALSE,
                                               ...) {
-      
+                            
                                                    # require(dqrng)
                                                    # ## Set the standard R seed:
                                                    # set.seed(seed)
@@ -378,8 +376,8 @@ MVP_model <- R6Class("MVP_model",
                                                     message(print(paste("vect_type = ", vect_type)))
                                                     
                                                     #### Currently for nuisance sampling only diagonal-Euclidean metric is available 
-                                                    metric_type_nuisance = "Euclidean"
-                                                    metric_shape_nuisance = "diag"
+                                                    metric_type_nuisance  <- "Empirical"
+                                                    metric_shape_nuisance <- "diag"
                                                     
                                                     if (force_autodiff == TRUE) { 
                                                       force_PartialLog <- TRUE
@@ -432,6 +430,9 @@ MVP_model <- R6Class("MVP_model",
                                                       ##
                                                       if (!identical(self$model_args_list, model_args_list))  { self$model_args_list <- model_args_list ; params_same <- 0 }
                                                     }
+                                                    
+                                                    ## Currently n_nuisance_to_track must be equal to n_nuisance (otherwise the summary estimates computed won't be correct! as they rely on the u's)
+                                                    n_nuisance_to_track <- self$n_nuisance
                                                     
                                                     # then update model if any of needed parameters changed
                                                     if (params_same == 0) {
@@ -608,17 +609,17 @@ MVP_model <- R6Class("MVP_model",
                                 }
                                 
                                 # create model fit object (includes model summary tables + traces + divergence info) by calling "BayesMVP::create_summary_and_traces" ----------------------
-                                self$model_fit_object <-           BayesMVP:::create_summary_and_traces(   model_results = result,
-                                                                                                init_object = init_object,
-                                                                                                n_nuisance = n_nuisance,
-                                                                                                compute_main_params = compute_main_params,
-                                                                                                compute_transformed_parameters = compute_transformed_parameters,
-                                                                                                compute_generated_quantities = compute_generated_quantities,
-                                                                                                save_log_lik_trace = save_log_lik_trace,
-                                                                                                save_nuisance_trace = save_nuisance_trace,
-                                                                                                compute_nested_rhat = compute_nested_rhat,
-                                                                                                n_superchains = n_superchains,
-                                                                                                save_trace_tibbles = save_trace_tibbles)
+                                self$model_fit_object <-           BayesMVP:::create_summary_and_traces(    model_results = result,
+                                                                                                            init_object = init_object,
+                                                                                                            n_nuisance = n_nuisance,
+                                                                                                            compute_main_params = compute_main_params,
+                                                                                                            compute_transformed_parameters = compute_transformed_parameters,
+                                                                                                            compute_generated_quantities = compute_generated_quantities,
+                                                                                                            save_log_lik_trace = save_log_lik_trace,
+                                                                                                            save_nuisance_trace = save_nuisance_trace,
+                                                                                                            compute_nested_rhat = compute_nested_rhat,
+                                                                                                            n_superchains = n_superchains,
+                                                                                                            save_trace_tibbles = save_trace_tibbles)
                                 
                                 # return the plotting class instance with the summary
                                 MVP_class_plot_object <- BayesMVP::MVP_class_extract_and_plot$new(  model_summary =   self$model_fit_object,

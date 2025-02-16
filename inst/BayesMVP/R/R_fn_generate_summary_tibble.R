@@ -13,7 +13,7 @@ generate_summary_tibble <- function(n_threads = NULL,
                                     n_superchains) {
   
         
-              n_cores <- parallel::detectCores()
+              n_cores <- round(parallel::detectCores() / 2, 0)
               n_threads <- n_cores
 
               #### Initialize summary dataframe
@@ -49,16 +49,18 @@ generate_summary_tibble <- function(n_threads = NULL,
               
               if (n_params < n_threads) { n_threads = n_params }
               
-              #### Compute summary stats using custom Rcpp/C++ functions
+              #### Compute summary stats using custom Rcpp/C++ functions:
               outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "mean",
                                                     n_threads = n_threads))
               means_between_chains <- outs$statistics[, 1]
+              
 
               outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "sd",
                                                     n_threads = n_threads))
               SDs_between_chains <- outs$statistics[, 1]
+              
 
               outs <-  (BayesMVP:::Rcpp_compute_chain_stats(   posterior_draws_as_std_vec_of_mats,
                                                     stat_type = "quantiles",
@@ -82,30 +84,30 @@ generate_summary_tibble <- function(n_threads = NULL,
               
               for (i in seq_len(n_to_compute)) {
                 
-                    #### Get all values for this parameter across iterations and chains
-                    param_values <- as.vector(trace[i, , ])
-                    
-                    #### Calculate summary statistics
-                    summary_df$mean[i] <- means_between_chains[i]
-                    summary_df$sd[i] <- SDs_between_chains[i]
-                    try({  
-                        summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[i, ]
-                        #### summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[, i]
-                    })
-                    summary_df$n_eff[i] <- round(ess_vec[i])
-                    summary_df$Rhat[i] <- rhat_vec[i]
+                        #### Get all values for this parameter across iterations and chains
+                        param_values <- as.vector(trace[i, , ])
+                        
+                        #### Calculate summary statistics
+                        summary_df$mean[i] <- means_between_chains[i]
+                        summary_df$sd[i] <- SDs_between_chains[i]
+                        try({  
+                            summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[i, ]
+                            #### summary_df[i, c("2.5%", "50%", "97.5%")] <- quantiles_between_chains[, i]
+                        })
+                        summary_df$n_eff[i] <- round(ess_vec[i])
+                        summary_df$Rhat[i] <- rhat_vec[i]
                 
               }
               
               if (compute_nested_rhat == TRUE) {
                 
-                    nested_rhat_vec <- numeric(n_to_compute)
-                    superchain_ids <- create_superchain_ids(n_chains = n_chains, n_superchains = n_superchains)
-                    
-                    for (i in seq_len(n_to_compute)) {
-                      nested_rhat_vec[i] <- posterior::rhat_nested(trace[i, , ], superchain_ids = superchain_ids)
-                      summary_df$n_Rhat[i] <- nested_rhat_vec[i]
-                    }
+                        nested_rhat_vec <- numeric(n_to_compute)
+                        superchain_ids <- create_superchain_ids(n_chains = n_chains, n_superchains = n_superchains)
+                        
+                        for (i in seq_len(n_to_compute)) {
+                          nested_rhat_vec[i] <- posterior::rhat_nested(trace[i, , ], superchain_ids = superchain_ids)
+                          summary_df$n_Rhat[i] <- nested_rhat_vec[i]
+                        }
                                     
               }
               

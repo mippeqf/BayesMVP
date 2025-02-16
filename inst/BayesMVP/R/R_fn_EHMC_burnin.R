@@ -58,7 +58,7 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                 gap,
                                                 metric_type_main,# = "Hessian",
                                                 metric_shape_main,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ape_main,# = "dense",
-                                                metric_type_nuisance ,#= "Euclidean",
+                                                metric_type_nuisance ,#= "Empirical",
                                                 metric_shape_nuisance ,#= "diag",
                                                 max_eps_main,
                                                 max_eps_us,
@@ -282,10 +282,10 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
               if (ii %% 10 == 0) {
                     print(ii)
               }
-          
-              if (ii %% 100 == 0) {
-                gc(reset = TRUE)
-              }
+            
+              # if (ii %% 50 == 0) {
+              #   gc(reset = TRUE)
+              # }
           
                if (manual_tau == FALSE) {
                     try({
@@ -302,7 +302,8 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                 tau_main_prop <-  tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_main)
                                 EHMC_args_as_Rcpp_List$tau_main  <-   if_not_NA_or_INF_else(tau_main_prop, 5.0 *   EHMC_args_as_Rcpp_List$eps_main)
                                 ##
-                                tau_us_prop <- 3 ## tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us)
+                                tau_us_prop <- tau_mult * sqrt(EHMC_burnin_as_Rcpp_List$eigen_max_us)
+                                ## tau_us_prop <- 3 
                                 EHMC_args_as_Rcpp_List$tau_us  <-   if_not_NA_or_INF_else(tau_us_prop, 5.0 * EHMC_args_as_Rcpp_List$eps_us)
                     
                       }
@@ -566,140 +567,308 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
           }
 
 
-          {
-
-                    if  ( (ii >  (- 1 + round(n_burnin/5))) && (ii %% interval_width_main == 0) )  {
-                      
-                      if (metric_type_main == "Hessian") {
-          
-                                ## //////////// update M_dense (for main param) using Hessian (num_diff)
-                                try({
-                                  
-                                    print(paste("updating Hessian"))
-                                  
-                                      Rcpp_update_M_dense_using_Hessian_num_diff <-     BayesMVP:::fn_Rcpp_wrapper_update_M_dense_main_Hessian( M_dense_main = M_dense_main_non_scaled,
-                                                                                                                                     M_inv_dense_main = M_inv_dense_main_non_scaled,
-                                                                                                                                     M_inv_dense_main_chol = M_inv_dense_main_chol_non_scaled,
-                                                                                                                                     shrinkage_factor = shrinkage_factor,
-                                                                                                                                     ratio_Hess_main = ratio_M_main,
-                                                                                                                                     interval_width = interval_width_main,
-                                                                                                                                     num_diff_e = 0.0001,
-                                                                                                                                     Model_type = Model_type,
-                                                                                                                                     force_autodiff = force_autodiff,
-                                                                                                                                     force_PartialLog = force_PartialLog,
-                                                                                                                                     multi_attempts = TRUE,
-                                                                                                                                     theta_main_vec = main_vec_for_Hessian,
-                                                                                                                                     theta_us_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
-                                                                                                                                     y = y,
-                                                                                                                                     Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
-                                                                                                                                     ii = ii,
-                                                                                                                                     n_burnin = n_adapt,
-                                                                                                                                     metric_type = "Hessian")
-          
-                                    #   is.positive.definite(  as.matrix(forceSymmetric(as.matrix(Rcpp_update_M_dense_using_Hessian_num_diff[[1]]))  ) )
-          
-                                      M_dense_main_non_scaled <-     Rcpp_update_M_dense_using_Hessian_num_diff[[1]]
-                                      M_inv_dense_main_non_scaled <- Rcpp_update_M_dense_using_Hessian_num_diff[[2]]
-                                      M_inv_dense_main_chol_non_scaled <- Rcpp_update_M_dense_using_Hessian_num_diff[[3]]
-          
-                                      # EHMC_Metric_as_Rcpp_List$M_dense_main <-            (  (Rcpp_update_M_dense_using_Hessian_num_diff[[1]]))
-                                      # EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-        (  (Rcpp_update_M_dense_using_Hessian_num_diff[[2]]))
-          
-                                      ## re-scale by largest variance:
-                                      median_main_var <-  1  ## max(diag(M_inv_dense_main_non_scaled))
-                                      EHMC_Metric_as_Rcpp_List$M_dense_main <-  median_main_var * M_dense_main_non_scaled
-                                      EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  BayesMVP:::Rcpp_solve(  EHMC_Metric_as_Rcpp_List$M_dense_main )
-                                      EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
-                                      EHMC_burnin_as_Rcpp_List$M_dense_sqrt <- pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
-          
-                                      if (metric_shape_main == "diag") {
-                                        
-                                                EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  matrix((diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)), ncol = 1)
-                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- diag(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
-                                                EHMC_Metric_as_Rcpp_List$M_dense_main <- diag(diag(  1 /   EHMC_Metric_as_Rcpp_List$M_dense_main  ))
-                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <- t(chol((EHMC_Metric_as_Rcpp_List$M_inv_dense_main)))
-          
-                                      } else if (metric_shape_main == "dense") {
-                                        
-                                                EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix((diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)), ncol = 1)
-                                           
-                                      } else if (metric_shape_main == "unit") { 
-                                        
-                                                EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(rep(1, n_params_main), ncol = 1)
-                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)
-                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  EHMC_Metric_as_Rcpp_List$M_inv_dense_main
-                                                EHMC_Metric_as_Rcpp_List$M_dense_sqrt <-           EHMC_Metric_as_Rcpp_List$M_inv_dense_main
-                                           
-                                      }
-                                      
-                                 })
-
-                      } else if (metric_type_main == "Empirical") {
-
-                                      if (metric_shape_main == "diag") {
-                
-                                                median_main_var <- 1 #  max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
-                                                print(median_main_var)
-                                                M_as_inv_snaper_s_vec_main_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical
-                                                M_as_inv_snaper_s_vec_main_empirical_scaled <- median_main_var * M_as_inv_snaper_s_vec_main_empirical
-                                                M_inv_as_snaper_s_vec_main_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_main_empirical_scaled
-                  
-                                                ## now update M_inv_nuisance
-                                                M_inv_main_vec_temp <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
-                                                EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  ratio_M_main * M_inv_as_snaper_s_vec_main_empirical_scaled + (1 - ratio_M_main) * M_inv_main_vec_temp
-                                                EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
-              
-                                      } else if (metric_shape_main == "dense") {
-              
-                  
-                                                median_nuisance_var <-  1 # max(diag(empicical_cov_main))
-                                                comment(print(empicical_cov_main))
-                                                inv_empicical_cov_main <-   BayesMVP:::Rcpp_solve(empicical_cov_main)
-                                                comment(print(inv_empicical_cov_main))
-                                                inv_empicical_cov_main_scaled <- median_nuisance_var * inv_empicical_cov_main
-                                                #  empicical_cov_main_scaled <- BayesMVP:::Rcpp_solve(inv_empicical_cov_main_scaled) #   1 / inv_empicical_cov_main_scaled
-                      
+          { ## //// Update metric(s):
+            
+                    if  ( (ii >  (- 1 + round(n_burnin/5))) && (ii %% interval_width_main == 0) && (ii < (n_burnin - round(n_burnin/10))) )  {
+            
+                           if (partitioned_HMC == FALSE) { 
                                             
-                                                EHMC_Metric_as_Rcpp_List$M_dense_main <-  ratio_M_main * inv_empicical_cov_main_scaled    +    (1 - ratio_M_main) *  EHMC_Metric_as_Rcpp_List$M_dense_main
-                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- BayesMVP:::Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_dense_main)
-                                                EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
-                                                EHMC_burnin_as_Rcpp_List$M_dense_sqrt <-     pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
-              
-                                      }
-
-
-                      }
-
-                    }
-
-            if  ( (ii < n_adapt) &&  (sample_nuisance == TRUE)  ) {
-              
-                 if  ( (ii >  (- 1 + round(n_burnin/5))) && (ii %% interval_width_nuisance == 0) )  {
-
-                         try({
-                                    ## ------------------------------------------------------------------------------------------------------------------------------------------- 
-                                    median_nuisance_var <- 1 #max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical)
-                                    M_as_inv_snaper_s_vec_us_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
-                                    M_as_inv_snaper_s_vec_us_empirical_scaled <- median_nuisance_var * M_as_inv_snaper_s_vec_us_empirical
-                                    M_inv_as_snaper_s_vec_us_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_us_empirical_scaled
-                                    # M_inv_as_snaper_s_vec_us_empirical_scaled <-  EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
-                                    ## now update M_inv_nuisance
-                                    EHMC_Metric_as_Rcpp_List$M_inv_us_vec <- ratio_M_us * M_inv_as_snaper_s_vec_us_empirical_scaled + (1 - ratio_M_us) * EHMC_Metric_as_Rcpp_List$M_inv_us_vec
-                                    EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- sqrt(1 /  EHMC_Metric_as_Rcpp_List$M_inv_us_vec)
-                                    EHMC_Metric_as_Rcpp_List$M_us_vec <- 1.0 / EHMC_Metric_as_Rcpp_List$M_inv_us_vec
-                                    # ################################################################
-                                    # #### ---- for unit metric --------------------------------------
-                                    # EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  rep(1, n_nuisance)
-                                    # EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- rep(1, n_nuisance)
-                                    # EHMC_Metric_as_Rcpp_List$M_us_vec <-   rep(1, n_nuisance)
-                                    # ################################################################
-                         })
-
-               }
-            }
-
-          }
-
+                                            if (metric_shape_main == "unit") { ## when partitioned_HMC is FALSE, setting "metric_shape_main" to "unit" results in the ENTIRE metric being a unit metric!!
+                                              
+                                                      metric_diag_vec <- rep(1, n_params)
+                                                      
+                                                      ## Metrics for main:
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(rep(1, n_params_main), ncol = 1)
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec))
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                                      EHMC_Metric_as_Rcpp_List$M_dense_sqrt <-           EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                                      ## Metrics for nuisance:
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  matrix(rep(1, n_nuisance), ncol = 1)
+                                                      EHMC_Metric_as_Rcpp_List$M_us_vec <-      matrix(rep(1, n_nuisance), ncol = 1)
+                                                      EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- matrix(rep(1, n_nuisance), ncol = 1)
+                                              
+                                              
+                                            } else if (metric_shape_main == "diag") { 
+                                              
+                                                      ## First get the value of the current metric:
+                                                      M_inv_us_vec_current <- EHMC_Metric_as_Rcpp_List$M_inv_us_vec
+                                                      M_inv_main_vec_current <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
+                                                 
+                                                      if (metric_type_main == "Empirical") {
+                                                        
+                                                               snaper_s_vec_to_use_main <-     EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical
+                                                          
+                                                      } else if (metric_type_main == "Hessian") {  ## then use the inverse-negative Hessian (diagonal) computed above
+                                                          
+                                                               outs <-     BayesMVP:::fn_Rcpp_compute_PD_Hessian_main(   shrinkage_factor = shrinkage_factor,
+                                                                                                                         num_diff_e = 0.00001,
+                                                                                                                         Model_type = Model_type,
+                                                                                                                         force_autodiff = force_autodiff,
+                                                                                                                         force_PartialLog = force_PartialLog,
+                                                                                                                         multi_attempts = multi_attempts,
+                                                                                                                         theta_main_vec = main_vec_for_Hessian,
+                                                                                                                         theta_us_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
+                                                                                                                         y = y,
+                                                                                                                         Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)
+                                                               Hessian <- outs$Hessian
+                                                               diag_Hessian <- c(diag(Hessian))
+                                                               snaper_s_vec_to_use_main <-     matrix(c(1 / diag_Hessian), ncol = 1)
+                                                          
+                                                      }
+                                                      
+                                                      if (metric_type_nuisance == "Empirical") {
+                                                        
+                                                               snaper_s_vec_to_use_nuisance <- EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
+                                                          
+                                                      }
+                                                      
+                                                      ## Now compute ADJUSTED snaper_s_vec_all:
+                                                      snaper_s_vec_all <- c(snaper_s_vec_to_use_nuisance, snaper_s_vec_to_use_main)
+                                                      max_var_s <- max(snaper_s_vec_all)
+                                                      adj_snaper_s_vec_all <- max_var_s * (1 / snaper_s_vec_all)
+                                                      adj_snaper_s_vec_to_use_nuisance <- adj_snaper_s_vec_all[index_nuisance]
+                                                      adj_snaper_s_vec_to_use_main <- adj_snaper_s_vec_all[index_main]
+                                                      
+                                                      ## now update the OVERALL metric and then ADJUST AGAIN:
+                                                      M_inv_us_vec <-       ratio_M_us *   adj_snaper_s_vec_to_use_nuisance +     (1 - ratio_M_us) *   M_inv_us_vec_current
+                                                      M_inv_main_vec <-     ratio_M_main * adj_snaper_s_vec_to_use_main +         (1 - ratio_M_main) * M_inv_main_vec_current
+                                                      
+                                                      ## Final ADJUSTED-OVERALL metric (for main + nuisance):
+                                                      M_inv_all_vec <- c(M_inv_us_vec, M_inv_main_vec)
+                                                      max_var_new <- max(M_inv_all_vec)
+                                                      adj_M_inv_all_vec <- max_var_new * (1 / M_inv_all_vec)
+                                                      
+                                                      ## Then replace "M_inv_all_vec" with the adjusted version:
+                                                      M_inv_all_vec <- adj_M_inv_all_vec
+                                                      M_all_vec <- 1.0 / M_inv_all_vec
+                                                      sqrt_M_all_vec <- sqrt(M_all_vec)
+                                                      
+                                                      #### ---- Now update the C++ lists:
+                                                      #### ---- for main:
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  matrix(M_inv_all_vec[index_main], ncol = 1)
+                                                      ## Now update the "dense" params:
+                                                      EHMC_Metric_as_Rcpp_List$M_dense_main <- diag(c(1 / c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)))
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec))
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  t(chol(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
+                                                      EHMC_burnin_as_Rcpp_List$M_dense_sqrt <- pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
+                                                      #### ---- for nuisance:
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  matrix(M_inv_all_vec[index_nuisance], ncol = 1)
+                                                      EHMC_Metric_as_Rcpp_List$M_us_vec <-      matrix(M_all_vec[index_nuisance], ncol = 1)
+                                                      EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- matrix(sqrt_M_all_vec[index_nuisance], ncol = 1)
+                                              
+                                            } else if (metric_shape_main == "dense") { ## NOTE: when partitioned_HMC<-FALSE, setting "metric_shape_main<-dense" results in a dense MAIN metric and a diagonal NUISANCE metric.
+                                                      
+                                                      ## First get current metric:
+                                                      M_inv_us_vec_current <-     EHMC_Metric_as_Rcpp_List$M_inv_us_vec
+                                                      M_inv_main_DENSE_current <- EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                                      
+                                                      if (metric_type_main == "Empirical") {
+                                                        
+                                                            snaper_s_vec_to_use_main <-     EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical
+                                                            snaper_s_vec_to_use_main_DENSE <- empicical_cov_main
+                                                            snaper_s_vec_to_use_main_DENSE_inv <- BayesMVP:::Rcpp_solve(snaper_s_vec_to_use_main_DENSE)
+                                                          
+                                                      } else if (metric_type_main == "Hessian") {  ## then use the inverse-negative Hessian (diagonal) computed above
+                                                        
+                                                            outs <-     BayesMVP:::fn_Rcpp_compute_PD_Hessian_main(   shrinkage_factor = shrinkage_factor,
+                                                                                                                      num_diff_e = 0.00001,
+                                                                                                                      Model_type = Model_type,
+                                                                                                                      force_autodiff = force_autodiff,
+                                                                                                                      force_PartialLog = force_PartialLog,
+                                                                                                                      multi_attempts = multi_attempts,
+                                                                                                                      theta_main_vec = main_vec_for_Hessian,
+                                                                                                                      theta_us_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
+                                                                                                                      y = y,
+                                                                                                                      Model_args_as_Rcpp_List = Model_args_as_Rcpp_List)
+                                                            Hessian <- outs$Hessian
+                                                            diag_Hessian <- c(diag(Hessian))
+                                                            snaper_s_vec_to_use_main <-     matrix(diag_Hessian, ncol = 1)
+                                                            snaper_s_vec_to_use_main_DENSE <- Hessian
+                                                            snaper_s_vec_to_use_main_DENSE_inv <- BayesMVP:::Rcpp_solve(snaper_s_vec_to_use_main_DENSE)
+                                                        
+                                                      }
+                                                      
+                                                      if (metric_type_nuisance == "Empirical") {
+                                                        
+                                                            snaper_s_vec_to_use_nuisance <- EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
+                                                        
+                                                      }
+                                                      
+                                                      ## Find the OVERALL maximum variance (comparing diagonal and dense):
+                                                      max_var_s <- max(max(snaper_s_vec_to_use_nuisance), max(snaper_s_vec_to_use_main))
+                                                      
+                                                      ## Adjust both metrics using the SAME max_var_s:
+                                                      adj_snaper_s_vec_to_use_main_DENSE <- max_var_s * snaper_s_vec_to_use_main_DENSE_inv
+                                                      adj_snaper_s_vec_to_use_nuisance <-   max_var_s * (1 / snaper_s_vec_to_use_nuisance)
+                                                      
+                                                      #### Update both metrics with ratio:
+                                                      ## Main:
+                                                      M_inv_dense_main <- BayesMVP:::Rcpp_near_PD(ratio_M_main * adj_snaper_s_vec_to_use_main_DENSE + (1 - ratio_M_main) * M_inv_main_DENSE_current)
+                                                      M_dense_main <-     BayesMVP:::Rcpp_solve(M_inv_dense_main)
+                                                      ## nuisance:
+                                                      M_inv_us_vec <-     ratio_M_us * adj_snaper_s_vec_to_use_nuisance +   (1 - ratio_M_us) * M_inv_us_vec_current
+  
+                                                      ## Adjust both again using same OVERALL maximum variance:
+                                                      max_var_new <- max(max(M_inv_us_vec), max(diag(M_inv_dense_main)))
+                                                      adj_M_inv_dense_main <- max_var_new * M_dense_main
+                                                      adj_M_inv_us_vec <-     max_var_new * (1 / M_inv_us_vec)
+                                                      
+                                                      ## Update the C++ lists:
+                                                      ## For main:
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- adj_M_inv_dense_main
+                                                      EHMC_Metric_as_Rcpp_List$M_dense_main <- solve(adj_M_inv_dense_main)
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(diag(adj_M_inv_dense_main), ncol = 1)
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <- t(chol(adj_M_inv_dense_main))
+                                                      EHMC_burnin_as_Rcpp_List$M_dense_sqrt <- pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
+                                                      
+                                                      ## For nuisance:
+                                                      EHMC_Metric_as_Rcpp_List$M_inv_us_vec <- matrix(adj_M_inv_us_vec, ncol = 1)
+                                                      EHMC_Metric_as_Rcpp_List$M_us_vec <- matrix(1.0 / adj_M_inv_us_vec, ncol = 1)
+                                                      EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- matrix(sqrt(1.0 / adj_M_inv_us_vec), ncol = 1)
+                                              
+                                            }
+                             
+                           } else if (partitioned_HMC == TRUE) { 
+                                   
+                                   if (metric_shape_main == "unit") { 
+                                     
+                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(rep(1, n_params_main), ncol = 1)
+                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec))
+                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                           EHMC_Metric_as_Rcpp_List$M_dense_sqrt <-           EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                     
+                                   } else { 
+                                     
+                                           if (metric_type_main == "Hessian") {
+                                             
+                                                       ## //////////// update M_dense (for main param) using Hessian (num_diff)
+                                                       try({
+                                                         
+                                                         message(paste("updating Hessian (for main params)"))
+                                                         
+                                                         Rcpp_update_M_dense_using_Hessian_num_diff <-     BayesMVP:::fn_Rcpp_wrapper_update_M_dense_main_Hessian( M_dense_main = M_dense_main_non_scaled,
+                                                                                                                                                                   M_inv_dense_main = M_inv_dense_main_non_scaled,
+                                                                                                                                                                   M_inv_dense_main_chol = M_inv_dense_main_chol_non_scaled,
+                                                                                                                                                                   shrinkage_factor = shrinkage_factor,
+                                                                                                                                                                   ratio_Hess_main = ratio_M_main,
+                                                                                                                                                                   interval_width = interval_width_main,
+                                                                                                                                                                   num_diff_e = 0.00001,
+                                                                                                                                                                   Model_type = Model_type,
+                                                                                                                                                                   force_autodiff = force_autodiff,
+                                                                                                                                                                   force_PartialLog = force_PartialLog,
+                                                                                                                                                                   multi_attempts = multi_attempts,
+                                                                                                                                                                   theta_main_vec = main_vec_for_Hessian,
+                                                                                                                                                                   theta_us_vec = EHMC_burnin_as_Rcpp_List$snaper_m_vec_us,
+                                                                                                                                                                   y = y,
+                                                                                                                                                                   Model_args_as_Rcpp_List = Model_args_as_Rcpp_List,
+                                                                                                                                                                   ii = ii,
+                                                                                                                                                                   n_burnin = n_adapt,
+                                                                                                                                                                   metric_type = "Hessian")
+                                                         
+                                                         M_dense_main_non_scaled <-     Rcpp_update_M_dense_using_Hessian_num_diff[[1]]
+                                                         M_inv_dense_main_non_scaled <- Rcpp_update_M_dense_using_Hessian_num_diff[[2]]
+                                                         M_inv_dense_main_chol_non_scaled <- Rcpp_update_M_dense_using_Hessian_num_diff[[3]]
+                                                         
+                                                         ## re-scale by largest variance:
+                                                         max_var <-  1  ## max(diag(M_inv_dense_main_non_scaled))
+                                                         EHMC_Metric_as_Rcpp_List$M_dense_main <-  max_var * M_dense_main_non_scaled
+                                                         EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  BayesMVP:::Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_dense_main)
+                                                         EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)
+                                                         EHMC_burnin_as_Rcpp_List$M_dense_sqrt <- pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
+                                                         
+                                                         if (metric_shape_main == "diag") {
+                                                           
+                                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  matrix(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main), ncol = 1)
+                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- diag(c(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)))
+                                                           EHMC_Metric_as_Rcpp_List$M_dense_main <- diag(c(diag(  1 /   EHMC_Metric_as_Rcpp_List$M_dense_main  )))
+                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <- t(chol((EHMC_Metric_as_Rcpp_List$M_inv_dense_main)))
+                                                           
+                                                         } else if (metric_shape_main == "dense") {
+                                                           
+                                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix((diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)), ncol = 1)
+                                                           
+                                                         } else if (metric_shape_main == "unit") { 
+                                                           
+                                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(rep(1, n_params_main), ncol = 1)
+                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  diag(c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec))
+                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                                           EHMC_Metric_as_Rcpp_List$M_dense_sqrt <-           EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                                           
+                                                         }
+                                                         
+                                                       })
+                                             
+                                           } else if (metric_type_main == "Empirical") {
+                                             
+                                                      message(paste("updating Euclidean metric (for main params)"))
+                                                     
+                                                     if (metric_shape_main == "diag") {
+                                                           
+                                                                 max_var <- 1 #  max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
+                                                                 M_as_inv_snaper_s_vec_main_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical
+                                                                 M_as_inv_snaper_s_vec_main_empirical_scaled <- max_var * M_as_inv_snaper_s_vec_main_empirical
+                                                                 M_inv_as_snaper_s_vec_main_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_main_empirical_scaled
+                                                                 
+                                                                 ## now update M_inv_nuisance
+                                                                 M_inv_main_vec_current <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
+                                                                 EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  ratio_M_main * M_inv_as_snaper_s_vec_main_empirical_scaled + (1 - ratio_M_main) * M_inv_main_vec_current
+                                                                 EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
+                                                       
+                                                     } else if (metric_shape_main == "dense") {
+                                                           
+                                                                 max_var <-  1 # max(diag(empicical_cov_main))
+                                                                 inv_empicical_cov_main <-   BayesMVP:::Rcpp_solve(empicical_cov_main)
+                                                                 inv_empicical_cov_main_scaled <- max_var * inv_empicical_cov_main
+                                                                 #  empicical_cov_main_scaled <- BayesMVP:::Rcpp_solve(inv_empicical_cov_main_scaled) #   1 / inv_empicical_cov_main_scaled
+                                                                 
+                                                                 EHMC_Metric_as_Rcpp_List$M_dense_main <-  ratio_M_main * inv_empicical_cov_main_scaled    +    (1 - ratio_M_main) *  EHMC_Metric_as_Rcpp_List$M_dense_main
+                                                                 EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- BayesMVP:::Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_dense_main)
+                                                                 EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
+                                                                 EHMC_burnin_as_Rcpp_List$M_dense_sqrt <-     pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
+                                                                 ## And update the diagonal:
+                                                                 EHMC_Metric_as_Rcpp_List$M_inv_main_vec <- matrix(c(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)), ncol = 1)
+                                                       
+                                                     }
+                                                     
+                                           }
+                                     
+                                   }
+                                   
+                                   if  ( (ii < n_adapt) &&  (sample_nuisance == TRUE)  ) {
+                                       
+                                       try({
+                                         
+                                         if (metric_shape_nuisance == "unit") { 
+                                           
+                                           #### ---- for unit metric --------------------------------------
+                                           EHMC_Metric_as_Rcpp_List$M_inv_us_vec <-  matrix(rep(1, n_nuisance), ncol = 1)
+                                           EHMC_Metric_as_Rcpp_List$M_us_vec <-      matrix(rep(1, n_nuisance), ncol = 1)
+                                           EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- matrix(rep(1, n_nuisance), ncol = 1)
+                                           
+                                         } else {
+                                           
+                                           ## ------------------------------------------------------------------------------------------------------------------------------------------- 
+                                           max_var <- 1 #max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical)
+                                           M_as_inv_snaper_s_vec_us_empirical <-   1 / EHMC_burnin_as_Rcpp_List$snaper_s_vec_us_empirical
+                                           M_as_inv_snaper_s_vec_us_empirical_scaled <- max_var * M_as_inv_snaper_s_vec_us_empirical
+                                           M_inv_as_snaper_s_vec_us_empirical_scaled <- 1 / M_as_inv_snaper_s_vec_us_empirical_scaled
+                                           ## now update M_inv_nuisance:
+                                           EHMC_Metric_as_Rcpp_List$M_inv_us_vec <- ratio_M_us * M_inv_as_snaper_s_vec_us_empirical_scaled + (1 - ratio_M_us) * EHMC_Metric_as_Rcpp_List$M_inv_us_vec
+                                           EHMC_burnin_as_Rcpp_List$sqrt_M_us_vec <- sqrt(1 /  EHMC_Metric_as_Rcpp_List$M_inv_us_vec)
+                                           EHMC_Metric_as_Rcpp_List$M_us_vec <- 1.0 / EHMC_Metric_as_Rcpp_List$M_inv_us_vec
+                                           
+                                         }
+                                         
+                                       })
+                                     
+                                   }
+                             
+                           }
+                      
+                    } ## // end of "if  ( (ii >  (- 1 + round(n_burnin/5))) && (ii %% interval_width_main == 0) && (ii < (n_burnin - round(n_burnin/10))) )  {" loop
+            
+          }  ## // end of metric block
+   
           ## //////////////////   --------------------------------  Perform iteration  ------------------------------------------------------------------------------
           try({
             

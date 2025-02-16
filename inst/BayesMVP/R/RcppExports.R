@@ -29,6 +29,10 @@ detect_vectorization_support <- function() {
     .Call(`_BayesMVP_detect_vectorization_support`)
 }
 
+fn_Rcpp_compute_PD_Hessian_main <- function(shrinkage_factor, num_diff_e, Model_type, force_autodiff, force_PartialLog, multi_attempts, theta_main_vec, theta_us_vec, y, Model_args_as_Rcpp_List) {
+    .Call(`_BayesMVP_fn_Rcpp_compute_PD_Hessian_main`, shrinkage_factor, num_diff_e, Model_type, force_autodiff, force_PartialLog, multi_attempts, theta_main_vec, theta_us_vec, y, Model_args_as_Rcpp_List)
+}
+
 fn_Rcpp_wrapper_update_M_dense_main_Hessian <- function(M_dense_main, M_inv_dense_main, M_inv_dense_main_chol, shrinkage_factor, ratio_Hess_main, interval_width, num_diff_e, Model_type, force_autodiff, force_PartialLog, multi_attempts, theta_main_vec, theta_us_vec, y, Model_args_as_Rcpp_List, ii, n_burnin, metric_type) {
     .Call(`_BayesMVP_fn_Rcpp_wrapper_update_M_dense_main_Hessian`, M_dense_main, M_inv_dense_main, M_inv_dense_main_chol, shrinkage_factor, ratio_Hess_main, interval_width, num_diff_e, Model_type, force_autodiff, force_PartialLog, multi_attempts, theta_main_vec, theta_us_vec, y, Model_args_as_Rcpp_List, ii, n_burnin, metric_type)
 }
@@ -79,6 +83,10 @@ Rcpp_solve <- function(mat) {
 
 Rcpp_Chol <- function(mat) {
     .Call(`_BayesMVP_Rcpp_Chol`, mat)
+}
+
+Rcpp_near_PD <- function(mat) {
+    .Call(`_BayesMVP_Rcpp_near_PD`, mat)
 }
 
 fn_compute_param_constrain_from_trace_parallel <- function(unc_params_trace_input_main, unc_params_trace_input_nuisance, pars_indicies_to_track, n_params_full, n_nuisance, n_params_main, include_nuisance, model_so_file, json_file_path) {

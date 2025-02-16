@@ -110,11 +110,8 @@ create_summary_and_traces <- function(    model_results,
   L_main_during_burnin <- model_results$init_burnin_object$L_main_during_burnin
   L_us_during_burnin <- model_results$init_burnin_object$L_us_during_burnin
   
-  
   {
 
-
-    
   if (sample_nuisance == TRUE) {
       n_nuisance <- n_nuisance
       n_nuisance_tracked <- dim(nuisance_trace[[1]])[1]
@@ -298,7 +295,7 @@ create_summary_and_traces <- function(    model_results,
    pars_indicies_to_track <- 1:n_par_inc_tp_and_gq
    n_params_full <- n_par_inc_tp_and_gq
    all_param_outs_trace <-    (BayesMVP:::fn_compute_param_constrain_from_trace_parallel(     unc_params_trace_input_main = main_trace,
-                                                                                              unc_params_trace_input_nuisance = nuisance_trace, # doesnt matter as not tracking nuisance
+                                                                                              unc_params_trace_input_nuisance = nuisance_trace,
                                                                                               pars_indicies_to_track = pars_indicies_to_track,
                                                                                               n_params_full = n_params_full,
                                                                                               n_nuisance = n_nuisance,
@@ -353,7 +350,7 @@ create_summary_and_traces <- function(    model_results,
     ##   trace_params_main[1:n_params_main, 1:n_iter, kk] <- all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter] 
       for (kk in 1:n_chains) {
         try({ 
-           trace_params_main[1:n_params_main, 1:n_iter, kk] <- all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter] 
+           trace_params_main[1:n_params_main, 1:n_iter, kk] <-   all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter]  ##  main_trace[[kk]][1:n_params_main, 1:n_iter]##  all_param_outs_trace[[kk]][index_params_main - offset, 1:n_iter] ## BOOKMARK
         }, silent = TRUE)
       }
    }
@@ -730,21 +727,26 @@ create_summary_and_traces <- function(    model_results,
     ### final lists to output 
     if (save_log_lik_trace == FALSE) log_lik_trace <- NULL
     if (save_nuisance_trace == FALSE)  nuisance_trace <- NULL
+    ##
+    if (save_nuisance_trace == TRUE) { 
+      ## do nothing
+    } else {
+      nuisance_trace <- NULL
+    }
+    ##
     traces <- list(traces_as_arrays = traces_as_arrays,
                    traces_as_tibbles = traces_as_tibbles,
                    log_lik_trace = log_lik_trace,
                    nuisance_trace = nuisance_trace)
-    
+    ##
     divergences <- list( n_divs = n_divs, 
                          pct_divs = pct_divs)
-    
-    
+    ##
     summaries <- list(summary_tibbles = summary_tibbles,
                       divergences = divergences,
                       efficiency_info = efficiency_info, 
                       HMC_info = HMC_info)
-    
-    
+    ##
     output_list <- list(  summaries = summaries, ### summary info (incl. efficiency info + divergences)
                           traces = traces      ### trace arrays + trace tibbles
                           ## all_param_outs_trace = all_param_outs_trace
