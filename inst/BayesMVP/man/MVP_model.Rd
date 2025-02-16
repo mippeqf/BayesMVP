@@ -275,7 +275,6 @@ Sample from the model
   metric_shape_main = "diag",
   ratio_M_main = 0.25,
   ratio_M_us = 0.25,
-  n_nuisance_to_track = 10,
   force_recompile = FALSE,
   ...
 )}\if{html}{\out{</div>}}
@@ -295,6 +294,15 @@ Sample from the model
 \item{\code{y}}{The dataset. See class documentation for details.}
 
 \item{\code{N}}{The sample size. See class documentation for details.}
+
+\item{\code{manual_tau}}{If \code{FALSE}, then SNAPER-HMC will be used to adapt \eqn{\tau} during the burnin phase. Otherwise if \code{TRUE}, \eqn{\tau} will be
+fixed to the value given in the \code{tau_if_manual} argument.}
+
+\item{\code{tau_if_manual}}{The HMC path length (\eqn{\tau}) to use for the HMC sampling. This will be used for both the burnin and sampling phases.
+Note that this only works if \code{manual_tau = TRUE}. Otherwise, \eqn{\tau} will be adapted using SNAPER-HMC. Also note that if only one value is
+given, then this value of tau will be used for both the main parameter sampling and the nuisance parameter sampling. If you want to specify separate
+path lengths for the main and nuisance parameters, provide a vector instead. E.g.  \code{tau_if_manual = c(0.50, 2.0)} will mean that
+\eqn{\tau} = 0.50 is used for the main parameters and \eqn{\tau} = 2.0 is used for the nuisance parameters.}
 
 \item{\code{sample_nuisance}}{Whether to sample nuisance parameters. See class documentation for details.}
 
@@ -363,8 +371,6 @@ is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwi
 \item{\code{ratio_M_main}}{Ratio to use for the metric. Main parameters.}
 
 \item{\code{ratio_M_us}}{Ratio to use for the metric. Nuisance parameters.}
-
-\item{\code{n_nuisance_to_track}}{The number of nuisance parameters to track (i.e. to generate a trace for). By default the first 5 nuisance parameters are tracked.}
 
 \item{\code{force_recompile}}{Recompile the (possibly dummy if using built-in model) Stan model.}
 

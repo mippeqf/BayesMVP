@@ -16,3 +16,4 @@ R_fn_post_burnin_prep_for_sampling(
 \description{
 R_fn_post_burnin_prep_for_sampling
 }
+\keyword{internal}

@@ -9,3 +9,4 @@ R_fn_avg_matrix_columns(matrix, n_chains_per_superchain)
 \description{
 R_fn_avg_matrix_columns
 }
+\keyword{internal}
