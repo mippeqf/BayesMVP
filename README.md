@@ -1,10 +1,15 @@
-BayesMVP uses the SNAPER Hamiltonian Monte Carlo (HMC) algorithm (SNAPER-HMC) as well as diffusion-pathspace HMC
-to efficiently sample the multivariate probit model (MVP) - which is used to model correlated binary data -
-as well as the latent class MVP model (LC-MVP) and the latent trait model, which are commonly used in medical
-applications to model diagnostic and/or screening test accuracy data without the presence of a perfect reference
-(or "gold standard") test. 
+BayesMVP uses a highly-efficient, recently proposed state-of-the-art HMC algorithm called SNAPER Hamiltonian Monte Carlo (SNAPER-HMC; Sountsov & Hoffman et al, 2022) to sample the posterior distribution. 
+Furthermore, depending on the model (and if the user enables this experimenal option), it also makes use of diffusion-pathspace HMC (Beskos et al, 2013) for models which have high-dimensional guassian latent variables. 
 
-In addition, it can also **sample any user-supplied Stan model**. However, BayesMVP will perform best for models which 
+BayesMVP was designed specifcially to efficiently sample the following models:
+- The multivariate probit model (MVP)
+- The latent class MVP model (LC-MVP), (currently) with 2 latent classes. 
+- THe latent trait latent class model, (currently) with 2 latent classes.
+
+The MVP model is used generally to model correlated binary data across various fields, whereas the latter two more complex latent class models tend to be used more specifically in medical
+applications to model diagnostic and screening test accuracy data without the presence of a perfect reference (or "gold standard") test. 
+
+In addition to these "built-in" models, BayesMVP can also **sample any user-supplied Stan model**. However, BayesMVP will perform best for models which 
 have high-dimensional guassian latent variables (or "nuisance parameters"), particularly when the diffusion-pathspace
 HMC option is enabled. That being said, even for models without such guassian latent variables, BayesMVP can sometimes 
 still outperform Stan substantially thanks to the burn-in algorithm it uses = which is based on SNAPER-HMC - an algorithm 
