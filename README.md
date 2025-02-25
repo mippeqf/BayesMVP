@@ -20,9 +20,9 @@ BayesMVP makes use of two state-of-the-art HMC algorithms:
 
 Furthermore, specifically for the three built-in models (i.e. the MVP, LC_MVP, and latent_trait), 
 it achieves particularly rapid sampling (despite using full MCMC - not approximate Bayes methods) by using a veriety of techniques, including:
-- (i) manually-derived gradients,
-- (ii) chunking - where vectors (e.g. Eigen::Matrix objects in C++) are partitioned into smaller blocks to prevent so-called "cache misses"), and:
-- (iii) fast approximate, vectorised (SIMD) math functions (on systems with AVX-512 and/or AVX2 CPU instruction sets)
+- (i) Manually-derived gradients (all implemented in C++ using the Eigen and stan::math libraries),
+- (ii) "Chunking" - a technique where large objects (e.g. Eigen::Matrix objects in C++) are partitioned into smaller blocks to prevent so-called "cache misses", and:
+- (iii) Fast approximate, vectorised (or "SIMD") math functions (on systems with AVX-512 and/or AVX2 CPU instruction sets - on systems without either of these instruction sets, BayesMVP will use a combination of the Eigen and stan::math C++ libraries for vectorisation).  
 
 --------------------------------------------------------------------------------------------------------------------------------------
 Before installing BayesMVP, first you must first install **cmdstanr** as well as the **bridgestan** R packages. 
