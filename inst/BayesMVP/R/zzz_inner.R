@@ -5,6 +5,7 @@
 
 
 #' setup_env_post_install
+#' @keywords internal
 #' @export
 setup_env_post_install <- function() {
   
@@ -88,6 +89,7 @@ setup_env_post_install <- function() {
 
 
 #' .onLoad
+#' @keywords internal
 #' @export
 .onLoad <- function(libname, 
                     pkgname) {
@@ -123,6 +125,7 @@ setup_env_post_install <- function() {
 
 
 #' .onAttach
+#' @keywords internal
 #' @export
 .onAttach <- function(libname, 
                       pkgname) {
@@ -133,6 +136,7 @@ setup_env_post_install <- function() {
 
 
 #' .First.lib
+#' @keywords internal
 #' @export
 .First.lib <- function(libname, 
                        pkgname) {

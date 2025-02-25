@@ -272,7 +272,7 @@ MVP_model <- R6Class("MVP_model",
                           #'@param n_iter The number of sampling (i.e., post-burnin) iterations. Default is 1000. 
                           #'@param adapt_delta The Metropolis-Hastings target acceptance rate. Default is 0.80. If there are divergences, sometimes increasing this can help, at the cost 
                           #'of efficiency (since this will decrease the step-size (epsilon) and increase the number of leapfrog steps (L) per iteration).
-                          #'@param learning_rate The ADAM learning rate (LR) for learning the appropriate HMC step-size (\eqn{\eps}) and HMC path length (\eqn{\tau = L \cdot \eps})
+                          #'@param learning_rate The ADAM learning rate (LR) for learning the appropriate HMC step-size (\eqn{\epsilon}) and HMC path length (\eqn{\tau = L \cdot \epsilon})
                           #'during the burnin period. The default depends on the length of burnin chosen as follows: if \code{n_burnin} < 249, then LR=0.10, if it's between 250 and 
                           #'500 then LR = 0.075, and if the burnin length is between 501 and 750 then LR=0.05, and finally if the burnin is >750 iterations then LR=0.025.
                           #'@param clip_iter The number of iterations to perform MALA (i.e., one leapfrog step) on (first clip_iter iterations) for the burnin period. 
@@ -294,6 +294,7 @@ MVP_model <- R6Class("MVP_model",
                           #'is \code{"Hessian"} if \code{n_params_main < 250} and \code{"Empirical"} otherwise. 
                           #'@param metric_shape_main The shape of the metric to use for the main parameters, which is adapted during the burnin period. Can be either \code{"diag"} or 
                           #'\code{"dense"}. The default is \code{"diag"} (i.e. a diagonal metric).
+                          #'@param metric_type_nuisance The type of metric to use for the nuisance parameters, which is adapted during the burnin period. Can be "diag" or "unit". 
                           #'@param ratio_M_main Ratio to use for the metric. Main parameters. 
                           #'@param ratio_M_us Ratio to use for the metric. Nuisance parameters. 
                           #'@param force_recompile Recompile the (possibly dummy if using built-in model) Stan model. 
@@ -334,6 +335,7 @@ MVP_model <- R6Class("MVP_model",
                                               tau_mult = 1.60,
                                               metric_type_main = "Hessian",
                                               metric_shape_main = "diag",
+                                              metric_type_nuisance = "Empirical",
                                               ratio_M_main = 0.25,
                                               ratio_M_us = 0.25,
                                               force_recompile = FALSE,
@@ -376,7 +378,7 @@ MVP_model <- R6Class("MVP_model",
                                                     message(print(paste("vect_type = ", vect_type)))
                                                     
                                                     #### Currently for nuisance sampling only diagonal-Euclidean metric is available 
-                                                    metric_type_nuisance  <- "Empirical"
+                                                    ## metric_type_nuisance  <- "Empirical"
                                                     metric_shape_nuisance <- "diag"
                                                     
                                                     if (force_autodiff == TRUE) { 

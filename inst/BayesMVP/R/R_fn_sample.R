@@ -205,8 +205,8 @@ R_fn_sample_model  <-    function(      Model_type,
                           }
         
         
-                          ## RcppParallel::setThreadOptions(numThreads = n_chains_sampling); #### BOOKMARK
-                          RcppParallel::setThreadOptions(numThreads = parallel::detectCores()); #### BOOKMARK
+                          RcppParallel::setThreadOptions(numThreads = n_chains_sampling); #### BOOKMARK
+                          # RcppParallel::setThreadOptions(numThreads = parallel::detectCores()); #### BOOKMARK
                           
                           if (parallel_method == "OpenMP") { 
                             fn <- BayesMVP:::Rcpp_fn_OpenMP_EHMC_sampling
