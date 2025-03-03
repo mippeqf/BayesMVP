@@ -1,29 +1,50 @@
 
 
+
+
+# remotes::install_github("stan-dev/cmdstanr", force = TRUE)
+# #### Load cmdstanr R outer package:
+# require(cmdstanr) 
+# #### Then, install the latest version of CmdStan:
+# install_cmdstan(cores = parallel::detectCores(),
+#                 overwrite = TRUE,
+#                 cpp_options = list("STAN_MODEL_LDFLAGS" = "-shared",   "CXXFLAGS" = "-fPIC"))
+
+
+
+# Install if needed
+# install.packages("pkgdown")
+# install.packages("Rdpack")
+require(pkgdown)
+require(Rdpack)
+
+# # Build site with PDF capabilities
+# pkgdown::build_site(local_INNER_pkg_dir)
+
+
 # ##
-# rm(list = ls())
+rm(list = ls())
 # ##
 rstudioapi::restartSession()
 # ##
-## rm(list = ls())
+rm(list = ls())
 
 
 ##
-
 {
-    ## First remove any possible package fragments:
-    ## Find user_pkg_install_dir:
-    user_pkg_install_dir <- Sys.getenv("R_LIBS_USER")
-    print(paste("user_pkg_install_dir = ", user_pkg_install_dir))
-    ##
-    ## Find pkg_install_path + pkg_temp_install_path:
-    pkg_install_path <- file.path(user_pkg_install_dir, "BayesMVP")
-    pkg_temp_install_path <- file.path(user_pkg_install_dir, "00LOCK-BayesMVP") 
-    ##
-    ## Remove any (possible) BayesMVP package fragments:
-    remove.packages("BayesMVP")
-    unlink(pkg_install_path, recursive = TRUE, force = TRUE)
-    unlink(pkg_temp_install_path, recursive = TRUE, force = TRUE)
+      ## First remove any possible package fragments:
+      ## Find user_pkg_install_dir:
+      user_pkg_install_dir <- Sys.getenv("R_LIBS_USER")
+      print(paste("user_pkg_install_dir = ", user_pkg_install_dir))
+      ##
+      ## Find pkg_install_path + pkg_temp_install_path:
+      pkg_install_path <- file.path(user_pkg_install_dir, "BayesMVP")
+      pkg_temp_install_path <- file.path(user_pkg_install_dir, "00LOCK-BayesMVP") 
+      ##
+      ## Remove any (possible) BayesMVP package fragments:
+      remove.packages("BayesMVP")
+      unlink(pkg_install_path, recursive = TRUE, force = TRUE)
+      unlink(pkg_temp_install_path, recursive = TRUE, force = TRUE)
 }
 
 
@@ -42,6 +63,18 @@ if (.Platform$OS.type == "windows") {
       local_INNER_pkg_dir <- "/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP"
   }
 }
+
+# setwd(local_INNER_pkg_dir)
+# 
+# devtools::build_manual(path = local_INNER_pkg_dir)
+# # 
+# # 
+# # 
+# devtools::document(roclets = c("rd", "collate", "namespace"))
+# unlink("*.pdf")
+# system("R CMD Rd2pdf .")
+# 
+# devtools::build_manual()
 
 
 
@@ -68,32 +101,47 @@ devtools::install(local_pkg_dir, upgrade = "never")
 ## * MIGHT * have to restart session:
 #### rstudioapi::restartSession()
 ##
+##
 {
-    install_success <- FALSE
-    try({  
-      ## Only works if do this first (on Linux)!! :
-      source("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP/src/R_script_load_OMP_Linux.R")
-      ##
-      ## Install (inner pkg):
-      require(BayesMVP)
-      BayesMVP::install_BayesMVP() ## CUSTOM_FLAGS = CUSTOM_FLAGS)
-      require(BayesMVP)
-      install_success <- TRUE
-    })
-    
-    rstudioapi::restartSession()
+        install_success <- FALSE
+      
+        try({  
+          ## Only works if do this first (on Linux)!! :
+          source("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP/src/R_script_load_OMP_Linux.R")
+          ##
+          ## Install (inner pkg):
+          require(BayesMVP)
+          BayesMVP::install_BayesMVP() ## CUSTOM_FLAGS = CUSTOM_FLAGS)
+          require(BayesMVP)
+          install_success <- TRUE
+        })
+        
+        try({  
+          beepr::beep("ping")
+        })
+        
+        rstudioapi::restartSession()
 }
 
 
-##### Using GitHub:
-## Install (outer pkg):
-BayesMVP_repo_link <- "https://github.com/CerulloE1996/BayesMVP"
-remotes::install_github(repo = BayesMVP_repo_link, upgrade = "never")
-###
-## Install (inner pkg):
-require(BayesMVP)
-BayesMVP::install_BayesMVP()
-require(BayesMVP)
+
+
+
+
+
+# ##### Using GitHub:
+# ## Install (outer pkg):
+# BayesMVP_repo_link <- "https://github.com/CerulloE1996/BayesMVP"
+# remotes::install_github(repo = BayesMVP_repo_link, upgrade = "never")
+# ###
+# ## Install (inner pkg):
+# require(BayesMVP)
+# BayesMVP::install_BayesMVP()
+# require(BayesMVP)
+
+
+
+
 
 
 # CUSTOM_FLAGS <- list(  "CCACHE_PATH = ccache",
