@@ -199,10 +199,10 @@ else
 endif
 ##
 $(info RTOOLS_COMPILER_PATH is: $(RTOOLS_COMPILER_PATH))
-$(info RTOOLS_COMPILER_PATH is: $(RTOOLS_COMPILER_PATH))
-$(info RTOOLS_COMPILER_PATH is: $(RTOOLS_COMPILER_PATH))
-$(info RTOOLS_COMPILER_PATH is: $(RTOOLS_COMPILER_PATH))
-$(info RTOOLS_COMPILER_PATH is: $(RTOOLS_COMPILER_PATH))
+$(info RTOOLS_COMPILER_LIB_PATH is: $(RTOOLS_COMPILER_LIB_PATH))
+$(info RTOOLS_COMPILER_BIN_PATH is: $(RTOOLS_COMPILER_BIN_PATH))
+$(info RTOOLS_COMPILER_INCLUDE_PATH is: $(RTOOLS_COMPILER_INCLUDE_PATH))
+$(info RTOOLS_COMPILER_LIBCXX_INCLUDE_PATH is: $(RTOOLS_COMPILER_LIBCXX_INCLUDE_PATH))
 ##
 ####### ----- OpenMP flags ---------------------------------------------------------------------------------------------------------
 ##
@@ -236,6 +236,11 @@ ifneq (,$(wildcard $(MINGW_CXX_COMPILER))) ## if clang (RTools "clang64") is NOT
 endif
 ##
 override CPU_FLAGS = $(CPU_BASE_FLAGS) $(FMA_FLAGS) $(AVX_FLAGS)
+##
+## ## GCC/Clang compiler flags to disable AVX (for debugging / testing on systems with no AVX):
+## override CPU_FLAGS = $(CPU_BASE_FLAGS) -mno-avx -mno-avx2 -mno-avx512f -mno-avx512cd -mno-avx512bw -mno-avx512dq -mno-avx512vl
+## ## Flags to disable FMA:
+## override CPU_FLAGS += -mno-fma
 ##
 override BASE_FLAGS =   $(CPU_FLAGS) \
                         $(MATH_FLAGS) \

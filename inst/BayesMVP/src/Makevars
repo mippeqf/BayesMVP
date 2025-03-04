@@ -105,16 +105,14 @@ endif
 ##
 ####### ----- CPU Feature Detection (i.e., AVX, FMA, etc) -------------------------------------------------------------------------
 ##
-## override HAS_FMA = $(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" R_script_has_FMA.R)
-## override HAS_AVX=$(shell "${R_HOME}/bin/Rscript" $(PKG_SRC_PATH)/R_script_has_AVX.R)
-override HAS_OMP=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_load_OMP_Linux.R")
-override LD_LIBRARY_PATH="$(HAS_OMP)"
 override HAS_FMA=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_FMA.R")
 override HAS_AVX=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX.R")
 override HAS_AVX2=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX2.R")
 override HAS_AVX512=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX_512.R")
 ##
-$(info CPU Features detected:)
+
+##
+$(info CPU Features detected:))
 $(info HAS_FMA: $(HAS_FMA))
 $(info HAS_AVX: $(HAS_AVX))
 $(info HAS_AVX2: $(HAS_AVX2))
@@ -154,6 +152,18 @@ endif
 ##
 ####### ----- OpenMP flags  ---------------------------------------------------------------------------------------------------------
 ##
+override OMP_LIB_FLAGS=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_load_OMP_Linux.R")
+override LD_LIBRARY_PATH+="$(OMP_LIB_FLAGS)"
+override OMP_SO=$(OMP_LIB_FLAGS)
+##
+## Initialize empty flags:
+override OMP_FLAGS=
+##
+ifneq ($(OMP_LIB_FLAGS),0)
+  override OMP_FLAGS+=-fopenmp
+endif
+##
+##
 ## PKG_LIBS += -L"/opt/AMD/aocc-compiler-5.0.0/lib" -lomp ## for AMD AOCC clang++
 ## PKG_LIBS += /opt/AMD/aocc-compiler-5.0.0/lib/libomp.so
 ## BASE_FLAGS +=  -fopenmp -fopenmp-simd ## for AMD AOCC clang++
@@ -188,11 +198,11 @@ endif
 ## override OMP_FLAGS = -fopenmp
 ## override OMP_LIB_FLAGS += -lgomp
 ##
-##  ------ BOOKMARK:
-override OMP_LIB_PATH=/usr/lib/gcc/x86_64-linux-gnu/11
-override OMP_SO=$(OMP_LIB_PATH)/libgomp.so
-override OMP_LIB_FLAGS=$(OMP_SO)
-override OMP_FLAGS = -fopenmp
+## ##  ------ BOOKMARK:
+## override OMP_LIB_PATH=/usr/lib/gcc/x86_64-linux-gnu/11
+## override OMP_SO=$(OMP_LIB_PATH)/libgomp.so
+## override OMP_LIB_FLAGS=$(OMP_SO)
+## override OMP_FLAGS = -fopenmp
 # ##  ------ BOOKMARK:
 # override OMP_LIB_PATH=$(AMD_AOCC_PATH)/lib
 # override OMP_SO=$(OMP_LIB_PATH)/libomp.so
@@ -215,7 +225,7 @@ endif
 override SHLIB_OPENMP_CFLAGS = $(OMP_FLAGS)
 override SHLIB_OPENMP_CXXFLAGS = $(SHLIB_OPENMP_CFLAGS)
 ## Print OpenMP info:
-$(info OMP_LIB_PATH is: $(OMP_LIB_PATH))
+#### $(info OMP_LIB_PATH is: $(OMP_LIB_PATH))
 $(info OMP_LIB_FLAGS is: $(OMP_LIB_FLAGS))
 $(info OMP_FLAGS is: $(OMP_FLAGS))
 $(info SHLIB_OPENMP_CFLAGS is: $(SHLIB_OPENMP_CFLAGS))
@@ -238,6 +248,11 @@ $(info MATH_FLAGS: $(MATH_FLAGS))
 ## endif
 ##
 override CPU_FLAGS = $(CPU_BASE_FLAGS) $(FMA_FLAGS) $(AVX_FLAGS)
+##
+## GCC/Clang compiler flags to disable AVX (for debugging / testing on systems with no AVX):
+override CPU_FLAGS = $(CPU_BASE_FLAGS) -mno-avx -mno-avx2 -mno-avx512f -mno-avx512cd -mno-avx512bw -mno-avx512dq -mno-avx512vl
+## Flags to disable FMA:
+override CPU_FLAGS += -mno-fma
 ##
 override BASE_FLAGS =   $(CPU_FLAGS) \
                         $(SHLIB_OPENMP_CFLAGS) \
