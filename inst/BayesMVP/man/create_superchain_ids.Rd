@@ -2,11 +2,11 @@
 % Please edit documentation in R/R_fn_create_superchain_ids.R
 \name{create_superchain_ids}
 \alias{create_superchain_ids}
-\title{Create superchain IDs for chain grouping when many chains are used}
+\title{#' create_superchain_ids}
 \usage{
 create_superchain_ids(n_superchains, n_chains)
 }
 \description{
-Create superchain IDs for chain grouping when many chains are used
+#' create_superchain_ids
 }
 \keyword{internal}

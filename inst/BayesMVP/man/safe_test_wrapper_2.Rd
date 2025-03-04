@@ -9,3 +9,4 @@ safe_test_wrapper_2(expr, ..., timeout = 5)
 \description{
 safe_test_wrapper_2
 }
+\keyword{internal}
