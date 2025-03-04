@@ -231,9 +231,8 @@ struct ComputeDiagnosticParallel : public RcppParallel::Worker {
        const int n_params;
        const std::string diagnostic;
        
-       /// uses tbb container for input
-       tbb::concurrent_vector<RcppParallel::RMatrix<double>> mcmc_3D_array;
-       // const std::vector<Eigen::Matrix<double, -1, -1>> mcmc_3D_array;
+       /// uses tbb container for input:
+       tbb::concurrent_vector<Eigen::Matrix<double, -1, -1>> mcmc_3D_array;
        
        /// use RMatrix for output 
        RcppParallel::RMatrix<double> output;
@@ -241,24 +240,25 @@ struct ComputeDiagnosticParallel : public RcppParallel::Worker {
        //// constructor
        ComputeDiagnosticParallel(const int &n_params_,
                                  const std::string &diagnostic_,
-                                 const std::vector<Rcpp::NumericMatrix> &mcmc_3D_array_,
+                                 const std::vector<Eigen::Matrix<double, -1, -1>> &mcmc_3D_array_,
                                  Rcpp::NumericMatrix &output_)
          : n_params(n_params_),
            diagnostic(diagnostic_),
            output(output_) 
          {
-             // Initialize concurrent vector of RMatrix
-             mcmc_3D_array = convert_vec_of_RcppMat_to_concurrent_vector(mcmc_3D_array_, mcmc_3D_array);
+                 // Initialize concurrent vector:
+                 mcmc_3D_array = convert_std_vec_to_concurrent_vector(mcmc_3D_array_, mcmc_3D_array);
          }
        
        //// Parallel operator
        void operator()(std::size_t begin, std::size_t end) {
          
              for (std::size_t i = begin; i < end; ++i) {
-                 const Eigen::Matrix<double, -1, -1> mcmc_3D_array_Eigen  = fn_convert_RMatrix_to_Eigen(mcmc_3D_array[i]);
-                 std::pair<double, double> result = Stan_compute_diagnostic(diagnostic, mcmc_3D_array_Eigen);
-                 output(i, 0) = result.first;
-                 output(i, 1) = result.second;
+               
+                     std::pair<double, double> result = Stan_compute_diagnostic(diagnostic, mcmc_3D_array[i]);
+                     output(i, 0) = result.first;
+                     output(i, 1) = result.second;
+                 
              }
              
        }
@@ -332,39 +332,43 @@ inline std::vector<double> compute_chain_stats(const std::string &stat_type,
 
 struct ComputeStatsParallel : public RcppParallel::Worker {
   
-  const int n_params;
-  const std::string stat_type;
-  tbb::concurrent_vector<RcppParallel::RMatrix<double>> mcmc_3D_array;
-  RcppParallel::RMatrix<double> output;
-  
-  //// constructor
-  ComputeStatsParallel(const int &n_params_,
-                       const std::string &stat_type_,
-                       const std::vector<Rcpp::NumericMatrix> &mcmc_3D_array_,
-                       Rcpp::NumericMatrix &output_)
-    : n_params(n_params_),
-      stat_type(stat_type_),
-      output(output_) 
-  {
-    // Initialize concurrent vector of RMatrix
-    mcmc_3D_array = convert_vec_of_RcppMat_to_concurrent_vector(mcmc_3D_array_, mcmc_3D_array);
-  }
-  
-  //// Parallel operator
-  void operator()(std::size_t begin, std::size_t end) {
-    
-    for (std::size_t i = begin; i < end; ++i) {
+        const int n_params;
+        const std::string stat_type;
+        
+        tbb::concurrent_vector<Eigen::Matrix<double, -1, -1>> mcmc_3D_array;
+        
+        RcppParallel::RMatrix<double> output;
+        
+        //// constructor
+        ComputeStatsParallel(const int &n_params_,
+                             const std::string &stat_type_,
+                             const std::vector<Eigen::Matrix<double, -1, -1>> &mcmc_3D_array_,
+                             Rcpp::NumericMatrix &output_)
+          : n_params(n_params_),
+            stat_type(stat_type_),
+            output(output_) 
+        {
+              // Initialize concurrent vector:
+              // mcmc_3D_array = convert_vec_of_RcppMat_to_concurrent_vector(mcmc_3D_array_, mcmc_3D_array);
+              mcmc_3D_array = convert_std_vec_to_concurrent_vector(mcmc_3D_array_, mcmc_3D_array);
+        }
+        
+        //// Parallel operator
+        void operator()(std::size_t begin, std::size_t end) {
           
-          const Eigen::MatrixXd mcmc_array_Eigen = fn_convert_RMatrix_to_Eigen(mcmc_3D_array[i]);
-          std::vector<double> result = compute_chain_stats(stat_type, mcmc_array_Eigen);
+              for (std::size_t i = begin; i < end; ++i) {
+                    
+                    ////  const Eigen::Matrix<double, -1, -1> mcmc_array_Eigen = fn_convert_RMatrix_to_Eigen(mcmc_3D_array[i]);
+                    const Eigen::Matrix<double, -1, -1> mcmc_array_Eigen = mcmc_3D_array[i];
+                    std::vector<double> result = compute_chain_stats(stat_type, mcmc_array_Eigen);
+                    
+                    for(int j = 0; j < result.size(); ++j) {
+                      output(i, j) = result[j];
+                    }
+                
+              }
           
-          for(size_t j = 0; j < result.size(); ++j) {
-            output(i, j) = result[j];
-          }
-      
-    }
-    
-  }
+        }
   
 };
 
