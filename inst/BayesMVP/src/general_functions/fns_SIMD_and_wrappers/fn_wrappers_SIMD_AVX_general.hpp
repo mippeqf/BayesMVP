@@ -46,13 +46,13 @@ MAYBE_INLINE  void fn_AVX_row_or_col_vector(    Eigen::Ref<T>  x_Ref,
                      for (int i = 0; i + vect_size <= N_divisible_by_vect_size; i += vect_size) {
                        
                          #if defined(USE_AVX_512)
-                             __m512d const AVX_array = _mm512_load_pd(&x_Ref(i));
+                             __m512d const AVX_array = _mm512_loadu_pd(&x_Ref(i));
                              __m512d const AVX_array_out = fn_AVX(AVX_array);
-                             _mm512_store_pd(&x_Ref(i), AVX_array_out);
+                             _mm512_storeu_pd(&x_Ref(i), AVX_array_out);
                          #elif defined(USE_AVX2)
-                             __m256d const AVX_array = _mm256_load_pd(&x_Ref(i));
+                             __m256d const AVX_array = _mm256_loadu_pd(&x_Ref(i));
                              __m256d const AVX_array_out = fn_AVX(AVX_array);
-                             _mm256_store_pd(&x_Ref(i), AVX_array_out);
+                             _mm256_storeu_pd(&x_Ref(i), AVX_array_out);
                          #endif
                            
                      }

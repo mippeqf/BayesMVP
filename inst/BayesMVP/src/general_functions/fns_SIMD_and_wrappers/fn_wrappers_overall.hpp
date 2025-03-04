@@ -107,8 +107,6 @@ ALWAYS_INLINE  auto          fn_EIGEN_double(   const Eigen::Ref<const T> x_L_va
   
 }
 
-
-
  
 //// blocks
 template <typename T, int n_rows = Eigen::Dynamic, int n_cols = Eigen::Dynamic>
@@ -124,7 +122,6 @@ ALWAYS_INLINE auto  fn_EIGEN_double(                 Eigen::Ref<Eigen::Block<T, 
 }
  
  
- 
 //// arrays
 template <int n_rows = Eigen::Dynamic, int n_cols = Eigen::Dynamic>
 ALWAYS_INLINE auto  fn_EIGEN_double(         const Eigen::Array<double, n_rows, n_cols> &x,
@@ -136,7 +133,6 @@ ALWAYS_INLINE auto  fn_EIGEN_double(         const Eigen::Array<double, n_rows, 
    T x_matrix = x.matrix();
    fn_EIGEN_Ref_double(Eigen::Ref<T>(x_matrix), fn, vect_type, skip_checks);
    return x_matrix;
-   
    
 }
  
@@ -154,6 +150,7 @@ ALWAYS_INLINE auto fn_EIGEN_double(  const Eigen::EigenBase<Derived> &x,
    T x_copy = x;
    fn_EIGEN_Ref_double(Eigen::Ref<T>(x_copy), fn, vect_type, skip_checks);
    return x_copy;
+   
 }
  
  
@@ -171,6 +168,7 @@ ALWAYS_INLINE auto fn_EIGEN_double(  const Eigen::MatrixBase<Derived> &x,
    T x_copy = x;
    fn_EIGEN_Ref_double(Eigen::Ref<T>(x_copy), fn, vect_type, skip_checks);
    return x_copy;
+   
 }
  
  
@@ -188,6 +186,7 @@ ALWAYS_INLINE auto fn_EIGEN_double(  const Eigen::ArrayBase<Derived> &x,
    T x_copy = x.matrix();
    fn_EIGEN_Ref_double(Eigen::Ref<T>(x_copy), fn, vect_type, skip_checks);
    return x_copy;
+   
 }
 
  

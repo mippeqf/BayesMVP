@@ -29,7 +29,7 @@ using namespace Eigen;
  
 template <typename T,  typename FuncDouble>
 ALWAYS_INLINE void fn_Loop_row_or_col_vector(      Eigen::Ref<T>  x, 
-                                            FuncDouble fn_double) {
+                                                   const FuncDouble &fn_double) {
   
    const int N = x.size();
    
@@ -46,7 +46,7 @@ ALWAYS_INLINE void fn_Loop_row_or_col_vector(      Eigen::Ref<T>  x,
  
 template<typename T, typename FuncDouble>
 ALWAYS_INLINE void fn_Loop_matrix(  Eigen::Ref<T> x,
-                             FuncDouble fn_double) {
+                                    const FuncDouble &fn_double) {
      
      const int rows = x.rows(); 
      const int cols = x.cols();
@@ -65,7 +65,7 @@ ALWAYS_INLINE void fn_Loop_matrix(  Eigen::Ref<T> x,
   
 template <typename T, typename FuncDouble>
 ALWAYS_INLINE void fn_Loop_dbl_Eigen( Eigen::Ref<T> x, 
-                               FuncDouble fn_double) {
+                                      const FuncDouble &fn_double) {
   
      constexpr int n_rows = T::RowsAtCompileTime;
      constexpr int n_cols = T::ColsAtCompileTime;
@@ -94,9 +94,9 @@ ALWAYS_INLINE void fn_Loop_dbl_Eigen( Eigen::Ref<T> x,
 
 template<typename FuncDouble, typename FuncDouble_wo_checks, typename T>
 ALWAYS_INLINE void    fn_process_double_Loop_sub_function(     Eigen::Ref<T> x,  
-                                                        FuncDouble fn_fast_double_function,
-                                                        FuncDouble_wo_checks fn_fast_double_function_wo_checks, 
-                                                        const bool skip_checks) {
+                                                               const FuncDouble &fn_fast_double_function,
+                                                               const FuncDouble_wo_checks &fn_fast_double_function_wo_checks, 
+                                                               const bool skip_checks) {
   
   if (skip_checks == false) {
     
