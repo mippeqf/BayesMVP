@@ -110,7 +110,7 @@ endif
 override HAS_OMP=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_load_OMP_Linux.R")
 override LD_LIBRARY_PATH="$(HAS_OMP)"
 override HAS_FMA=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_FMA.R")
-override HAS_AVX2=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX.R")
+override HAS_AVX=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX.R")
 override HAS_AVX2=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX2.R")
 override HAS_AVX512=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX_512.R")
 ##
