@@ -10,7 +10,8 @@
  
 
 #ifdef EIGEN_MAX_ALIGN_BYTES
-#undef EIGEN_MAX_ALIGN_BYTES
+    #define EIGEN_MAX_ALIGN_BYTES_OLD = EIGEN_MAX_ALIGN_BYTES
+    #undef EIGEN_MAX_ALIGN_BYTES
 #endif
  
 
@@ -25,7 +26,9 @@
       #elif defined(USE_AVX)   //// use AVX (if both AVX-512 and AVX2 NOT available)
             #define EIGEN_VECTORIZE_AVX
             #define EIGEN_MAX_ALIGN_BYTES 16 
-      #endif 
+      #else 
+            #define EIGEN_MAX_ALIGN_BYTES = EIGEN_MAX_ALIGN_BYTES_OLD
+      #endif
 #else
       #if defined(USE_AVX_512) //// use AVX-512 if available
             #define EIGEN_VECTORIZE_AVX512
@@ -36,7 +39,9 @@
       #elif defined(USE_AVX)   //// use AVX (if both AVX-512 and AVX2 NOT available)
             #define EIGEN_VECTORIZE_AVX
             #define EIGEN_MAX_ALIGN_BYTES 16
-          #endif
+      #else 
+            #define EIGEN_MAX_ALIGN_BYTES = EIGEN_MAX_ALIGN_BYTES_OLD
+      #endif
 #endif
 
 
