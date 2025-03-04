@@ -112,7 +112,7 @@ override HAS_AVX512=$(shell "$(R_HOME)/bin/Rscript" "$(PWD)/R_script_has_AVX_512
 ##
 
 ##
-$(info CPU Features detected:))
+$(info CPU Features detected:)
 $(info HAS_FMA: $(HAS_FMA))
 $(info HAS_AVX: $(HAS_AVX))
 $(info HAS_AVX2: $(HAS_AVX2))
