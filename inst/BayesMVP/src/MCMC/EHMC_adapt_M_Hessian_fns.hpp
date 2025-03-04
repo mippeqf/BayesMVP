@@ -63,11 +63,11 @@ Eigen::Matrix<double, -1, -1> near_PD(const Eigen::Ref<const Eigen::Matrix<doubl
 
 
 
-Eigen::Matrix<double, -1, -1> shrink_hessian(const Eigen::Matrix<double, -1, -1> &hessian, 
-                                             double shrinkage_factor) {
+Eigen::Matrix<double, -1, -1> shrink_hessian( const Eigen::Matrix<double, -1, -1> &hessian, 
+                                              double shrinkage_factor) {
   
-  Eigen::Matrix<double, -1, -1> diagonal = hessian.diagonal().asDiagonal();
-  return (1 - shrinkage_factor) * hessian + shrinkage_factor * diagonal;
+        Eigen::Matrix<double, -1, -1> diagonal = hessian.diagonal().asDiagonal();
+        return (1 - shrinkage_factor) * hessian + shrinkage_factor * diagonal;
   
 }
 

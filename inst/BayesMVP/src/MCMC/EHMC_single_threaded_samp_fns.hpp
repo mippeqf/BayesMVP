@@ -81,8 +81,8 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                          rng_main_i.seed(seed_main_chain_i + (ii + 1));
                          rng_nuisance_i.seed(1e6 + seed_nuisance_chain_i + (ii + 1));
                      #elif RNG_TYPE_dqrng_xoshiro256plusplus == 1
-                         rng_main_i.long_jump(seed_main_chain_i + (ii + 1));
-                         rng_nuisance_i.long_jump(1e6 + seed_nuisance_chain_i + (ii + 1));
+                         rng_main_i.seed(seed_main_chain_i + (ii + 1));
+                         rng_nuisance_i.seed(1e6 + seed_nuisance_chain_i + (ii + 1));
                      #endif 
                      
                      if (partitioned_HMC == true) {
@@ -90,7 +90,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                //////////////////////////////////////// sample nuisance (GIVEN main)
                                if (sample_nuisance == true)   {
                                              
-                                             stan::math::start_nested();
+                                            //stan::math::start_nested();
                                              fn_Diffusion_HMC_nuisance_only_single_iter_InPlace_process(    result_input,    
                                                                                                             rng_nuisance_i,
                                                                                                             Model_type, 
@@ -99,7 +99,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                                                                                             Model_args_as_cpp_struct,  
                                                                                                             EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
                                                                                                             Stan_model_as_cpp_struct);
-                                             stan::math::recover_memory_nested(); 
+                                             //stan::math::recover_memory_nested(); 
                                             
                                              HMC_output_single_chain_i.diagnostics_p_jump_us()(ii) =  result_input.us_p_jump();
                                              HMC_output_single_chain_i.diagnostics_div_us()(ii) =  result_input.us_div();
@@ -108,7 +108,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                
                                  { /// sample main GIVEN u's
                                    
-                                             stan::math::start_nested();
+                                             //stan::math::start_nested();
                                              fn_standard_HMC_main_only_single_iter_InPlace_process(      result_input,   
                                                                                                          rng_main_i,
                                                                                                          Model_type,  
@@ -117,7 +117,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                                                                                          Model_args_as_cpp_struct, 
                                                                                                          EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
                                                                                                          Stan_model_as_cpp_struct);
-                                             stan::math::recover_memory_nested(); 
+                                             //stan::math::recover_memory_nested(); 
                                              
                                              HMC_output_single_chain_i.diagnostics_p_jump_main()(ii) =  result_input.main_p_jump();
                                              HMC_output_single_chain_i.diagnostics_div_main()(ii) =  result_input.main_div();
@@ -126,7 +126,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                      
                      } else {  //// sample all params at once 
                            
-                                             stan::math::start_nested();
+                                             //stan::math::start_nested();
                                              fn_standard_HMC_dual_single_iter_InPlace_process(    result_input,    
                                                                                                   rng_main_i,
                                                                                                   rng_nuisance_i,
@@ -136,7 +136,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                                                                                                   Model_args_as_cpp_struct,   
                                                                                                   EHMC_args_as_cpp_struct, EHMC_Metric_as_cpp_struct, 
                                                                                                   Stan_model_as_cpp_struct);
-                                             stan::math::recover_memory_nested(); 
+                                             //stan::math::recover_memory_nested(); 
                                              
                                              HMC_output_single_chain_i.diagnostics_p_jump_us()(ii) =  result_input.us_p_jump();
                                              HMC_output_single_chain_i.diagnostics_div_us()(ii) =  result_input.us_div();
@@ -148,7 +148,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
                      //// store iteration ii 
                      {
                          
-                             std::lock_guard<std::mutex> lock(result_mutex_1);  
+                             ////std::lock_guard<std::mutex> lock(result_mutex_1);  
                              
                              // HMC_output_single_chain_i.store_iteration(ii, sample_nuisance);
                              HMC_output_single_chain_i.trace_main().col(ii) = result_input.main_theta_vec(); 
@@ -168,7 +168,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
          
                  if (burnin_indicator == false) {
                    if (ii %  static_cast<int>(std::round(static_cast<double>(n_iter)/4.0)) == 0) {
-                     std::lock_guard<std::mutex> lock(print_mutex);
+                     ////std::lock_guard<std::mutex> lock(print_mutex);
                      double pct_complete = 100.0 * (static_cast<double>(ii) / static_cast<double>(n_iter));
                      std::cout << "Chain #" << chain_id << " - Sampling is around " << pct_complete << " % complete" << "\n";
                    }
@@ -181,7 +181,7 @@ ALWAYS_INLINE  void                    fn_sample_HMC_multi_iter_single_thread(  
          
          
     {
-           std::lock_guard<std::mutex> lock(result_mutex_2);
+           // std::lock_guard<std::mutex> lock(result_mutex_2);
            HMC_output_single_chain_i.result_input() = result_input;
     }
      

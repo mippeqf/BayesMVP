@@ -207,15 +207,15 @@ ALWAYS_INLINE  void                         fn_standard_HMC_dual_single_iter_InP
   {
 
       { /// draw velocity for main:
-          //// Eigen::Matrix<double, -1, 1> std_norm_vec_main = Eigen::Matrix<double, -1, 1>::Zero(n_params_main);
-          generate_random_std_norm_vec_InPlace(result_input.main_velocity_0_vec(), rng_main);
-          if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * result_input.main_velocity_0_vec();
-          if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = result_input.main_velocity_0_vec().array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
+          Eigen::Matrix<double, -1, 1> std_norm_vec_main = Eigen::Matrix<double, -1, 1>::Zero(n_params_main);
+          generate_random_std_norm_vec_InPlace(std_norm_vec_main, rng_main);
+          if (metric_shape_main == "dense") result_input.main_velocity_0_vec()  = EHMC_Metric_struct_as_cpp_struct.M_inv_dense_main_chol * std_norm_vec_main;
+          if (metric_shape_main == "diag")  result_input.main_velocity_0_vec().array() = std_norm_vec_main.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_main_vec).array().sqrt() ; 
       }
       { /// draw velocity for nuisance:
-          //// Eigen::Matrix<double, -1, 1> std_norm_vec_us = Eigen::Matrix<double, -1, 1>::Zero(n_nuisance);
-          generate_random_std_norm_vec_InPlace(result_input.us_velocity_0_vec(), rng_nuisance);
-          result_input.us_velocity_0_vec().array() = ( result_input.us_velocity_0_vec().array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt() );  //.cast<float>() ;  
+          Eigen::Matrix<double, -1, 1> std_norm_vec_us = Eigen::Matrix<double, -1, 1>::Zero(n_nuisance);
+          generate_random_std_norm_vec_InPlace(std_norm_vec_us, rng_nuisance);
+          result_input.us_velocity_0_vec().array() = std_norm_vec_us.array() *  (EHMC_Metric_struct_as_cpp_struct.M_inv_us_vec).array().sqrt();
       }
 
     {

@@ -41,7 +41,34 @@ using namespace Eigen;
 
 
 
-     
+#include <tbb/task_scheduler_observer.h>
+#include <tbb/task_arena.h>
+ 
+ class PinningObserver : public tbb::task_scheduler_observer {
+   
+       std::vector<int> core_ids;
+   
+     public:
+       PinningObserver(const std::vector<int>& cores) 
+         : core_ids(cores) {
+         observe(true); // Activate the observer
+       }
+       
+       void on_scheduler_entry(bool worker) override {
+         int thread_id = tbb::this_task_arena::current_thread_index();
+         if (thread_id < core_ids.size()) {
+           cpu_set_t cpuset;
+           CPU_ZERO(&cpuset);
+           CPU_SET(core_ids[thread_id], &cpuset);
+           pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+         }
+       }
+   
+ };
+ 
+ 
+ 
+ 
  
 
 // --------------------------------- RcpParallel  functions  -- SAMPLING fn ------------------------------------------------------------------------------------------------------------------------------------------- 
@@ -56,29 +83,13 @@ class RcppParallel_EHMC_sampling : public RcppParallel::Worker {
   
 public:
   
-          //// Clear all Eigen matrices:
-          void reset_Eigen() {
-                theta_main_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
-                theta_us_vectors_all_chains_input_from_R_RcppPar.resize(0, 0);
-          }
-          
-          //// Clear all tbb concurrent vectors
-          void reset_tbb() { 
-                HMC_outputs.clear();
-                HMC_inputs.clear();
-                y_copies.clear();
-                Model_args_as_cpp_struct_copies.clear();
-                EHMC_args_as_cpp_struct_copies.clear();
-                EHMC_Metric_as_cpp_struct_copies.clear();
-          }
-          
-          //// Clear all:
-          void reset() {
-                reset_tbb();
-                reset_Eigen();
-          } 
           
           //////////////////// ---- declare variables
+          // #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
+          //       dqrng::xoshiro256plus global_rng_main;
+          //       dqrng::xoshiro256plus global_rng_nuisance;
+          // #endif
+          
           const uint64_t  global_seed;
           const int  n_threads;
           const int  n_iter;
@@ -90,29 +101,29 @@ public:
           const bool multi_attempts; 
           
           //// local storage:
-          tbb::concurrent_vector<HMC_output_single_chain> HMC_outputs;
-          tbb::concurrent_vector<HMCResult> HMC_inputs;
+          std::vector<HMC_output_single_chain> HMC_outputs;
+          std::vector<HMCResult> HMC_inputs;
           
           //// Input data (to read)
-          Eigen::Matrix<double, -1, -1>  theta_main_vectors_all_chains_input_from_R_RcppPar;
-          Eigen::Matrix<double, -1, -1>  theta_us_vectors_all_chains_input_from_R_RcppPar;
+          const Eigen::Matrix<double, -1, -1>  &theta_main_vectors_all_chains_input_from_R_RcppPar;
+          const Eigen::Matrix<double, -1, -1>  &theta_us_vectors_all_chains_input_from_R_RcppPar;
           
           //// data:
-          tbb::concurrent_vector<Eigen::Matrix<int, -1, -1>> y_copies;  
+          const std::vector<Eigen::Matrix<int, -1, -1>> &y_copies;  
           
           //// input structs:
-          tbb::concurrent_vector<Model_fn_args_struct>   Model_args_as_cpp_struct_copies;  
-          tbb::concurrent_vector<EHMC_fn_args_struct>    EHMC_args_as_cpp_struct_copies;  
-          tbb::concurrent_vector<EHMC_Metric_struct>     EHMC_Metric_as_cpp_struct_copies;  
+          const std::vector<Model_fn_args_struct>   &Model_args_as_cpp_struct_copies;  
+          std::vector<EHMC_fn_args_struct>          &EHMC_args_as_cpp_struct_copies;  //// These have to be modifiable
+          const std::vector<EHMC_Metric_struct>     &EHMC_Metric_as_cpp_struct_copies;  
           
           //////////////////// ---- declare SAMPLING-SPECIFIC variables:
           //// references to R trace matrices:
           const int n_nuisance_to_track;
-          std::vector<Rcpp::NumericMatrix> &trace_output;
-          std::vector<Rcpp::NumericMatrix> &trace_output_divs;
-          std::vector<Rcpp::NumericMatrix> &trace_output_nuisance;
+          std::vector<Eigen::Matrix<double, -1, -1>> &trace_output;
+          std::vector<Eigen::Matrix<double, -1, -1>> &trace_output_divs;
+          std::vector<Eigen::Matrix<double, -1, -1>> &trace_output_nuisance;
           //// this only gets used for built-in models, for Stan models log_lik must be defined in the "transformed parameters" block.
-          std::vector<Rcpp::NumericMatrix> &trace_output_log_lik;   
+          std::vector<Eigen::Matrix<double, -1, -1>> &trace_output_log_lik;   
           
           
   ////////////// Constructor (initialise these with the SOURCE format)
@@ -128,18 +139,18 @@ public:
                                //// inputs
                                const Eigen::Matrix<double, -1, -1> &theta_main_vectors_all_chains_input_from_R,
                                const Eigen::Matrix<double, -1, -1> &theta_us_vectors_all_chains_input_from_R,
-                               ////  data:
-                               const std::vector<Eigen::Matrix<int, -1, -1>> &y_copies_R,
-                               //////////////  input structs:
-                               const std::vector<Model_fn_args_struct>  &Model_args_as_cpp_struct_copies_R,   // READ-ONLY
-                               std::vector<EHMC_fn_args_struct>  &EHMC_args_as_cpp_struct_copies_R,  
-                               const std::vector<EHMC_Metric_struct>  &EHMC_Metric_as_cpp_struct_copies_R, // READ-ONLY
+                               //// data:
+                               const std::vector<Eigen::Matrix<int, -1, -1>> &y_copies_,
+                               //// input structs:
+                               const std::vector<Model_fn_args_struct>  &Model_args_as_cpp_struct_copies_,   // READ-ONLY
+                               std::vector<EHMC_fn_args_struct>  &EHMC_args_as_cpp_struct_copies_,  
+                               const std::vector<EHMC_Metric_struct>  &EHMC_Metric_as_cpp_struct_copies_, // READ-ONLY
                                //// -------------- For POST-BURNIN only:
                                const int &n_nuisance_to_track_R,
-                               std::vector<Rcpp::NumericMatrix> &trace_output_,
-                               std::vector<Rcpp::NumericMatrix> &trace_output_divs_,
-                               std::vector<Rcpp::NumericMatrix> &trace_output_nuisance_,
-                               std::vector<Rcpp::NumericMatrix> &trace_output_log_lik_
+                               std::vector<Eigen::Matrix<double, -1, -1>> &trace_output_,
+                               std::vector<Eigen::Matrix<double, -1, -1>> &trace_output_divs_,
+                               std::vector<Eigen::Matrix<double, -1, -1>> &trace_output_nuisance_,
+                               std::vector<Eigen::Matrix<double, -1, -1>> &trace_output_log_lik_
                                )
     :
     n_threads(n_threads_R),
@@ -154,6 +165,12 @@ public:
     //// inputs:
     theta_main_vectors_all_chains_input_from_R_RcppPar(theta_main_vectors_all_chains_input_from_R),
     theta_us_vectors_all_chains_input_from_R_RcppPar(theta_us_vectors_all_chains_input_from_R),
+    ////  data:
+    y_copies(y_copies_),
+    //// input structs:
+    Model_args_as_cpp_struct_copies(Model_args_as_cpp_struct_copies_),
+    EHMC_args_as_cpp_struct_copies(EHMC_args_as_cpp_struct_copies_),
+    EHMC_Metric_as_cpp_struct_copies(EHMC_Metric_as_cpp_struct_copies_),
     //// -------------- For POST-BURNIN only:
     n_nuisance_to_track(n_nuisance_to_track_R), 
     trace_output(trace_output_),
@@ -161,26 +178,22 @@ public:
     trace_output_nuisance(trace_output_nuisance_),
     trace_output_log_lik(trace_output_log_lik_)
   {
-            y_copies = convert_std_vec_to_concurrent_vector(y_copies_R, y_copies);
-            Model_args_as_cpp_struct_copies = convert_std_vec_to_concurrent_vector(Model_args_as_cpp_struct_copies_R, Model_args_as_cpp_struct_copies);
-            EHMC_args_as_cpp_struct_copies = convert_std_vec_to_concurrent_vector(EHMC_args_as_cpp_struct_copies_R, EHMC_args_as_cpp_struct_copies);
-            EHMC_Metric_as_cpp_struct_copies = convert_std_vec_to_concurrent_vector(EHMC_Metric_as_cpp_struct_copies_R, EHMC_Metric_as_cpp_struct_copies);
+    
+            // #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
+            //     global_rng_main.seed(global_seed_R);
+            //     global_rng_nuisance.seed(global_seed_R + 1e6);
+            // #endif
             
             const int N = Model_args_as_cpp_struct_copies[0].N;
             const int n_us =  Model_args_as_cpp_struct_copies[0].n_nuisance;
             const int n_params_main = Model_args_as_cpp_struct_copies[0].n_params_main;
     
             HMC_outputs.reserve(n_threads_R);
-            for (int i = 0; i < n_threads_R; ++i) {
-              HMC_output_single_chain HMC_output_single_chain(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N);
-              HMC_outputs.emplace_back(HMC_output_single_chain);
-            }
-            
             HMC_inputs.reserve(n_threads_R);
             for (int i = 0; i < n_threads_R; ++i) {
-              HMCResult HMCResult(n_params_main, n_us, N);
-              HMC_inputs.emplace_back(HMCResult);
-            } 
+                HMC_outputs.emplace_back(n_iter_R, n_nuisance_to_track, n_params_main, n_us, N);
+                HMC_inputs.emplace_back(n_params_main, n_us, N);
+            }
         
   }
 
@@ -191,11 +204,6 @@ public:
               const uint64_t global_seed_nuisance = global_seed + 1e6;
               const int global_seed_main_int =      static_cast<int>(global_seed_main);
               const int global_seed_nuisance_int =  static_cast<int>(global_seed_nuisance);
-              
-              #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-                      dqrng::xoshiro256plus global_rng_main(global_seed_main_int);
-                      dqrng::xoshiro256plus global_rng_nuisance(global_seed_nuisance_int);
-              #endif
       
               //// Process all chains from begin to end:
               for (std::size_t i = begin; i < end; ++i) {
@@ -205,13 +213,13 @@ public:
                            const int seed_nuisance_int_i = global_seed_nuisance_int + n_iter*(1 + chain_id_int);
                            
                            #if RNG_TYPE_dqrng_xoshiro256plusplus == 1
-                                 thread_local dqrng::xoshiro256plus rng_main_i(global_rng_main);      // make thread local copy of rng 
-                                 thread_local dqrng::xoshiro256plus rng_nuisance_i(global_rng_nuisance);      // make thread local copy of rng 
-                                 rng_main_i.long_jump(seed_main_int_i);  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                                 rng_nuisance_i.long_jump(seed_nuisance_int_i);  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                 dqrng::xoshiro256plus rng_main_i; //(global_rng_main);      // make thread local copy of rng 
+                                 dqrng::xoshiro256plus rng_nuisance_i; //(global_rng_nuisance);      // make thread local copy of rng 
+                                 rng_main_i.seed(seed_main_int_i);  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                 rng_nuisance_i.seed(seed_nuisance_int_i);  // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                            #elif RNG_TYPE_CPP_STD == 1
-                                 thread_local std::mt19937 rng_main_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                                 thread_local std::mt19937 rng_nuisance_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                 std::mt19937 rng_main_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                                 std::mt19937 rng_nuisance_i;  // Fresh RNG // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                                  rng_main_i.seed(seed_main_int_i); // set / re-set the seed
                                  rng_nuisance_i.seed(seed_nuisance_int_i); // set / re-set the seed
                            #endif
@@ -221,8 +229,8 @@ public:
                            const int n_params_main = Model_args_as_cpp_struct_copies[i].n_params_main;
                            const int n_params = n_params_main + n_us;
                           
-                           thread_local stan::math::ChainableStack ad_tape;     // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
-                           thread_local stan::math::nested_rev_autodiff nested; // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           stan::math::ChainableStack ad_tape;     // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
+                           //// stan::math::nested_rev_autodiff nested; // bookmark - thread_local works on Linux but not sure about WIndows (also is it needed on Linux?)
                            
                            const bool burnin_indicator = false;
                            const int current_iter = 0; // gets assigned later for post-burnin
@@ -239,7 +247,7 @@ public:
                               
                               if (Model_type == "Stan") {  
                    
-                                            Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(    Model_args_as_cpp_struct_copies[i].model_so_file,
+                                           Stan_model_struct  Stan_model_as_cpp_struct = fn_load_Stan_model_and_data(     Model_args_as_cpp_struct_copies[i].model_so_file,
                                                                                                                           Model_args_as_cpp_struct_copies[i].json_file_path, 
                                                                                                                           seed_main_int_i);
                                       
@@ -312,41 +320,28 @@ public:
   
   // Copy results directly to R matrices
   void copy_results_to_output() {
-    for (int i = 0; i < n_threads; ++i) {
-
-          // Copy main trace
-          for (int ii = 0; ii < HMC_outputs[i].trace_main().cols(); ++ii) {
-            for (int param = 0; param < HMC_outputs[i].trace_main().rows(); ++param) {
-              trace_output[i](param, ii) = (HMC_outputs[i].trace_main()(param, ii));
-            }
+    
+          // const int n_nuisance = HMC_outputs[0].trace_nuisance().rows();
+          const int n_iter = HMC_outputs[0].trace_main().cols();
+          
+          for (int i = 0; i < n_threads; ++i) {
+            
+                      // Copy main trace
+                      for (int ii = 0; ii < n_iter; ++ii) {
+                  
+                          trace_output[i].col(ii) = HMC_outputs[i].trace_main().col(ii);
+                          trace_output_divs[i].col(ii) =  HMC_outputs[i].trace_div().col(ii);
+                          if (sample_nuisance == true) {
+                            trace_output_nuisance[i].col(ii) =  HMC_outputs[i].trace_nuisance().col(ii);
+                          }
+                          if (Model_type != "Stan") {
+                            trace_output_log_lik[i].col(ii) =   HMC_outputs[i].trace_log_lik().col(ii);
+                          }
+                       
+                      }
+      
           }
-
-          // Copy divs
-          for (int ii = 0; ii < HMC_outputs[i].trace_div().cols(); ++ii) {
-            for (int param = 0; param < HMC_outputs[i].trace_div().rows(); ++param) {
-              trace_output_divs[i](param, ii) =  (HMC_outputs[i].trace_div()(param, ii));
-            }
-          }
-
-          // Copy nuisance  
-          if (sample_nuisance) {
-            for (int ii = 0; ii < HMC_outputs[i].trace_nuisance().cols(); ++ii) {
-              for (int param = 0; param < HMC_outputs[i].trace_nuisance().rows(); ++param) {
-                trace_output_nuisance[i](param, ii) =  (HMC_outputs[i].trace_nuisance()(param, ii));
-              }
-            }
-          }
-
-          // Copy log-lik   (for built-in models only)
-          if (Model_type != "Stan") {
-            for (int ii = 0; ii < HMC_outputs[i].trace_log_lik().cols(); ++ii) {
-              for (int param = 0; param < HMC_outputs[i].trace_log_lik().rows(); ++param) {
-                trace_output_log_lik[i](param, ii) =   (HMC_outputs[i].trace_log_lik()(param, ii));
-              }
-            }
-          }
-
-    }
+    
   }
 
 
