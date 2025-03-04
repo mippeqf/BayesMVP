@@ -1,36 +1,6 @@
 
 #pragma once
 
- 
- 
-
-// #include <stan/math/rev.hpp>
-// ////
-// #include <stan/math/prim/fun/Eigen.hpp>
-// #include <stan/math/prim/fun/typedefs.hpp>
-// #include <stan/math/prim/fun/value_of_rec.hpp>
-// #include <stan/math/prim/err/check_pos_definite.hpp>
-// #include <stan/math/prim/err/check_square.hpp>
-// #include <stan/math/prim/err/check_symmetric.hpp>
-// ////
-// #include <stan/math/prim/fun/cholesky_decompose.hpp>
-// #include <stan/math/prim/fun/sqrt.hpp>
-// #include <stan/math/prim/fun/log.hpp>
-// #include <stan/math/prim/fun/transpose.hpp>
-// #include <stan/math/prim/fun/dot_product.hpp>
-// #include <stan/math/prim/fun/norm2.hpp>
-// #include <stan/math/prim/fun/diagonal.hpp>
-// #include <stan/math/prim/fun/cholesky_decompose.hpp>
-// #include <stan/math/prim/fun/eigenvalues_sym.hpp>
-// #include <stan/math/prim/fun/diag_post_multiply.hpp>
-// ////
-// #include <stan/math/prim/prob/multi_normal_cholesky_lpdf.hpp>
-// #include <stan/math/prim/prob/lkj_corr_cholesky_lpdf.hpp>
-// #include <stan/math/prim/prob/weibull_lpdf.hpp>
-// #include <stan/math/prim/prob/gamma_lpdf.hpp>
-// #include <stan/math/prim/prob/beta_lpdf.hpp>
-// 
-
 
  
 #include <Eigen/Dense>
@@ -40,33 +10,6 @@
 
 #include <unsupported/Eigen/SpecialFunctions>
 
-
-
-
- 
-// 
-// using std_vec_of_EigenVecs = std::vector<Eigen::Matrix<double, -1, 1>>;
-// using std_vec_of_EigenVecs_int = std::vector<Eigen::Matrix<int, -1, 1>>;
-// 
-// using std_vec_of_EigenMats = std::vector<Eigen::Matrix<double, -1, -1>>;
-// using std_vec_of_EigenMats_int = std::vector<Eigen::Matrix<int, -1, -1>>;
-// 
-// using two_layer_std_vec_of_EigenVecs =  std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>;
-// using two_layer_std_vec_of_EigenVecs_int = std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>;
-// 
-// using two_layer_std_vec_of_EigenMats = std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>;
-// using two_layer_std_vec_of_EigenMats_int = std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>;
-// 
-// 
-// using three_layer_std_vec_of_EigenVecs =  std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, 1>>>>;
-// using three_layer_std_vec_of_EigenVecs_int =  std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, 1>>>>;
-// 
-// using three_layer_std_vec_of_EigenMats = std::vector<std::vector<std::vector<Eigen::Matrix<double, -1, -1>>>>; 
-// using three_layer_std_vec_of_EigenMats_int = std::vector<std::vector<std::vector<Eigen::Matrix<int, -1, -1>>>>;
-// 
-// 
-// 
-// 
 
 
 
@@ -228,7 +171,7 @@ inline  void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD
   Eigen::Matrix<double, -1, 1 >  target_AD_grad(n_corrs);
   double grad_prev_AD = 0.0;
 
-  stan::math::var target_AD = 0.0;
+  double target_AD_double = 0.0;
   
   int dim_choose_2 = n_tests * (n_tests - 1) * 0.5 ;
   std::vector<Eigen::Matrix<double, -1, -1 > > deriv_L_wrt_unc_full = vec_of_mats_double(dim_choose_2 + n_tests, dim_choose_2, n_class);
@@ -241,7 +184,9 @@ inline  void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD
  
   {     ////////////////////////// local AD block
 
-   stan::math::start_nested();  ////////////////////////
+    stan::math::start_nested();  ////////////////////////
+    
+    stan::math::var target_AD = 0.0;
 
     Eigen::Matrix<stan::math::var, -1, 1  >  Omega_raw_vec_var =  stan::math::to_var(Omega_raw_vec_double) ;
     std::vector<Eigen::Matrix<stan::math::var, -1, -1 > > Omega_unconstrained_var = fn_convert_std_vec_of_corrs_to_3d_array_var(Eigen_vec_to_std_vec_var(Omega_raw_vec_var),  n_tests, n_class);
@@ -368,7 +313,9 @@ inline  void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD
       ////log_abs_L_Omega_double[c] =    log_abs_L_Omega_double[c].array().min(700.0).max(-700.0);
     }
 
-  stan::math::recover_memory_nested();  //////////////////////////////////////////
+    target_AD_double = target_AD.val();
+    
+    stan::math::recover_memory_nested();  //////////////////////////////////////////
 
   }   //////////////////////////  end of local AD block
 
@@ -416,7 +363,7 @@ inline  void                             fn_lp_grad_MVP_LC_Pinkney_PartialLog_MD
         }
       }
     }
-    double prior_densities_corrs = target_AD.val();
+    double prior_densities_corrs = target_AD_double;
     prior_densities = prior_densities_coeffs + prior_densities_corrs ;     // total prior densities and Jacobian adjustments
   }
   

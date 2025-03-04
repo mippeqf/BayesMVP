@@ -111,7 +111,6 @@ void                             fn_lp_grad_MVP_multi_attempts_InPlace_process( 
                                                                                     const Eigen::Ref<const Eigen::Matrix<int, -1, -1>> y_ref,
                                                                                     const std::string grad_option,
                                                                                     const Model_fn_args_struct &Model_args_as_cpp_struct
-                                                                                  //  MVP_ThreadLocalWorkspace &MVP_workspace
 ) {
 
  

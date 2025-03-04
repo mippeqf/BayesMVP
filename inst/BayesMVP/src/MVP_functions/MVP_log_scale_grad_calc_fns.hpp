@@ -23,8 +23,7 @@
  
 
 
-
-inline void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
+ALWAYS_INLINE void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
                                                                   const std::vector<int> &index,
                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
                                                                   Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
@@ -111,20 +110,20 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_underflow(       const int t,
  
  
  
-inline void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t,
-                                                                    const int num_overflows,
-                                                                    const std::vector<int> &index,
-                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
-                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
-                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
-                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_Z_std_norm,
-                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
-                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
-                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
-                                                                    Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
-                                                                    const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
-                                                                    const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
-                                                                    const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(     const int t,
+                                                                      const int num_overflows,
+                                                                      const std::vector<int> &index,
+                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> Bound_U_Phi_Bound_Z,
+                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> Phi_Z,
+                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> Z_std_norm,
+                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_Z_std_norm,
+                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> prob,
+                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> y1_log_prob,
+                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Bound_Z,
+                                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
+                                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  Bound_Z,
+                                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>>  u_array,
+                                                                      const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
    
          const double sqrt_2_pi_recip = 1.0 / std::sqrt(2.0 * M_PI);
@@ -203,7 +202,7 @@ inline void fn_MVP_compute_lp_GHK_cols_log_scale_overflow(          const int t,
  
 
 
-inline  void fn_MVP_grad_prep_log_scale(                 Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,
+ALWAYS_INLINE  void fn_MVP_grad_prep_log_scale(          Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,
                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_prob_recip_rowwise_prod_temp,
                                                          Eigen::Ref<Eigen::Matrix<double, -1, 1>>  log_prob_rowwise_prod_temp_all,
                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,
@@ -376,38 +375,38 @@ inline  void fn_MVP_grad_prep_log_scale(                 Eigen::Ref<Eigen::Matri
  
  
 
-inline  void fn_MVP_compute_nuisance_grad_log_scale(      const std::vector<int> &n_problem_array,
-                                                          const std::vector<std::vector<int>> &problem_index_array,
-                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_u_grad_array_CM_chunk,  // indexed
-                                                          Eigen::Ref<Eigen::Matrix<double, -1, -1>> u_grad_array_CM_chunk,  // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_double,
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip, // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob, // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_recip,  // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,  // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,  // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,  // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,  // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,  // indexed
-                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,  // indexed
-                                                          Eigen::Matrix<double, -1, -1>  &log_abs_z_grad_term,  /// NOT Eigen::Ref as can't resize them !!!
-                                                          Eigen::Matrix<double, -1, -1>  &sign_z_grad_term,
-                                                          Eigen::Matrix<double, -1, -1>  &log_abs_grad_prob,
-                                                          Eigen::Matrix<double, -1, -1>  &sign_grad_prob,
-                                                          Eigen::Matrix<double, -1, 1>   &log_abs_prod_container_or_inc_array,
-                                                          Eigen::Matrix<double, -1, 1>   &sign_prod_container_or_inc_array,
-                                                          Eigen::Matrix<double, -1, 1>   &log_sum_result,  
-                                                          Eigen::Matrix<double, -1, 1>   &sign_sum_result, 
-                                                          Eigen::Matrix<double, -1, -1>  &log_terms,
-                                                          Eigen::Matrix<double, -1, -1>  &sign_terms,
-                                                          Eigen::Matrix<double, -1, 1> &log_abs_a,
-                                                          Eigen::Matrix<double, -1, 1> &log_abs_b,
-                                                          Eigen::Matrix<double, -1, 1> &sign_a,
-                                                          Eigen::Matrix<double, -1, 1> &sign_b,
-                                                          Eigen::Matrix<double, -1, 1> &container_max_logs,
-                                                          Eigen::Matrix<double, -1, 1> &container_sum_exp_signed,
-                                                          const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE  void fn_MVP_compute_nuisance_grad_log_scale(       const std::vector<int> &n_problem_array,
+                                                                  const std::vector<std::vector<int>> &problem_index_array,
+                                                                  Eigen::Ref<Eigen::Matrix<double, -1, -1>> log_abs_u_grad_array_CM_chunk,  // indexed
+                                                                  Eigen::Ref<Eigen::Matrix<double, -1, -1>> u_grad_array_CM_chunk,  // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_double,
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip, // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob, // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_recip,  // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,  // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,  // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,  // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,  // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,  // indexed
+                                                                  const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,  // indexed
+                                                                  Eigen::Matrix<double, -1, -1>  &log_abs_z_grad_term,  /// NOT Eigen::Ref as can't resize them !!!
+                                                                  Eigen::Matrix<double, -1, -1>  &sign_z_grad_term,
+                                                                  Eigen::Matrix<double, -1, -1>  &log_abs_grad_prob,
+                                                                  Eigen::Matrix<double, -1, -1>  &sign_grad_prob,
+                                                                  Eigen::Matrix<double, -1, 1>   &log_abs_prod_container_or_inc_array,
+                                                                  Eigen::Matrix<double, -1, 1>   &sign_prod_container_or_inc_array,
+                                                                  Eigen::Matrix<double, -1, 1>   &log_sum_result,  
+                                                                  Eigen::Matrix<double, -1, 1>   &sign_sum_result, 
+                                                                  Eigen::Matrix<double, -1, -1>  &log_terms,
+                                                                  Eigen::Matrix<double, -1, -1>  &sign_terms,
+                                                                  Eigen::Matrix<double, -1, 1> &log_abs_a,
+                                                                  Eigen::Matrix<double, -1, 1> &log_abs_b,
+                                                                  Eigen::Matrix<double, -1, 1> &sign_a,
+                                                                  Eigen::Matrix<double, -1, 1> &sign_b,
+                                                                  Eigen::Matrix<double, -1, 1> &container_max_logs,
+                                                                  Eigen::Matrix<double, -1, 1> &container_sum_exp_signed,
+                                                                  const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
   
   
@@ -741,36 +740,36 @@ inline  void fn_MVP_compute_nuisance_grad_log_scale(      const std::vector<int>
   
   
 
-inline  void      fn_MVP_compute_coefficients_grad_log_scale(   const std::vector<int> &n_problem_array,
-                                                                const std::vector<std::vector<int>> &problem_index_array,
-                                                                Eigen::Matrix<double, -1, -1> &beta_grad_array,
-                                                                std::vector<Eigen::Matrix<double, -1, -1>> &sign_beta_grad_array_for_each_n, 
-                                                                std::vector<Eigen::Matrix<double, -1, -1>> &log_abs_beta_grad_array_for_each_n,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_double,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,
-                                                                Eigen::Matrix<double, -1, -1>  &log_abs_z_grad_term, /// NOT Eigen::Ref as can't resize them !!!
-                                                                Eigen::Matrix<double, -1, -1>  &sign_z_grad_term,
-                                                                Eigen::Matrix<double, -1, -1>  &log_abs_grad_prob,
-                                                                Eigen::Matrix<double, -1, -1>  &sign_grad_prob,
-                                                                Eigen::Matrix<double, -1, 1>   &log_abs_prod_container_or_inc_array,
-                                                                Eigen::Matrix<double, -1, 1>   &sign_prod_container_or_inc_array,
-                                                                Eigen::Matrix<double, -1, -1>  &log_abs_prod_container_or_inc_array_comp,
-                                                                Eigen::Matrix<double, -1, -1>  &sign_prod_container_or_inc_array_comp,
-                                                                Eigen::Matrix<double, -1, 1>   &log_sum_result,
-                                                                Eigen::Matrix<double, -1, 1>   &sign_sum_result,
-                                                                Eigen::Matrix<double, -1, -1>  &log_terms,
-                                                                Eigen::Matrix<double, -1, -1>  &sign_terms,
-                                                                Eigen::Matrix<double, -1, 1>   &container_max_logs,
-                                                                Eigen::Matrix<double, -1, 1>   &container_sum_exp_signed,
-                                                                const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE  void      fn_MVP_compute_coefficients_grad_log_scale(      const std::vector<int> &n_problem_array,
+                                                                          const std::vector<std::vector<int>> &problem_index_array,
+                                                                          Eigen::Matrix<double, -1, -1> &beta_grad_array,
+                                                                          std::vector<Eigen::Matrix<double, -1, -1>> &sign_beta_grad_array_for_each_n, 
+                                                                          std::vector<Eigen::Matrix<double, -1, -1>> &log_abs_beta_grad_array_for_each_n,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_double,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prob_rowwise_prod_temp,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                                          const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,
+                                                                          Eigen::Matrix<double, -1, -1>  &log_abs_z_grad_term, /// NOT Eigen::Ref as can't resize them !!!
+                                                                          Eigen::Matrix<double, -1, -1>  &sign_z_grad_term,
+                                                                          Eigen::Matrix<double, -1, -1>  &log_abs_grad_prob,
+                                                                          Eigen::Matrix<double, -1, -1>  &sign_grad_prob,
+                                                                          Eigen::Matrix<double, -1, 1>   &log_abs_prod_container_or_inc_array,
+                                                                          Eigen::Matrix<double, -1, 1>   &sign_prod_container_or_inc_array,
+                                                                          Eigen::Matrix<double, -1, -1>  &log_abs_prod_container_or_inc_array_comp,
+                                                                          Eigen::Matrix<double, -1, -1>  &sign_prod_container_or_inc_array_comp,
+                                                                          Eigen::Matrix<double, -1, 1>   &log_sum_result,
+                                                                          Eigen::Matrix<double, -1, 1>   &sign_sum_result,
+                                                                          Eigen::Matrix<double, -1, -1>  &log_terms,
+                                                                          Eigen::Matrix<double, -1, -1>  &sign_terms,
+                                                                          Eigen::Matrix<double, -1, 1>   &container_max_logs,
+                                                                          Eigen::Matrix<double, -1, 1>   &container_sum_exp_signed,
+                                                                          const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
   
   
@@ -966,46 +965,46 @@ inline  void      fn_MVP_compute_coefficients_grad_log_scale(   const std::vecto
 
 
 
-inline  void fn_MVP_compute_L_Omega_grad_log_scale(    const std::vector<int> &n_problem_array,
-                                                      const std::vector<std::vector<int>> &problem_index_array,
-                                                      Eigen::Ref<Eigen::Matrix<double, -1, -1>> L_Omega_grad_array,
-                                                      std::vector<Eigen::Matrix<double, -1, -1>>  &sign_L_Omega_grad_array_col_for_each_n,
-                                                      std::vector<Eigen::Matrix<double, -1, -1>>  &log_abs_L_Omega_grad_array_col_for_each_n,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_Bound_Z,  ////
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_Bound_Z,  ////
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_Z_std_norm,  ////
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_Z_std_norm, ////
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_double,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prop_rowwise_prod_temp,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
-                                                      const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,
-                                                      Eigen::Matrix<double, -1, -1>  &log_abs_z_grad_term,  /// NOT Eigen::Ref as can't resize them !!!
-                                                      Eigen::Matrix<double, -1, -1>  &sign_z_grad_term,
-                                                      Eigen::Matrix<double, -1, -1>  &log_abs_grad_prob,
-                                                      Eigen::Matrix<double, -1, -1>  &sign_grad_prob,
-                                                      Eigen::Matrix<double, -1, 1>   &log_abs_prod_container_or_inc_array,
-                                                      Eigen::Matrix<double, -1, 1>   &sign_prod_container_or_inc_array,
-                                                      Eigen::Matrix<double, -1, -1>  &log_abs_prod_container_or_inc_array_comp,
-                                                      Eigen::Matrix<double, -1, -1>  &sign_prod_container_or_inc_array_comp,
-                                                      Eigen::Matrix<double, -1, -1>  &log_abs_derivs_chain_container_vec_comp,
-                                                      Eigen::Matrix<double, -1, -1>  &sign_derivs_chain_container_vec_comp,
-                                                      Eigen::Matrix<double, -1, 1>   &log_sum_result,
-                                                      Eigen::Matrix<double, -1, 1>   &sign_sum_result,
-                                                      Eigen::Matrix<double, -1, -1>  &log_terms,
-                                                      Eigen::Matrix<double, -1, -1>  &sign_terms,
-                                                      Eigen::Matrix<double, -1, 1>   &log_abs_a,
-                                                      Eigen::Matrix<double, -1, 1>   &log_abs_b,
-                                                      Eigen::Matrix<double, -1, 1>   &sign_a,
-                                                      Eigen::Matrix<double, -1, 1>   &sign_b,
-                                                      Eigen::Matrix<double, -1, 1>   &container_max_logs,
-                                                      Eigen::Matrix<double, -1, 1>   &container_sum_exp_signed,
-                                                      const Model_fn_args_struct &Model_args_as_cpp_struct
+ALWAYS_INLINE  void fn_MVP_compute_L_Omega_grad_log_scale(      const std::vector<int> &n_problem_array,
+                                                                const std::vector<std::vector<int>> &problem_index_array,
+                                                                Eigen::Ref<Eigen::Matrix<double, -1, -1>> L_Omega_grad_array,
+                                                                std::vector<Eigen::Matrix<double, -1, -1>>  &sign_L_Omega_grad_array_col_for_each_n,
+                                                                std::vector<Eigen::Matrix<double, -1, -1>>  &log_abs_L_Omega_grad_array_col_for_each_n,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_Bound_Z,  ////
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_Bound_Z,  ////
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_Z_std_norm,  ////
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_Z_std_norm, ////
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> L_Omega_double,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_L_Omega_double,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_phi_Z_recip,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> y1_log_prob,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_prop_rowwise_prod_temp,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_sign_chunk_times_phi_Bound_Z_x_L_Omega_diag_recip,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_abs_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> sign_y_m_ysign_x_u_array_times_phi_Z_times_phi_Bound_Z_times_L_Omega_diag_recip,
+                                                                const Eigen::Ref<const Eigen::Matrix<double, -1, -1>> log_common_grad_term_1,
+                                                                Eigen::Matrix<double, -1, -1>  &log_abs_z_grad_term,  /// NOT Eigen::Ref as can't resize them !!!
+                                                                Eigen::Matrix<double, -1, -1>  &sign_z_grad_term,
+                                                                Eigen::Matrix<double, -1, -1>  &log_abs_grad_prob,
+                                                                Eigen::Matrix<double, -1, -1>  &sign_grad_prob,
+                                                                Eigen::Matrix<double, -1, 1>   &log_abs_prod_container_or_inc_array,
+                                                                Eigen::Matrix<double, -1, 1>   &sign_prod_container_or_inc_array,
+                                                                Eigen::Matrix<double, -1, -1>  &log_abs_prod_container_or_inc_array_comp,
+                                                                Eigen::Matrix<double, -1, -1>  &sign_prod_container_or_inc_array_comp,
+                                                                Eigen::Matrix<double, -1, -1>  &log_abs_derivs_chain_container_vec_comp,
+                                                                Eigen::Matrix<double, -1, -1>  &sign_derivs_chain_container_vec_comp,
+                                                                Eigen::Matrix<double, -1, 1>   &log_sum_result,
+                                                                Eigen::Matrix<double, -1, 1>   &sign_sum_result,
+                                                                Eigen::Matrix<double, -1, -1>  &log_terms,
+                                                                Eigen::Matrix<double, -1, -1>  &sign_terms,
+                                                                Eigen::Matrix<double, -1, 1>   &log_abs_a,
+                                                                Eigen::Matrix<double, -1, 1>   &log_abs_b,
+                                                                Eigen::Matrix<double, -1, 1>   &sign_a,
+                                                                Eigen::Matrix<double, -1, 1>   &sign_b,
+                                                                Eigen::Matrix<double, -1, 1>   &container_max_logs,
+                                                                Eigen::Matrix<double, -1, 1>   &container_sum_exp_signed,
+                                                                const Model_fn_args_struct &Model_args_as_cpp_struct
 ) {
 
   
