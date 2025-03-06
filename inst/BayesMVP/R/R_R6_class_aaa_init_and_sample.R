@@ -383,6 +383,7 @@ MVP_model <- R6Class("MVP_model",
                           #'@param force_recompile Recompile the (possibly dummy if using built-in model) Stan model. 
                           #'@param ... Additional arguments passed to sampling.
                           #'@return Returns self invisibly, allowing for method chaining of this classes (MVP_model) methods. E.g.: model$sample(...)$summary(...). 
+                          #'
                           sample = function(  init_lists_per_chain = self$init_lists_per_chain,
                                               model_args_list = self$model_args_list,
                                               Stan_data_list = self$Stan_data_list,
@@ -419,8 +420,8 @@ MVP_model <- R6Class("MVP_model",
                                               metric_type_main = "Empirical",
                                               metric_shape_main = "diag",
                                               metric_type_nuisance = "Empirical",
-                                              ratio_M_main = 0.50,
-                                              ratio_M_us = 0.50,
+                                              ratio_M_main = NULL,
+                                              ratio_M_us = NULL,
                                               force_recompile = FALSE,
                                               ...) {
                             
@@ -497,6 +498,26 @@ MVP_model <- R6Class("MVP_model",
                                                     if (partitioned_HMC == TRUE) {
                                                       sample_nuisance <- TRUE
                                                     } 
+                                                    
+                                                    if (metric_type_main == "Hessian") { 
+                                                      
+                                                            interval_width_main <- if_null_then_set_to(interval_width_main, 50)
+                                                            ##
+                                                            ratio_M_main <- if_null_then_set_to(ratio_M_main, 0.75)
+                                                            ratio_M_us <- if_null_then_set_to(ratio_M_us, 0.25)
+                                                            ##
+                                                            interval_width_nuisance <- if_null_then_set_to(interval_width_nuisance, interval_width_main)
+                                                      
+                                                    } else if (metric_type_main == "Empirical") { 
+                                                      
+                                                            interval_width_main <- if_null_then_set_to(interval_width_main, 50)
+                                                            ##
+                                                            ratio_M_main <- if_null_then_set_to(ratio_M_main, 0.50)
+                                                            ratio_M_us <- if_null_then_set_to(ratio_M_us, 0.25)
+                                                            ##
+                                                            interval_width_nuisance <- if_null_then_set_to(interval_width_nuisance, interval_width_main)
+                                                      
+                                                    }
                                                     
                                                     params_same <- 1
                                                     
