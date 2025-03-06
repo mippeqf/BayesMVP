@@ -841,74 +841,88 @@ R_fn_EHMC_SNAPER_ADAM_burnin <-    function(    Model_type,
                                                                    M_inv_dense_main_non_scaled <- Rcpp_update_M_dense_using_Hessian_num_diff[[2]]
                                                                    M_inv_dense_main_chol_non_scaled <- Rcpp_update_M_dense_using_Hessian_num_diff[[3]]
                                                                    
-                                                                   ## re-scale by largest variance:
-                                                                   max_var <-  1  ## max(diag(M_inv_dense_main_non_scaled))
-                                                                   EHMC_Metric_as_Rcpp_List$M_dense_main <-  max_var * M_dense_main_non_scaled
-                                                                   EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  BayesMVP:::Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_dense_main)
-                                                                   EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)
-                                                                   EHMC_burnin_as_Rcpp_List$M_dense_sqrt <- pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
+                                                                   M_main_diag          <- diag(M_dense_main_non_scaled)
+                                                                   M_main_diag_sqrt     <- sqrt(M_main_diag)
+                                                                   M_inv_main_diag      <- diag(M_inv_dense_main_non_scaled)
+                                                                   M_inv_main_diag_sqrt <- sqrt(M_inv_main_diag)
+                                                                 
                                                                
                                                                if (metric_shape_main == "diag") {
-                                                                 
-                                                                     EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  c(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
-                                                                     EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- c(sqrt(1.0 / c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)))
-                                                                     ##
-                                                                     ## And still update the "dense" parameters:
-                                                                     ##
-                                                                     EHMC_Metric_as_Rcpp_List$M_inv_dense_main      <- diag(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
-                                                                     EHMC_Metric_as_Rcpp_List$M_dense_main          <- diag(diag(EHMC_Metric_as_Rcpp_List$M_dense_main))
-                                                                     EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <- diag(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol))
-                                                                     EHMC_burnin_as_Rcpp_List$M_dense_sqrt          <- diag(diag(EHMC_burnin_as_Rcpp_List$M_dense_sqrt))
+                                                                       
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  M_inv_main_diag
+                                                                           EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- M_main_diag_sqrt
+                                                                           ##
+                                                                           ## And still update the "dense" parameters:
+                                                                           ##
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main      <- diag(M_inv_main_diag)
+                                                                           EHMC_Metric_as_Rcpp_List$M_dense_main          <- diag(M_main_diag)
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <- diag(M_inv_main_diag_sqrt)
+                                                                           EHMC_burnin_as_Rcpp_List$M_dense_sqrt          <- diag(M_main_diag_sqrt)
                                                                  
                                                                } else if (metric_shape_main == "dense") {
-                                                                 
-                                                                     EHMC_Metric_as_Rcpp_List$M_inv_main_vec  <- c(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
-                                                                     EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- c(sqrt(1.0 / c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)))
-                                                                 
+                                                                     
+                                                                           ## re-scale by largest variance:
+                                                                           # max_var <-  1  ## max(diag(M_inv_dense_main_non_scaled))
+                                                                           EHMC_Metric_as_Rcpp_List$M_dense_main          <-  M_dense_main_non_scaled
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main      <-  M_inv_dense_main_non_scaled
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  M_inv_dense_main_chol_non_scaled
+                                                                           EHMC_burnin_as_Rcpp_List$M_dense_sqrt <- pracma::sqrtm(M_dense_main_non_scaled)[[1]]
+                                                                           ##
+                                                                           ## And still update the diagonal parameters:
+                                                                           ##
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec  <- c(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
+                                                                           EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- sqrt(EHMC_burnin_as_Rcpp_List$M_dense_sqrt)
+                                                                   
                                                                }  
                                                          
                                                        })
                                              
                                            } else if (metric_type_main == "Empirical") {
                                              
-                                                      #### message(paste("updating Euclidean metric (for main params)"))
-                                                     
-                                                     if (metric_shape_main == "diag") {
-                                                           
-                                                                 max_var <- 1 #  max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
-                                                                 M_as_inv_snaper_s_vec_main_empirical <-   1.0 / c(EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
-                                                                 M_as_inv_snaper_s_vec_main_empirical_scaled <- max_var * M_as_inv_snaper_s_vec_main_empirical
-                                                                 M_inv_as_snaper_s_vec_main_empirical_scaled <- 1.0 / c(M_as_inv_snaper_s_vec_main_empirical_scaled)
-                                                                 ##
-                                                                 M_inv_main_vec_current <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
-                                                                 EHMC_Metric_as_Rcpp_List$M_inv_main_vec <-  ratio_M_main * M_inv_as_snaper_s_vec_main_empirical_scaled + (1.0 - ratio_M_main) * M_inv_main_vec_current
-                                                                 EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- c(sqrt(1.0 / c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)))
-                                                                 ##
-                                                                 ## And still update the "dense" parameters:
-                                                                 ##
-                                                                 EHMC_Metric_as_Rcpp_List$M_dense_main          <-  diag(c(1.0 / c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)))
-                                                                 EHMC_Metric_as_Rcpp_List$M_inv_dense_main      <-  diag(c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec))
-                                                                 EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
-                                                                 EHMC_burnin_as_Rcpp_List$M_dense_sqrt          <-  diag(EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec)
-                                                       
-                                                     } else if (metric_shape_main == "dense") {
-                                                           
-                                                                 max_var <-  1 # max(diag(empicical_cov_main))
-                                                                 inv_empicical_cov_main <-   BayesMVP:::Rcpp_solve(empicical_cov_main)
-                                                                 inv_empicical_cov_main_scaled <- max_var * inv_empicical_cov_main
-                                                                 #  empicical_cov_main_scaled <- BayesMVP:::Rcpp_solve(inv_empicical_cov_main_scaled) #   1 / inv_empicical_cov_main_scaled
-                                                                 ##
-                                                                 EHMC_Metric_as_Rcpp_List$M_dense_main <-  ratio_M_main * inv_empicical_cov_main_scaled    +    (1.0 - ratio_M_main) *  EHMC_Metric_as_Rcpp_List$M_dense_main
-                                                                 EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- BayesMVP:::Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_dense_main)
-                                                                 EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
-                                                                 EHMC_burnin_as_Rcpp_List$M_dense_sqrt <-     pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
-                                                                 ##
-                                                                 ## And update the diagonal:
-                                                                 ##
-                                                                 EHMC_Metric_as_Rcpp_List$M_inv_main_vec  <- c(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
-                                                                 EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- c(sqrt(1.0 / c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)))
-                                                       
-                                                     }
+                                                                #### message(paste("updating Euclidean metric (for main params)"))
+                                                               
+                                                               if (metric_shape_main == "diag") {
+                                                                     
+                                                                           # max_var <- 1 #  max(EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
+                                                                           # M_as_inv_snaper_s_vec_main_empirical <-   1.0 / c(EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical)
+                                                                           # M_as_inv_snaper_s_vec_main_empirical_scaled <- max_var * M_as_inv_snaper_s_vec_main_empirical
+                                                                           # M_inv_as_snaper_s_vec_main_empirical_scaled <- 1.0 / c(M_as_inv_snaper_s_vec_main_empirical_scaled)
+                                                                           ##
+                                                                           M_inv_as_snaper_s_vec_main_empirical <- EHMC_burnin_as_Rcpp_List$snaper_s_vec_main_empirical
+                                                                           ##
+                                                                           M_inv_main_vec_current <- EHMC_Metric_as_Rcpp_List$M_inv_main_vec
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec  <-  ratio_M_main * M_inv_as_snaper_s_vec_main_empirical + (1.0 - ratio_M_main) * M_inv_main_vec_current
+                                                                           M_main_vec <- c(1.0 / EHMC_Metric_as_Rcpp_List$M_inv_main_vec)
+                                                                           EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- c(sqrt(M_main_vec))
+                                                                           ##
+                                                                           ## And still update the "dense" parameters:
+                                                                           ##
+                                                                           EHMC_Metric_as_Rcpp_List$M_dense_main          <-  diag(c(1.0 / c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec)))
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main      <-  diag(c(EHMC_Metric_as_Rcpp_List$M_inv_main_vec))
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(  EHMC_Metric_as_Rcpp_List$M_inv_dense_main )
+                                                                           EHMC_burnin_as_Rcpp_List$M_dense_sqrt          <-  diag(EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec)
+                                                                 
+                                                               } else if (metric_shape_main == "dense") {
+                                                                     
+                                                                           # max_var <-  1 # max(diag(empicical_cov_main))
+                                                                           # inv_empicical_cov_main <-   BayesMVP:::Rcpp_solve(empicical_cov_main)
+                                                                           # inv_empicical_cov_main_scaled <- max_var * inv_empicical_cov_main
+                                                                           #  empicical_cov_main_scaled <- BayesMVP:::Rcpp_solve(inv_empicical_cov_main_scaled) #   1 / inv_empicical_cov_main_scaled
+                                                                           ##
+                                                                           M_inv_dense_main_current <- EHMC_Metric_as_Rcpp_List$M_inv_dense_main
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main <-  ratio_M_main * empicical_cov_main + (1.0 - ratio_M_main) *  M_inv_dense_main_current
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main <- BayesMVP:::Rcpp_near_PD(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)
+                                                                           ##
+                                                                           EHMC_Metric_as_Rcpp_List$M_dense_main          <-  BayesMVP:::Rcpp_solve(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_dense_main_chol <-  BayesMVP:::Rcpp_Chol(EHMC_Metric_as_Rcpp_List$M_inv_dense_main)
+                                                                           EHMC_burnin_as_Rcpp_List$M_dense_sqrt          <-  pracma::sqrtm(EHMC_Metric_as_Rcpp_List$M_dense_main)[[1]]
+                                                                           ##
+                                                                           ## And update the diagonal:
+                                                                           ##
+                                                                           EHMC_Metric_as_Rcpp_List$M_inv_main_vec  <- c(diag(EHMC_Metric_as_Rcpp_List$M_inv_dense_main))
+                                                                           EHMC_burnin_as_Rcpp_List$sqrt_M_main_vec <- sqrt(EHMC_burnin_as_Rcpp_List$M_dense_sqrt)
+                                                                 
+                                                               }
                                                      
                                            }
                                      
