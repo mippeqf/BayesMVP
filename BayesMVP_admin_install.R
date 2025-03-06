@@ -4,35 +4,76 @@
 
 
 
+# 
+# # remotes::install_github("stan-dev/cmdstanr", force = TRUE)
+# # #### Load cmdstanr R outer package:
+# # require(cmdstanr) 
+# # #### Then, install the latest version of CmdStan:
+# # install_cmdstan(cores = parallel::detectCores(),
+# #                 overwrite = TRUE,
+# #                 cpp_options = list("STAN_MODEL_LDFLAGS" = "-shared",   "CXXFLAGS" = "-fPIC"))
+# 
+# 
+# 
+# # Install if needed
+# # install.packages("pkgdown")
+# # install.packages("Rdpack")
+# require(pkgdown)
+# require(Rdpack)
+# 
+# # # Build site with PDF capabilities
+# # pkgdown::build_site(local_INNER_pkg_dir)
 
-# remotes::install_github("stan-dev/cmdstanr", force = TRUE)
-# #### Load cmdstanr R outer package:
-# require(cmdstanr) 
-# #### Then, install the latest version of CmdStan:
-# install_cmdstan(cores = parallel::detectCores(),
-#                 overwrite = TRUE,
-#                 cpp_options = list("STAN_MODEL_LDFLAGS" = "-shared",   "CXXFLAGS" = "-fPIC"))
 
-
-
-# Install if needed
-# install.packages("pkgdown")
-# install.packages("Rdpack")
-require(pkgdown)
-require(Rdpack)
-
-# # Build site with PDF capabilities
-# pkgdown::build_site(local_INNER_pkg_dir)
 
 
 # ##
 rm(list = ls())
 # ##
-rstudioapi::restartSession()
+.rs.restartR()  # In RStudio
+# # ##
+# assign(".Last.warning", NULL, envir = baseenv())
 # ##
-rm(list = ls())
-
-
+# # Force garbage collection
+# gc(verbose = TRUE)
+# ##
+# rm(list = ls())
+# 
+# # This is a safer way to reset warnings
+# options(warn = -1)  # Turn off warnings temporarily
+# options(warn = 0)   # Turn them back on
+# 
+# 
+# # Step 1: Detach your package if it's loaded
+# pkg_name <- "yourPackageName"  # Replace with your package name
+# if (pkg_name %in% (.packages())) {
+#   detach(paste0("package:", pkg_name), unload = TRUE, force = TRUE)
+# }
+# 
+# # Step 2: Unload the namespace
+# if (pkg_name %in% loadedNamespaces()) {
+#   unloadNamespace(pkg_name)
+# }
+# 
+# # Step 3: Clear global environment objects
+# rm(list = ls())
+# 
+# # Step 4: Force garbage collection
+# gc(full = TRUE)
+# 
+# # Step 5: Reset warning behavior
+# options(warn = -1)
+# options(warn = 0)
+# 
+# # Step 6: Try cleaning DLLs again with your local package directory
+# tools::clean_dll("path/to/your/package")
+# 
+# 
+# warnings()
+# 
+# 
+# 
+#
 ##
 {
   ## First remove any possible package fragments:
@@ -109,9 +150,9 @@ devtools::install(local_pkg_dir, upgrade = "never")
   install_success <- FALSE
   
   try({  
-    ## Only works if do this first (on Linux)!! :
-    source("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP/src/R_script_load_OMP_Linux.R")
-    ##
+    # ## Sometimes only works if do this first (on Linux) :
+    # source("/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP/src/R_script_load_OMP_Linux.R")
+    # ##
     ## Install (inner pkg):
     require(BayesMVP)
     BayesMVP::install_BayesMVP() ## CUSTOM_FLAGS = CUSTOM_FLAGS)
