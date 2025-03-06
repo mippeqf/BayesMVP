@@ -350,11 +350,14 @@ Model_fn_args_struct   convert_R_List_to_Model_fn_args_struct(Rcpp::List R_List)
 //////  Function to convert from R List -> C++ struct (so can call fn's from R without having to use Rcpp::List as not thread-safe, and slower etc)
 EHMC_Metric_struct convert_R_List_EHMC_Metric_struct(const Rcpp::List &R_List) {
 
+  ////
   const Eigen::Matrix<double, -1, -1> M_dense_main = Rcpp::as<Eigen::Matrix<double, -1, -1>>(R_List["M_dense_main"]);
   const Eigen::Matrix<double, -1, -1> M_inv_dense_main = Rcpp::as<Eigen::Matrix<double, -1, -1>>(R_List["M_inv_dense_main"]);
   const Eigen::Matrix<double, -1, -1> M_inv_dense_main_chol = Rcpp::as<Eigen::Matrix<double, -1, -1>>(R_List["M_inv_dense_main_chol"]);
 
+  ////
   const Eigen::Matrix<double, -1, 1>  M_inv_main_vec = Rcpp::as<Eigen::Matrix<double, -1, 1>>(R_List["M_inv_main_vec"]);
+  ////
   const Eigen::Matrix<double, -1, 1>  M_inv_us_vec = Rcpp::as<Eigen::Matrix<double, -1, 1>>(R_List["M_inv_us_vec"]);
   const Eigen::Matrix<double, -1, 1>  M_us_vec = Rcpp::as<Eigen::Matrix<double, -1, 1>>(R_List["M_us_vec"]);
 
@@ -1238,11 +1241,24 @@ Eigen::Matrix<double, -1, -1>  Rcpp_Chol(const Eigen::Matrix<double, -1, -1>  &m
 
 
 
+
+
+
+
 // [[Rcpp::export]]
 Eigen::Matrix<double, -1, -1>  Rcpp_near_PD(const Eigen::Matrix<double, -1, -1>  &mat) {
   
-      Eigen::Matrix<double, -1, -1>    res_Eigen = near_PD(mat);
-      return  res_Eigen;
+        if (!(is_positive_definite(mat))) { 
+          
+              Eigen::Matrix<double, -1, -1>    res_Eigen = near_PD(mat);
+              return res_Eigen;
+          
+        } else { 
+        
+              Eigen::Matrix<double, -1, -1> res_Eigen = mat;
+              return res_Eigen;
+          
+        }
   
 } 
 
