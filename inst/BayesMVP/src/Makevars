@@ -38,8 +38,6 @@ ifneq ($(USER_SUPPLIED_CCACHE_PATH),) ## i.e. if user supplies "USER_SUPPLIED_CC
 	override CCACHE="$(USER_SUPPLIED_CCACHE_PATH)"
 endif
 ##
-$(info CCACHE is: $(CCACHE))
-##
 ####### ----- Compiler settings (clang preffered [AMD AOCC clang if available], then gcc/g++ [2nd or 3rd choice] --------------------
 ## First, check if AMD AOCC-clang compiler is availabnle (AMD CPU's only), otherwise use "standard" clang, and if not then use gcc/g++:
 override AMD_AOCC_PATH = $(shell ls -d /opt/AMD/aocc-compiler-* 2>/dev/null | sort -rV | head -n1)
@@ -77,9 +75,12 @@ override GCC_CPP_COMPILER=gcc
 # override CPP_COMPILER = "$(AMD_AOCC_CPP_COMPILER)"
 # override CXX_STD = CXX17 # Use C++17
 # override CPU_BASE_FLAGS = -O3  -march=znver4  -mtune=znver4 ## BOOKMARK
-#### ---- To force gcc/g++: ## ---- BOOKMARK
-override CXX_COMPILER = "$(GCC_CXX_COMPILER)"
-override CPP_COMPILER = "$(GCC_CPP_COMPILER)"
+##
+## ---- To force gcc/g++: ## ---- BOOKMARK
+##
+override CXX_COMPILER = $(GCC_CXX_COMPILER)
+override CPP_COMPILER = $(GCC_CPP_COMPILER)
+##
 override CXX_STD = -std=gnu++17 # Use C++17
 override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
 ##
@@ -88,19 +89,19 @@ override CPU_BASE_FLAGS = -O3  -march=native  -mtune=native
 ##
 ## Custom user-supplied flags (if supplied):
 ifneq ($(USER_SUPPLIED_CXX_COMPILER),) ## i.e. if user-supplied variable is available
-	override CXX_COMPILER="$(USER_SUPPLIED_CXX_COMPILER)"
+	override CXX_COMPILER=$(USER_SUPPLIED_CXX_COMPILER)
 endif
 ##
 ifneq ($(USER_SUPPLIED_CPP_COMPILER),) ## i.e. if user-supplied variable is available
-	override CPP_COMPILER="$(USER_SUPPLIED_CPP_COMPILER)"
+	override CPP_COMPILER=$(USER_SUPPLIED_CPP_COMPILER)
 endif
 ##
 ifneq ($(USER_SUPPLIED_CXX_STD),) ## i.e. if user-supplied variable is available
-	override CXX_STD="$(USER_SUPPLIED_CXX_STD)"
+	override CXX_STD=$(USER_SUPPLIED_CXX_STD)
 endif
 ##
 ifneq ($(USER_SUPPLIED_CPU_BASE_FLAGS),) ## i.e. if user-supplied variable is available
-	override CPU_BASE_FLAGS="$(USER_SUPPLIED_CPU_BASE_FLAGS)"
+	override CPU_BASE_FLAGS=$(USER_SUPPLIED_CPU_BASE_FLAGS)
 endif
 ##
 ####### ----- CPU Feature Detection (i.e., AVX, FMA, etc) -------------------------------------------------------------------------
@@ -334,8 +335,16 @@ override PKG_CXXFLAGS = $(PKG_CPPFLAGS)
 override CPPFLAGS = $(PKG_CPPFLAGS)
 override CXXFLAGS = $(PKG_CPPFLAGS)
 ##
-override CC  = "$(CCACHE)" $(CPP_COMPILER) 
-override CXX = "$(CCACHE)" $(CXX_COMPILER) 
+## override CC  = "$(CCACHE)" $(CPP_COMPILER) 
+## override CXX = "$(CCACHE)" $(CXX_COMPILER)
+ifeq ($(CCACHE),)
+  override CC  = $(CPP_COMPILER)
+  override CXX = $(CXX_COMPILER)
+else
+  override CC  = $(CCACHE) $(CPP_COMPILER)
+  override CXX = $(CCACHE) $(CXX_COMPILER)
+  ## $(info CCACHE is: $(CCACHE))
+endif
 ##
 override CFLAGS =  $(CPPFLAGS)
 ##
