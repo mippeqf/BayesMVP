@@ -23,20 +23,21 @@ $(info PKG_LIB_ARCH_PATH is: $(PKG_LIB_ARCH_PATH))
 ####### ----- CCACHE / ccache path -------------------------------------------------------------------------------------------------  
 ##
 ## Find ccache path:
+## Find ccache path:
 override CCACHE_PATH=$(shell which ccache 2>/dev/null)
 override HAVE_CCACHE=$(if $(CCACHE_PATH),YES,)
-##
+
 ## Set CCACHE prefix only if available
 ifneq (,$(HAVE_CCACHE))
   override CCACHE=$(CCACHE_PATH)
 else
-  override CCACHE =
+  override CCACHE=
 endif
 ##
 ## Custom user-supplied flags (if supplied):
-ifneq ($(USER_SUPPLIED_CCACHE_PATH),) ## i.e. if user supplies "USER_SUPPLIED_CCACHE_PATH" variable
-	override CCACHE="$(USER_SUPPLIED_CCACHE_PATH)"
-endif
+## ifneq ($(USER_SUPPLIED_CCACHE_PATH),) ## i.e. if user supplies "USER_SUPPLIED_CCACHE_PATH" variable
+## 	override CCACHE="$(USER_SUPPLIED_CCACHE_PATH)"
+## endif
 ##
 ####### ----- Compiler settings (clang preffered [AMD AOCC clang if available], then gcc/g++ [2nd or 3rd choice] --------------------
 ## First, check if AMD AOCC-clang compiler is availabnle (AMD CPU's only), otherwise use "standard" clang, and if not then use gcc/g++:
@@ -335,15 +336,12 @@ override PKG_CXXFLAGS = $(PKG_CPPFLAGS)
 override CPPFLAGS = $(PKG_CPPFLAGS)
 override CXXFLAGS = $(PKG_CPPFLAGS)
 ##
-## override CC  = "$(CCACHE)" $(CPP_COMPILER) 
-## override CXX = "$(CCACHE)" $(CXX_COMPILER)
-ifeq ($(CCACHE),)
-  override CC  = $(CPP_COMPILER)
-  override CXX = $(CXX_COMPILER)
-else
+ifeq ($(HAVE_CCACHE),YES)
   override CC  = $(CCACHE) $(CPP_COMPILER)
   override CXX = $(CCACHE) $(CXX_COMPILER)
-  ## $(info CCACHE is: $(CCACHE))
+else
+  override CC  = $(CPP_COMPILER)
+  override CXX = $(CXX_COMPILER)
 endif
 ##
 override CFLAGS =  $(CPPFLAGS)
