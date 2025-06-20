@@ -7,6 +7,9 @@
 .setup_env_onload <- function(libname, 
                              pkgname) {
             
+
+                    cat("Running setup_env_pre_install ----------------------")
+
             ## Set brigestan and cmdstanr environment variables / directories 
             ##  bs_dir <- bridgestan_path()
             cmdstan_dir <- BayesMVP:::cmdstanr_path()

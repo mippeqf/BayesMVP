@@ -5,6 +5,7 @@
 #' @export
 setup_env_pre_install <- function() {
 
+        cat("Running setup_env_pre_install ----------------------")
 
         ## Set brigestan and cmdstanr environment variables / directories
         #### bs_dir <- BayesMVP:::bridgestan_path()
@@ -71,6 +72,7 @@ setup_env_pre_install <- function() {
 #' @export
 setup_env_post_install <- function() {
 
+        cat("Running setup_env_post_install ----------------------")
 
           # Set brigestan and cmdstanr environment variables / directories
           #### bs_dir <- bridgestan_path()

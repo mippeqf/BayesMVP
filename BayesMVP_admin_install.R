@@ -30,7 +30,7 @@
 # ##
 rm(list = ls())
 # ##
-.rs.restartR()  # In RStudio
+# .rs.restartR()  # In RStudio
 # # ##
 # assign(".Last.warning", NULL, envir = baseenv())
 # ##
@@ -96,15 +96,15 @@ rm(list = ls())
 
 
 if (.Platform$OS.type == "windows") {
-  local_pkg_dir <-  "C:\\Users\\enzoc\\Documents\\Work\\PhD_work\\R_packages\\BayesMVP"
-  local_INNER_pkg_dir <-  "C:\\Users\\enzoc\\Documents\\Work\\PhD_work\\R_packages\\BayesMVP\\inst\\BayesMVP"
+  local_pkg_dir <-  "C:\\BayesMVP"
+  local_INNER_pkg_dir <-  "C:\\BayesMVP\\inst\\BayesMVP"
 } else {
   if (parallel::detectCores() > 16) {   ## if on local HPC
-    local_pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP"  
-    local_INNER_pkg_dir <- "/home/enzocerullo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP"
+    local_pkg_dir <- "/home/test/BayesMVP"  
+    local_INNER_pkg_dir <- "/home/test/BayesMVP/inst/BayesMVP"
   } else {  ## if on laptop
-    local_pkg_dir <- "/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP"  
-    local_INNER_pkg_dir <- "/home/enzo/Documents/Work/PhD_work/R_packages/BayesMVP/inst/BayesMVP"
+    local_pkg_dir <- "/home/test/BayesMVP"  
+    local_INNER_pkg_dir <- "/home/test/BayesMVP/inst/BayesMVP"
   }
 }
 
@@ -135,12 +135,12 @@ if (.Platform$OS.type == "windows") {
 #### -------- ACTUAL (LOCAL) INSTALL: 
 ## Document:
 devtools::clean_dll(local_pkg_dir)
-#### devtools::document(local_pkg_dir)
-roxygen2::roxygenize(local_pkg_dir)
+# devtools::document(local_pkg_dir)
+# roxygen2::roxygenize(local_pkg_dir)
 ##
 ## Install (outer pkg):
 devtools::clean_dll(local_pkg_dir)
-devtools::install(local_pkg_dir, upgrade = "never")
+remotes::install_local(local_pkg_dir, upgrade = "never")
 ##
 ## * MIGHT * have to restart session:
 #### rstudioapi::restartSession()
@@ -164,7 +164,7 @@ devtools::install(local_pkg_dir, upgrade = "never")
     beepr::beep("ping")
   })
   
-  rstudioapi::restartSession()
+  # rstudioapi::restartSession()
 }
 
 
@@ -222,13 +222,13 @@ devtools::install(local_pkg_dir, upgrade = "never")
 #### ----------------- install cmdstanr first:
 
 #### Install the cmdstanr "outer" R package:
-remotes::install_github("stan-dev/cmdstanr", force = TRUE)
-#### Load cmdstanr R outer package:
-require(cmdstanr) 
-#### Then, install the latest version of CmdStan:
-install_cmdstan(cores = parallel::detectCores(),
-                overwrite = TRUE,
-                cpp_options = list("STAN_MODEL_LDFLAGS" = "-shared",   "CXXFLAGS" = "-fPIC"))
+# remotes::install_github("stan-dev/cmdstanr", force = TRUE)
+# #### Load cmdstanr R outer package:
+# require(cmdstanr) 
+# #### Then, install the latest version of CmdStan:
+# install_cmdstan(cores = parallel::detectCores(),
+#                 overwrite = TRUE,
+#                 cpp_options = list("STAN_MODEL_LDFLAGS" = "-shared",   "CXXFLAGS" = "-fPIC"))
 
 
 
@@ -237,8 +237,8 @@ install_cmdstan(cores = parallel::detectCores(),
 
 
 #### ----------------- Then install bridgestan:
-remotes::install_github("https://github.com/roualdes/bridgestan", subdir="R")
-#### Load bridgestan:
+# remotes::install_github("https://github.com/roualdes/bridgestan", subdir="R")
+## Load bridgestan:
 require(bridgestan)
 
 
