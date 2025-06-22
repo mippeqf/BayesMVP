@@ -1,4 +1,6 @@
-*/old/
-*/old_or_backup/
-*/old_debug/
-*/backups_or_temp_or_future/
+**/old/*
+**/old_or_backup/*
+**/old_debug/*
+**/backups_or_temp_or_future/*
+*.o
+*.so
