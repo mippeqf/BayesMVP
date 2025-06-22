@@ -7,7 +7,7 @@ bridgestan_path <- function() {
 
           # Check if the BRIDGESTAN environment variable is already set
           if (!(Sys.getenv("BRIDGESTAN") %in% c("", " ", "  "))) {
-            message(paste(cat("Bridgestan path found at:"), Sys.getenv("BRIDGESTAN")))
+            # message(paste(cat("Bridgestan path found at:"), Sys.getenv("BRIDGESTAN")))
             return(Sys.getenv("BRIDGESTAN")) # Use the value from the environment variable
           }
 
@@ -20,7 +20,7 @@ bridgestan_path <- function() {
           # Check if the default path exists
           if (dir.exists(default_path) == TRUE) {
             Sys.setenv(BRIDGESTAN=default_path)
-            message(paste(cat("Bridgestan path found at:"), default_path))
+            # message(paste(cat("Bridgestan path found at:"), default_path))
             return(default_path)
           }
 
@@ -33,7 +33,7 @@ bridgestan_path <- function() {
           if (length(available_dirs) > 0) {
             recent_dir <- available_dirs[order(available_dirs, decreasing = TRUE)][1]
             Sys.setenv(BRIDGESTAN=recent_dir)
-            message(paste(cat("Bridgestan path found at:"), recent_dir))
+            # message(paste(cat("Bridgestan path found at:"), recent_dir))
             return(recent_dir)
           }
           

@@ -26,14 +26,14 @@ cmdstanr_path <- function() {
             if (length(cmdstan_dirs) > 0) {
               # Sort directories by version (assumes lexicographical sorting works for version strings)
               recent_dir <- cmdstan_dirs[order(cmdstan_dirs, decreasing = TRUE)][1]
-              message("Found latest cmdstan in .cmdstan: ", recent_dir)
+              # message("Found latest cmdstan in .cmdstan: ", recent_dir)
               return(recent_dir)
             }
 
             # Check for cmdstan directory directly under HOME
             cmdstan_dir <- file.path(home_dir, "cmdstan")
             if (dir.exists(cmdstan_dir)) {
-              message("Found cmdstan in home directory: ", cmdstan_dir)
+              # message("Found cmdstan in home directory: ", cmdstan_dir)
               return(cmdstan_dir)
             }
 
